@@ -113,7 +113,7 @@ function Badge({ status }: { status: string }) {
 
 // ─── Withdrawal Form ──────────────────────────────────────────────────────────
 
-function WithdrawalForm({ affiliateId }: { affiliateId: number }) {
+function WithdrawalForm({ affiliateId, affiliateCode }: { affiliateId: number; affiliateCode: string }) {
   const [amount, setAmount] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
@@ -148,7 +148,7 @@ function WithdrawalForm({ affiliateId }: { affiliateId: number }) {
       setFieldErr("Enter a valid 10-digit account number.");
       return;
     }
-    mutation.mutate({ affiliateId, amount, accountName, accountNumber, bankName });
+    mutation.mutate({ affiliateId, affiliateCode, amount, accountName, accountNumber, bankName });
   }
 
   if (success) {
@@ -835,7 +835,7 @@ export default function AffiliateDashboard() {
               </p>
             </div>
 
-            <WithdrawalForm affiliateId={affiliate.id} />
+            <WithdrawalForm affiliateId={affiliate.id} affiliateCode={affiliate.code} />
 
             {/* Past withdrawals */}
             {withdrawals.length > 0 && (

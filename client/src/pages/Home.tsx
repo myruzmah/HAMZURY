@@ -347,7 +347,7 @@ export default function Home() {
             <div className="flex flex-col gap-2">
               {[
                 { label: "BizDoc Consult", href: "/bizdoc", color: "#1B4D3E" },
-                { label: "Systemize", href: "/systemise", color: TEAL },
+                { label: "Systemise", href: "/systemise", color: TEAL },
                 { label: "Hamzury Skills", href: "/skills", color: "#8B6914" },
               ].map(d => (
                 <Link key={d.href} href={d.href}
@@ -360,7 +360,7 @@ export default function Home() {
             </div>
           </div>
           {/* Login / Sign Out */}
-          <div className="px-8 pb-10">
+          <div className="px-8 pb-10" style={{ paddingBottom: "calc(2.5rem + env(safe-area-inset-bottom))" }}>
             <div className="h-px mb-6 opacity-20" style={{ backgroundColor: GOLD }} />
             {isAuthenticated ? (
               <button onClick={() => { logout(); setMobileMenuOpen(false); }}
@@ -927,14 +927,14 @@ export default function Home() {
       </footer>
 
       {/* Mobile bottom nav */}
-      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50" style={{ backgroundColor: WHITE, borderTop: `1px solid ${GOLD}18` }}>
-        <div className="flex items-center justify-around px-2 py-3">
-          <MobileNavItem icon={<ShieldCheck size={22} />} label="Services" onClick={() => document.getElementById("what")?.scrollIntoView({ behavior: "smooth" })} />
-          <MobileNavItem icon={<Search size={22} />} label="Ask Me" onClick={() => { setActiveTab("ask"); document.getElementById("what")?.scrollIntoView({ behavior: "smooth" }); setTimeout(() => dropdownInputRef.current?.focus(), 450); }} highlight />
-          <MobileNavItem icon={<TrendingUp size={22} />} label="My Update" onClick={openTrackTab} />
+      <div className="fixed bottom-0 left-0 right-0 md:hidden z-50" style={{ backgroundColor: WHITE, borderTop: `1px solid ${GOLD}18`, paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="flex items-center justify-around px-2 py-2">
+          <MobileNavItem icon={<ShieldCheck size={20} />} label="Services" onClick={() => document.getElementById("what")?.scrollIntoView({ behavior: "smooth" })} />
+          <MobileNavItem icon={<Search size={20} />} label="Ask Me" onClick={() => { setActiveTab("ask"); document.getElementById("what")?.scrollIntoView({ behavior: "smooth" }); setTimeout(() => dropdownInputRef.current?.focus(), 450); }} highlight />
+          <MobileNavItem icon={<TrendingUp size={20} />} label="My Update" onClick={openTrackTab} />
         </div>
       </div>
-      <div className="md:hidden h-16" />
+      <div className="md:hidden h-20" />
 
       {/* Ask Me Search Engine */}
       <AskMeSearch open={askMeOpen} onClose={() => setAskMeOpen(false)} initialQ={askMeInitialQ} />
@@ -949,29 +949,24 @@ export default function Home() {
 // ─── Mobile Nav Item ──────────────────────────────────────────────────────────
 function MobileNavItem({ icon, label, href, onClick, highlight }: { icon: React.ReactNode; label: string; href?: string; onClick?: () => void; highlight?: boolean }) {
   const [, setLocation] = useLocation();
-  if (highlight) {
-    return (
-      <button
-        onClick={() => { if (onClick) onClick(); else if (href) setLocation(href); }}
-        className="flex flex-col items-center gap-1 px-3 py-1 min-w-[56px]"
-      >
-        <span
-          className="flex items-center justify-center w-9 h-9 rounded-full"
-          style={{ backgroundColor: TEAL, color: GOLD }}
-        >
-          {icon}
-        </span>
-        <span className="text-[9px] font-semibold uppercase tracking-wider" style={{ color: TEAL }}>{label}</span>
-      </button>
-    );
-  }
   return (
     <button
       onClick={() => { if (onClick) onClick(); else if (href) setLocation(href); }}
-      className="flex flex-col items-center gap-1 px-3 py-2 min-w-[56px]"
+      className="flex flex-col items-center justify-center gap-1 flex-1 py-2"
+      style={{ minWidth: 0 }}
     >
-      <span style={{ color: TEAL, opacity: 0.5 }}>{icon}</span>
-      <span className="text-[9px] font-medium uppercase tracking-wider" style={{ color: TEAL, opacity: 0.4 }}>{label}</span>
+      <span
+        className={`flex items-center justify-center ${highlight ? "w-10 h-10 rounded-full" : "w-10 h-10"}`}
+        style={highlight ? { backgroundColor: TEAL, color: GOLD } : { color: TEAL, opacity: 0.45 }}
+      >
+        {icon}
+      </span>
+      <span
+        className="text-[10px] font-semibold uppercase tracking-wider leading-none"
+        style={{ color: TEAL, opacity: highlight ? 1 : 0.4 }}
+      >
+        {label}
+      </span>
     </button>
   );
 }
@@ -1041,9 +1036,18 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
       ],
     };
   }
-  if (match(["founder", "muhammad", "hamzury who", "who started", "owner", "behind", "about hamzury", "ceo of hamzury"])) {
+  if (match(["ceo", "ceo of hamzury", "who is the ceo", "idris", "chief executive"])) {
     return {
-      text: "HAMZURY was founded by Muhammad Hamzury — an entrepreneur, strategist, and business infrastructure specialist. His mission: remove every barrier that stops ambitious businesses from reaching their potential. Learn more on the Founder page.",
+      text: "The CEO of HAMZURY Innovation Hub is Idris Ibrahim — he leads day-to-day operations and also heads the Systemise department, overseeing brand, systems, and digital strategy for clients.",
+      actions: [
+        { label: "Explore Systemise →", href: "/systemise" },
+        { label: "Meet the Founder →", href: "/founder" },
+      ],
+    };
+  }
+  if (match(["founder", "muhammad", "hamzury who", "who started", "owner", "behind", "about hamzury"])) {
+    return {
+      text: "HAMZURY was founded by Muhammad Hamzury — who built the company from the ground up, from a typing shop in Jos to Nigeria's integrated business infrastructure hub. He also serves as Chairman of RIDI. The CEO is Idris Ibrahim.",
       actions: [
         { label: "Meet the Founder →", href: "/founder" },
         { label: "Explore HAMZURY →", href: "/" },

@@ -582,7 +582,7 @@ export async function updateSkillsApplicationStatus(id: number, status: string, 
   if (reviewNotes) updateData.reviewNotes = reviewNotes;
   await db.update(skillsApplications).set(updateData).where(eq(skillsApplications.id, id));
   const result = await db.select().from(skillsApplications).where(eq(skillsApplications.id, id)).limit(1);
-  return result[0];
+  return result.length > 0 ? result[0] : undefined;
 }
 
 // ─── Skills Admin Stats ─────────────────────────────────────────────────────

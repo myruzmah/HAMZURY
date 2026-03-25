@@ -1107,27 +1107,31 @@ export default function SkillsPortal() {
       </footer>
 
       {/* ── MOBILE BOTTOM NAV ── */}
-      <nav className="fixed bottom-0 inset-x-0 md:hidden z-50 flex items-center justify-around h-16 border-t"
-        style={{ backgroundColor: W, borderColor: `${DARK}08` }}>
-        <button onClick={() => window.location.href = "/"}
-          className="flex flex-col items-center gap-1 text-[10px] font-semibold opacity-50 hover:opacity-100 transition-opacity uppercase tracking-wider"
-          style={{ color: DARK }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-          Home
-        </button>
-        <button onClick={() => openChat()}
-          className="flex flex-col items-center gap-1 px-6 py-2.5 rounded-2xl text-[10px] font-semibold uppercase tracking-wider"
-          style={{ backgroundColor: DARK, color: GOLD }}>
-          <MessageCircle size={18} />
-          Get Clarity
-        </button>
-        <button
-          onClick={() => { document.getElementById("my-update")?.scrollIntoView({ behavior: "smooth" }); }}
-          className="flex flex-col items-center gap-1 text-[10px] font-semibold opacity-50 hover:opacity-100 transition-opacity uppercase tracking-wider"
-          style={{ color: DARK }}>
-          <GraduationCap size={20} />
-          My Update
-        </button>
+      <nav
+        className="fixed bottom-0 inset-x-0 md:hidden z-50 border-t"
+        style={{ backgroundColor: W, borderColor: `${DARK}12`, paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="flex items-stretch h-16">
+          <button onClick={() => window.location.href = "/"}
+            className="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: DARK, opacity: 0.45 }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Home
+          </button>
+          <button onClick={() => openChat()}
+            className="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ backgroundColor: DARK, color: GOLD }}>
+            <MessageCircle size={18} />
+            Get Clarity
+          </button>
+          <button
+            onClick={() => { document.getElementById("my-update")?.scrollIntoView({ behavior: "smooth" }); }}
+            className="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: DARK, opacity: 0.45 }}>
+            <GraduationCap size={20} />
+            My Update
+          </button>
+        </div>
       </nav>
 
       {/* ── SKILLS DESK ── */}

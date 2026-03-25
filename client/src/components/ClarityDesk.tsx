@@ -12,6 +12,25 @@ const Au    = "#C9A97E";
 const CREAM = "#F8F5EE";
 const W     = "#FFFFFF";
 
+const SYSTEMISE_WA = "2349130700056";
+
+const APPT_SLOTS = [
+  "Monday · 9:00 AM",
+  "Monday · 11:00 AM",
+  "Monday · 2:00 PM",
+  "Tuesday · 9:00 AM",
+  "Tuesday · 11:00 AM",
+  "Tuesday · 2:00 PM",
+  "Wednesday · 9:00 AM",
+  "Wednesday · 11:00 AM",
+  "Wednesday · 4:00 PM",
+  "Thursday · 9:00 AM",
+  "Thursday · 2:00 PM",
+  "Thursday · 4:00 PM",
+  "Friday · 9:00 AM",
+  "Friday · 11:00 AM",
+];
+
 interface Msg { id: string; role: "bot" | "user"; text: string }
 type Phase = "chat" | "contact" | "payment";
 
@@ -31,10 +50,13 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
   const [contactPhone, setContactPhone] = useState("");
   const [paymentDone, setPaymentDone]   = useState(false);
   const [initialized, setInitialized]   = useState(false);
+  const [showAppt, setShowAppt]         = useState(false);
+  const [apptSlot, setApptSlot]         = useState("");
 
   const endRef   = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const systemiseChat = trpc.systemise.chat.useMutation();
+  const confirmPaymentMutation = trpc.systemise.confirmPayment.useMutation();
 
   const uid = () => `${Date.now()}-${Math.random()}`;
 
@@ -61,6 +83,8 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
       setPhase("chat");
       setShowReadyBtn(false);
       setPaymentDone(false);
+      setShowAppt(false);
+      setApptSlot("");
       setContactName("");
       setContactPhone("");
     }
@@ -137,6 +161,8 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
     setContactName("");
     setContactPhone("");
     setInitialized(false);
+    setShowAppt(false);
+    setApptSlot("");
   }, []);
 
   if (!open) return null;
@@ -213,7 +239,7 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
             </div>
           )}
 
-          {phase === "contact" && (
+          {phase === "contact" && !showAppt && (
             <div className="rounded-2xl p-4 border" style={{ backgroundColor: W, borderColor: `${G}20` }}>
               <p className="text-sm font-semibold mb-0.5" style={{ color: G }}>A few quick details</p>
               <p className="text-xs mb-3" style={{ color: "#6B7280" }}>So we can put together your scope and get moving.</p>
@@ -235,10 +261,70 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
               <button
                 onClick={submitContact}
                 disabled={!contactName.trim() || contactPhone.replace(/\D/g, "").length < 7}
-                className="w-full py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40"
+                className="w-full py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40 mb-2"
                 style={{ backgroundColor: G, color: Au }}
               >
-                Continue →
+                Get Started →
+              </button>
+              <button
+                onClick={() => setShowAppt(true)}
+                className="w-full py-2.5 rounded-xl text-sm font-medium transition-all hover:opacity-80 border"
+                style={{ borderColor: `${G}25`, backgroundColor: "transparent", color: G }}
+              >
+                Book a Call Instead
+              </button>
+            </div>
+          )}
+
+          {/* Appointment booking */}
+          {phase === "contact" && showAppt && (
+            <div className="rounded-2xl p-4 border" style={{ backgroundColor: W, borderColor: `${Au}50` }}>
+              <p className="text-sm font-semibold mb-0.5" style={{ color: G }}>Book a Discovery Call</p>
+              <p className="text-xs mb-4" style={{ color: "#6B7280" }}>
+                Pick a slot (Mon–Fri, WAT). We'll confirm on WhatsApp within 1 hour.
+              </p>
+              <div className="grid grid-cols-2 gap-2 mb-4 max-h-48 overflow-y-auto pr-1">
+                {APPT_SLOTS.map(slot => (
+                  <button
+                    key={slot}
+                    onClick={() => setApptSlot(slot)}
+                    className="px-3 py-2 rounded-xl text-xs font-medium text-left transition-all border"
+                    style={{
+                      backgroundColor: apptSlot === slot ? G : CREAM,
+                      color: apptSlot === slot ? Au : "#2C2C2C",
+                      borderColor: apptSlot === slot ? G : `${G}20`,
+                    }}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+              <a
+                href={
+                  apptSlot
+                    ? `https://wa.me/${SYSTEMISE_WA}?text=${encodeURIComponent(
+                        `Hi HAMZURY Systemise, I'd like to book a discovery call on ${apptSlot} WAT. My name is ${contactName || "—"}.`
+                      )}`
+                    : "#"
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={e => { if (!apptSlot) e.preventDefault(); }}
+                className="block w-full py-3 rounded-xl text-sm font-semibold text-center transition-all hover:opacity-90 mb-2"
+                style={{
+                  backgroundColor: apptSlot ? G : `${G}40`,
+                  color: Au,
+                  pointerEvents: apptSlot ? "auto" : "none",
+                }}
+              >
+                {apptSlot ? `Confirm · ${apptSlot} →` : "Select a time above"}
+              </a>
+              <button
+                onClick={() => { setShowAppt(false); setApptSlot(""); }}
+                className="w-full py-2 text-xs"
+                style={{ color: "#9CA3AF" }}
+              >
+                ← Back
               </button>
             </div>
           )}
@@ -254,7 +340,18 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
               </div>
               {!paymentDone ? (
                 <button
-                  onClick={() => setPaymentDone(true)}
+                  onClick={async () => {
+                    setPaymentDone(true);
+                    try {
+                      await confirmPaymentMutation.mutateAsync({
+                        name: contactName || "Client",
+                        phone: contactPhone || "—",
+                        service: "Systemise — General",
+                      });
+                    } catch {
+                      // Silent — payment confirmation logged best-effort
+                    }
+                  }}
                   className="w-full py-3 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
                   style={{ backgroundColor: G, color: Au }}
                 >

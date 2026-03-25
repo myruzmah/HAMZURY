@@ -25,19 +25,16 @@ function FounderLoginCard() {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
   const [, setLocation]       = useLocation();
-  const DEV_PW = "12345678A@";
-
   async function login() {
     if (!pw) { setError("Enter the password."); return; }
-    if (pw !== DEV_PW) { setError("Incorrect password."); return; }
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/dev-login", {
+      const res = await fetch("/api/founder-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name: "Muhammad Hamzury", role: "admin", staffId: 1 }),
+        body: JSON.stringify({ password: pw }),
       });
       if (!res.ok) throw new Error(await res.text());
       setLocation("/founder/dashboard");
@@ -97,7 +94,8 @@ export default function FounderPage() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: WHITE }}>
       <PageMeta
         title="Our Founder — HAMZURY"
-        description="The person behind HAMZURY — built to structure Nigerian businesses that last."
+        description="Muhammad Hamzury — from a photocopy shop in Jos to Nigeria's integrated business infrastructure hub. The origin story of BizDoc, Systemise, and RIDI."
+        ogImage="https://hamzury.com/founder.jpg"
       />
 
       {/* ── Navigation ──────────────────────────────────────────────────────── */}
@@ -146,7 +144,7 @@ export default function FounderPage() {
               className="text-base font-normal tracking-[0.15em] uppercase mb-8"
               style={{ color: DARK, opacity: 0.5 }}
             >
-              Founder &amp; CEO
+              Founder
             </p>
 
             {/* Gold rule */}
@@ -156,7 +154,7 @@ export default function FounderPage() {
             />
 
             <p
-              className="text-lg md:text-xl font-light leading-relaxed max-w-xl"
+              className="text-lg md:text-xl font-light leading-relaxed max-w-xl mb-6"
               style={{ color: DARK }}
             >
               Building Nigeria's premier business infrastructure —{" "}
@@ -164,21 +162,150 @@ export default function FounderPage() {
                 one company at a time.
               </span>
             </p>
+            <div className="flex flex-wrap gap-3">
+              {["Founder · HAMZURY", "Chairman · RIDI"].map(tag => (
+                <span
+                  key={tag}
+                  className="text-[11px] font-semibold tracking-wider uppercase px-3 py-1.5 rounded-full"
+                  style={{ backgroundColor: `${TEAL}0D`, color: TEAL, border: `1px solid ${TEAL}18` }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
           </div>
 
-          {/* Founder initial avatar */}
-          <div className="shrink-0">
+          {/* Founder portrait */}
+          <div className="shrink-0 relative">
             <div
-              className="w-32 h-32 rounded-full flex items-center justify-center text-3xl font-semibold select-none"
+              className="w-52 h-52 md:w-64 md:h-64 rounded-2xl overflow-hidden"
               style={{
                 border: `3px solid ${GOLD}`,
-                backgroundColor: MILK,
-                color: TEAL,
-                letterSpacing: "0.05em",
+                boxShadow: `0 24px 64px rgba(10,31,28,0.18), 0 0 0 8px ${MILK}`,
               }}
             >
-              M
+              <img
+                src="/founder.jpg"
+                alt="Muhammad Hamzury — Founder, HAMZURY Innovation Hub"
+                className="w-full h-full object-cover object-top"
+                onError={e => {
+                  const t = e.currentTarget;
+                  t.style.display = "none";
+                  const parent = t.parentElement;
+                  if (parent) {
+                    parent.style.display = "flex";
+                    parent.style.alignItems = "center";
+                    parent.style.justifyContent = "center";
+                    parent.style.backgroundColor = MILK;
+                    parent.innerHTML = `<span style="font-size:2.5rem;font-weight:600;color:${TEAL};letter-spacing:0.05em">MH</span>`;
+                  }
+                }}
+              />
             </div>
+            {/* Chairman RIDI badge */}
+            <div
+              className="absolute -bottom-3 -right-3 px-3 py-1.5 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-lg"
+              style={{ backgroundColor: GOLD, color: TEAL }}
+            >
+              Chairman · RIDI
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Section 1b: Origin Story ─────────────────────────────────────────── */}
+      <section className="py-24 px-6 md:px-12" style={{ backgroundColor: TEAL }}>
+        <div className="max-w-5xl mx-auto">
+          <p
+            className="text-[10px] font-medium tracking-[0.35em] uppercase mb-3"
+            style={{ color: GOLD }}
+          >
+            The Origin
+          </p>
+          <h2
+            className="text-3xl md:text-4xl font-medium tracking-tight mb-14"
+            style={{ color: MILK }}
+          >
+            Where HAMZURY came from.
+          </h2>
+
+          {/* Arabic/Ajami callout */}
+          <div
+            className="rounded-2xl p-6 mb-14 border"
+            style={{ borderColor: `${GOLD}30`, backgroundColor: `${MILK}08` }}
+          >
+            <p className="text-sm font-light leading-relaxed" style={{ color: `${MILK}B0` }}>
+              You'll notice Arabic script in the HAMZURY logo. That is not decoration.
+              It is a tribute to{" "}
+              <span className="font-semibold" style={{ color: GOLD }}>Haruna</span> —
+              my father — who understood Ajami and believed that knowledge, in any script,
+              belongs to everyone. He opened a photocopy and typing shop — not to profit,
+              but so the community could learn. That was his version of an innovation hub.
+              Every student who needed a document typed, every family that needed a form filled —
+              he made sure they had access. That shop was his contribution to building something.
+            </p>
+          </div>
+
+          {/* Timeline steps */}
+          <div className="space-y-0">
+            {[
+              {
+                phase: "The Beginning",
+                body: "After my father passed, I started where he left off — selling scratch cards, doing typing work for students, learning how to serve people and build trust one transaction at a time. There was no strategy. There was just work.",
+              },
+              {
+                phase: "University of Jos",
+                body: "I took on a shop that others had abandoned. The reputation was not good — but I saw what it could be. I built a customer base that knew us as honest, reliable, and the best internet cafe on campus. Not through advertising. Through showing up every day and doing the work right.",
+              },
+              {
+                phase: "The Turning Point",
+                body: "I watched the cafe business decline in real time. Everyone had a phone. The footfall dried up. But instead of seeing a dying business, I saw a signal — the world was moving to digital. I made a decision: this space would become something bigger. Hamzury Innovation Hub.",
+              },
+              {
+                phase: "RIDI",
+                body: "As the Hub grew, I saw the same pattern everywhere — talented people held back not by lack of ability, but by lack of access to the right skills. I founded RIDI (Rural Innovation Development Initiative) because tech skills are a necessity, not a privilege. We have sponsored thousands of students across 28 communities.",
+              },
+              {
+                phase: "The Full System",
+                body: "Skills alone were not enough. The graduates needed legal structures, operational systems, and market positioning to actually build with. That is why we built BizDoc Consult, Systemise, and Hamzury Skills — not as separate products, but as one integrated system for businesses that intend to last.",
+              },
+            ].map((item, i) => (
+              <div
+                key={item.phase}
+                className="flex gap-6 md:gap-10 items-start pb-10 last:pb-0"
+              >
+                {/* Step number + vertical line */}
+                <div className="flex flex-col items-center shrink-0 pt-1">
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{ backgroundColor: GOLD, color: TEAL }}
+                  >
+                    {i + 1}
+                  </div>
+                  {i < 4 && (
+                    <div
+                      className="w-px flex-1 mt-3"
+                      style={{ backgroundColor: `${GOLD}25`, minHeight: 40 }}
+                    />
+                  )}
+                </div>
+                {/* Content */}
+                <div className="pb-6">
+                  <p
+                    className="text-xs font-bold tracking-widest uppercase mb-2"
+                    style={{ color: GOLD }}
+                  >
+                    {item.phase}
+                  </p>
+                  <p
+                    className="text-base font-light leading-relaxed"
+                    style={{ color: `${MILK}CC` }}
+                  >
+                    {item.body}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -375,7 +502,7 @@ export default function FounderPage() {
               {
                 dept: "RIDI",
                 why: "Everyone needs skills. Not as a luxury — as a necessity.",
-                body: "I looked around and saw talented people held back not by lack of ambition, but by lack of access to practical knowledge. RIDI was built to close that gap. Skills should not be gatekept by geography or income. Everyone deserves the tools to build something real.",
+                body: "The Rural Innovation Development Initiative exists because I have lived both sides of that access gap. I watched brilliant people do nothing with their talent — not from lack of will, but lack of entry. RIDI closes that gap. We do not offer a lesser version of training. We offer the same programs, the same certification, to anyone willing to do the work — regardless of income or geography.",
               },
               {
                 dept: "HAMZURY SKILLS",
@@ -385,7 +512,7 @@ export default function FounderPage() {
               {
                 dept: "SYSTEMISE",
                 why: "Structure and visibility are what kill good ideas.",
-                body: "I have watched brilliant businesses struggle not because of bad products, but because of invisible systems. Founders could not see their numbers. Their teams could not follow a structure. Their brand said nothing. Systemise exists to fix the invisible architecture that good businesses need.",
+                body: "I have watched brilliant businesses struggle not because of bad products, but because of invisible systems. Founders could not see their numbers. Their teams could not follow a structure. Their brand said nothing. Systemise exists to fix the invisible architecture that good businesses need. Today, Systemise is led by our CEO, Idris Ibrahim.",
               },
               {
                 dept: "BIZDOC",

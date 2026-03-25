@@ -39,7 +39,38 @@ async function startServer() {
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
 
-  // ─── DEV-ONLY: Quick login without OAuth ─────────────────────────────────
+  // ─── Founder Login — password-gated, env-controlled ─────────────────────
+  app.post("/api/founder-login", async (req, res) => {
+    try {
+      const { password } = req.body ?? {};
+      const expected = process.env.FOUNDER_PW;
+      if (!expected) {
+        return res.status(503).json({ error: "Founder access not configured on this server." });
+      }
+      if (!password || password !== expected) {
+        return res.status(401).json({ error: "Incorrect password." });
+      }
+      const openId = "founder__admin__1";
+      const token = await sdk.createSessionToken(openId, { name: "Muhammad Hamzury" });
+      const cookieOptions = getSessionCookieOptions(req);
+      res.cookie(COOKIE_NAME, token, {
+        ...cookieOptions,
+        sameSite: "lax",
+        maxAge: 8 * 60 * 60 * 1000,
+      });
+      res.json({ success: true, name: "Muhammad Hamzury", role: "admin" });
+    } catch (err) {
+      res.status(500).json({ error: String(err) });
+    }
+  });
+
+  app.post("/api/dev-logout", (req, res) => {
+    const cookieOptions = getSessionCookieOptions(req);
+    res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+    res.json({ success: true });
+  });
+
+  // ─── DEV-ONLY: Role-switching for local development ───────────────────────
   if (process.env.NODE_ENV !== "production") {
     app.post("/api/dev-login", async (req, res) => {
       try {
@@ -56,12 +87,6 @@ async function startServer() {
       } catch (err) {
         res.status(500).json({ error: String(err) });
       }
-    });
-
-    app.post("/api/dev-logout", (req, res) => {
-      const cookieOptions = getSessionCookieOptions(req);
-      res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      res.json({ success: true });
     });
   }
   // ─────────────────────────────────────────────────────────────────────────

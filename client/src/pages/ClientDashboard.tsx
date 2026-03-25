@@ -346,29 +346,13 @@ export default function ClientDashboard() {
       const saved = localStorage.getItem(`hamzury-roadmap-${lookupPhone}`);
       if (saved) setRoadmapChecks(JSON.parse(saved));
     } else if (data && !data.found) {
-      // No file found — allow demo login with mock data
-      const mock = getMockClient(lookupPhone);
-      const s: ClientSession = {
-        phone: lookupPhone,
-        name: mock.name,
-        ref: mock.reference,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      };
-      saveSession(lookupPhone, s);
-      setSession(s);
+      setLoginError("No file found for this number. Contact your CSO on 08067149356 or 09130700056.");
       setLoginLoading(false);
+      setLookupPhone("");
     } else if (lookupQuery.isError) {
-      // DB error — fall back to mock
-      const mock = getMockClient(lookupPhone);
-      const s: ClientSession = {
-        phone: lookupPhone,
-        name: mock.name,
-        ref: mock.reference,
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      };
-      saveSession(lookupPhone, s);
-      setSession(s);
+      setLoginError("Could not connect. Please try again or contact your CSO.");
       setLoginLoading(false);
+      setLookupPhone("");
     }
   }, [lookupQuery.data, lookupQuery.isLoading, lookupQuery.isFetching, lookupQuery.isError, lookupPhone, loginLoading]);
 

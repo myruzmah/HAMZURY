@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: "How do I track my project?",
-    a: "Use the 'My Update' section on the homepage. Enter your phone number to see real-time project status updates from your assigned consultant.",
+    a: "Use the 'My Update' section on the homepage. Enter your reference number (e.g. BZ-2026-0041) and the phone number you registered with. Your reference number is sent to you once your file is activated — if you haven't received it, contact your CSO on WhatsApp.",
   },
   {
     q: "What documents do I need for CAC registration?",
@@ -41,15 +41,15 @@ const FAQS = [
   },
   {
     q: "What is the RIDI program?",
-    a: "RIDI (Rural Integrated Development Initiative) is our community empowerment program under Hamzury Skills. It provides capacity-building training to underserved communities across Nigeria.",
+    a: "RIDI (Rural Innovation Development Initiative) is our community empowerment program under Hamzury Skills. It provides free, practical skills training to underserved communities across Nigeria — currently active in 28 communities. Every participant receives the same certification as paid students.",
   },
   {
     q: "How do I contact the CSO?",
     a: "Use the live chat widget on any of our service pages or email our Client Services Office directly at cso@hamzury.com.",
   },
   {
-    q: "What is Sistemis?",
-    a: "Sistemis is our business automation and systems design department. We help companies build efficient workflows, automate repetitive processes, and scale with structured operational systems.",
+    q: "What is Systemise?",
+    a: "Systemise is our business automation and systems design department. We help companies build efficient workflows, automate repetitive processes, and scale with structured operational systems — from brand identity and websites to CRM and full business operating systems.",
   },
   {
     q: "What is Hamzury Skills?",
@@ -290,7 +290,9 @@ export default function AskMePage() {
             </Link>
 
             <a
-              href="tel:+2348000000000"
+              href="https://wa.me/2349130700056"
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-lg text-sm font-semibold transition"
               style={{
                 background: "transparent",
@@ -299,9 +301,13 @@ export default function AskMePage() {
               }}
             >
               <Phone size={17} />
-              Call Us
+              Book a Call
             </a>
           </div>
+          <p className="text-xs mt-6" style={{ color: "rgba(255,255,255,0.4)" }}>
+            To speak with us directly, book a call via chat and we'll confirm an available time slot.
+            BizDoc enquiries: 08067149356 · Skills &amp; Systemise: 09130700056
+          </p>
         </div>
       </section>
 

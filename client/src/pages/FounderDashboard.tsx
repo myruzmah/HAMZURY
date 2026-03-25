@@ -102,12 +102,15 @@ const FILES = [
 export default function FounderDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [activeSection, setActiveSection] = useState<Section>("overview");
-  const [resolvedIds, setResolvedIds] = useState<number[]>([]);
+  const [resolvedRefs, setResolvedRefs] = useState<string[]>([]);
 
-  const statsQuery      = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
-  const activityQuery   = trpc.activity.recent.useQuery({ limit: 10 });
+  const statsQuery       = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
+  const activityQuery    = trpc.activity.recent.useQuery({ limit: 10 });
   const commissionsQuery = trpc.commissions.list.useQuery();
-  const leadsQuery      = trpc.leads.list.useQuery();
+  const leadsQuery       = trpc.leads.list.useQuery();
+  const escalationsQuery = trpc.institutional.escalations.useQuery(undefined, { refetchInterval: 30000 });
+  const deptStatsQuery   = trpc.institutional.deptStats.useQuery(undefined, { refetchInterval: 30000 });
+  const revenueStatsQuery = trpc.commissions.revenueStats.useQuery(undefined, { refetchInterval: 60000 });
 
   if (loading) {
     return (
@@ -118,11 +121,25 @@ export default function FounderDashboard() {
   }
   if (!user) return null;
 
-  const stats      = statsQuery.data;
-  const activity   = activityQuery.data || [];
-  const commissions = commissionsQuery.data || [];
-  const leads      = leadsQuery.data || [];
+  const stats        = statsQuery.data;
+  const activity     = activityQuery.data || [];
+  const commissions  = commissionsQuery.data || [];
+  const leads        = leadsQuery.data || [];
   const pendingComms = commissions.filter((c: any) => c.status === "pending").length;
+  const rawEscalations  = escalationsQuery.data;
+  const realDeptStats   = deptStatsQuery.data || [];
+
+  type EscalationItem = { ref: string; type: string; title: string; from: string; urgency: "high" | "medium"; time: string };
+  const escalations: EscalationItem[] = rawEscalations && rawEscalations.length > 0
+    ? rawEscalations.map(e => ({
+        ref: e.ref || `ESC-${Math.random()}`,
+        type: e.type === "high_value_task" ? "High-value Task" : e.type === "unassigned_lead" ? "Unassigned Lead" : "Pending Payout",
+        title: e.label + (e.value ? ` — ₦${Number(e.value).toLocaleString()}` : ""),
+        from: e.type === "high_value_task" ? "Tasks" : e.type === "unassigned_lead" ? "CSO" : "Finance",
+        urgency: e.type === "high_value_task" ? "high" : "medium",
+        time: "Live",
+      }))
+    : MOCK_ESCALATIONS.map(e => ({ ref: String(e.id), type: e.type, title: e.title, from: e.from, urgency: e.urgency as "high" | "medium", time: e.time }));
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview",     icon: LayoutDashboard, label: "Overview" },
@@ -192,7 +209,7 @@ export default function FounderDashboard() {
               {sidebarItems.find(s => s.key === activeSection)?.label}
             </h1>
             <p className="text-xs opacity-40" style={{ color: CHOCO }}>
-              {user.name || "Muhammad Hamzury"} · Founder &amp; Director, HAMZURY
+              {user.name || "Muhammad Hamzury"} · Founder, HAMZURY Innovation Hub
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -212,14 +229,14 @@ export default function FounderDashboard() {
             )}
             {activeSection === "command" && (
               <CommandSection
-                escalations={MOCK_ESCALATIONS}
-                resolvedIds={resolvedIds}
-                setResolvedIds={setResolvedIds}
+                escalations={escalations}
+                resolvedRefs={resolvedRefs}
+                setResolvedRefs={setResolvedRefs}
                 pendingComms={pendingComms}
                 onSwitchToAssign={() => setActiveSection("assign")}
               />
             )}
-            {activeSection === "analytics" && <AnalyticsSection />}
+            {activeSection === "analytics" && <AnalyticsSection revenueStats={revenueStatsQuery.data} deptStats={realDeptStats} leads={leads} />}
             {activeSection === "commissions" && <CommissionsSection commissions={commissions} />}
             {activeSection === "staff" && <StaffSection />}
             {activeSection === "calendar" && <CalendarSection />}
@@ -345,14 +362,15 @@ function OverviewSection({ stats, leads, commissions, activity }: {
 }
 
 // ─── Command Center ──────────────────────────────────────────────────────────
-function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms, onSwitchToAssign }: {
-  escalations: typeof MOCK_ESCALATIONS;
-  resolvedIds: number[];
-  setResolvedIds: React.Dispatch<React.SetStateAction<number[]>>;
+type EscItem = { ref: string; type: string; title: string; from: string; urgency: "high" | "medium"; time: string };
+function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingComms, onSwitchToAssign }: {
+  escalations: EscItem[];
+  resolvedRefs: string[];
+  setResolvedRefs: React.Dispatch<React.SetStateAction<string[]>>;
   pendingComms: number;
   onSwitchToAssign: () => void;
 }) {
-  const active = escalations.filter(e => !resolvedIds.includes(e.id));
+  const active = escalations.filter(e => !resolvedRefs.includes(e.ref));
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -405,7 +423,7 @@ function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms
           </div>
         ) : active.map(e => (
           <div
-            key={e.id}
+            key={e.ref}
             className="bg-white rounded-2xl border p-5 flex items-start gap-4"
             style={{ borderColor: e.urgency === "high" ? "#EF444430" : `${CHOCO}08` }}
           >
@@ -430,7 +448,7 @@ function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms
               variant="ghost"
               className="text-xs shrink-0"
               style={{ color: "#22C55E" }}
-              onClick={() => { setResolvedIds(p => [...p, e.id]); toast.success("Marked as resolved"); }}
+              onClick={() => { setResolvedRefs(p => [...p, e.ref]); toast.success("Marked as resolved"); }}
             >
               Resolve
             </Button>
@@ -442,21 +460,38 @@ function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms
 }
 
 // ─── Analytics Section ───────────────────────────────────────────────────────
-function AnalyticsSection() {
+function AnalyticsSection({ revenueStats, deptStats, leads }: {
+  revenueStats?: { monthlyRevenue?: { month: string; revenue: number }[] } | null;
+  deptStats?: { dept: string; completedTasks: number; totalTasks: number }[];
+  leads?: any[];
+}) {
   const fmtNaira = (v: number) => `₦${(v / 1000000).toFixed(1)}M`;
+
+  const revenueData = revenueStats?.monthlyRevenue?.length
+    ? revenueStats.monthlyRevenue
+    : MOCK_REVENUE;
+
+  const deptPerfData = deptStats && deptStats.length > 0
+    ? deptStats.map((d, i) => ({
+        dept: d.dept,
+        completed: d.completedTasks,
+        active: Math.max(0, d.totalTasks - d.completedTasks),
+        color: ["#1B4D3E", "#4285F4", "#C9A97E", "#34A853"][i % 4],
+      }))
+    : MOCK_DEPT_PERFORMANCE;
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: CHOCO }}>Company Analytics</h2>
-        <p className="text-xs opacity-30" style={{ color: CHOCO }}>Seed data — updated with live data at launch</p>
+        <p className="text-xs opacity-30" style={{ color: CHOCO }}>{revenueStats ? "Live data from database" : "Seed data — connect DB for live figures"}</p>
       </div>
 
       {/* Revenue chart */}
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${CHOCO}08` }}>
-        <p className="text-sm font-normal mb-6 opacity-60" style={{ color: CHOCO }}>Monthly Revenue — Oct 2025 to Mar 2026</p>
+        <p className="text-sm font-normal mb-6 opacity-60" style={{ color: CHOCO }}>Monthly Revenue — Last 6 Months</p>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={MOCK_REVENUE} barSize={28}>
+          <BarChart data={revenueData} barSize={28}>
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: CHOCO, opacity: 0.4 }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={fmtNaira} tick={{ fontSize: 11, fill: CHOCO, opacity: 0.4 }} axisLine={false} tickLine={false} />
             <Tooltip
@@ -464,8 +499,8 @@ function AnalyticsSection() {
               contentStyle={{ borderRadius: 10, border: `1px solid ${CHOCO}10`, fontSize: 12 }}
             />
             <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
-              {MOCK_REVENUE.map((_, i) => (
-                <Cell key={i} fill={i === MOCK_REVENUE.length - 1 ? GOLD : `${CHOCO}25`} />
+              {revenueData.map((_: any, i: number) => (
+                <Cell key={i} fill={i === revenueData.length - 1 ? GOLD : `${CHOCO}25`} />
               ))}
             </Bar>
           </BarChart>
@@ -495,7 +530,7 @@ function AnalyticsSection() {
         <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${CHOCO}08` }}>
           <p className="text-sm font-normal mb-5 opacity-60" style={{ color: CHOCO }}>Department Task Performance</p>
           <div className="space-y-4">
-            {MOCK_DEPT_PERFORMANCE.map(({ dept, completed, active, color }) => {
+            {deptPerfData.map(({ dept, completed, active, color }) => {
               const total = completed + active;
               const rate  = Math.round((completed / total) * 100);
               return (

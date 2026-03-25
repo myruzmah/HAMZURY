@@ -2112,29 +2112,27 @@ export default function BizDocPortal() {
       </footer>
 
       {/* ── MOBILE BOTTOM NAV ────────────────────────────────────────────── */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 pb-safe" style={{ backgroundColor: W, borderTop: `1px solid ${G}10` }}>
-        <div className="flex items-center justify-around px-4 py-3">
-          <Link href="/">
-            <button className="flex flex-col items-center gap-1 text-[10px] font-semibold opacity-40" style={{ color: G }}>
-              <ChevronLeft size={18} />
-              Home
-            </button>
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40"
+        style={{ backgroundColor: W, borderTop: `1px solid ${G}15`, paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
+        <div className="flex items-stretch h-16">
+          <Link href="/" className="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: Au, opacity: 0.45 }}>
+            <ChevronLeft size={18} />
+            Home
           </Link>
           <button
             onClick={() => setDeskOpen(true)}
-            className="flex flex-col items-center gap-1 px-6 py-2.5 rounded-2xl text-[11px] font-bold"
+            className="flex flex-col items-center justify-center gap-1 flex-1 text-[11px] font-bold rounded-none"
             style={{ backgroundColor: G, color: Au }}
           >
             <MessageCircle size={18} />
             Get Clarity
           </button>
           <button
-            onClick={() => {
-              const el = document.getElementById("my-update");
-              el?.scrollIntoView({ behavior: "smooth" });
-            }}
-            className="flex flex-col items-center gap-1 text-[10px] font-semibold opacity-40"
-            style={{ color: G }}
+            onClick={() => document.getElementById("my-update")?.scrollIntoView({ behavior: "smooth" })}
+            className="flex flex-col items-center justify-center gap-1 flex-1 text-[10px] font-semibold uppercase tracking-wider"
+            style={{ color: Au, opacity: 0.45 }}
           >
             <FileSearch size={18} />
             My Update

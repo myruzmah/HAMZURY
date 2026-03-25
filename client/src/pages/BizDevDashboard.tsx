@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 import { toast } from "sonner";
@@ -23,6 +24,8 @@ const GOLD = "#C9A97E";    // accent
 const MILK = "#FBF8EE";    // background
 
 type Section = "overview" | "leads" | "partnerships" | "brandqa" | "affiliates" | "files";
+type LeadRow = { id: number; ref: string; name: string; contact: string; source: string; score: number; budget: string; timeline: string; service: string; status: "handoff_ready" | "qualifying" | "nurturing" | "handed_off" };
+type AffRow  = { id: number; name: string; ref: string; leads: number; converted: number; earnings: string; status: string };
 
 // ─── Mock Seed Data ──────────────────────────────────────────────────────────
 const MOCK_KPI = {
@@ -34,7 +37,7 @@ const MOCK_KPI = {
   referralConversion: 23,
 };
 
-const MOCK_LEADS = [
+const MOCK_LEADS: LeadRow[] = [
   { id: 1, ref: "BZ-LEAD-0041", name: "Chukwuemeka Foods Ltd", contact: "CEO — Chukwuemeka Obi", source: "Referral", score: 5, budget: "₦1.2M", timeline: "4 weeks", service: "BizDoc + Systemise", status: "handoff_ready" },
   { id: 2, ref: "BZ-LEAD-0040", name: "Kemi Adeyemi Properties", contact: "Director — Kemi Adeyemi", source: "Content", score: 4, budget: "₦750K", timeline: "6 weeks", service: "BizDoc", status: "qualifying" },
   { id: 3, ref: "BZ-LEAD-0039", name: "Abuja Digital Ventures", contact: "Co-founder — Tunde Salami", source: "Events", score: 3, budget: "₦500K", timeline: "8 weeks", service: "Systemise", status: "qualifying" },
@@ -83,6 +86,9 @@ export default function BizDevDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [activeSection, setActiveSection] = useState<Section>("overview");
 
+  const leadsQuery     = trpc.leads.list.useQuery(undefined, { refetchInterval: 20000 });
+  const affiliatesQuery = trpc.affiliate.listAll.useQuery(undefined, { refetchInterval: 30000 });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
@@ -91,6 +97,36 @@ export default function BizDevDashboard() {
     );
   }
   if (!user) return null;
+
+  const realLeads = leadsQuery.data || [];
+  const realAffiliates = affiliatesQuery.data || [];
+  // Use real leads if available, else MOCK_LEADS
+  const leadsList: LeadRow[] = realLeads.length > 0
+    ? realLeads.map(l => ({
+        id: l.id,
+        ref: l.ref || `BZ-LEAD-${String(l.id).padStart(4, "0")}`,
+        name: l.businessName || l.name || "Unknown",
+        contact: l.name || "—",
+        source: l.source || "Unknown",
+        score: 3,
+        budget: "—",
+        timeline: "—",
+        service: l.service || "TBD",
+        status: (l.status === "new" || l.status === "contacted" ? "qualifying" : l.status === "converted" ? "handed_off" : "nurturing") as LeadRow["status"],
+      }))
+    : MOCK_LEADS;
+  // Use real affiliates if available, else MOCK_AFFILIATES
+  const affiliatesList: AffRow[] = realAffiliates.length > 0
+    ? realAffiliates.map(a => ({
+        id: a.id,
+        name: a.name,
+        ref: a.code || `AFF-${String(a.id).padStart(3, "0")}`,
+        leads: 0,
+        converted: 0,
+        earnings: "₦0",
+        status: a.status || "active",
+      }))
+    : MOCK_AFFILIATES;
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview", icon: LayoutDashboard, label: "Overview" },
@@ -154,11 +190,11 @@ export default function BizDevDashboard() {
 
         <ScrollArea className="flex-1">
           <div className="p-6 md:p-8">
-            {activeSection === "overview" && <OverviewSection />}
-            {activeSection === "leads" && <LeadTrackerSection />}
+            {activeSection === "overview" && <OverviewSection leadsList={leadsList} affiliatesList={affiliatesList} />}
+            {activeSection === "leads" && <LeadTrackerSection leadsList={leadsList} />}
             {activeSection === "partnerships" && <PartnershipsSection />}
             {activeSection === "brandqa" && <BrandQASection />}
-            {activeSection === "affiliates" && <AffiliatesSection />}
+            {activeSection === "affiliates" && <AffiliatesSection affiliatesList={affiliatesList} />}
             {activeSection === "files" && <FilesSection />}
           </div>
         </ScrollArea>
@@ -168,13 +204,19 @@ export default function BizDevDashboard() {
 }
 
 // ─── Overview ────────────────────────────────────────────────────────────────
-function OverviewSection() {
+function OverviewSection({ leadsList, affiliatesList }: { leadsList: LeadRow[]; affiliatesList: AffRow[] }) {
+  const qualifiedThisWeek = leadsList.filter(l => l.status === "qualifying" || l.status === "handoff_ready").length;
+  const handoffReady = leadsList.filter(l => l.status === "handoff_ready").length;
+  const handedOff = leadsList.filter(l => l.status === "handed_off").length;
+  const handoffRate = leadsList.length > 0 ? Math.round((handedOff / leadsList.length) * 100) : MOCK_KPI.handoffRate;
+  const activeAffs = affiliatesList.filter(a => a.status === "active").length;
+
   const KPI_CARDS = [
-    { label: "Qualified Leads (Week)", value: MOCK_KPI.qualifiedLeadsWeek, unit: "", target: "10–15/week", color: GREEN },
-    { label: "Lead → Handoff Rate", value: MOCK_KPI.handoffRate, unit: "%", target: "Target ≥60%", color: "#3B82F6" },
-    { label: "Avg Qualification Score", value: MOCK_KPI.avgScore, unit: "/5", target: "Target ≥4", color: GOLD },
+    { label: "Qualified Leads", value: qualifiedThisWeek || MOCK_KPI.qualifiedLeadsWeek, unit: "", target: "10–15/week", color: GREEN },
+    { label: "Lead → Handoff Rate", value: handoffRate, unit: "%", target: "Target ≥60%", color: "#3B82F6" },
+    { label: "Handoff Ready", value: handoffReady, unit: "", target: "Send to CSO", color: GOLD },
     { label: "Brand QA Pass Rate", value: MOCK_KPI.brandQAPass, unit: "%", target: "Target ≥85%", color: "#8B5CF6" },
-    { label: "Active Partnerships", value: MOCK_KPI.activePartnerships, unit: "", target: "Q1 target: 15", color: DARK },
+    { label: "Active Affiliates", value: activeAffs || MOCK_KPI.activePartnerships, unit: "", target: "Q1 target: 15", color: DARK },
     { label: "Referral Conversion", value: MOCK_KPI.referralConversion, unit: "%", target: "Target ≥20%", color: "#22C55E" },
   ];
 
@@ -196,7 +238,7 @@ function OverviewSection() {
       {/* Handoff SLA alert */}
       <div className="flex items-center gap-3 rounded-xl px-4 py-3 border" style={{ backgroundColor: `${GOLD}10`, borderColor: `${GOLD}30` }}>
         <AlertCircle size={15} style={{ color: GOLD }} />
-        <p className="text-sm font-normal" style={{ color: DARK }}>2 leads ready for CSO handoff — within 24h SLA</p>
+        <p className="text-sm font-normal" style={{ color: DARK }}>{handoffReady > 0 ? `${handoffReady} lead${handoffReady > 1 ? "s" : ""} ready for CSO handoff — within 24h SLA` : "No leads pending handoff right now"}</p>
         <Button size="sm" variant="ghost" className="ml-auto text-xs" style={{ color: GOLD }} onClick={() => toast("Leads handed off to CSO")}>
           Handoff Now
         </Button>
@@ -240,7 +282,7 @@ function OverviewSection() {
 }
 
 // ─── Lead Tracker ─────────────────────────────────────────────────────────────
-function LeadTrackerSection() {
+function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
   const [filter, setFilter] = useState<"all" | "handoff_ready" | "qualifying" | "nurturing" | "handed_off">("all");
   const [showForm, setShowForm] = useState(false);
   const [checklist, setChecklist] = useState<boolean[]>([false, false, false, false, false]);
@@ -254,7 +296,7 @@ function LeadTrackerSection() {
     handed_off: { bg: "#6B728015", text: "#6B7280", label: "Handed Off" },
   };
 
-  const filtered = filter === "all" ? MOCK_LEADS : MOCK_LEADS.filter(l => l.status === filter);
+  const filtered = filter === "all" ? leadsList : leadsList.filter(l => l.status === filter);
 
   return (
     <div className="space-y-6">
@@ -558,8 +600,8 @@ function BrandQASection() {
 }
 
 // ─── Affiliates ───────────────────────────────────────────────────────────────
-function AffiliatesSection() {
-  const [affiliates, setAffiliates] = useState(MOCK_AFFILIATES);
+function AffiliatesSection({ affiliatesList }: { affiliatesList: AffRow[] }) {
+  const [affiliates, setAffiliates] = useState(affiliatesList);
   const approve = (id: number) => { setAffiliates(prev => prev.map(a => a.id === id ? { ...a, status: "active" } : a)); toast.success("Affiliate approved"); };
 
   const total = affiliates.filter(a => a.status === "active").length;

@@ -73,3 +73,54 @@ export const adminProcedure = t.procedure.use(
     });
   }),
 );
+
+// ─── Role-based procedures ─────────────────────────────────────────────────────
+// Checks hamzuryRole, which is the institutional hierarchy (not the system 'role' field).
+
+/** Founder or CEO only — for role management, org-level overrides, strategic decisions */
+export const founderCEOProcedure = t.procedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    const allowed = ["founder", "ceo"];
+    if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only Founder or CEO can perform this action." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);
+
+/** Finance, CEO, or Founder — for commission approvals and financial operations */
+export const financeProcedure = t.procedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    const allowed = ["founder", "ceo", "finance"];
+    if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only Finance, CEO, or Founder can perform this action." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);
+
+/** Any senior staff (all roles above department_staff) */
+export const seniorProcedure = t.procedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    const allowed = ["founder", "ceo", "cso", "finance", "hr", "bizdev"];
+    if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only senior staff can perform this action." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);
+
+/** CSO, CEO, or Founder — for lead assignment and client ops */
+export const csoProcedure = t.procedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    const allowed = ["founder", "ceo", "cso"];
+    if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only CSO, CEO, or Founder can perform this action." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);

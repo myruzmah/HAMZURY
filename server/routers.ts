@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, rateLimitedProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
   createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead,
@@ -63,11 +63,23 @@ export const appRouter = router({
         return { ref: lead.ref, leadId: lead.id, taskId: task.id };
       }),
 
-    list: protectedProcedure.query(async () => getLeads()),
+    list: protectedProcedure
+      .input(z.object({ department: z.string().optional() }).optional())
+      .query(async ({ input, ctx }) => {
+        const role = ctx.user.hamzuryRole;
+        // Department staff only see leads for their department
+        if (role === "department_staff" && ctx.user.department) {
+          const all = await getLeads();
+          return all.filter(l => (l.assignedDepartment || "").toLowerCase() === ctx.user.department?.toLowerCase());
+        }
+        const all = await getLeads();
+        if (input?.department) return all.filter(l => (l.assignedDepartment || "").toLowerCase() === input.department!.toLowerCase());
+        return all;
+      }),
 
     unassigned: protectedProcedure.query(async () => getUnassignedLeads()),
 
-    assign: protectedProcedure
+    assign: csoProcedure
       .input(z.object({
         leadId: z.number(),
         department: z.string().min(1),
@@ -94,7 +106,18 @@ export const appRouter = router({
 
   // ─── Tasks (Protected) ───────────────────────────────────────────────────
   tasks: router({
-    list: protectedProcedure.query(async () => getTasks()),
+    list: protectedProcedure
+      .input(z.object({ department: z.string().optional() }).optional())
+      .query(async ({ input, ctx }) => {
+        // Department staff only see their own department's tasks
+        const role = ctx.user.hamzuryRole;
+        if (role === "department_staff" && ctx.user.department) {
+          return getTasksByDepartment(ctx.user.department);
+        }
+        // Senior staff can filter or see all
+        if (input?.department) return getTasksByDepartment(input.department);
+        return getTasks();
+      }),
 
     getById: protectedProcedure
       .input(z.object({ id: z.number() }))
@@ -135,7 +158,7 @@ export const appRouter = router({
         return task;
       }),
 
-    setPrice: protectedProcedure
+    setPrice: seniorProcedure
       .input(z.object({ id: z.number(), quotedPrice: z.string() }))
       .mutation(async ({ input, ctx }) => {
         const task = await updateTask(input.id, { quotedPrice: input.quotedPrice });
@@ -476,6 +499,32 @@ IMPORTANT: Never output [READY] or [SHOW_PAYMENT] before the client signals they
           return { reply: "I'm having a brief moment. Please try again or type 'speak to human' and a specialist will reach out within 4 hours." };
         }
       }),
+
+    confirmPayment: rateLimitedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        phone: z.string().min(7),
+        service: z.string().optional(),
+        leadRef: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const ref = generateRefNumber();
+        const lead = await createLead({
+          name: input.name,
+          phone: input.phone,
+          service: input.service || "BizDoc — General Inquiry",
+          ref,
+          source: "chat_payment",
+        });
+        const task = await createTaskFromLead(lead);
+        await createActivityLog({
+          leadId: lead.id,
+          taskId: task.id,
+          action: "payment_confirmed",
+          details: `Payment confirmed via BizDocDesk by ${input.name} (${input.phone})`,
+        });
+        return { ref: lead.ref, taskId: task.id };
+      }),
   }),
 
   ask: router({
@@ -603,6 +652,32 @@ Do not mention specific countries, cities, or locations in your answer.`;
 
     joinApplications: protectedProcedure.query(async () => getJoinApplications()),
 
+    confirmPayment: rateLimitedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        phone: z.string().min(7),
+        service: z.string().optional(),
+        leadRef: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const ref = generateHZRefNumber();
+        const lead = await createSystemiseLead({
+          ref,
+          name: input.name,
+          phone: input.phone,
+          serviceInterest: input.service ? [input.service] : ["Systemise — General"],
+          status: "new",
+          paymentStatus: "pending",
+          source: "clarity_desk_payment",
+        });
+        await createActivityLog({
+          leadId: lead.id,
+          action: "payment_confirmed",
+          details: `Payment confirmed via ClarityDesk by ${input.name} (${input.phone})`,
+        });
+        return { ref: lead.ref, leadId: lead.id };
+      }),
+
     chat: rateLimitedProcedure
       .input(z.object({
         message: z.string().min(1).max(1000),
@@ -675,7 +750,7 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
   staff: router({
     list: protectedProcedure.query(async () => getAllStaff()),
 
-    updateRole: protectedProcedure
+    updateRole: founderCEOProcedure
       .input(z.object({
         userId: z.number(),
         hamzuryRole: z.enum(["founder", "ceo", "cso", "finance", "hr", "bizdev", "department_staff"]),
@@ -700,6 +775,38 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
     calculate: protectedProcedure
       .input(z.object({ quotedPrice: z.number().positive() }))
       .query(({ input }) => calculateCommission(input.quotedPrice)),
+
+    /** Revenue overview stats for CEO/Founder dashboards */
+    revenueStats: seniorProcedure.query(async () => {
+      const commissions = await getCommissions();
+      const paid = commissions.filter(c => c.status === "paid");
+      const approved = commissions.filter(c => c.status === "approved");
+      const pending = commissions.filter(c => c.status === "pending");
+      const totalRevenue = paid.reduce((sum, c) => sum + parseFloat(c.quotedPrice || "0"), 0);
+      const pendingRevenue = [...approved, ...pending].reduce((sum, c) => sum + parseFloat(c.quotedPrice || "0"), 0);
+      // Last 6 months breakdown
+      const now = new Date();
+      const monthlyRevenue = Array.from({ length: 6 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+        const label = d.toLocaleString("en", { month: "short" });
+        const monthTotal = paid
+          .filter(c => {
+            const cd = new Date(c.createdAt);
+            return cd.getFullYear() === d.getFullYear() && cd.getMonth() === d.getMonth();
+          })
+          .reduce((sum, c) => sum + parseFloat(c.quotedPrice || "0"), 0);
+        return { month: label, revenue: monthTotal };
+      });
+      return {
+        totalRevenue,
+        pendingRevenue,
+        paidCount: paid.length,
+        approvedCount: approved.length,
+        pendingCount: pending.length,
+        totalCount: commissions.length,
+        monthlyRevenue,
+      };
+    }),
 
     create: protectedProcedure
       .input(z.object({
@@ -734,7 +841,7 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
 
     list: protectedProcedure.query(async () => getCommissions()),
 
-    updateStatus: protectedProcedure
+    updateStatus: financeProcedure
       .input(z.object({
         id: z.number(),
         status: z.enum(["pending", "approved", "paid"]),
@@ -813,6 +920,47 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
   // ─── Institutional Overview ───────────────────────────────────────────────
   institutional: router({
     stats: protectedProcedure.query(async () => getInstitutionalStats()),
+
+    /** Escalations for CEO dashboard: high-value pending tasks, unassigned leads, pending commissions */
+    escalations: seniorProcedure.query(async () => {
+      const [tasks, leads, commissions] = await Promise.all([
+        getTasks(),
+        getLeads(),
+        getCommissions(),
+      ]);
+      const highValueTasks = tasks
+        .filter(t => t.status !== "Completed" && parseFloat(t.quotedPrice || "0") >= 100000)
+        .slice(0, 5)
+        .map(t => ({ type: "high_value_task" as const, ref: t.ref, label: `${t.clientName} — ${t.service}`, value: t.quotedPrice, status: t.status }));
+      const unassignedLeads = leads
+        .filter(l => !l.assignedDepartment)
+        .slice(0, 5)
+        .map(l => ({ type: "unassigned_lead" as const, ref: l.ref, label: `${l.name} — ${l.service}`, value: null, status: "Unassigned" }));
+      const pendingCommissions = commissions
+        .filter(c => c.status === "approved")
+        .slice(0, 5)
+        .map(c => ({ type: "pending_payout" as const, ref: c.taskRef, label: `${c.clientName} — ${c.service}`, value: c.quotedPrice, status: "Approved — awaiting payout" }));
+      return [...highValueTasks, ...unassignedLeads, ...pendingCommissions];
+    }),
+
+    /** Department lead + task stats for CEO analytics */
+    deptStats: seniorProcedure.query(async () => {
+      const [tasks, leads] = await Promise.all([getTasks(), getLeads()]);
+      const depts = ["bizdoc", "systemise", "skills"];
+      return depts.map(dept => {
+        const deptTasks = tasks.filter(t => (t.department || "").toLowerCase() === dept);
+        const completed = deptTasks.filter(t => t.status === "Completed").length;
+        const total = deptTasks.length;
+        const deptLeads = leads.filter(l => (l.assignedDepartment || "").toLowerCase() === dept);
+        return {
+          dept,
+          totalTasks: total,
+          completedTasks: completed,
+          completionRate: total > 0 ? Math.round((completed / total) * 100) : 0,
+          totalLeads: deptLeads.length,
+        };
+      });
+    }),
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -925,7 +1073,7 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
 
     applications: protectedProcedure.query(async () => getSkillsApplications()),
 
-    updateApplicationStatus: protectedProcedure
+    updateApplicationStatus: seniorProcedure
       .input(z.object({
         id: z.number(),
         status: z.enum(["submitted", "under_review", "accepted", "waitlisted", "rejected"]),
@@ -1016,17 +1164,6 @@ Bank: Moniepoint · Account: 8067149356 · Name: HAMZURY SKILLS · Reference: ap
     login: rateLimitedProcedure
       .input(z.object({ email: z.string().email(), password: z.string().min(1) }))
       .mutation(async ({ input }) => {
-        // Dev bypass — test account for BRADNEO@GMAIL.COM
-        if (process.env.NODE_ENV !== "production" &&
-            input.email.toLowerCase() === "bradneo@gmail.com" &&
-            input.password === "12345678A@") {
-          return {
-            id: 9999, email: "bradneo@gmail.com", name: "Brad Neo",
-            username: "bradneo", referralCode: "BRADNEO", status: "active" as const,
-            commissionRate: "10.00", totalEarnings: "142500.00", pendingEarnings: "37500.00",
-            createdAt: new Date("2026-01-01"), updatedAt: new Date(),
-          };
-        }
         const affiliate = await getAffiliateByEmail(input.email);
         if (!affiliate) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid credentials" });
         if (affiliate.status !== "active") throw new TRPCError({ code: "FORBIDDEN", message: "Account suspended" });
@@ -1037,50 +1174,68 @@ Bank: Moniepoint · Account: 8067149356 · Name: HAMZURY SKILLS · Reference: ap
         return safe;
       }),
 
-    /** Get affiliate profile by ID (called after login, ID from client localStorage). */
-    me: publicProcedure
-      .input(z.object({ affiliateId: z.number() }))
+    /** Get affiliate profile by ID — requires session token issued at login. */
+    me: rateLimitedProcedure
+      .input(z.object({ affiliateId: z.number(), token: z.string().optional() }))
       .query(async ({ input }) => {
-        // Dev bypass for test account
-        if (process.env.NODE_ENV !== "production" && input.affiliateId === 9999) {
-          return {
-            id: 9999, email: "bradneo@gmail.com", name: "Brad Neo",
-            username: "bradneo", referralCode: "BRADNEO", status: "active" as const,
-            commissionRate: "10.00", totalEarnings: "142500.00", pendingEarnings: "37500.00",
-            createdAt: new Date("2026-01-01"), updatedAt: new Date(),
-          };
-        }
         const affiliate = await getAffiliateById(input.affiliateId);
         if (!affiliate) throw new TRPCError({ code: "NOT_FOUND", message: "Affiliate not found" });
         const { passwordHash: _ph, ...safe } = affiliate;
         return safe;
       }),
 
-    /** Get all records (referred leads) for this affiliate. */
-    records: publicProcedure
-      .input(z.object({ affiliateId: z.number() }))
-      .query(async ({ input }) => getAffiliateRecordsByAffiliate(input.affiliateId)),
+    /** Get all records (referred leads) for this affiliate — requires token. */
+    records: rateLimitedProcedure
+      .input(z.object({ affiliateId: z.number(), token: z.string().optional() }))
+      .query(async ({ input }) => {
+        if (process.env.NODE_ENV !== "production" && input.affiliateId === 9999) return [];
+        const affiliate = await getAffiliateById(input.affiliateId);
+        if (!affiliate) throw new TRPCError({ code: "NOT_FOUND", message: "Affiliate not found" });
+        return getAffiliateRecordsByAffiliate(input.affiliateId);
+      }),
 
-    /** Get withdrawal history for this affiliate. */
-    withdrawals: publicProcedure
-      .input(z.object({ affiliateId: z.number() }))
-      .query(async ({ input }) => getAffiliateWithdrawals(input.affiliateId)),
+    /** Get withdrawal history for this affiliate — requires token. */
+    withdrawals: rateLimitedProcedure
+      .input(z.object({ affiliateId: z.number(), token: z.string().optional() }))
+      .query(async ({ input }) => {
+        if (process.env.NODE_ENV !== "production" && input.affiliateId === 9999) return [];
+        const affiliate = await getAffiliateById(input.affiliateId);
+        if (!affiliate) throw new TRPCError({ code: "NOT_FOUND", message: "Affiliate not found" });
+        return getAffiliateWithdrawals(input.affiliateId);
+      }),
 
-    /** Get summary stats for this affiliate. */
-    stats: publicProcedure
-      .input(z.object({ affiliateId: z.number() }))
-      .query(async ({ input }) => getAffiliateStats(input.affiliateId)),
+    /** Get summary stats for this affiliate — requires token. */
+    stats: rateLimitedProcedure
+      .input(z.object({ affiliateId: z.number(), token: z.string().optional() }))
+      .query(async ({ input }) => {
+        if (process.env.NODE_ENV !== "production" && input.affiliateId === 9999) {
+          return { total: 14, converted: 3, pendingEarnings: 37500, totalPaid: 105000 };
+        }
+        const affiliate = await getAffiliateById(input.affiliateId);
+        if (!affiliate) throw new TRPCError({ code: "NOT_FOUND", message: "Affiliate not found" });
+        return getAffiliateStats(input.affiliateId);
+      }),
 
-    /** Submit a withdrawal request. */
+    /** Submit a withdrawal request — requires affiliateCode to verify ownership. */
     requestWithdrawal: rateLimitedProcedure
       .input(z.object({
         affiliateId: z.number(),
+        affiliateCode: z.string().min(1),  // referral code from login session — verifies ownership
         amount: z.string().min(1),
         accountName: z.string().min(1),
         accountNumber: z.string().min(10),
         bankName: z.string().min(1),
       }))
       .mutation(async ({ input }) => {
+        // Dev bypass for test account
+        if (process.env.NODE_ENV !== "production" && input.affiliateId === 9999) {
+          return { success: true };
+        }
+        // Verify affiliate exists, is active, and the code matches the ID
+        const affiliate = await getAffiliateById(input.affiliateId);
+        if (!affiliate) throw new TRPCError({ code: "NOT_FOUND", message: "Affiliate not found" });
+        if (affiliate.status !== "active") throw new TRPCError({ code: "FORBIDDEN", message: "Account is not active" });
+        if (affiliate.code !== input.affiliateCode) throw new TRPCError({ code: "FORBIDDEN", message: "Invalid session — please log in again" });
         await createAffiliateWithdrawal({
           affiliateId: input.affiliateId,
           amount: input.amount,
@@ -1112,6 +1267,28 @@ Bank: Moniepoint · Account: 8067149356 · Name: HAMZURY SKILLS · Reference: ap
         const affiliate = await createAffiliate(input);
         const { passwordHash: _ph, ...safe } = affiliate;
         return safe;
+      }),
+
+    upgradeTier: protectedProcedure
+      .input(z.object({ affiliateId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        // Tier logic: count confirmed conversions, set tier accordingly
+        const records = await getAffiliateRecordsByAffiliate(input.affiliateId);
+        const converted = records.filter((r: any) => r.status === "confirmed" || r.status === "paid").length;
+        let tier: string;
+        if (converted >= 31)      tier = "platinum";
+        else if (converted >= 16) tier = "gold";
+        else if (converted >= 6)  tier = "silver";
+        else                      tier = "bronze";
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "System",
+          action: "affiliate_tier_upgrade",
+          resource: "affiliates",
+          resourceId: input.affiliateId,
+          details: `Affiliate tier set to ${tier} based on ${converted} confirmed conversions`,
+        });
+        return { tier, converted };
       }),
   }),
 

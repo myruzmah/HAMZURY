@@ -88,12 +88,15 @@ const FILES = [
 export default function CEODashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [activeSection, setActiveSection] = useState<Section>("overview");
-  const [resolvedIds, setResolvedIds] = useState<number[]>([]);
+  const [resolvedRefs, setResolvedRefs] = useState<string[]>([]);
 
   const statsQuery = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
   const activityQuery = trpc.activity.recent.useQuery({ limit: 10 });
   const commissionsQuery = trpc.commissions.list.useQuery();
   const leadsQuery = trpc.leads.list.useQuery();
+  const revenueStatsQuery = trpc.commissions.revenueStats.useQuery(undefined, { refetchInterval: 60000 });
+  const escalationsQuery = trpc.institutional.escalations.useQuery(undefined, { refetchInterval: 30000 });
+  const deptStatsQuery = trpc.institutional.deptStats.useQuery(undefined, { refetchInterval: 60000 });
 
   if (loading) {
     return (
@@ -109,6 +112,9 @@ export default function CEODashboard() {
   const commissions = commissionsQuery.data || [];
   const leads = leadsQuery.data || [];
   const pendingComms = commissions.filter(c => c.status === "pending").length;
+  const revenueStats = revenueStatsQuery.data;
+  const escalations = escalationsQuery.data || [];
+  const deptStats = deptStatsQuery.data || [];
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview", icon: LayoutDashboard, label: "Overview" },
@@ -188,9 +194,9 @@ export default function CEODashboard() {
               <OverviewSection stats={stats} leads={leads} commissions={commissions} activity={activity} />
             )}
             {activeSection === "command" && (
-              <CommandSection escalations={MOCK_ESCALATIONS} resolvedIds={resolvedIds} setResolvedIds={setResolvedIds} pendingComms={pendingComms} onSwitchToAssign={() => setActiveSection("assign")} />
+              <CommandSection escalations={escalations} resolvedRefs={resolvedRefs} setResolvedRefs={setResolvedRefs} pendingComms={pendingComms} onSwitchToAssign={() => setActiveSection("assign")} />
             )}
-            {activeSection === "analytics" && <AnalyticsSection />}
+            {activeSection === "analytics" && <AnalyticsSection revenueStats={revenueStats} deptStats={deptStats} leads={leads} />}
             {activeSection === "calendar" && <CalendarSection />}
             {activeSection === "assign" && <AssignSection />}
             {activeSection === "files" && <FilesSection />}
@@ -251,23 +257,31 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
         </div>
       </div>
 
-      {/* Department summary */}
+      {/* Department summary — real data */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Department Status</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {MOCK_DEPT_PERFORMANCE.map(d => (
-            <div key={d.dept} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
-                <p className="text-sm font-medium" style={{ color: GREEN }}>{d.dept}</p>
+          {[
+            { dept: "bizdoc", label: "BizDoc", color: "#1B4D3E" },
+            { dept: "systemise", label: "Systemise", color: "#4285F4" },
+            { dept: "skills", label: "Skills", color: "#C9A97E" },
+          ].map(({ dept, label, color }) => {
+            const d = (stats as any)?.deptStats?.find((x: any) => x.dept === dept) ||
+              { completedTasks: 0, totalTasks: 0, completionRate: 0, totalLeads: 0 };
+            return (
+              <div key={dept} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                  <p className="text-sm font-medium" style={{ color: GREEN }}>{label}</p>
+                </div>
+                <p className="text-2xl font-normal mb-0.5" style={{ color: GREEN }}>{d.completedTasks ?? 0}</p>
+                <p className="text-xs opacity-40" style={{ color: GREEN }}>completed · {(d.totalTasks ?? 0) - (d.completedTasks ?? 0)} active</p>
+                <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${d.completionRate ?? 0}%`, backgroundColor: color }} />
+                </div>
               </div>
-              <p className="text-2xl font-normal mb-0.5" style={{ color: GREEN }}>{d.completed}</p>
-              <p className="text-xs opacity-40" style={{ color: GREEN }}>completed · {d.active} active</p>
-              <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${(d.completed / (d.completed + d.active)) * 100}%`, backgroundColor: d.color }} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -300,20 +314,32 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
 }
 
 // ─── Command Center ──────────────────────────────────────────────────────────
-function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms, onSwitchToAssign }: {
-  escalations: typeof MOCK_ESCALATIONS;
-  resolvedIds: number[];
-  setResolvedIds: React.Dispatch<React.SetStateAction<number[]>>;
+type Escalation = { type: string; ref: string; label: string; value: string | null; status: string };
+
+function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingComms, onSwitchToAssign }: {
+  escalations: Escalation[];
+  resolvedRefs: string[];
+  setResolvedRefs: React.Dispatch<React.SetStateAction<string[]>>;
   pendingComms: number;
   onSwitchToAssign: () => void;
 }) {
-  const active = escalations.filter(e => !resolvedIds.includes(e.id));
+  const active = escalations.filter(e => !resolvedRefs.includes(e.ref));
+  const typeColors: Record<string, string> = {
+    high_value_task: "#EF4444",
+    unassigned_lead: GOLD,
+    pending_payout: "#8B5CF6",
+  };
+  const typeLabels: Record<string, string> = {
+    high_value_task: "High-Value Task",
+    unassigned_lead: "Unassigned Lead",
+    pending_payout: "Pending Payout",
+  };
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: GREEN }}>Command Center</h2>
-        <p className="text-xs opacity-30" style={{ color: GREEN }}>Items requiring Founder attention</p>
+        <p className="text-xs opacity-30" style={{ color: GREEN }}>Items requiring CEO attention — live from database</p>
       </div>
 
       {/* Quick actions */}
@@ -323,17 +349,22 @@ function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms
         </Button>
         <Link href="/hub/finance">
           <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
-            View Commission Queue ({pendingComms})
+            Commission Queue ({pendingComms})
           </Button>
         </Link>
         <Link href="/hub/cso">
           <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
-            View Lead Pipeline
+            Lead Pipeline
+          </Button>
+        </Link>
+        <Link href="/hub/hr">
+          <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
+            HR & Attendance
           </Button>
         </Link>
       </div>
 
-      {/* Escalations */}
+      {/* Real Escalations */}
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>
           Escalations ({active.length})
@@ -343,50 +374,82 @@ function CommandSection({ escalations, resolvedIds, setResolvedIds, pendingComms
             <CheckCircle2 size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#22C55E" }} />
             <p className="text-sm opacity-40" style={{ color: GREEN }}>No pending escalations</p>
           </div>
-        ) : active.map(e => (
-          <div key={e.id} className="bg-white rounded-2xl border p-5 flex items-start gap-4" style={{ borderColor: e.urgency === "high" ? "#EF444430" : `${GREEN}08` }}>
-            <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: e.urgency === "high" ? "#EF4444" : GOLD }} />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-normal" style={{ backgroundColor: e.urgency === "high" ? "#EF444415" : `${GOLD}15`, color: e.urgency === "high" ? "#EF4444" : GOLD }}>
-                  {e.type}
-                </span>
-                <span className="text-[10px] opacity-30" style={{ color: GREEN }}>from {e.from} · {e.time}</span>
+        ) : active.map((e, i) => {
+          const color = typeColors[e.type] || GOLD;
+          return (
+            <div key={`${e.ref}-${i}`} className="bg-white rounded-2xl border p-5 flex items-start gap-4" style={{ borderColor: e.type === "high_value_task" ? "#EF444430" : `${GREEN}08` }}>
+              <div className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: color }} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-normal" style={{ backgroundColor: `${color}15`, color }}>
+                    {typeLabels[e.type] || e.type}
+                  </span>
+                  <span className="text-[10px] opacity-30 font-mono" style={{ color: GREEN }}>{e.ref}</span>
+                </div>
+                <p className="text-sm font-normal" style={{ color: GREEN }}>{e.label}</p>
+                {e.value && <p className="text-xs font-medium mt-0.5" style={{ color: GOLD }}>₦{parseFloat(e.value).toLocaleString("en-NG")}</p>}
               </div>
-              <p className="text-sm font-normal" style={{ color: GREEN }}>{e.title}</p>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-xs shrink-0"
+                style={{ color: "#22C55E" }}
+                onClick={() => { setResolvedRefs(p => [...p, e.ref]); toast.success("Marked as resolved"); }}
+              >
+                Resolve
+              </Button>
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-xs shrink-0"
-              style={{ color: "#22C55E" }}
-              onClick={() => { setResolvedIds(p => [...p, e.id]); toast.success("Marked as resolved"); }}
-            >
-              Resolve
-            </Button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
 
 // ─── Analytics Section ───────────────────────────────────────────────────────
-function AnalyticsSection() {
-  const fmtNaira = (v: number) => `₦${(v / 1000000).toFixed(1)}M`;
+function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: any; deptStats: any[]; leads: any[] }) {
+  const fmtNaira = (v: number) => v >= 1000000 ? `₦${(v / 1000000).toFixed(1)}M` : `₦${(v / 1000).toFixed(0)}K`;
+
+  const revenueData = revenueStats?.monthlyRevenue || MOCK_REVENUE;
+  const hasDeptStats = deptStats && deptStats.length > 0;
+
+  // Lead source breakdown from real leads
+  const sourceMap: Record<string, number> = {};
+  leads.forEach(l => { const src = l.source || "Direct"; sourceMap[src] = (sourceMap[src] || 0) + 1; });
+  const leadSources = Object.entries(sourceMap).map(([source, count]) => ({ source, count }));
+  const displaySources = leadSources.length > 0 ? leadSources : MOCK_LEAD_SOURCES;
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: GREEN }}>Company Analytics</h2>
-        <p className="text-xs opacity-30" style={{ color: GREEN }}>Seed data — updated with live data at launch</p>
+        <p className="text-xs opacity-30" style={{ color: GREEN }}>
+          {revenueStats ? "Live data from database" : "Loading…"}
+        </p>
       </div>
+
+      {/* Revenue summary cards */}
+      {revenueStats && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { label: "Total Paid Revenue", value: fmtNaira(revenueStats.totalRevenue), color: "#22C55E" },
+            { label: "Pending Revenue", value: fmtNaira(revenueStats.pendingRevenue), color: GOLD },
+            { label: "Commissions Paid", value: revenueStats.paidCount, color: GREEN },
+            { label: "Pending Approvals", value: revenueStats.pendingCount, color: "#EF4444" },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${GREEN}08` }}>
+              <p className="text-xl font-medium" style={{ color }}>{value}</p>
+              <p className="text-[10px] uppercase tracking-wider mt-1 opacity-40" style={{ color: GREEN }}>{label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Revenue chart */}
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
-        <p className="text-sm font-normal mb-6 opacity-60" style={{ color: GREEN }}>Monthly Revenue — Oct 2025 to Mar 2026</p>
+        <p className="text-sm font-normal mb-6 opacity-60" style={{ color: GREEN }}>Monthly Revenue — Last 6 Months</p>
         <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={MOCK_REVENUE} barSize={28}>
+          <BarChart data={revenueData} barSize={28}>
             <XAxis dataKey="month" tick={{ fontSize: 11, fill: GREEN, opacity: 0.4 }} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={fmtNaira} tick={{ fontSize: 11, fill: GREEN, opacity: 0.4 }} axisLine={false} tickLine={false} />
             <Tooltip
@@ -394,8 +457,8 @@ function AnalyticsSection() {
               contentStyle={{ borderRadius: 10, border: `1px solid ${GREEN}10`, fontSize: 12 }}
             />
             <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
-              {MOCK_REVENUE.map((_, i) => (
-                <Cell key={i} fill={i === MOCK_REVENUE.length - 1 ? GOLD : `${GREEN}25`} />
+              {revenueData.map((_: any, i: number) => (
+                <Cell key={i} fill={i === revenueData.length - 1 ? GOLD : `${GREEN}25`} />
               ))}
             </Bar>
           </BarChart>
@@ -405,10 +468,10 @@ function AnalyticsSection() {
       {/* Lead sources + Department performance */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
-          <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Lead Sources — This Month</p>
+          <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Lead Sources {leadSources.length === 0 ? "(No leads yet)" : ""}</p>
           <div className="space-y-4">
-            {MOCK_LEAD_SOURCES.map(({ source, count }) => {
-              const max = Math.max(...MOCK_LEAD_SOURCES.map(l => l.count));
+            {displaySources.map(({ source, count }: any) => {
+              const max = Math.max(...displaySources.map((l: any) => l.count));
               return (
                 <div key={source} className="flex items-center gap-3">
                   <p className="text-sm w-20 shrink-0 font-normal opacity-60" style={{ color: GREEN }}>{source}</p>
@@ -425,17 +488,22 @@ function AnalyticsSection() {
         <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
           <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Department Task Performance</p>
           <div className="space-y-4">
-            {MOCK_DEPT_PERFORMANCE.map(({ dept, completed, active, color }) => {
-              const total = completed + active;
-              const rate = Math.round((completed / total) * 100);
+            {(hasDeptStats ? deptStats : [
+              { dept: "bizdoc", completedTasks: 0, totalTasks: 0, completionRate: 0 },
+              { dept: "systemise", completedTasks: 0, totalTasks: 0, completionRate: 0 },
+              { dept: "skills", completedTasks: 0, totalTasks: 0, completionRate: 0 },
+            ]).map((d: any) => {
+              const colors: Record<string, string> = { bizdoc: "#1B4D3E", systemise: "#4285F4", skills: "#C9A97E" };
+              const color = colors[d.dept] || GOLD;
+              const label = d.dept.charAt(0).toUpperCase() + d.dept.slice(1);
               return (
-                <div key={dept} className="flex items-center gap-3">
+                <div key={d.dept} className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                  <p className="text-sm w-20 shrink-0 font-normal opacity-70" style={{ color: GREEN }}>{dept}</p>
+                  <p className="text-sm w-24 shrink-0 font-normal opacity-70" style={{ color: GREEN }}>{label}</p>
                   <div className="flex-1 h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${rate}%`, backgroundColor: color }} />
+                    <div className="h-full rounded-full" style={{ width: `${d.completionRate || 0}%`, backgroundColor: color }} />
                   </div>
-                  <p className="text-xs font-medium w-10 text-right opacity-50" style={{ color: GREEN }}>{rate}%</p>
+                  <p className="text-xs font-medium w-10 text-right opacity-50" style={{ color: GREEN }}>{d.completionRate || 0}%</p>
                 </div>
               );
             })}

@@ -82,6 +82,8 @@ export default function CSODashboard() {
     { date: new Date().toISOString().split("T")[0] },
     { refetchInterval: 30000 },
   );
+  const staffQuery        = trpc.staff.list.useQuery(undefined, { refetchInterval: 60000 });
+  const appointmentsQuery = trpc.systemise.appointments.useQuery(undefined, { refetchInterval: 30000 });
 
   const assignMutation = trpc.leads.assign.useMutation({
     onSuccess: () => {
@@ -119,6 +121,8 @@ export default function CSODashboard() {
   };
 
   const currentSection = SECTIONS.find(s => s.id === activeSection);
+  const staffList = staffQuery.data || [];
+  const realAppointments = appointmentsQuery.data || [];
   const unreadUpdates = MOCK_UPDATES.filter(u => !u.acknowledged).length;
 
   return (
@@ -418,7 +422,7 @@ export default function CSODashboard() {
             {activeSection === "commissions" && <CommissionsView />}
 
             {/* ── Helpers ── */}
-            {activeSection === "helpers" && <HelpersView />}
+            {activeSection === "helpers" && <HelpersView staffList={staffList} />}
 
             {/* ── Quick Access ── */}
             {activeSection === "quickaccess" && <QuickAccessView />}
@@ -427,7 +431,7 @@ export default function CSODashboard() {
             {activeSection === "updates" && <DeptUpdatesView />}
 
             {/* ── Calendar ── */}
-            {activeSection === "calendar" && <CalendarView />}
+            {activeSection === "calendar" && <CalendarView realAppointments={realAppointments} />}
 
           </div>
         </ScrollArea>
@@ -740,7 +744,7 @@ const MOCK_HELPERS = [
   { id: 3, name: "Yusuf Danlami", email: "yusuf@helper.com",   phone: "0803 456 7890", status: "Inactive", leads: 0, lastActive: "3d ago" },
 ];
 
-function HelpersView() {
+function HelpersView({ staffList }: { staffList: any[] }) {
   const [showAssign, setShowAssign]     = useState(false);
   const [selectedHelper, setSelectedHelper] = useState("");
   const [leadRef, setLeadRef]           = useState("");
@@ -779,7 +783,7 @@ function HelpersView() {
                 style={{ borderColor: `${TEAL}18`, color: TEAL }}
               >
                 <option value="">Select helper…</option>
-                {MOCK_HELPERS.filter(h => h.status === "Active").map(h => (
+                {(staffList.length > 0 ? staffList.map(s => ({ ...s, status: "Active", leads: 0, lastActive: "—" })) : MOCK_HELPERS).filter(h => h.status === "Active").map(h => (
                   <option key={h.id} value={h.name}>{h.name}</option>
                 ))}
               </select>
@@ -810,7 +814,7 @@ function HelpersView() {
         )}
 
         <div className="divide-y" style={{ borderColor: `${TEAL}06` }}>
-          {MOCK_HELPERS.map(h => (
+          {(staffList.length > 0 ? staffList.map(s => ({ id: s.id, name: s.name || s.email, email: s.email, phone: s.phone || "—", status: "Active", leads: 0, lastActive: "—" })) : MOCK_HELPERS).map(h => (
             <div key={h.id} className="px-4 py-3 flex flex-col md:flex-row md:items-center gap-3 hover:bg-gray-50/40 transition-colors">
               <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-[14px] shrink-0" style={{ backgroundColor: `${TEAL}10`, color: TEAL }}>
                 {h.name[0]}
@@ -1200,11 +1204,25 @@ const STATUS_C: Record<string, { bg: string; text: string }> = {
   cancelled: { bg: "#EF444415", text: "#EF4444" },
 };
 
-function CalendarView() {
+function CalendarView({ realAppointments }: { realAppointments: any[] }) {
   const [typeFilter, setTypeFilter] = useState("all");
 
-  const visible = typeFilter === "all" ? MOCK_APPOINTMENTS : MOCK_APPOINTMENTS.filter(a => a.type === typeFilter);
-  const today   = MOCK_APPOINTMENTS.filter(a => a.date === "2026-03-23");
+  const apptData = realAppointments.length > 0
+    ? realAppointments.map((a: any) => ({
+        id: a.id,
+        client: a.clientName,
+        ref: a.ref || `APT-${a.id}`,
+        type: "consultation",
+        date: a.preferredDate || "",
+        time: a.preferredTime || "",
+        duration: 60,
+        notes: a.notes || "",
+        dept: "Systemise",
+        status: a.status || "pending",
+      }))
+    : MOCK_APPOINTMENTS;
+  const visible = typeFilter === "all" ? apptData : apptData.filter((a: any) => a.type === typeFilter);
+  const today   = apptData.filter((a: any) => a.date === new Date().toISOString().split("T")[0]);
 
   return (
     <div className="space-y-5">

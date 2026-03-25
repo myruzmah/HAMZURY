@@ -122,6 +122,8 @@ export default function HRDashboard() {
   const statsQuery = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
   const activityQuery = trpc.activity.recent.useQuery({ limit: 10 });
   const staffQuery = trpc.staff.list.useQuery();
+  const today = new Date().toISOString().split("T")[0];
+  const attendanceQuery = trpc.attendance.byDate.useQuery({ date: today }, { refetchInterval: 30000 });
 
   if (loading) {
     return (
@@ -134,7 +136,29 @@ export default function HRDashboard() {
 
   const stats = statsQuery.data;
   const activity = activityQuery.data || [];
-  void staffQuery.data;
+  const realStaff = staffQuery.data || [];
+  const todayAttendance = attendanceQuery.data || [];
+  // Use real staff if available, otherwise fall back to mock
+  const staffList = realStaff.length > 0
+    ? realStaff.map(s => ({
+        id: `STF-${String(s.id).padStart(3, "0")}`,
+        name: s.name || s.email || "Unknown",
+        role: s.hamzuryRole || "staff",
+        dept: s.department || "General",
+        status: "Active",
+        hireDate: s.createdAt ? new Date(s.createdAt).toISOString().split("T")[0] : "—",
+      }))
+    : MOCK_STAFF;
+  // Build today's attendance from real data
+  const attendanceList = todayAttendance.length > 0
+    ? todayAttendance.map((a: any) => ({
+        name: a.userName || `User #${a.userId}`,
+        dept: a.department || "—",
+        checkIn: a.checkIn ? new Date(a.checkIn).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }) : null,
+        checkOut: a.checkOut ? new Date(a.checkOut).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }) : null,
+        status: a.status || "Present",
+      }))
+    : MOCK_ATTENDANCE;
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview",     icon: LayoutDashboard, label: "Overview"        },
@@ -212,9 +236,9 @@ export default function HRDashboard() {
         {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-6 md:p-8">
-            {activeSection === "overview"    && <OverviewSection stats={stats} activity={activity} />}
-            {activeSection === "staff"       && <StaffSection />}
-            {activeSection === "attendance"  && <AttendanceSection />}
+            {activeSection === "overview"    && <OverviewSection stats={stats} activity={activity} staffList={staffList} />}
+            {activeSection === "staff"       && <StaffSection staffList={staffList} />}
+            {activeSection === "attendance"  && <AttendanceSection attendanceList={attendanceList} />}
             {activeSection === "performance" && <PerformanceSection />}
             {activeSection === "hiring"      && <HiringSection />}
             {activeSection === "training"    && <TrainingSection />}
@@ -228,7 +252,7 @@ export default function HRDashboard() {
 }
 
 // ─── Overview Section ─────────────────────────────────────────────────────────
-function OverviewSection({ stats, activity }: { stats: any; activity: any[] }) {
+function OverviewSection({ stats, activity, staffList }: { stats: any; activity: any[]; staffList: typeof MOCK_STAFF }) {
   const totalStaff = stats?.totalStaff ?? 24;
   const STAT_CARDS = [
     { label: "Total Staff",       value: totalStaff, icon: Users,         color: GREEN                },
@@ -303,10 +327,10 @@ function OverviewSection({ stats, activity }: { stats: any; activity: any[] }) {
 }
 
 // ─── Staff Section ────────────────────────────────────────────────────────────
-function StaffSection() {
+function StaffSection({ staffList }: { staffList: typeof MOCK_STAFF }) {
   const [search, setSearch] = useState("");
 
-  const filtered = MOCK_STAFF.filter(s =>
+  const filtered = staffList.filter((s: any) =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
     s.id.toLowerCase().includes(search.toLowerCase()) ||
     s.dept.toLowerCase().includes(search.toLowerCase())
@@ -389,7 +413,8 @@ function StaffSection() {
 }
 
 // ─── Attendance Section ───────────────────────────────────────────────────────
-function AttendanceSection() {
+type AttendanceRow = { name: string; dept: string; checkIn: string | null; checkOut: string | null; status: string };
+function AttendanceSection({ attendanceList }: { attendanceList: AttendanceRow[] }) {
   const [tab, setTab] = useState<"today" | "leave">("today");
   const [leaveStatuses, setLeaveStatuses] = useState<Record<string, string>>(
     Object.fromEntries(MOCK_LEAVE.map(l => [l.id, l.status]))
@@ -427,7 +452,7 @@ function AttendanceSection() {
 
       {tab === "today" && (
         <div className="space-y-3">
-          {MOCK_ATTENDANCE.map((a, i) => {
+          {attendanceList.map((a, i) => {
             const sc = attendanceStatusColor(a.status);
             return (
               <div key={i} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${GREEN}08` }}>
