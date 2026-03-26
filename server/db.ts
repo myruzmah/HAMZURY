@@ -1,6 +1,8 @@
 import { eq, desc, sql, and, gte, lte, ne, like } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { createHash, randomBytes, timingSafeEqual } from "crypto";
+import { createHash, randomBytes, timingSafeEqual, scrypt } from "crypto";
+import { promisify } from "util";
+const scryptAsync = promisify(scrypt);
 import {
   InsertUser, users, User,
   leads, InsertLead, Lead,
@@ -24,8 +26,29 @@ import {
   affiliates, InsertAffiliate, Affiliate,
   affiliateRecords, InsertAffiliateRecord, AffiliateRecord,
   affiliateWithdrawals, InsertAffiliateWithdrawal, AffiliateWithdrawal,
+  staffUsers, StaffUser, InsertStaffUser,
+  subscriptions, InsertSubscription, Subscription,
+  subscriptionPayments, InsertSubscriptionPayment, SubscriptionPayment,
+  clientCredentials, InsertClientCredential, ClientCredential,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
+
+// ─── Password Utilities (scrypt — for staffUsers table) ───────────────────────
+
+export async function hashPassword(password: string): Promise<{ hash: string; salt: string }> {
+  const salt = randomBytes(32).toString("hex");
+  const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
+  return { hash: derivedKey.toString("hex"), salt };
+}
+
+export async function verifyPassword(password: string, hash: string, salt: string): Promise<boolean> {
+  try {
+    const derivedKey = await scryptAsync(password, salt, 64) as Buffer;
+    const storedBuffer = Buffer.from(hash, "hex");
+    if (derivedKey.length !== storedBuffer.length) return false;
+    return timingSafeEqual(derivedKey, storedBuffer);
+  } catch { return false; }
+}
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -96,18 +119,23 @@ export async function updateUserRole(userId: number, hamzuryRole: string, depart
 
 // ─── Reference Number Generator ──────────────────────────────────────────────
 
-export function generateRefNumber(): string {
-  // Random 6-char alphanumeric — not guessable, not year-locked
-  const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
-  return `BZ-${token}`;
+export function generateHMZRef(phone?: string | null): string {
+  const now = new Date();
+  const day = now.getDate();
+  const month = now.getMonth() + 1;
+  const digits = phone ? phone.replace(/\D/g, "").slice(-4).padStart(4, "0") : randomBytes(2).toString("hex").toUpperCase();
+  return `HMZ-${day}/${month}-${digits}`;
 }
+
+// Backward-compat alias
+export const generateRefNumber = generateHMZRef;
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 
 export async function createLead(data: Omit<InsertLead, "id" | "createdAt" | "updatedAt">): Promise<Lead> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const ref = data.ref || generateRefNumber();
+  const ref = data.ref || generateHMZRef(data.phone);
   await db.insert(leads).values({ ...data, ref });
   const result = await db.select().from(leads).where(eq(leads.ref, ref)).limit(1);
   return result[0];
@@ -208,7 +236,7 @@ export async function getTaskByPhone(phoneDigits: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateTask(id: number, data: Partial<Pick<Task, "status" | "notes" | "deadline" | "assignedTo" | "quotedPrice" | "completedAt">>) {
+export async function updateTask(id: number, data: Partial<Pick<Task, "status" | "notes" | "deadline" | "assignedTo" | "quotedPrice" | "completedAt" | "kpiApproved" | "isRework" | "reworkNote" | "subscriptionId" | "taskMonth">>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(tasks).set(data).where(eq(tasks.id, id));
@@ -219,6 +247,52 @@ export async function getTasksByDepartment(department: string) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(tasks).where(eq(tasks.department, department)).orderBy(desc(tasks.createdAt));
+}
+
+/** When CSO assigns a lead to a department, sync the linked task's department field */
+export async function updateTaskDepartmentByLeadId(leadId: number, department: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(tasks).set({ department }).where(eq(tasks.leadId, leadId));
+}
+
+/** All tasks submitted for CSO review (status = Submitted, not yet kpiApproved) */
+export async function getSubmittedTasksForReview() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tasks)
+    .where(and(eq(tasks.status, "Submitted"), eq(tasks.kpiApproved, false)))
+    .orderBy(desc(tasks.updatedAt));
+}
+
+export async function getTasksByAssignee(staffUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tasks).where(eq(tasks.assignedTo, staffUserId)).orderBy(desc(tasks.createdAt));
+}
+
+/** Get tasks by department for staff member KPI/workspace */
+export async function getTasksByDeptForStaff(department: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tasks)
+    .where(eq(tasks.department, department))
+    .orderBy(desc(tasks.createdAt));
+}
+
+/** Get commission by task ref — used to prevent duplicate commission creation */
+export async function getCommissionByTaskRef(taskRef: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(commissions).where(eq(commissions.taskRef, taskRef)).limit(1);
+  return result[0];
+}
+
+/** Update lead score */
+export async function updateLeadScore(leadId: number, score: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(leads).set({ leadScore: score }).where(eq(leads.id, leadId));
 }
 
 export async function getCompletedTasksWithPrice() {
@@ -733,4 +807,171 @@ export async function getAffiliateStats(affiliateId: number) {
     .filter(r => r.status === "paid")
     .reduce((sum, r) => sum + parseFloat(r.commissionAmount?.toString() || "0"), 0);
   return { total, converted, pendingEarnings, totalPaid };
+}
+
+// ─── Staff Users ─────────────────────────────────────────────────────────────
+
+export async function getStaffUserByEmail(email: string): Promise<StaffUser | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(staffUsers).where(eq(staffUsers.email, email.toLowerCase())).limit(1);
+  return results[0] ?? null;
+}
+
+export async function getStaffUserById(id: number): Promise<StaffUser | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const results = await db.select().from(staffUsers).where(eq(staffUsers.id, id)).limit(1);
+  return results[0] ?? null;
+}
+
+export async function createStaffUser(data: InsertStaffUser): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(staffUsers).values(data);
+}
+
+export async function updateStaffUserLogin(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(staffUsers).set({ lastLogin: new Date(), failedAttempts: 0, lockedUntil: null, firstLogin: false }).where(eq(staffUsers.id, id));
+}
+
+export async function incrementStaffFailedAttempts(id: number): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const user = await getStaffUserById(id);
+  if (!user) return 0;
+  const attempts = (user.failedAttempts ?? 0) + 1;
+  const lockedUntil = attempts >= 5 ? new Date(Date.now() + 15 * 60 * 1000) : null;
+  await db.update(staffUsers).set({ failedAttempts: attempts, lockedUntil }).where(eq(staffUsers.id, id));
+  return attempts;
+}
+
+export async function updateStaffPassword(id: number, passwordHash: string, passwordSalt: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(staffUsers).set({ passwordHash, passwordSalt, passwordChanged: true, firstLogin: false }).where(eq(staffUsers.id, id));
+}
+
+export async function listAllStaffUsers(): Promise<StaffUser[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(staffUsers).orderBy(staffUsers.createdAt);
+}
+
+// ─── Subscriptions ────────────────────────────────────────────────────────────
+
+export async function createSubscription(data: Omit<InsertSubscription, "id" | "createdAt" | "updatedAt">): Promise<Subscription> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(subscriptions).values(data);
+  const row = await db.select().from(subscriptions).where(eq(subscriptions.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getSubscriptions(): Promise<Subscription[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subscriptions).orderBy(desc(subscriptions.createdAt));
+}
+
+export async function getSubscriptionById(id: number): Promise<Subscription | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(subscriptions).where(eq(subscriptions.id, id)).limit(1);
+  return result[0];
+}
+
+export async function updateSubscriptionStatus(id: number, status: "active" | "paused" | "cancelled"): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(subscriptions).set({ status }).where(eq(subscriptions.id, id));
+}
+
+// ─── Subscription Payments ────────────────────────────────────────────────────
+
+export async function createSubscriptionPayment(data: Omit<InsertSubscriptionPayment, "id" | "createdAt">): Promise<SubscriptionPayment> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(subscriptionPayments).values(data);
+  const row = await db.select().from(subscriptionPayments).where(eq(subscriptionPayments.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getPaymentsBySubscription(subscriptionId: number): Promise<SubscriptionPayment[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subscriptionPayments)
+    .where(eq(subscriptionPayments.subscriptionId, subscriptionId))
+    .orderBy(desc(subscriptionPayments.month));
+}
+
+export async function getAllSubscriptionPayments(): Promise<SubscriptionPayment[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subscriptionPayments).orderBy(desc(subscriptionPayments.createdAt));
+}
+
+export async function updateSubscriptionPayment(id: number, data: Partial<Pick<SubscriptionPayment, "status" | "amountPaid" | "paidAt" | "recordedBy" | "paymentRef" | "notes">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(subscriptionPayments).set(data).where(eq(subscriptionPayments.id, id));
+}
+
+export async function getOrCreateMonthlyPayment(subscriptionId: number, month: string, amountDue: string): Promise<SubscriptionPayment> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db.select().from(subscriptionPayments)
+    .where(and(eq(subscriptionPayments.subscriptionId, subscriptionId), eq(subscriptionPayments.month, month)))
+    .limit(1);
+  if (existing[0]) return existing[0];
+  const result = await db.insert(subscriptionPayments).values({ subscriptionId, month, amountDue, status: "pending" });
+  const row = await db.select().from(subscriptionPayments).where(eq(subscriptionPayments.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+// ─── Client Credentials ───────────────────────────────────────────────────────
+
+export async function createClientCredential(data: Omit<InsertClientCredential, "id" | "createdAt" | "updatedAt">): Promise<ClientCredential> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(clientCredentials).values(data);
+  const row = await db.select().from(clientCredentials).where(eq(clientCredentials.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getCredentialsByTaskId(taskId: number): Promise<ClientCredential[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clientCredentials).where(eq(clientCredentials.taskId, taskId));
+}
+
+export async function getCredentialsBySubscriptionId(subscriptionId: number): Promise<ClientCredential[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clientCredentials).where(eq(clientCredentials.subscriptionId, subscriptionId));
+}
+
+export async function deleteClientCredential(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(clientCredentials).where(eq(clientCredentials.id, id));
+}
+
+export async function getTasksBySubscriptionId(subscriptionId: number): Promise<Task[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tasks)
+    .where(eq(tasks.subscriptionId, subscriptionId))
+    .orderBy(desc(tasks.createdAt));
+}
+
+export async function getSubscriptionByLeadRef(ref: string): Promise<Subscription | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const leadRow = await db.select({ id: leads.id }).from(leads).where(eq(leads.ref, ref)).limit(1);
+  if (!leadRow[0]) return undefined;
+  const subRow = await db.select().from(subscriptions).where(eq(subscriptions.leadId, leadRow[0].id)).limit(1);
+  return subRow[0];
 }

@@ -50,9 +50,12 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
   const [contactName, setContactName]   = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [paymentDone, setPaymentDone]   = useState(false);
+  const [confirmedRef, setConfirmedRef] = useState<string | null>(null);
+  const [csoNotifyUrl, setCsoNotifyUrl] = useState<string | null>(null);
   const [initialized, setInitialized]   = useState(false);
   const [showAppt, setShowAppt]         = useState(false);
   const [apptSlot, setApptSlot]         = useState("");
+  const [mounted, setMounted]         = useState(false);
 
   const endRef   = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -70,8 +73,8 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
   useEffect(() => {
     if (open && !initialized) {
       const greeting = preselectedService
-        ? `Hi 👋 I'm Amara, your BizDoc advisor. I can see you're looking at ${preselectedService} — before I put anything together, what's your name?`
-        : "Hi 👋 I'm Amara, your BizDoc compliance advisor. Before we get into anything — what's your name?";
+        ? `Hi, I'm Amara, your BizDoc advisor. I can see you're looking at ${preselectedService}. Before I put anything together, what's your name?`
+        : "Hi, I'm Amara, your BizDoc compliance advisor. Before we get into anything, what's your name?";
       setMessages([{ id: uid(), role: "bot", text: greeting }]);
       setInitialized(true);
       setTimeout(() => inputRef.current?.focus(), 300);
@@ -87,8 +90,20 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
       setPhase("chat");
       setShowReadyBtn(false);
       setPaymentDone(false);
+      setConfirmedRef(null);
+      setCsoNotifyUrl(null);
       setContactName("");
       setContactPhone("");
+    }
+  }, [open]);
+
+  // Slide-in animation
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => setMounted(true), 10);
+      return () => clearTimeout(t);
+    } else {
+      setMounted(false);
     }
   }, [open]);
 
@@ -127,7 +142,7 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
       }
     } catch {
       setLoading(false);
-      addBot("I'm having a moment — please try again or reach us directly on WhatsApp.");
+      addBot("I'm having a moment. Please try again or reach us directly on WhatsApp.");
     }
   }, [messages, loading, bizdocChat, addBot]);
 
@@ -143,7 +158,7 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
 
     try {
       const res = await bizdocChat.mutateAsync({
-        message: `[System: Contact collected — Name: ${contactName}, Phone: ${contactPhone}. Please confirm warmly and proceed to payment.]`,
+        message: `[System: Contact collected. Name: ${contactName}, Phone: ${contactPhone}. Please confirm warmly and proceed to payment.]`,
         history,
       });
       let reply = res.reply.replace(/\[READY\]/g, "").replace(/\[SHOW_PAYMENT\]/g, "").trim();
@@ -161,6 +176,8 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
     setPhase("chat");
     setShowReadyBtn(false);
     setPaymentDone(false);
+    setConfirmedRef(null);
+    setCsoNotifyUrl(null);
     setContactName("");
     setContactPhone("");
     setInitialized(false);
@@ -172,13 +189,13 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(10,31,28,0.65)", backdropFilter: "blur(8px)" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-[60]"
+      style={{ backgroundColor: "rgba(10,31,28,0.50)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
     >
       <div
-        className="w-full md:max-w-lg md:rounded-2xl overflow-hidden shadow-2xl flex flex-col rounded-t-2xl"
-        style={{ height: "90vh", maxHeight: "700px", backgroundColor: CREAM }}
+        className={`absolute bottom-0 right-0 w-full max-h-[85vh] md:top-0 md:bottom-auto md:max-h-full md:h-full md:w-[430px] flex flex-col shadow-2xl transition-transform duration-300 ease-out rounded-t-2xl md:rounded-none ${mounted ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full"}`}
+        style={{ backgroundColor: CREAM }}
         onClick={e => e.stopPropagation()}
       >
         {/* ── Header ── */}
@@ -312,7 +329,7 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
                 href={
                   apptSlot
                     ? `https://wa.me/${BIZDOC_WA}?text=${encodeURIComponent(
-                        `Hi HAMZURY BizDoc, I'd like to book a compliance call on ${apptSlot} WAT. My name is ${contactName || "—"}.`
+                        `Hi HAMZURY BizDoc, I'd like to book a compliance call on ${apptSlot} WAT. My name is ${contactName || "N/A"}.`
                       )}`
                     : "#"
                 }
@@ -355,11 +372,13 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
                   onClick={async () => {
                     setPaymentDone(true);
                     try {
-                      await confirmPaymentMutation.mutateAsync({
+                      const result = await confirmPaymentMutation.mutateAsync({
                         name: contactName || "Client",
-                        phone: contactPhone || "—",
-                        service: "BizDoc — General Inquiry",
+                        phone: contactPhone || "N/A",
+                        service: "BizDoc: General Inquiry",
                       });
+                      setConfirmedRef(result.ref);
+                      setCsoNotifyUrl(result.csoNotifyUrl ?? null);
                     } catch {
                       // Silent — payment confirmation logged best-effort
                     }
@@ -370,20 +389,57 @@ export function BizDocDesk({ open, onClose, preselectedService }: Props) {
                   I've Made the Payment →
                 </button>
               ) : (
-                <div className="rounded-xl p-3 text-xs space-y-2" style={{ backgroundColor: "#E8F4EC", border: `1px solid ${G}20` }}>
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
-                    <strong style={{ color: G }}>Confirming your payment…</strong>
+                !confirmedRef ? (
+                  // Still confirming — show pulsing indicator
+                  <div className="rounded-xl p-3 text-xs space-y-2" style={{ backgroundColor: "#E8F4EC", border: `1px solid ${G}20` }}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+                      <strong style={{ color: G }}>Confirming your payment…</strong>
+                    </div>
+                    <p style={{ color: "#374151" }}>
+                      We're verifying your transfer. This takes a few seconds.
+                    </p>
+                    <div className="pt-1 border-t" style={{ borderColor: `${G}15` }}>
+                      <p style={{ color: "#6B7280" }}>Didn't send the correct amount? Top up to:</p>
+                      <p className="font-semibold" style={{ color: "#1A1A1A" }}>8067149356 · Moniepoint · BIZDOC CONSULT</p>
+                    </div>
                   </div>
-                  <p style={{ color: "#374151" }}>
-                    We're verifying your transfer to activate your tracking reference (HAM-2026-XX-XXXX).
-                    This typically takes 5–15 minutes during business hours.
-                  </p>
-                  <div className="pt-1 border-t" style={{ borderColor: `${G}15` }}>
-                    <p style={{ color: "#6B7280" }}>Didn't send the correct amount? Top up to:</p>
-                    <p className="font-semibold" style={{ color: "#1A1A1A" }}>8067149356 · Moniepoint · BIZDOC CONSULT</p>
+                ) : (
+                  // Reference confirmed — show success card
+                  <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: "#E8F4EC", border: `1px solid ${G}20` }}>
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                      <strong className="text-sm" style={{ color: G }}>Payment Received ✓</strong>
+                    </div>
+                    <div className="rounded-lg p-3 text-center" style={{ backgroundColor: "#fff", border: `1px solid ${G}15` }}>
+                      <p className="text-[11px] uppercase tracking-widest mb-1" style={{ color: G, opacity: 0.5 }}>Your Reference</p>
+                      <p className="text-xl font-bold tracking-widest font-mono" style={{ color: G }}>{confirmedRef}</p>
+                    </div>
+                    <p className="text-xs" style={{ color: "#374151" }}>
+                      Your CSO will contact you on WhatsApp within 1 hour. Save your reference. You'll need it to track your file.
+                    </p>
+                    <div className="flex gap-2">
+                      <a
+                        href={`/client/dashboard`}
+                        className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-center border transition-opacity hover:opacity-70"
+                        style={{ borderColor: `${G}30`, color: G }}
+                      >
+                        View Dashboard →
+                      </a>
+                      {csoNotifyUrl && (
+                        <a
+                          href={csoNotifyUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-center transition-opacity hover:opacity-90"
+                          style={{ backgroundColor: G, color: Au }}
+                        >
+                          WhatsApp CSO →
+                        </a>
+                      )}
+                    </div>
                   </div>
-                </div>
+                )
               )}
             </div>
           )}

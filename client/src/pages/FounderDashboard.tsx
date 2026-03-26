@@ -29,6 +29,7 @@ import {
   DollarSign, Users, CalendarDays, ClipboardCheck, FolderOpen,
   AlertTriangle, TrendingUp, CheckCircle2, Clock, FileText,
   BookOpen, GraduationCap, Shield, Lock, Calculator, Loader2, Target,
+  Eye, EyeOff, Plus, Trash2,
 } from "lucide-react";
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
@@ -36,7 +37,7 @@ const CHOCO = "#2C1A0E";
 const GOLD  = "#C9A97E";
 const MILK  = "#FBF8EE";
 
-type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files";
+type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files" | "vault";
 
 // ─── Mock Seed Data ──────────────────────────────────────────────────────────
 const MOCK_REVENUE = [
@@ -150,6 +151,7 @@ export default function FounderDashboard() {
     { key: "calendar",     icon: CalendarDays,     label: "Calendar" },
     { key: "assign",       icon: ClipboardCheck,   label: "Assign Tasks" },
     { key: "files",        icon: FolderOpen,       label: "Files & Resources" },
+    { key: "vault",        icon: Lock,             label: "My Vault" },
   ];
 
   return (
@@ -242,6 +244,7 @@ export default function FounderDashboard() {
             {activeSection === "calendar" && <CalendarSection />}
             {activeSection === "assign" && <AssignSection />}
             {activeSection === "files" && <FilesSection />}
+            {activeSection === "vault" && <VaultSection />}
           </div>
         </ScrollArea>
       </div>
@@ -888,6 +891,323 @@ function AssignSection() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ─── Vault Section ───────────────────────────────────────────────────────────
+const VAULT_KEY = "hamzury-founder-vault";
+
+type VaultAccount = { id: string; site: string; username: string; password: string };
+type VaultDoc = { id: string; label: string; status: "have" | "missing"; notes: string };
+type VaultGoal = { id: string; text: string; done: boolean };
+
+const DEFAULT_ACCOUNTS: VaultAccount[] = [
+  { id: "a1", site: "CAC Portal",         username: "hamzury@admin",      password: "cac@secure2026" },
+  { id: "a2", site: "FIRS TaxPro",        username: "tax@hamzury.com",    password: "firs@taxpr0" },
+  { id: "a3", site: "Google Workspace",   username: "admin@hamzury.com",  password: "gws@hamzury2026" },
+];
+
+const DEFAULT_DOCS: VaultDoc[] = [
+  { id: "d1", label: "CAC Certificate (BN/RC)",        status: "have",    notes: "" },
+  { id: "d2", label: "TIN Certificate",                status: "have",    notes: "" },
+  { id: "d3", label: "SCUML Registration",             status: "missing", notes: "" },
+  { id: "d4", label: "Company Seal",                   status: "have",    notes: "" },
+  { id: "d5", label: "Board Resolution (current year)",status: "missing", notes: "" },
+  { id: "d6", label: "Trademark Certificate",          status: "missing", notes: "" },
+  { id: "d7", label: "CERPAC (foreign partner)",       status: "missing", notes: "" },
+  { id: "d8", label: "Business Insurance",             status: "missing", notes: "" },
+];
+
+const DEFAULT_GOALS: VaultGoal[] = [
+  { id: "g1", text: "Review weekly metrics from all departments", done: false },
+  { id: "g2", text: "Complete one deep-work session on brand strategy", done: false },
+  { id: "g3", text: "Check in with CEO on operational blockers", done: false },
+];
+
+const SCHEDULE_DAYS = [
+  { day: "Mon", blocks: [{ time: "8–10:30", label: "Learning Hall" }, { time: "11–1:30", label: "Content Creation" }, { time: "2–4", label: "Strategy Work" }] },
+  { day: "Tue", blocks: [{ time: "8–10:30", label: "Learning Hall" }, { time: "11–1:30", label: "Content Creation" }, { time: "2–4", label: "Strategy Work" }] },
+  { day: "Wed", blocks: [{ time: "8–10:30", label: "Learning Hall" }, { time: "11–1:30", label: "Content Creation" }, { time: "2–4", label: "Strategy Work" }] },
+  { day: "Thu", blocks: [{ time: "8–10:30", label: "Learning Hall" }, { time: "11–1:30", label: "Content Creation" }, { time: "2–4", label: "Strategy Work" }] },
+  { day: "Fri", blocks: [{ time: "8–10:30", label: "Learning Hall" }, { time: "11–1:30", label: "Content Creation" }, { time: "2–4", label: "Strategy Work" }] },
+];
+
+function loadVault() {
+  try {
+    const raw = localStorage.getItem(VAULT_KEY);
+    if (!raw) return { accounts: DEFAULT_ACCOUNTS, docs: DEFAULT_DOCS, goals: DEFAULT_GOALS };
+    return JSON.parse(raw);
+  } catch {
+    return { accounts: DEFAULT_ACCOUNTS, docs: DEFAULT_DOCS, goals: DEFAULT_GOALS };
+  }
+}
+
+function saveVault(data: { accounts: VaultAccount[]; docs: VaultDoc[]; goals: VaultGoal[] }) {
+  localStorage.setItem(VAULT_KEY, JSON.stringify(data));
+}
+
+function VaultSection() {
+  const [vaultTab, setVaultTab] = useState<"accounts" | "documents" | "growth">("accounts");
+
+  const initial = loadVault();
+  const [accounts, setAccounts] = useState<VaultAccount[]>(initial.accounts ?? DEFAULT_ACCOUNTS);
+  const [docs,     setDocs]     = useState<VaultDoc[]>(initial.docs ?? DEFAULT_DOCS);
+  const [goals,    setGoals]    = useState<VaultGoal[]>(initial.goals ?? DEFAULT_GOALS);
+
+  const [revealedIds, setRevealedIds] = useState<string[]>([]);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [newSite, setNewSite]     = useState("");
+  const [newUser, setNewUser]     = useState("");
+  const [newPass, setNewPass]     = useState("");
+  const [newGoal, setNewGoal]     = useState("");
+
+  const persist = (a: VaultAccount[], d: VaultDoc[], g: VaultGoal[]) => {
+    setAccounts(a); setDocs(d); setGoals(g);
+    saveVault({ accounts: a, docs: d, goals: g });
+  };
+
+  const addAccount = () => {
+    if (!newSite || !newUser || !newPass) { toast.error("Fill all fields"); return; }
+    const updated = [...accounts, { id: `a${Date.now()}`, site: newSite, username: newUser, password: newPass }];
+    persist(updated, docs, goals);
+    setNewSite(""); setNewUser(""); setNewPass(""); setShowAddAccount(false);
+    toast.success("Account saved to vault");
+  };
+
+  const deleteAccount = (id: string) => {
+    persist(accounts.filter(a => a.id !== id), docs, goals);
+    toast("Account removed");
+  };
+
+  const toggleDoc = (id: string) => {
+    const updated = docs.map(d => d.id === id ? { ...d, status: d.status === "have" ? "missing" as const : "have" as const } : d);
+    persist(accounts, updated, goals);
+  };
+
+  const updateDocNote = (id: string, notes: string) => {
+    const updated = docs.map(d => d.id === id ? { ...d, notes } : d);
+    persist(accounts, updated, goals);
+  };
+
+  const toggleGoal = (id: string) => {
+    const updated = goals.map(g => g.id === id ? { ...g, done: !g.done } : g);
+    persist(accounts, docs, updated);
+  };
+
+  const addGoal = () => {
+    if (!newGoal.trim()) return;
+    const updated = [...goals, { id: `g${Date.now()}`, text: newGoal.trim(), done: false }];
+    persist(accounts, docs, updated);
+    setNewGoal("");
+  };
+
+  const deleteGoal = (id: string) => {
+    persist(accounts, docs, goals.filter(g => g.id !== id));
+  };
+
+  const VAULT_TABS = [
+    { key: "accounts"  as const, label: "Accounts" },
+    { key: "documents" as const, label: "Documents" },
+    { key: "growth"    as const, label: "Growth" },
+  ];
+
+  return (
+    <div className="space-y-6 max-w-3xl">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
+          <Lock size={16} style={{ color: GOLD }} />
+        </div>
+        <div>
+          <h2 className="text-base font-medium" style={{ color: CHOCO }}>Personal Vault</h2>
+          <p className="text-[11px] mt-0.5" style={{ color: "#9CA3AF" }}>Data stored locally on this device only</p>
+        </div>
+      </div>
+
+      {/* Sub-tabs */}
+      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: `${CHOCO}08` }}>
+        {VAULT_TABS.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setVaultTab(t.key)}
+            className="px-4 py-1.5 rounded-lg text-sm font-normal transition-all"
+            style={{
+              backgroundColor: vaultTab === t.key ? CHOCO : "transparent",
+              color: vaultTab === t.key ? GOLD : `${CHOCO}60`,
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Accounts Tab ── */}
+      {vaultTab === "accounts" && (
+        <div className="space-y-3">
+          {accounts.map(acc => {
+            const revealed = revealedIds.includes(acc.id);
+            return (
+              <div key={acc.id} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${CHOCO}08` }}>
+                <div className="flex-1 min-w-0 grid grid-cols-3 gap-3 items-center">
+                  <p className="text-sm font-medium truncate" style={{ color: CHOCO }}>{acc.site}</p>
+                  <p className="text-sm opacity-60 truncate" style={{ color: CHOCO }}>{acc.username}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-mono opacity-50 truncate" style={{ color: CHOCO }}>
+                      {revealed ? acc.password : "••••••••"}
+                    </p>
+                    <button
+                      onClick={() => setRevealedIds(p => revealed ? p.filter(x => x !== acc.id) : [...p, acc.id])}
+                      className="shrink-0 opacity-30 hover:opacity-70 transition-opacity"
+                    >
+                      {revealed ? <EyeOff size={14} style={{ color: CHOCO }} /> : <Eye size={14} style={{ color: CHOCO }} />}
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={() => deleteAccount(acc.id)}
+                  className="shrink-0 opacity-20 hover:opacity-60 transition-opacity"
+                >
+                  <Trash2 size={14} style={{ color: "#EF4444" }} />
+                </button>
+              </div>
+            );
+          })}
+
+          {showAddAccount ? (
+            <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GOLD}25` }}>
+              <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: CHOCO }}>New Account</p>
+              <Input placeholder="Site / App name *" value={newSite} onChange={e => setNewSite(e.target.value)} className="border-gray-200 bg-gray-50" />
+              <Input placeholder="Username / Email *" value={newUser} onChange={e => setNewUser(e.target.value)} className="border-gray-200 bg-gray-50" />
+              <Input placeholder="Password *" type="password" value={newPass} onChange={e => setNewPass(e.target.value)} className="border-gray-200 bg-gray-50" />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={addAccount} style={{ backgroundColor: CHOCO, color: GOLD }}>Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => { setShowAddAccount(false); setNewSite(""); setNewUser(""); setNewPass(""); }}>Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowAddAccount(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm transition-all hover:opacity-70"
+              style={{ borderColor: `${CHOCO}15`, color: `${CHOCO}40` }}
+            >
+              <Plus size={14} />
+              Add Account
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Documents Tab ── */}
+      {vaultTab === "documents" && (
+        <div className="space-y-3">
+          {docs.map(doc => (
+            <div key={doc.id} className="bg-white rounded-2xl border p-4 space-y-2" style={{ borderColor: `${CHOCO}08` }}>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => toggleDoc(doc.id)}
+                  className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
+                  style={{
+                    borderColor: doc.status === "have" ? "#22C55E" : `${CHOCO}25`,
+                    backgroundColor: doc.status === "have" ? "#22C55E" : "transparent",
+                  }}
+                >
+                  {doc.status === "have" && <CheckCircle2 size={10} color="white" />}
+                </button>
+                <p className="flex-1 text-sm font-normal" style={{ color: CHOCO }}>{doc.label}</p>
+                <span
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
+                  style={{
+                    backgroundColor: doc.status === "have" ? "#DCFCE7" : "#FEF3C7",
+                    color:           doc.status === "have" ? "#166534" : "#92400E",
+                  }}
+                >
+                  {doc.status === "have" ? "Have it" : "Missing"}
+                </span>
+              </div>
+              <Input
+                placeholder="Notes (optional)"
+                value={doc.notes}
+                onChange={e => updateDocNote(doc.id, e.target.value)}
+                className="border-gray-100 bg-gray-50 text-xs h-8"
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Growth Tab ── */}
+      {vaultTab === "growth" && (
+        <div className="space-y-6">
+          {/* Quote */}
+          <div className="rounded-2xl p-5" style={{ backgroundColor: `${GOLD}10`, border: `1px solid ${GOLD}25` }}>
+            <p className="text-sm italic leading-relaxed mb-3" style={{ color: CHOCO }}>
+              "The system is the business. Build it so it runs without you."
+            </p>
+            <p className="text-xs font-medium opacity-50" style={{ color: CHOCO }}>— Muhammad Hamzury</p>
+          </div>
+
+          {/* Weekly Goals */}
+          <div>
+            <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>Weekly Goals</p>
+            <div className="space-y-2">
+              {goals.map(g => (
+                <div key={g.id} className="bg-white rounded-2xl border p-3 flex items-center gap-3" style={{ borderColor: `${CHOCO}08` }}>
+                  <button
+                    onClick={() => toggleGoal(g.id)}
+                    className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
+                    style={{
+                      borderColor: g.done ? GOLD : `${CHOCO}25`,
+                      backgroundColor: g.done ? GOLD : "transparent",
+                    }}
+                  >
+                    {g.done && <CheckCircle2 size={10} color="white" />}
+                  </button>
+                  <p
+                    className="flex-1 text-sm"
+                    style={{ color: CHOCO, opacity: g.done ? 0.35 : 0.8, textDecoration: g.done ? "line-through" : "none" }}
+                  >
+                    {g.text}
+                  </p>
+                  <button onClick={() => deleteGoal(g.id)} className="opacity-20 hover:opacity-50 transition-opacity shrink-0">
+                    <Trash2 size={13} style={{ color: "#EF4444" }} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-3">
+              <Input
+                placeholder="Add a goal for this week..."
+                value={newGoal}
+                onChange={e => setNewGoal(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && addGoal()}
+                className="border-gray-200 bg-gray-50 text-sm"
+              />
+              <Button size="sm" onClick={addGoal} style={{ backgroundColor: CHOCO, color: GOLD }}>
+                <Plus size={14} />
+              </Button>
+            </div>
+          </div>
+
+          {/* Weekly Schedule */}
+          <div>
+            <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>5-Day Schedule</p>
+            <div className="grid grid-cols-5 gap-2">
+              {SCHEDULE_DAYS.map(({ day, blocks }) => (
+                <div key={day} className="bg-white rounded-2xl border p-3 space-y-2" style={{ borderColor: `${CHOCO}08` }}>
+                  <p className="text-xs font-medium text-center uppercase tracking-wider" style={{ color: GOLD }}>{day}</p>
+                  {blocks.map(b => (
+                    <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: `${CHOCO}06` }}>
+                      <p className="text-[10px] font-medium leading-snug" style={{ color: CHOCO }}>{b.label}</p>
+                      <p className="text-[9px] opacity-40 mt-0.5" style={{ color: CHOCO }}>{b.time}</p>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

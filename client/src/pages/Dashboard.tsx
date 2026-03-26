@@ -48,10 +48,26 @@ export default function Dashboard() {
 
   const tasksQuery = trpc.tasks.list.useQuery(undefined, { refetchInterval: 15000 });
   const statsQuery = trpc.tasks.stats.useQuery();
+  const utils = trpc.useUtils();
+  const updateStatusMutation = trpc.tasks.updateStatus.useMutation({
+    onSuccess: () => { utils.tasks.list.invalidate(); toast.success("Status updated"); },
+    onError: () => toast.error("Failed to update status"),
+  });
+  const updateNotesMutation = trpc.tasks.updateNotes.useMutation({
+    onSuccess: () => { utils.tasks.list.invalidate(); toast.success("Notes saved"); },
+    onError: () => toast.error("Failed to save notes"),
+  });
+  const submitMutation = trpc.tasks.submit.useMutation({
+    onSuccess: () => { utils.tasks.list.invalidate(); toast.success("Task submitted for review"); },
+    onError: () => toast.error("Failed to submit task"),
+  });
 
   const tasks = tasksQuery.data || [];
   const stats = statsQuery.data;
   const selectedTask = tasks.find(t => t.id === selectedTaskId);
+
+  const isOverdue = (task: any) =>
+    task.deadline && new Date(task.deadline) < new Date() && task.status !== "Completed" && task.status !== "Submitted";
 
   const filteredTasks = useMemo(() => {
     let result = tasks;
@@ -182,7 +198,9 @@ export default function Dashboard() {
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${
                       selectedTaskId === task.id
                         ? "border-[#C9A97E] bg-[#F8F5F0]/50 shadow-sm"
-                        : "border-[#0A1F1C]/5 hover:border-[#0A1F1C]/20 bg-white"
+                        : isOverdue(task)
+                          ? "border-red-300 bg-red-50/50 hover:border-red-400"
+                          : "border-[#0A1F1C]/5 hover:border-[#0A1F1C]/20 bg-white"
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
@@ -229,6 +247,31 @@ export default function Dashboard() {
 
 function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void; onRefresh: () => void }) {
   const utils = trpc.useUtils();
+  const submitMutation = trpc.tasks.submit.useMutation({
+    onSuccess: () => { utils.tasks.list.invalidate(); onRefresh(); toast.success("Task submitted for review"); },
+    onError: () => toast.error("Failed to submit task"),
+  });
+  const updateStatusMutation = trpc.tasks.updateStatus.useMutation({
+    onSuccess: () => { utils.tasks.list.invalidate(); onRefresh(); toast.success("Status updated"); },
+    onError: () => toast.error("Failed to update status"),
+  });
+
+  const [revealedCred, setRevealedCred] = useState<{ username: string; password: string; loginUrl?: string | null } | null>(null);
+  const [showAddCred, setShowAddCred] = useState(false);
+  const [newCred, setNewCred] = useState({ platform: "Tax Pro Max", loginUrl: "", username: "", password: "", notes: "" });
+
+  const credsQuery = trpc.credentials.listByTask.useQuery(
+    { taskId: task.id },
+    { enabled: !!task.id }
+  );
+  const addCredMutation = trpc.credentials.add.useMutation({
+    onSuccess: () => { credsQuery.refetch(); setShowAddCred(false); setNewCred({ platform: "Tax Pro Max", loginUrl: "", username: "", password: "", notes: "" }); toast.success("Credentials saved securely"); },
+    onError: () => toast.error("Failed to save credentials"),
+  });
+  const revealMutation = trpc.credentials.reveal.useMutation({
+    onSuccess: (d) => setRevealedCred(d),
+    onError: () => toast.error("Failed to reveal — check permissions"),
+  });
 
   return (
     <div className="p-4 md:p-8 max-w-5xl mx-auto w-full">
@@ -253,6 +296,34 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
             <span>Service: <strong>{task.service}</strong></span>
             {task.phone && <span className="flex items-center gap-1"><Phone size={12} /> {task.phone}</span>}
           </div>
+          {/* Status Actions */}
+          {task.status !== "Completed" && task.status !== "Submitted" && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {(["In Progress", "Waiting on Client"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => updateStatusMutation.mutate({ id: task.id, status: s })}
+                  disabled={task.status === s || updateStatusMutation.isPending}
+                  className="text-[11px] px-3 py-1.5 rounded-full border transition-all disabled:opacity-40"
+                  style={{
+                    backgroundColor: task.status === s ? "#0A1F1C" : "transparent",
+                    color: task.status === s ? "#C9A97E" : "#0A1F1C",
+                    borderColor: "#0A1F1C30",
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+              <button
+                onClick={() => submitMutation.mutate({ id: task.id })}
+                disabled={submitMutation.isPending}
+                className="text-[11px] px-3 py-1.5 rounded-full transition-all"
+                style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+              >
+                {submitMutation.isPending ? "Submitting…" : "Submit for Review →"}
+              </button>
+            </div>
+          )}
         </div>
         <StatusUpdater taskId={task.id} currentStatus={task.status} onRefresh={onRefresh} />
       </div>
@@ -265,6 +336,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
           <TabsTrigger value="documents" className="gap-1.5"><FileUp size={14} /> Documents</TabsTrigger>
           <TabsTrigger value="whatsapp" className="gap-1.5"><MessageSquare size={14} /> WhatsApp</TabsTrigger>
           <TabsTrigger value="ai" className="gap-1.5"><Bot size={14} /> AI Assistant</TabsTrigger>
+          <TabsTrigger value="credentials" className="gap-1.5"><FileSearch size={14} /> Credentials</TabsTrigger>
         </TabsList>
 
         <TabsContent value="checklist">
@@ -281,6 +353,112 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
         </TabsContent>
         <TabsContent value="ai">
           <AIAssistantPanel task={task} />
+        </TabsContent>
+        <TabsContent value="credentials">
+          <div className="bg-white p-6 rounded-2xl border border-[#0A1F1C]/10 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-[11px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#0A1F1C" }}>
+                Client Credentials
+              </p>
+              <button
+                onClick={() => setShowAddCred(!showAddCred)}
+                className="text-[11px] px-2.5 py-1 rounded-lg"
+                style={{ backgroundColor: "#0A1F1C10", color: "#0A1F1C" }}
+              >
+                + Add
+              </button>
+            </div>
+
+            {showAddCred && (
+              <div className="rounded-xl p-4 space-y-2 mb-3 border" style={{ borderColor: "#0A1F1C12", backgroundColor: "#0A1F1C04" }}>
+                <input
+                  placeholder="Platform (e.g. Tax Pro Max)"
+                  value={newCred.platform}
+                  onChange={e => setNewCred(p => ({ ...p, platform: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
+                  style={{ borderColor: "#0A1F1C20" }}
+                />
+                <input
+                  placeholder="Login URL (optional)"
+                  value={newCred.loginUrl}
+                  onChange={e => setNewCred(p => ({ ...p, loginUrl: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
+                  style={{ borderColor: "#0A1F1C20" }}
+                />
+                <input
+                  placeholder="Username / Email"
+                  value={newCred.username}
+                  onChange={e => setNewCred(p => ({ ...p, username: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
+                  style={{ borderColor: "#0A1F1C20" }}
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={newCred.password}
+                  onChange={e => setNewCred(p => ({ ...p, password: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
+                  style={{ borderColor: "#0A1F1C20" }}
+                />
+                <input
+                  placeholder="Notes (optional)"
+                  value={newCred.notes}
+                  onChange={e => setNewCred(p => ({ ...p, notes: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
+                  style={{ borderColor: "#0A1F1C20" }}
+                />
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => addCredMutation.mutate({ ...newCred, taskId: task.id })}
+                    disabled={!newCred.username || !newCred.password || addCredMutation.isPending}
+                    className="text-[12px] px-4 py-2 rounded-lg font-medium disabled:opacity-40"
+                    style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+                  >
+                    {addCredMutation.isPending ? "Saving…" : "Save Encrypted"}
+                  </button>
+                  <button onClick={() => setShowAddCred(false)} className="text-[12px] px-3 py-2 rounded-lg opacity-40" style={{ color: "#0A1F1C" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {(credsQuery.data || []).map(cred => (
+              <div key={cred.id} className="rounded-xl p-3 mb-2 border" style={{ borderColor: "#0A1F1C10" }}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[12px] font-semibold" style={{ color: "#0A1F1C" }}>{cred.platform}</span>
+                  {cred.loginUrl && (
+                    <a href={cred.loginUrl} target="_blank" rel="noopener noreferrer"
+                      className="text-[10px] opacity-50 hover:opacity-80"
+                      style={{ color: "#0A1F1C" }}>Open →</a>
+                  )}
+                </div>
+                <p className="text-[12px] font-mono" style={{ color: "#0A1F1C" }}>{cred.username}</p>
+                {revealedCred && revealMutation.isSuccess ? (
+                  <div className="mt-1 p-2 rounded-lg" style={{ backgroundColor: "#FEF3C7" }}>
+                    <p className="text-[11px] font-mono font-bold" style={{ color: "#92400E" }}>{revealedCred.password}</p>
+                    <p className="text-[10px] opacity-50 mt-0.5" style={{ color: "#92400E" }}>Hide after use — this is logged</p>
+                    <button onClick={() => setRevealedCred(null)} className="text-[10px] mt-1 opacity-50" style={{ color: "#92400E" }}>Hide</button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[12px] font-mono opacity-30" style={{ color: "#0A1F1C" }}>{cred.passwordMasked}</span>
+                    <button
+                      onClick={() => revealMutation.mutate({ credentialId: cred.id })}
+                      disabled={revealMutation.isPending}
+                      className="text-[10px] px-2 py-0.5 rounded-md opacity-50 hover:opacity-80"
+                      style={{ backgroundColor: "#0A1F1C10", color: "#0A1F1C" }}
+                    >
+                      {revealMutation.isPending ? "…" : "Reveal"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {credsQuery.data?.length === 0 && !showAddCred && (
+              <p className="text-[12px] opacity-30" style={{ color: "#0A1F1C" }}>No credentials stored for this task</p>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>

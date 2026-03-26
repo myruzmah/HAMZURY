@@ -1,0 +1,1 @@
+ALTER TABLE `staffUsers` MODIFY COLUMN `staffHamzuryRole` enum('founder','ceo','cso','finance','hr','bizdev','bizdev_staff','media','skills_staff','systemise_head','tech_lead','compliance_staff','security_staff','department_staff') NOT NULL;

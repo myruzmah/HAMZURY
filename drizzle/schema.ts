@@ -27,6 +27,28 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 /**
+ * Staff users — email+password login (separate from OAuth users table).
+ */
+export const staffUsers = mysqlTable("staffUsers", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  passwordSalt: varchar("passwordSalt", { length: 128 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  hamzuryRole: mysqlEnum("staffHamzuryRole", ["founder","ceo","cso","finance","hr","bizdev","bizdev_staff","media","skills_staff","systemise_head","tech_lead","compliance_staff","security_staff","department_staff"]).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  firstLogin: boolean("firstLogin").default(true).notNull(),
+  passwordChanged: boolean("passwordChanged").default(false).notNull(),
+  failedAttempts: int("failedAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil"),
+  lastLogin: timestamp("lastLogin"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type StaffUser = typeof staffUsers.$inferSelect;
+export type InsertStaffUser = typeof staffUsers.$inferInsert;
+
+/**
  * Leads captured from the AI chat widget on the public page.
  */
 export const leads = mysqlTable("leads", {
@@ -41,6 +63,8 @@ export const leads = mysqlTable("leads", {
   /** Source: chat, referral, walk-in, bizdev */
   source: varchar("source", { length: 50 }).default("chat"),
   status: mysqlEnum("leadStatus", ["new", "contacted", "converted", "archived"]).default("new").notNull(),
+  /** CSO lead score 0-10 based on discovery checklist signals */
+  leadScore: int("lead_score").default(0),
   /** CSO assignment fields */
   assignedDepartment: varchar("assignedDepartment", { length: 50 }),
   assignedBy: int("assignedBy"),
@@ -77,6 +101,16 @@ export const tasks = mysqlTable("tasks", {
   quotedPrice: decimal("quotedPrice", { precision: 12, scale: 2 }),
   deadline: varchar("deadline", { length: 20 }),
   completedAt: timestamp("completedAt"),
+  /** KPI Engine: manager approves completed task → +1 smooth task */
+  kpiApproved: boolean("kpi_approved").default(false).notNull(),
+  /** KPI Engine: manager flags task for rework → staff must redo */
+  isRework: boolean("is_rework").default(false).notNull(),
+  /** Rework reason from manager — shown to staff so they know what to fix */
+  reworkNote: text("rework_note"),
+  /** Links task to a subscription (for recurring monthly services) */
+  subscriptionId: int("subscriptionId"),
+  /** Month this task covers e.g. "2026-03" */
+  taskMonth: varchar("taskMonth", { length: 7 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -512,3 +546,74 @@ export const affiliateWithdrawals = mysqlTable("affiliate_withdrawals", {
 
 export type AffiliateWithdrawal = typeof affiliateWithdrawals.$inferSelect;
 export type InsertAffiliateWithdrawal = typeof affiliateWithdrawals.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SUBSCRIPTION / TAX PRO MAX TABLES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Recurring service subscriptions (Tax Pro Max Monthly, etc.)
+ * Created by CSO when a client subscribes to a monthly service.
+ */
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  leadId: int("leadId"),
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  businessName: varchar("businessName", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 320 }),
+  service: varchar("service", { length: 100 }).notNull(),
+  department: varchar("department", { length: 50 }).default("bizdoc").notNull(),
+  monthlyFee: decimal("monthlyFee", { precision: 12, scale: 2 }).notNull(),
+  billingDay: int("billingDay").default(1).notNull(),
+  status: mysqlEnum("subscriptionStatus", ["active", "paused", "cancelled"]).default("active").notNull(),
+  startDate: varchar("startDate", { length: 10 }).notNull(),
+  assignedStaffEmail: varchar("assignedStaffEmail", { length: 255 }),
+  notesForStaff: text("notesForStaff"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+/**
+ * Monthly payment records for each subscription.
+ * Finance staff marks payments as received each month.
+ */
+export const subscriptionPayments = mysqlTable("subscription_payments", {
+  id: int("id").autoincrement().primaryKey(),
+  subscriptionId: int("subscriptionId").notNull(),
+  month: varchar("month", { length: 7 }).notNull(), // "2026-03"
+  amountDue: decimal("amountDue", { precision: 12, scale: 2 }).notNull(),
+  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }),
+  status: mysqlEnum("paymentStatus2", ["pending", "paid", "overdue", "waived"]).default("pending").notNull(),
+  paidAt: timestamp("paidAt"),
+  recordedBy: varchar("recordedBy", { length: 255 }),
+  paymentRef: varchar("paymentRef", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SubscriptionPayment = typeof subscriptionPayments.$inferSelect;
+export type InsertSubscriptionPayment = typeof subscriptionPayments.$inferInsert;
+
+/**
+ * Encrypted client credentials for managed services (Tax Pro Max, FIRS, CAC, etc.)
+ * Visible to BizDoc staff assigned to the task. Password stored AES-256-GCM encrypted.
+ */
+export const clientCredentials = mysqlTable("client_credentials", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId"),
+  subscriptionId: int("subscriptionId"),
+  platform: varchar("platform", { length: 100 }).notNull(), // "Tax Pro Max", "FIRS", "CAC"
+  loginUrl: varchar("loginUrl", { length: 500 }),
+  username: varchar("username", { length: 500 }).notNull(),
+  passwordEnc: text("passwordEnc").notNull(),   // AES-256-GCM encrypted
+  iv: varchar("iv", { length: 64 }).notNull(),  // encryption IV
+  notes: text("notes"),
+  addedBy: varchar("addedBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ClientCredential = typeof clientCredentials.$inferSelect;
+export type InsertClientCredential = typeof clientCredentials.$inferInsert;

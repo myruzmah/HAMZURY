@@ -1,6 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <rect width="200" height="200" fill="#F5F0E8"/>
-  <!-- Stylised HAMZURY Arabic mark -->
-  <text x="100" y="140" font-family="'Noto Naskh Arabic', 'Arabic Typesetting', 'Traditional Arabic', serif"
-    font-size="130" font-weight="700" fill="#1A1A1A" text-anchor="middle">ح</text>
-</svg>

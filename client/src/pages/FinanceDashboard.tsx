@@ -26,6 +26,14 @@ export default function FinanceDashboard() {
   const commissionsQuery = trpc.commissions.list.useQuery(undefined, { refetchInterval: 15000 });
   const statsQuery = trpc.institutional.stats.useQuery();
   const tasksQuery = trpc.tasks.list.useQuery();
+  const subsQuery = trpc.subscriptions.list.useQuery();
+  const allPaymentsQuery = trpc.subscriptions.allPayments.useQuery();
+  const recordPaymentMutation = trpc.subscriptions.recordPayment.useMutation({
+    onSuccess: () => { allPaymentsQuery.refetch(); toast.success("Payment recorded"); },
+    onError: () => toast.error("Failed to record payment"),
+  });
+  const [payingMonth, setPayingMonth] = useState<{ subscriptionId: number; month: string; amountDue: number } | null>(null);
+  const [paymentRef, setPaymentRef] = useState("");
 
   if (loading) {
     return (
@@ -63,10 +71,6 @@ export default function FinanceDashboard() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-3 text-[12px] font-semibold">
-            <Link href="/hub/cso" className="opacity-60 hover:opacity-100 transition-opacity" style={{ color: "#C9A97E" }}>CSO Hub</Link>
-            <Link href="/hub/federal" className="opacity-60 hover:opacity-100 transition-opacity" style={{ color: "#C9A97E" }}>Federal Hub</Link>
-          </div>
           <span className="hidden md:block text-[#F8F5F0]/20">|</span>
           <span className="text-[13px] hidden md:block" style={{ color: "#C9A97E" }}>{user.name || user.email}</span>
           <button onClick={logout} className="flex items-center gap-1 text-[13px]" style={{ color: "#F8F5F0" }}>
@@ -91,6 +95,7 @@ export default function FinanceDashboard() {
             <TabsTrigger value="calculator" className="gap-1.5"><Calculator size={14} /> Calculator</TabsTrigger>
             <TabsTrigger value="commissions" className="gap-1.5"><DollarSign size={14} /> Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts" className="gap-1.5"><Wallet size={14} /> Payout Queue</TabsTrigger>
+            <TabsTrigger value="subscriptions" className="gap-1.5"><TrendingUp size={14} /> Subscriptions</TabsTrigger>
           </TabsList>
 
           <TabsContent value="calculator">
@@ -103,6 +108,84 @@ export default function FinanceDashboard() {
 
           <TabsContent value="payouts">
             <PayoutQueue commissions={commissions.filter(c => c.status === "approved")} onRefresh={() => commissionsQuery.refetch()} />
+          </TabsContent>
+
+          <TabsContent value="subscriptions" className="space-y-4">
+            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "#0A1F1C10" }}>
+              <table className="w-full text-[13px]">
+                <thead>
+                  <tr className="border-b" style={{ backgroundColor: "#0A1F1C06", borderColor: "#0A1F1C08" }}>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#0A1F1C" }}>Client</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#0A1F1C" }}>Service</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#0A1F1C" }}>Month</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#0A1F1C" }}>Fee</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#0A1F1C" }}>Status</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#0A1F1C" }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(subsQuery.data || []).map(sub => {
+                    const currentMonth = new Date().toISOString().slice(0, 7);
+                    const monthPayment = (allPaymentsQuery.data || []).find(p => p.subscriptionId === sub.id && p.month === currentMonth);
+                    return (
+                      <tr key={sub.id} className="border-b hover:bg-gray-50" style={{ borderColor: "#0A1F1C06" }}>
+                        <td className="px-4 py-3 font-medium" style={{ color: "#0A1F1C" }}>{sub.clientName}</td>
+                        <td className="px-4 py-3 opacity-60" style={{ color: "#0A1F1C" }}>{sub.service}</td>
+                        <td className="px-4 py-3 font-mono text-[12px] opacity-60" style={{ color: "#0A1F1C" }}>{currentMonth}</td>
+                        <td className="px-4 py-3" style={{ color: "#C9A97E" }}>₦{Number(sub.monthlyFee).toLocaleString()}</td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[10px] px-2 py-1 rounded-full font-semibold uppercase ${
+                            monthPayment?.status === "paid" ? "bg-green-100 text-green-700" :
+                            monthPayment?.status === "overdue" ? "bg-red-100 text-red-600" :
+                            "bg-amber-100 text-amber-700"
+                          }`}>
+                            {monthPayment?.status ?? "pending"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {monthPayment?.status !== "paid" && (
+                            <button
+                              onClick={() => setPayingMonth({ subscriptionId: sub.id, month: currentMonth, amountDue: Number(sub.monthlyFee) })}
+                              className="text-[11px] px-3 py-1.5 rounded-lg"
+                              style={{ backgroundColor: "#0A1F1C10", color: "#0A1F1C" }}
+                            >
+                              Record Payment
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {payingMonth && (
+              <div className="rounded-2xl p-5 border space-y-3" style={{ borderColor: "#0A1F1C15", backgroundColor: "#0A1F1C04" }}>
+                <p className="text-[13px] font-semibold" style={{ color: "#0A1F1C" }}>
+                  Record payment for {(subsQuery.data || []).find(s => s.id === payingMonth.subscriptionId)?.clientName} — {payingMonth.month}
+                </p>
+                <input
+                  placeholder="Payment reference (bank/transfer ref)"
+                  value={paymentRef}
+                  onChange={e => setPaymentRef(e.target.value)}
+                  className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                  style={{ borderColor: "#0A1F1C20" }}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { recordPaymentMutation.mutate({ subscriptionId: payingMonth.subscriptionId, month: payingMonth.month, amountPaid: payingMonth.amountDue, paymentRef }); setPayingMonth(null); setPaymentRef(""); }}
+                    disabled={recordPaymentMutation.isPending}
+                    className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                    style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+                  >
+                    Confirm ₦{payingMonth.amountDue.toLocaleString()} Received
+                  </button>
+                  <button onClick={() => setPayingMonth(null)} className="px-3 py-2 rounded-xl text-[13px] opacity-40" style={{ color: "#0A1F1C" }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

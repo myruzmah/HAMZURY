@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
+import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
@@ -9,12 +10,13 @@ import BizDocPortal from "./pages/BizDocPortal";
 import Dashboard from "./pages/Dashboard";
 import CSODashboard from "./pages/CSODashboard";
 import FinanceDashboard from "./pages/FinanceDashboard";
-import FederalHub from "./pages/FederalHub";
 import CEODashboard from "./pages/CEODashboard";
 import BizDevDashboard from "./pages/BizDevDashboard";
 import HRDashboard from "./pages/HRDashboard";
 import SystemisePortal from "./pages/SystemisePortal";
 import SkillsPortal from "./pages/SkillsPortal";
+import SkillsPrograms from "./pages/SkillsPrograms";
+import SkillsBlueprint from "./pages/SkillsBlueprint";
 import SkillsStudent from "./pages/SkillsStudent";
 import SkillsAdmin from "./pages/SkillsAdmin";
 import FounderPage from "./pages/FounderPage";
@@ -22,18 +24,21 @@ import FounderDashboard from "./pages/FounderDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ConsultantPage from "./pages/ConsultantPage";
-import TrackPage from "./pages/TrackPage";
 import AskMePage from "./pages/AskMePage";
 import AffiliatePage from "./pages/AffiliatePage";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import PricingPage from "./pages/PricingPage";
-import StaffLoginPage from "./pages/StaffLoginPage";
+import LoginPage from "./pages/LoginPage";
+import StaffWorkspace from "./pages/StaffWorkspace";
 import SkillsCEOPage from "./pages/SkillsCEOPage";
 import CTOPage from "./pages/CTOPage";
 import ClientDashboard from "./pages/ClientDashboard";
+import AlumniPage from "./pages/AlumniPage";
+import RIDIPage from "./pages/RIDIPage";
+import RIDIDashboard from "./pages/RIDIDashboard";
+import MediaDashboard from "./pages/MediaDashboard";
+import TeamPage from "./pages/TeamPage";
 import CookieBanner from "./components/CookieBanner";
-import { lazy, Suspense } from "react";
-const DevLogin = lazy(() => import("./pages/DevLogin"));
 import { trpc } from "./lib/trpc";
 import { getLoginUrl } from "./const";
 
@@ -46,11 +51,13 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "/hub/finance":       ["founder", "finance"],
   "/hub/hr":            ["founder", "hr"],
   "/hub/bizdev":        ["founder", "bizdev"],
-  "/hub/federal":       ["founder", "cso", "finance", "hr", "bizdev"],
-  "/bizdoc/dashboard":  ["founder", "cso", "department_staff"],
-  "/skills/admin":      ["founder", "department_staff"],
+  "/hub/workspace":     ["founder", "bizdev_staff", "compliance_staff", "security_staff", "department_staff"],
+  "/bizdoc/dashboard":  ["founder", "cso", "bizdev"],
+  "/skills/admin":      ["founder", "skills_staff"],
+  "/ridi/dashboard":    ["founder", "skills_staff"],
+  "/media/dashboard":   ["founder", "media"],
   "/skills/ceo":        ["founder", "ceo"],
-  "/systemise/cto":     ["founder", "ceo"],
+  "/systemise/cto":     ["founder", "ceo", "systemise_head", "tech_lead", "media"],
 };
 
 /** Wrapper that enforces hamzuryRole-based access on /hub/* and sensitive routes */
@@ -68,24 +75,14 @@ function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; childre
 
   if (!me.data) {
     // Not authenticated — redirect to login
-    window.location.href = import.meta.env.DEV ? "/dev-login" : "/staff-login";
+    window.location.href = "/login";
     return null;
   }
 
   const role = me.data.hamzuryRole || "";
   if (!allowedRoles.includes(role)) {
-    // Authenticated but wrong role — show access denied
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#F8F5EE]">
-        <div className="text-center max-w-sm px-6">
-          <p className="text-[32px] font-bold text-[#0A1F1C] mb-2">Access Denied</p>
-          <p className="text-[14px] text-[#0A1F1C] opacity-50 mb-6">
-            Your role ({role || "unassigned"}) does not have access to this section.
-          </p>
-          <a href="/" className="text-[13px] font-semibold text-[#C9A97E] underline">← Return to Home</a>
-        </div>
-      </div>
-    );
+    window.location.href = "/login";
+    return null;
   }
 
   return <>{children}</>;
@@ -110,6 +107,8 @@ function Router() {
 
       {/* Skills Department Portal */}
       <Route path={"/skills"} component={SkillsPortal} />
+      <Route path={"/skills/programs"} component={SkillsPrograms} />
+      <Route path={"/skills/blueprint"} component={SkillsBlueprint} />
       <Route path={"/skills/student"} component={SkillsStudent} />
       <Route path={"/skills/admin"}>
         <RoleGuard allowedRoles={ROLE_ACCESS["/skills/admin"]}>
@@ -133,11 +132,6 @@ function Router() {
           <FinanceDashboard />
         </RoleGuard>
       </Route>
-      <Route path={"/hub/federal"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/hub/federal"]}>
-          <FederalHub />
-        </RoleGuard>
-      </Route>
       <Route path={"/hub/bizdev"}>
         <RoleGuard allowedRoles={ROLE_ACCESS["/hub/bizdev"]}>
           <BizDevDashboard />
@@ -148,12 +142,14 @@ function Router() {
           <HRDashboard />
         </RoleGuard>
       </Route>
+      <Route path={"/hub/workspace"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/hub/workspace"]}>
+          <StaffWorkspace />
+        </RoleGuard>
+      </Route>
 
       {/* Client Dashboard */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />
-
-      {/* Public Tracking */}
-      <Route path={"/track"} component={TrackPage} />
 
       {/* Affiliate Portal */}
       <Route path={"/affiliate"} component={AffiliatePage} />
@@ -171,6 +167,21 @@ function Router() {
         </RoleGuard>
       </Route>
 
+      {/* Community / Public Pages */}
+      <Route path={"/alumni"} component={AlumniPage} />
+      <Route path={"/ridi"} component={RIDIPage} />
+      <Route path={"/ridi/dashboard"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/ridi/dashboard"]}>
+          <RIDIDashboard />
+        </RoleGuard>
+      </Route>
+      <Route path={"/media/dashboard"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/media/dashboard"]}>
+          <MediaDashboard />
+        </RoleGuard>
+      </Route>
+      <Route path={"/team"} component={TeamPage} />
+
       {/* Info Pages */}
       <Route path={"/founder"} component={FounderPage} />
       <Route path={"/founder/dashboard"}>
@@ -183,14 +194,7 @@ function Router() {
       <Route path={"/consultant"} component={ConsultantPage} />
       <Route path={"/ask"} component={AskMePage} />
       <Route path={"/pricing"} component={PricingPage} />
-      <Route path={"/staff-login"} component={StaffLoginPage} />
-
-      {/* Dev Login (development only — excluded from production bundle) */}
-      {import.meta.env.DEV && (
-        <Route path={"/dev-login"}>
-          <Suspense fallback={null}><DevLogin /></Suspense>
-        </Route>
-      )}
+      <Route path={"/login"} component={LoginPage} />
 
       {/* Fallback */}
       <Route path={"/404"} component={NotFound} />
@@ -199,12 +203,23 @@ function Router() {
   );
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    // Skip scroll reset for hash links (in-page anchors)
+    if (window.location.hash) return;
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+  }, [location]);
+  return null;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster />
+          <ScrollToTop />
           <Router />
           <CookieBanner />
         </TooltipProvider>

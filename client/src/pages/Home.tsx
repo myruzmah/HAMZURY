@@ -12,7 +12,7 @@ import { useLocation, Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 
-const LOGIN_URL = import.meta.env.DEV ? "/dev-login" : "/staff-login";
+const LOGIN_URL = "/login";
 
 const TEAL  = "#0A1F1C";
 const GREEN = "#34A853";
@@ -21,19 +21,6 @@ const CREAM = "#FBF8EE";
 const WHITE = "#FFFFFF";
 const DARK  = "#1A1A1A";
 
-const ROLE_DASHBOARDS: Record<string, { label: string; path: string }[]> = {
-  admin: [
-    { label: "CEO Hub",    path: "/hub/ceo"     },
-    { label: "CSO Hub",    path: "/hub/cso"     },
-    { label: "Finance",    path: "/hub/finance"  },
-    { label: "HR Hub",     path: "/hub/federal"  },
-    { label: "BizDev",     path: "/hub/bizdev"   },
-  ],
-  user: [
-    { label: "My Dashboard", path: "/bizdoc/dashboard" },
-    { label: "My Learning",  path: "/skills/student"  },
-  ],
-};
 
 const DEPARTMENTS = [
   {
@@ -43,12 +30,12 @@ const DEPARTMENTS = [
     icon: <ShieldCheck size={28} />,
     color: "#1B4D3E",
     href: "/bizdoc",
-    intro: "Your business is not legally protected until the filings are done. BizDoc handles every compliance obligation — so no raids, no penalties, no surprises.",
+    intro: "Your business isn't legally protected until the filings are done. BizDoc handles every compliance obligation. No raids, no penalties, no surprises.",
     pricing: "Starting from ₦50,000",
     services: [
       "CAC registration & annual filings",
       "Industry licenses (NAFDAC, SON, DPR, Export)",
-      "Tax compliance — VAT, PAYE, TCC",
+      "Tax compliance: VAT, PAYE, TCC",
       "Corporate contracts & legal frameworks",
       "Trademark & intellectual property",
       "Business bank account facilitation",
@@ -59,9 +46,9 @@ const DEPARTMENTS = [
     label: "Systemize",
     sub: "Strategy & Automation",
     icon: <Cpu size={28} />,
-    color: TEAL,
+    color: "#1E3A5F",
     href: "/systemise",
-    intro: "Most businesses fail not from bad ideas, but from broken systems. Systemize builds the infrastructure that lets your business run without you being in every decision.",
+    intro: "Most businesses fail from broken systems, not bad ideas. Systemise builds infrastructure that lets your business run without you in every decision.",
     pricing: "Starting from ₦150,000",
     services: [
       "Premium brand identity & positioning",
@@ -77,9 +64,9 @@ const DEPARTMENTS = [
     label: "Hamzury Skills",
     sub: "Talent & Development",
     icon: <GraduationCap size={28} />,
-    color: "#8B6914",
+    color: "#DAA520",
     href: "/skills",
-    intro: "Your team's capability ceiling is your business's growth ceiling. Hamzury Skills closes that gap with practical programs taught by operators, not theorists.",
+    intro: "Your team's capability ceiling is your growth ceiling. Skills closes that gap. Practical programs taught by operators, not theorists.",
     pricing: "Starting from ₦35,000 per cohort",
     services: [
       "Business Essentials intensive cohorts",
@@ -159,13 +146,13 @@ export default function Home() {
   const dropdownInputRef = useRef<HTMLInputElement>(null);
   const [partnershipOpen, setPartnershipOpen] = useState(false);
 
-  const trackQuery = trpc.tracking.lookupByPhone.useQuery(
-    { phone: trackRef },
+  const trackQuery = trpc.tracking.lookup.useQuery(
+    { ref: trackRef },
     { enabled: false, retry: false }
   );
 
   function handleTrack() {
-    if (trackRef.trim().length < 7) return;
+    if (trackRef.trim().length < 4) return;
     setTrackLoading(true);
     setTrackNotFound(false);
     setTrackResult(null);
@@ -179,7 +166,7 @@ export default function Home() {
           businessName: d.businessName ?? null,
           service: d.service ?? null,
           status: d.status,
-          progress: d.progress ?? Math.round(((d.statusIndex + 1) / d.statusTotal) * 100),
+          progress: Math.round(((d.statusIndex + 1) / d.statusTotal) * 100),
         });
       } else {
         setTrackNotFound(true);
@@ -191,8 +178,6 @@ export default function Home() {
     setActiveTab("track");
     setTimeout(() => document.getElementById("what")?.scrollIntoView({ behavior: "smooth" }), 50);
   }
-
-  const dashboards = ROLE_DASHBOARDS[user?.role || "user"] || ROLE_DASHBOARDS.user;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 20);
@@ -218,8 +203,8 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: CREAM, fontFamily: "'Inter', sans-serif" }}>
       <PageMeta
-        title="HAMZURY — Compliance, Systems & Skills for Businesses"
-        description="Register your business, build your systems, and grow your skills with Hamzury Innovation Hub. BizDoc Consult, Systemize, and Hamzury Skills — all under one roof."
+        title="HAMZURY | Compliance, Systems & Skills for Businesses"
+        description="Register your business, build your systems, and grow your skills with Hamzury Innovation Hub. BizDoc Consult, Systemize, and Hamzury Skills. All under one roof."
         ogImage="https://hamzury.com/og-image.jpg"
         canonical="https://hamzury.com/"
       />
@@ -251,7 +236,7 @@ export default function Home() {
 
       {/* ─── NAV ─── */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "py-3" : "py-5"}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 relative ${scrolled ? "py-3" : "py-5"}`}
         style={{
           backgroundColor: scrolled ? `${WHITE}F8` : "transparent",
           backdropFilter: scrolled ? "blur(20px)" : "none",
@@ -268,104 +253,76 @@ export default function Home() {
             HAMZURY
           </div>
 
-          {/* Desktop center nav */}
+          {/* Desktop center nav — scroll links */}
           <div className="hidden md:flex items-center gap-8 text-[12px] font-semibold tracking-[0.14em] uppercase" style={{ color: DARK }}>
             <button onClick={() => scrollTo("what")} className="transition-opacity hover:opacity-40">Services</button>
             <button onClick={() => scrollTo("process")} className="transition-opacity hover:opacity-40">Process</button>
             <Link href="/founder" className="transition-opacity hover:opacity-40">Founder</Link>
           </div>
 
-          {/* Desktop right */}
-          <div className="hidden md:flex items-center gap-4">
-            {isAuthenticated ? (
-              <button
-                onClick={logout}
-                className="flex items-center gap-1 text-[12px] font-medium opacity-40 hover:opacity-80 transition-opacity"
-                style={{ color: DARK }}
-              >
-                <LogOut size={13} />
-              </button>
-            ) : (
-              <button
-                onClick={() => { window.location.href = LOGIN_URL; }}
-                className="text-[11px] font-semibold uppercase tracking-wider px-5 py-2.5 rounded-full transition-all hover:scale-[1.02]"
-                style={{ backgroundColor: TEAL, color: CREAM }}
-              >
-                Login
-              </button>
-            )}
-          </div>
-
+          {/* Hamburger */}
           <button
-            className="md:hidden flex items-center justify-center w-10 h-10"
-            style={{ color: mobileMenuOpen ? WHITE : TEAL }}
+            className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 transition-colors"
+            style={{ color: TEAL }}
             onClick={() => setMobileMenuOpen(p => !p)}
+            aria-label="Menu"
           >
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
-      </nav>
 
-      {/* Mobile full-screen menu */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden flex flex-col" style={{ backgroundColor: TEAL, paddingTop: "64px" }}>
+        {/* Dropdown menu */}
+        {mobileMenuOpen && (
+          <div
+            className="absolute top-full left-0 right-0 z-50 border-t"
+            style={{ backgroundColor: WHITE, borderColor: `${GOLD}20`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+          >
+            <div className="max-w-7xl mx-auto px-6 py-3 flex flex-col">
+              {[
+                { label: "Services",  action: () => { scrollTo("what"); setMobileMenuOpen(false); } },
+                { label: "Process",   action: () => { scrollTo("process"); setMobileMenuOpen(false); } },
+                { label: "Pricing",   action: () => { window.location.href = "/pricing"; } },
+                { label: "Founder",   action: () => { window.location.href = "/founder"; } },
+                { label: "My Update", action: () => { openTrackTab(); setMobileMenuOpen(false); } },
+              ].map(item => (
+                <button key={item.label}
+                  onClick={item.action}
+                  className="block text-left px-3 py-3 rounded-xl text-sm font-medium hover:bg-black/5 transition-colors"
+                  style={{ color: TEAL }}>
+                  {item.label}
+                </button>
+              ))}
 
-          {/* ── Main nav links ── */}
-          <div className="flex-1 flex flex-col px-7 pt-6 overflow-y-auto">
-            {[
-              { label: "Services",   action: () => { scrollTo("what"); setMobileMenuOpen(false); } },
-              { label: "Process",    action: () => { scrollTo("process"); setMobileMenuOpen(false); } },
-              { label: "Pricing",    action: () => { window.location.href = "/pricing"; } },
-              { label: "Founder",    action: () => { window.location.href = "/founder"; } },
-              { label: "My Update",  action: () => { openTrackTab(); setMobileMenuOpen(false); } },
-            ].map(item => (
-              <button key={item.label}
-                className="text-left text-[26px] font-light tracking-tight py-3.5 border-b transition-opacity active:opacity-50"
-                style={{ color: CREAM, borderColor: `${GOLD}12` }}
-                onClick={item.action}>
-                {item.label}
-              </button>
-            ))}
-
-            {/* ── Departments ── */}
-            <div className="mt-6 mb-4">
-              <p className="text-[10px] font-bold tracking-[0.25em] uppercase mb-3" style={{ color: `${GOLD}70` }}>Departments</p>
-              <div className="flex flex-col gap-1">
+              {/* Departments */}
+              <div className="border-t mt-1 pt-2" style={{ borderColor: `${GOLD}15` }}>
+                <p className="px-3 text-[10px] font-bold tracking-[0.25em] uppercase mb-1" style={{ color: `${GOLD}90` }}>Departments</p>
                 {[
-                  { label: "BizDoc Consult",  href: "/bizdoc"    },
+                  { label: "BizDoc Consult",  href: "/bizdoc" },
                   { label: "Systemise",        href: "/systemise" },
-                  { label: "Hamzury Skills",   href: "/skills"    },
+                  { label: "Hamzury Skills",   href: "/skills" },
                 ].map(d => (
-                  <a key={d.href} href={d.href}
-                    className="flex items-center gap-3 py-2.5 transition-opacity active:opacity-50"
-                    onClick={() => setMobileMenuOpen(false)}>
+                  <Link key={d.href} href={d.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 transition-colors">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: GOLD }} />
-                    <span className="text-[15px] font-medium" style={{ color: CREAM }}>{d.label}</span>
-                    <span className="ml-auto text-[11px] opacity-30" style={{ color: GOLD }}>→</span>
-                  </a>
+                    <span className="text-sm font-medium" style={{ color: TEAL }}>{d.label}</span>
+                  </Link>
                 ))}
+              </div>
+
+              {/* Staff Login */}
+              <div className="border-t mt-1 pt-2 pb-1" style={{ borderColor: `${GOLD}15` }}>
+                <Link href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-black/5 transition-colors">
+                  <LogOut size={14} style={{ color: TEAL, opacity: 0.4 }} />
+                  <span className="text-[13px] font-medium" style={{ color: TEAL, opacity: 0.5 }}>Staff Login</span>
+                </Link>
               </div>
             </div>
           </div>
-
-          {/* ── Bottom: Login / Sign Out ── */}
-          <div className="px-7 py-6" style={{ paddingBottom: "calc(1.5rem + env(safe-area-inset-bottom))", borderTop: `1px solid ${GOLD}15` }}>
-            {isAuthenticated ? (
-              <button onClick={() => { logout(); setMobileMenuOpen(false); }}
-                className="text-[13px] font-medium opacity-40 flex items-center gap-2"
-                style={{ color: CREAM }}>
-                Sign Out
-              </button>
-            ) : (
-              <button onClick={() => { window.location.href = LOGIN_URL; }}
-                className="w-full text-[13px] font-bold uppercase tracking-widest rounded-2xl h-14 transition-opacity active:opacity-80"
-                style={{ backgroundColor: GOLD, color: TEAL }}>
-                Staff Login
-              </button>
-            )}
-          </div>
-        </div>
-      )}
+        )}
+      </nav>
 
       {/* ─── HERO ─── */}
       <section id="hero" className="relative flex flex-col justify-center overflow-hidden" style={{ minHeight: "100svh", backgroundColor: CREAM }}>
@@ -430,26 +387,6 @@ export default function Home() {
           <ChevronDown size={20} style={{ color: TEAL }} />
         </div>
       </section>
-
-      {/* Staff quick access bar */}
-      {isAuthenticated && (
-        <section className="py-4 px-6 md:px-12 border-b" style={{ backgroundColor: WHITE, borderColor: GOLD + "20" }}>
-          <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-3">
-            <span className="text-[11px] font-bold tracking-[0.2em] uppercase mr-2" style={{ color: GOLD }}>
-              {user?.name?.split(" ")[0]}
-            </span>
-            {dashboards.map(d => (
-              <Link key={d.path} href={d.path}>
-                <button className="px-4 py-1.5 rounded-full text-[11px] font-semibold uppercase tracking-wider border transition-all hover:scale-[1.02]"
-                  style={{ borderColor: TEAL + "20", color: TEAL, backgroundColor: CREAM }}>
-                  {d.label}
-                </button>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
-
 
       {/* ─── WHAT (5 cards: 3 Departments + Ask Me + My Update) ─── */}
       <section id="what" className="py-10 md:py-14 px-6 md:px-12" style={{ backgroundColor: WHITE }}>
@@ -658,90 +595,66 @@ export default function Home() {
                     </div>
                   </button>
                   <div style={{ maxHeight: isOpen ? "900px" : "0px", overflow: "hidden", transition: "max-height 0.45s ease" }}>
-                    <div className="border-t" style={{ borderColor: TEAL + "18", backgroundColor: TEAL }}>
-                      <div className="flex justify-end px-6 pt-4 pb-0">
-                        <button onClick={() => setActiveTab(null)} className="flex items-center gap-1 text-[11px] font-medium opacity-40 hover:opacity-80 transition-opacity" style={{ color: CREAM }}>
-                          <X size={14} /> Close
+                    <div className="px-6 md:px-8 pb-8 pt-4 border-t" style={{ borderColor: `${TEAL}15`, backgroundColor: CREAM }}>
+                      {/* MY UPDATE label */}
+                      <p className="text-[11px] font-bold tracking-[0.25em] uppercase mb-3" style={{ color: GOLD }}>MY UPDATE</p>
+
+                      {/* Input row */}
+                      <div className="flex gap-2 mb-3">
+                        <input type="text" placeholder="HMZ-26/3-XXXX"
+                          className="flex-1 rounded-xl px-4 py-3 text-sm outline-none border font-mono"
+                          style={{ borderColor: `${TEAL}18`, backgroundColor: WHITE, color: TEAL }}
+                          value={trackRef}
+                          onChange={e => { setTrackRef(e.target.value); setTrackNotFound(false); setTrackResult(null); }}
+                          onKeyDown={e => e.key === "Enter" && handleTrack()} />
+                        <button onClick={handleTrack} disabled={trackLoading}
+                          className="px-5 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
+                          style={{ backgroundColor: TEAL, color: GOLD }}>
+                          {trackLoading ? "…" : "Access"}
                         </button>
                       </div>
-                      {/* Portal interior */}
-                      <div className="relative px-6 md:px-10 pt-6 pb-10">
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ backgroundImage: `radial-gradient(circle, ${GOLD}15 1px, transparent 1px)`, backgroundSize: "28px 28px" }}
-                        />
-                        <div className="relative max-w-md mx-auto text-center">
-                          <div className="inline-flex items-center gap-2 mb-5 px-4 py-1.5 rounded-full border" style={{ borderColor: `${GOLD}30`, backgroundColor: `${GOLD}10` }}>
-                            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: GOLD }} />
-                            <span className="text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: GOLD }}>Client Access</span>
-                          </div>
-                          <h3 className="font-light mb-2 tracking-tight" style={{ color: WHITE, fontSize: "clamp(1.3rem, 3vw, 1.7rem)", letterSpacing: "-0.03em" }}>
-                            Track your project.<br />Access your dashboard.
-                          </h3>
-                          <p className="text-sm mb-6 leading-relaxed" style={{ color: `${WHITE}60` }}>
-                            Enter your HAMZURY reference code to see live progress on your active service.
+                      <p className="text-[11px] mb-4" style={{ color: TEAL, opacity: 0.35 }}>Enter your reference number e.g. HMZ-17/3-9567</p>
+
+                      {/* Not found */}
+                      {trackNotFound && (
+                        <p className="text-[12px] mb-3" style={{ color: `${TEAL}90` }}>No file found. Contact your CSO if you just enrolled.</p>
+                      )}
+
+                      {/* Result card */}
+                      {trackResult && (
+                        <div className="rounded-2xl p-4 text-left border" style={{ backgroundColor: WHITE, borderColor: `${TEAL}12` }}>
+                          <p className="text-[11px] font-bold tracking-wider uppercase mb-1" style={{ color: GOLD }}>
+                            {trackResult.ref}
                           </p>
-                          <div className="flex gap-2 max-w-xs mx-auto mb-3">
-                            <input
-                              type="text"
-                              placeholder="e.g. 08034620520"
-                              maxLength={15}
-                              className="rounded-xl px-4 flex-1 border text-sm outline-none py-3"
-                              style={{ backgroundColor: `${WHITE}08`, borderColor: `${WHITE}15`, color: WHITE }}
-                              value={trackRef}
-                              onChange={e => { setTrackRef(e.target.value); setTrackNotFound(false); setTrackResult(null); }}
-                              onKeyDown={e => e.key === "Enter" && handleTrack()}
-                            />
-                            <button
-                              onClick={handleTrack}
-                              disabled={trackLoading}
-                              className="px-5 py-3 rounded-xl font-semibold text-sm transition-all hover:opacity-90 active:scale-95 shrink-0 disabled:opacity-50"
-                              style={{ backgroundColor: GOLD, color: TEAL }}
-                            >
-                              {trackLoading ? "…" : "Access"}
-                            </button>
-                          </div>
-                          {trackNotFound && (
-                            <p className="text-[12px] mb-3" style={{ color: `${WHITE}50` }}>
-                              No file found for this number. Contact your CSO if you just enrolled.
-                            </p>
-                          )}
-                          {trackResult && (
-                            <div className="mt-4 rounded-2xl p-5 text-left border" style={{ backgroundColor: `${WHITE}08`, borderColor: `${WHITE}12` }}>
-                              <div className="flex items-start justify-between mb-3">
-                                <div>
-                                  <p className="text-white font-semibold">{trackResult.businessName || trackResult.clientName || "Your File"}</p>
-                                  <p className="text-[11px] font-mono mt-0.5" style={{ color: `${WHITE}45` }}>{trackResult.ref}</p>
-                                </div>
-                                <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ backgroundColor: `#34A85320`, color: "#34A853" }}>● Live</span>
-                              </div>
-                              <div className="mb-4">
-                                <div className="flex justify-between text-xs mb-1.5" style={{ color: `${WHITE}55` }}>
-                                  <span>{trackResult.status}</span>
-                                  <span style={{ color: GOLD }}>{trackResult.progress}%</span>
-                                </div>
-                                <div className="h-1.5 rounded-full" style={{ backgroundColor: `${WHITE}12` }}>
-                                  <div className="h-full rounded-full transition-all" style={{ width: `${trackResult.progress}%`, backgroundColor: GOLD }} />
-                                </div>
-                              </div>
-                              <p className="text-xs mb-4" style={{ color: `${WHITE}50` }}>{trackResult.service}</p>
-                              <a
-                                href="/client/dashboard"
-                                className="block text-center py-2.5 rounded-xl text-sm font-semibold w-full transition-all hover:opacity-90"
-                                style={{ backgroundColor: GOLD, color: TEAL }}
-                                onClick={e => {
-                                  e.preventDefault();
-                                  localStorage.setItem("hamzury-client-session", JSON.stringify({ ref: trackResult.ref, expiresAt: Date.now() + 24 * 60 * 60 * 1000 }));
-                                  window.location.href = "/client/dashboard";
-                                }}
-                              >
-                                Open Full Dashboard →
-                              </a>
+                          <p className="text-[16px] font-bold mb-0.5" style={{ color: TEAL }}>
+                            {trackResult.businessName || trackResult.clientName || "Your File"}
+                          </p>
+                          <p className="text-[13px] mb-3" style={{ color: TEAL, opacity: 0.55 }}>{trackResult.service}</p>
+                          <div className="mb-3">
+                            <div className="flex justify-between text-[11px] mb-1.5" style={{ color: `${TEAL}55` }}>
+                              <span>{trackResult.status}</span>
+                              <span style={{ color: GOLD }}>{trackResult.progress}%</span>
                             </div>
-                          )}
-                          <p className="mt-5 text-[11px]" style={{ color: `${WHITE}28` }}>First time? Your CSO will set you up at onboarding.</p>
+                            <div className="h-1.5 rounded-full" style={{ backgroundColor: `${TEAL}12` }}>
+                              <div className="h-full rounded-full" style={{ width: `${trackResult.progress}%`, backgroundColor: GOLD }} />
+                            </div>
+                          </div>
+                          <a href="/client/dashboard"
+                            onClick={e => {
+                              e.preventDefault();
+                              localStorage.setItem("hamzury-client-session", JSON.stringify({
+                                ref: trackResult.ref, phone: trackRef, name: trackResult.clientName,
+                                businessName: trackResult.businessName, service: trackResult.service,
+                                status: trackResult.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
+                              }));
+                              window.location.href = "/client/dashboard";
+                            }}
+                            className="block w-full py-2.5 rounded-xl text-sm font-semibold text-center transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: TEAL, color: GOLD }}>
+                            Open Full Dashboard →
+                          </a>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -768,14 +681,14 @@ export default function Home() {
                 letterSpacing: "-0.02em",
               }}
             >
-              "We built HAMZURY because businesses deserve more than consultants who disappear after the invoice. We stay until the work is done — and we build systems that keep working after we leave."
+              "Businesses deserve more than consultants who disappear after the invoice. We stay until the work is done. And build systems that keep working after we leave."
             </p>
             <Link
               href="/founder"
               className="text-sm font-semibold tracking-wide transition-opacity hover:opacity-60 inline-flex items-center gap-2"
               style={{ color: TEAL }}
             >
-              — Muhammad Hamzury <ArrowRight size={14} />
+              Muhammad Hamzury <ArrowRight size={14} />
             </Link>
           </blockquote>
         </div>
@@ -792,9 +705,7 @@ export default function Home() {
           <h2 className="text-2xl md:text-3xl font-light tracking-tight mb-2" style={{ color: TEAL, letterSpacing: "-0.025em" }}>
             Built to solve real problems.
           </h2>
-          <p className="text-sm mb-10" style={{ color: "#2C2C2C", opacity: 0.45 }}>
-            Every department exists for a reason.
-          </p>
+          <div className="mb-10" />
 
           {/* Founder's Why — 3 cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
@@ -835,7 +746,7 @@ export default function Home() {
 
           {(() => {
             const STEPS = [
-              { num: "01", title: "Brief",    short: "Tell us what you need",                detail: "Share what you need — service type, timeline, and any context. The more specific you are, the faster we can move." },
+              { num: "01", title: "Brief",    short: "Tell us what you need",                detail: "Share what you need: service type, timeline, and any context. The more specific you are, the faster we can move." },
               { num: "02", title: "Assigned", short: "CSO responds within 24 hours",         detail: "Your dedicated Client Success Officer reviews your brief and responds within 24 hours with a clear plan of action." },
               { num: "03", title: "Execute",  short: "Specialists handle the work",          detail: "Our specialists take full ownership. You won't need to chase anyone or explain anything twice." },
               { num: "04", title: "Verify",   short: "Quality checked before it reaches you",detail: "Every deliverable goes through an internal quality check before it leaves our team. No exceptions." },
@@ -890,6 +801,71 @@ export default function Home() {
       </section>
 
 
+      {/* ── OUR TEAM ── */}
+      <section className="py-16 md:py-24 px-6 md:px-12" style={{ backgroundColor: CREAM }}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-3 mb-8">
+            <span className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[0.25em] uppercase border"
+              style={{ color: GREEN, borderColor: CREAM, backgroundColor: CREAM }}>
+              Our Team
+            </span>
+          </div>
+          <h2 className="text-[clamp(28px,4vw,42px)] font-light tracking-tight mb-3" style={{ color: TEAL, letterSpacing: "-0.02em" }}>
+            The people behind HAMZURY.
+          </h2>
+          <p className="text-[15px] mb-12 max-w-xl opacity-55" style={{ color: DARK }}>
+            Operators and educators who built what they now teach.
+          </p>
+          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
+            {[
+              { name: "Barrister Abdullahi Musa", role: "Head of Compliance", dept: "BizDoc Consult", href: "/consultant", initials: "AM", color: "#1B4D3E" },
+              { name: "Idris Ibrahim",             role: "Chief Executive Officer", dept: "HAMZURY",   href: "/team",       initials: "II", color: "#0A1F1C" },
+              { name: "Systems Lead",              role: "CTO & Architect",   dept: "Systemize",       href: "/systemise/cto", initials: "SL", color: "#1E3A5F" },
+              { name: "Skills Lead",               role: "CEO, Skills",       dept: "HAMZURY Skills",  href: "/skills/ceo", initials: "SK", color: "#C9A97E" },
+            ].map(member => (
+              <Link key={member.href} href={member.href}>
+                {/* Mobile: compact row */}
+                <div className="sm:hidden flex items-center gap-4 px-4 py-3 rounded-xl border cursor-pointer transition-all active:scale-[0.98]"
+                  style={{ borderColor: `${member.color}15`, backgroundColor: WHITE }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                    style={{ backgroundColor: member.color, color: GOLD }}>
+                    {member.initials}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold truncate" style={{ color: TEAL }}>{member.name}</p>
+                    <p className="text-[11px] opacity-50" style={{ color: DARK }}>{member.role}</p>
+                  </div>
+                  <span className="ml-auto text-[11px] opacity-25 shrink-0" style={{ color: TEAL }}>→</span>
+                </div>
+                {/* Desktop: card */}
+                <div className="hidden sm:block rounded-2xl overflow-hidden border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md"
+                  style={{ borderColor: `${member.color}18`, backgroundColor: WHITE }}>
+                  <div className="h-28 flex items-center justify-center"
+                    style={{ backgroundColor: `${member.color}12` }}>
+                    <div className="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold"
+                      style={{ backgroundColor: member.color, color: GOLD }}>
+                      {member.initials}
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-[14px] font-semibold mb-0.5" style={{ color: TEAL }}>{member.name}</p>
+                    <p className="text-[12px] mb-1 opacity-55" style={{ color: DARK }}>{member.role}</p>
+                    <p className="text-[10px] font-bold tracking-wider uppercase" style={{ color: member.color, opacity: 0.6 }}>{member.dept}</p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-8 text-center">
+            <Link href="/team">
+              <span className="text-[13px] font-medium cursor-pointer transition-opacity hover:opacity-100" style={{ color: TEAL, opacity: 0.45 }}>
+                Meet the full team →
+              </span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ─── FOOTER ─── */}
       <footer className="px-6 md:px-12 py-8 border-t" style={{ backgroundColor: TEAL, borderColor: `${GOLD}15` }}>
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -904,6 +880,9 @@ export default function Home() {
             <button onClick={() => setPartnershipOpen(true)} className="opacity-40 hover:opacity-80 transition-opacity">Partnership</button>
             <Link href="/privacy"   className="opacity-40 hover:opacity-80 transition-opacity">Privacy</Link>
             <Link href="/terms"     className="opacity-40 hover:opacity-80 transition-opacity">Terms</Link>
+            <a href="/affiliate" className="hover:opacity-100 transition-opacity" style={{ color: GOLD, opacity: 0.5 }}>
+              Affiliate Programme
+            </a>
           </div>
           <button
             onClick={() => { window.location.href = LOGIN_URL; }}
@@ -998,7 +977,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
 
   if (match(["cac", "register", "registration", "compliance", "tax", "legal", "license", "trademark", "certificate", "nafdac", "filing", "incorporation", "contract", "bank account"])) {
     return {
-      text: "BizDoc is HAMZURY's compliance department. We handle CAC registration, tax clearance, industry licenses, corporate contracts, trademarks, and business bank account setup — everything your business needs to be legally sound and investor-ready.",
+      text: "BizDoc is HAMZURY's compliance department. We handle CAC registration, tax clearance, industry licenses, corporate contracts, trademarks, and business bank account setup. Everything your business needs to be legally sound and investor-ready.",
       actions: [
         { label: "Go to BizDoc →", href: "/bizdoc" },
         { label: "Start an inquiry", href: "/bizdoc" },
@@ -1027,7 +1006,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["ceo", "ceo of hamzury", "who is the ceo", "idris", "chief executive"])) {
     return {
-      text: "The CEO of HAMZURY Innovation Hub is Idris Ibrahim — he leads day-to-day operations and also heads the Systemise department, overseeing brand, systems, and digital strategy for clients.",
+      text: "The CEO of HAMZURY Innovation Hub is Idris Ibrahim. He leads day-to-day operations and also heads the Systemise department, overseeing brand, systems, and digital strategy for clients.",
       actions: [
         { label: "Explore Systemise →", href: "/systemise" },
         { label: "Meet the Founder →", href: "/founder" },
@@ -1036,7 +1015,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["founder", "muhammad", "hamzury who", "who started", "owner", "behind", "about hamzury"])) {
     return {
-      text: "HAMZURY was founded by Muhammad Hamzury — who built the company from the ground up, from a typing shop in Jos to Nigeria's integrated business infrastructure hub. He also serves as Chairman of RIDI. The CEO is Idris Ibrahim.",
+      text: "HAMZURY was founded by Muhammad Hamzury, who built the company from the ground up, from a typing shop in Jos to Nigeria's integrated business infrastructure hub. He also serves as Chairman of RIDI. The CEO is Idris Ibrahim.",
       actions: [
         { label: "Meet the Founder →", href: "/founder" },
         { label: "Explore HAMZURY →", href: "/" },
@@ -1045,7 +1024,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["address", "location", "office", "abuja", "where", "visit", "physical"])) {
     return {
-      text: "HAMZURY services are handled fully remotely — no need to come in person. For in-person consultations, reach us via WhatsApp to schedule.",
+      text: "HAMZURY services are handled fully remotely. No need to come in person. For in-person consultations, reach us via WhatsApp to schedule.",
       actions: [
         { label: "WhatsApp us →", href: "https://wa.me/2348034620520" },
         { label: "Contact BizDoc →", href: "/bizdoc" },
@@ -1064,7 +1043,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["train", "course", "learn", "skill", "program", "cohort", "student", "education", "internship", "scholarship", "ridi", "talent", "team", "ceo"])) {
     return {
-      text: "Skills is HAMZURY's talent and development department. We run business education programs, digital marketing training, IT internships, CEO development, and the RIDI scholarship for underserved communities. If your team needs leveling up — or you do — Skills is the right place.",
+      text: "Skills is HAMZURY's talent and development department. We run business education programs, digital marketing training, IT internships, CEO development, and the RIDI scholarship for underserved communities. If your team needs leveling up, or you do, Skills is the right place.",
       actions: [
         { label: "Go to Skills →", href: "/skills" },
         { label: "Apply for a program", href: "/skills" },
@@ -1074,10 +1053,9 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["track", "file", "update", "status", "progress", "follow", "my file", "my update", "reference", "stage"])) {
     return {
-      text: "You can check your file status under 'My Update'. Log in on the main page with your reference code to see the full timeline — current stage, next steps, and any actions required from you.",
+      text: "You can check your file status under 'My Update'. Log in on the main page with your reference code to see the full timeline: current stage, next steps, and any actions required from you.",
       actions: [
-        { label: "Go to My Update →", href: "/track" },
-        { label: "Login", href: "/dev-login" },
+        { label: "Go to My Update →", href: "/" },
         { label: "Contact BizDoc", href: "/bizdoc" },
       ],
     };
@@ -1094,7 +1072,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["commission"])) {
     return {
-      text: "HAMZURY affiliates earn commissions based on referral volume — from 5% (Bronze) to 13% (Platinum). Commissions are paid 30 days after client payment confirmation.",
+      text: "HAMZURY affiliates earn commissions based on referral volume, from 5% (Bronze) to 13% (Platinum). Commissions are paid 30 days after client payment confirmation.",
       actions: [
         { label: "Join affiliate program →", href: "/affiliate" },
         { label: "See commission tiers", href: "/affiliate" },
@@ -1103,7 +1081,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["refund"])) {
     return {
-      text: "We offer refunds only before work commences. Once filing begins, a credit note or revision cycle is offered. A 70% deposit is required upfront — the remaining 30% is due on delivery.",
+      text: "We offer refunds only before work commences. Once filing begins, a credit note or revision cycle is offered. A 70% deposit is required upfront. The remaining 30% is due on delivery.",
       actions: [
         { label: "See full policy →", href: "/terms" },
         { label: "Contact BizDoc", href: "/bizdoc" },
@@ -1139,7 +1117,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["foreign", "foreigner", "expatriate", "expat", "non-nigerian", "nationality"])) {
     return {
-      text: "Yes — foreign nationals can register a business with additional documentation. Contact our BizDoc Consult team for a personalised checklist.",
+      text: "Yes, foreign nationals can register a business with additional documentation. Contact our BizDoc Consult team for a personalised checklist.",
       actions: [
         { label: "Contact BizDoc →", href: "/bizdoc" },
         { label: "See services", href: "/bizdoc" },
@@ -1148,7 +1126,7 @@ function getSearchResult(input: string): { text: string; actions: { label: strin
   }
   if (match(["innovation hub", "hamzury hub", "umbrella", "parent company", "full name"])) {
     return {
-      text: "Hamzury Innovation Hub is our full brand name — the umbrella company housing BizDoc Consult, Systemize, and Hamzury Skills.",
+      text: "Hamzury Innovation Hub is our full brand name, the umbrella company housing BizDoc Consult, Systemize, and Hamzury Skills.",
       actions: [
         { label: "Learn about us →", href: "/founder" },
         { label: "Explore departments", href: "/" },
@@ -1475,7 +1453,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
         businessName: form.business,
         phone: form.phone,
         email: form.email,
-        service: `Partnership — ${form.type}`,
+        service: `Partnership: ${form.type}`,
         context: form.idea,
       });
       setStep("done");
@@ -1518,7 +1496,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                 <CheckCircle size={24} style={{ color: GREEN }} />
               </div>
               <h4 className="text-xl font-semibold mb-2 tracking-tight" style={{ color: TEAL }}>We'll reach out shortly.</h4>
-              <p className="text-sm leading-relaxed mb-6" style={{ color: DARK, opacity: 0.5 }}>Your inquiry has been received. Our team reviews every partnership request personally — expect a response within 48 hours.</p>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: DARK, opacity: 0.5 }}>Your inquiry has been received. Our team reviews every partnership request personally. Expect a response within 48 hours.</p>
               <button onClick={onClose}
                 className="px-6 py-3 rounded-full text-sm font-semibold transition-all hover:opacity-90"
                 style={{ backgroundColor: TEAL, color: CREAM }}>

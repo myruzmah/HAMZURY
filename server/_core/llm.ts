@@ -210,8 +210,8 @@ const normalizeToolChoice = (
 };
 
 const assertApiKey = () => {
-  if (!ENV.anthropicApiKey) {
-    throw new Error("ANTHROPIC_API_KEY is not configured");
+  if (!ENV.qwenApiKey && !ENV.anthropicApiKey) {
+    throw new Error("No AI API key configured. Set QWEN_API_KEY in your .env file.");
   }
 };
 
@@ -260,18 +260,69 @@ const normalizeResponseFormat = ({
   };
 };
 
-export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
-  assertApiKey();
-
+// ─── Qwen via OpenAI-compatible API ──────────────────────────────────────────
+async function invokeQwen(params: InvokeParams): Promise<InvokeResult> {
   const { messages, maxTokens, max_tokens } = params;
 
-  // Extract system prompt from messages
+  // Qwen accepts standard OpenAI message format (system role is fine)
+  const normalised = messages.map(m => ({
+    role: m.role as string,
+    content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+  }));
+
+  const body = {
+    model: "qwen-plus",          // Qwen 3.5 Plus — change to "qwen-max" for highest quality
+    max_tokens: maxTokens || max_tokens || 1024,
+    messages: normalised,
+  };
+
+  const response = await fetch("https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "authorization": `Bearer ${ENV.qwenApiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Qwen API error: ${response.status} ${response.statusText} – ${errorText}`);
+  }
+
+  const data = await response.json() as {
+    id: string;
+    model: string;
+    choices: Array<{ index: number; message: { role: string; content: string }; finish_reason: string }>;
+    usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+  };
+
+  const fullText = data.choices[0]?.message?.content ?? "";
+
+  return {
+    id: data.id,
+    created: Math.floor(Date.now() / 1000),
+    model: data.model,
+    // Provide content[] for any code that reads it the Anthropic way
+    content: [{ type: "text", text: fullText }],
+    choices: data.choices.map(c => ({
+      index: c.index,
+      message: { role: "assistant" as const, content: c.message.content },
+      finish_reason: c.finish_reason,
+    })),
+    usage: data.usage,
+  } as unknown as InvokeResult;
+}
+
+// ─── Anthropic fallback (used only if QWEN_API_KEY is not set) ───────────────
+async function invokeAnthropic(params: InvokeParams): Promise<InvokeResult> {
+  const { messages, maxTokens, max_tokens } = params;
+
   const systemMsg = messages.find(m => m.role === "system");
   const system = systemMsg
     ? (typeof systemMsg.content === "string" ? systemMsg.content : JSON.stringify(systemMsg.content))
     : undefined;
 
-  // Filter to user/assistant only (Anthropic doesn't accept "system" in messages array)
   const filtered = messages
     .filter(m => m.role === "user" || m.role === "assistant")
     .map(m => ({
@@ -302,15 +353,13 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   }
 
   const data = await response.json() as {
-    id: string;
-    model: string;
+    id: string; model: string;
     content: Array<{ type: string; text: string }>;
     usage?: { input_tokens: number; output_tokens: number };
   };
 
   const fullText = data.content.filter(c => c.type === "text").map(c => c.text).join("");
 
-  // Return format compatible with both old (response.content[]) and new (choices[]) code
   return {
     id: data.id,
     created: Math.floor(Date.now() / 1000),
@@ -327,4 +376,11 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
       total_tokens: data.usage.input_tokens + data.usage.output_tokens,
     } : undefined,
   } as unknown as InvokeResult;
+}
+
+// ─── Public entry point — prefers Qwen, falls back to Anthropic ──────────────
+export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
+  assertApiKey();
+  if (ENV.qwenApiKey) return invokeQwen(params);
+  return invokeAnthropic(params);
 }

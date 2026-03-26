@@ -10,7 +10,8 @@ import {
   Briefcase, Building2, GraduationCap, MessageSquare,
   TrendingUp, CalendarCheck, DollarSign, Wallet, UserPlus,
   Zap, ExternalLink, FileText, FolderOpen, Link2, Plus,
-  Bell, CalendarDays, ChevronRight, LayoutDashboard,
+  Bell, CalendarDays, ChevronRight, LayoutDashboard, Target,
+  Phone, RefreshCw,
 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "wouter";
@@ -27,7 +28,9 @@ const DARK  = "#1A1A1A";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section =
   | "overview"
+  | "discovery"
   | "assign"
+  | "review"
   | "pipeline"
   | "tasks"
   | "activity"
@@ -36,11 +39,14 @@ type Section =
   | "helpers"
   | "quickaccess"
   | "updates"
-  | "calendar";
+  | "calendar"
+  | "subscriptions";
 
 const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: "overview",    label: "Overview",       icon: <LayoutDashboard size={16} /> },
+  { id: "discovery",   label: "Discovery",      icon: <Target size={16} /> },
   { id: "assign",      label: "Assign Leads",   icon: <Send size={16} /> },
+  { id: "review",      label: "Pending Review", icon: <CheckCircle2 size={16} /> },
   { id: "pipeline",    label: "Lead Pipeline",  icon: <FileSearch size={16} /> },
   { id: "tasks",       label: "All Tasks",      icon: <Briefcase size={16} /> },
   { id: "activity",    label: "Activity",       icon: <Activity size={16} /> },
@@ -50,11 +56,13 @@ const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
   { id: "quickaccess", label: "Quick Access",   icon: <Zap size={16} /> },
   { id: "updates",     label: "Dept Updates",   icon: <Bell size={16} /> },
   { id: "calendar",    label: "Calendar",       icon: <CalendarDays size={16} /> },
+  { id: "subscriptions", label: "Subscriptions", icon: <RefreshCw size={16} /> },
 ];
 
 const DEPARTMENTS = [
-  { value: "bizdoc",    label: "BizDoc — Compliance",   color: BRAND.bizdoc },
-  { value: "systemise", label: "Systemise — Operations", color: BRAND.systemise },
+  { value: "bizdoc",    label: "BizDoc — Compliance",    color: BRAND.bizdoc },
+  { value: "systemise", label: "Systemise — Tech/Ops",   color: BRAND.systemise },
+  { value: "media",     label: "Media — Content/Brand",  color: "#7C3AED" },
   { value: "skills",    label: "Skills — Talent",        color: BRAND.skills },
 ];
 
@@ -94,6 +102,30 @@ export default function CSODashboard() {
     onError: () => toast.error("Failed to assign lead"),
   });
 
+  const pendingQuery = trpc.tasks.pending.useQuery(undefined, { refetchInterval: 15000 });
+  const approveMutation = trpc.tasks.approve.useMutation({
+    onSuccess: () => { toast.success("Task approved — counted as smooth task"); pendingQuery.refetch(); tasksQuery.refetch(); },
+    onError: () => toast.error("Failed to approve task"),
+  });
+  const reworkMutation = trpc.tasks.flagRework.useMutation({
+    onSuccess: () => { toast.success("Task sent back for rework"); pendingQuery.refetch(); },
+    onError: () => toast.error("Failed to flag task"),
+  });
+  const [reworkNotes, setReworkNotes] = useState<Record<number, string>>({});
+
+  const utils = trpc.useUtils();
+  const subsQuery = trpc.subscriptions.list.useQuery(undefined, { refetchInterval: 30000 });
+  const createSubMutation = trpc.subscriptions.create.useMutation({
+    onSuccess: () => { utils.subscriptions.list.invalidate(); toast.success("Subscription created"); setShowNewSub(false); },
+    onError: () => toast.error("Failed to create subscription"),
+  });
+  const createMonthlyTaskMutation = trpc.subscriptions.createMonthlyTask.useMutation({
+    onSuccess: (d) => { utils.subscriptions.list.invalidate(); toast.success(`Monthly task created — ref: ${d.ref}`); },
+    onError: (e) => toast.error(e.message),
+  });
+  const [showNewSub, setShowNewSub] = useState(false);
+  const [newSub, setNewSub] = useState({ clientName: "", businessName: "", phone: "", service: "Tax Pro Max Monthly", department: "bizdoc", monthlyFee: 15000, startDate: new Date().toISOString().slice(0, 10) });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
@@ -109,10 +141,13 @@ export default function CSODashboard() {
   const recentActivity = activityQuery.data || [];
   const allTasks      = tasksQuery.data || [];
   const attendance    = attendanceQuery.data || [];
+  const pendingTasks  = pendingQuery.data || [];
 
   const filteredTasks = taskDeptFilter === "all"
     ? allTasks
     : allTasks.filter((t: any) => t.department === taskDeptFilter);
+
+  const newPayments = allLeads.filter((l: any) => l.source === "chat_payment" && l.status === "new");
 
   const handleAssign = (leadId: number) => {
     const dept = selectedDept[leadId];
@@ -124,6 +159,95 @@ export default function CSODashboard() {
   const staffList = staffQuery.data || [];
   const realAppointments = appointmentsQuery.data || [];
   const unreadUpdates = MOCK_UPDATES.filter(u => !u.acknowledged).length;
+
+  function renderSubscriptions() {
+    const subs = subsQuery.data || [];
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    return (
+      <div className="space-y-6 max-w-3xl">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold" style={{ color: TEAL }}>Subscription Clients</h2>
+            <p className="text-[12px] opacity-50 mt-0.5" style={{ color: TEAL }}>{subs.filter(s => s.status === "active").length} active · Monthly recurring services</p>
+          </div>
+          <button
+            onClick={() => setShowNewSub(!showNewSub)}
+            className="text-[12px] px-4 py-2 rounded-xl font-medium"
+            style={{ backgroundColor: TEAL, color: GOLD }}
+          >
+            + New Subscription
+          </button>
+        </div>
+
+        {showNewSub && (
+          <div className="rounded-2xl p-5 border space-y-3" style={{ borderColor: `${TEAL}15`, backgroundColor: `${TEAL}04` }}>
+            <p className="text-[13px] font-semibold mb-2" style={{ color: TEAL }}>New Subscription</p>
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="Client Name *" value={newSub.clientName} onChange={e => setNewSub(p => ({ ...p, clientName: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="Business Name" value={newSub.businessName} onChange={e => setNewSub(p => ({ ...p, businessName: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="Phone" value={newSub.phone} onChange={e => setNewSub(p => ({ ...p, phone: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="Service" value={newSub.service} onChange={e => setNewSub(p => ({ ...p, service: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input type="number" placeholder="Monthly Fee (₦)" value={newSub.monthlyFee} onChange={e => setNewSub(p => ({ ...p, monthlyFee: Number(e.target.value) }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input type="date" value={newSub.startDate} onChange={e => setNewSub(p => ({ ...p, startDate: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => createSubMutation.mutate(newSub)}
+                disabled={!newSub.clientName || createSubMutation.isPending}
+                className="px-5 py-2 rounded-xl text-[13px] font-medium disabled:opacity-40"
+                style={{ backgroundColor: TEAL, color: GOLD }}
+              >
+                {createSubMutation.isPending ? "Creating…" : "Create Subscription"}
+              </button>
+              <button onClick={() => setShowNewSub(false)} className="px-4 py-2 rounded-xl text-[13px] opacity-50" style={{ color: TEAL }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
+        {subs.length === 0 ? (
+          <div className="text-center py-12 opacity-40 text-[13px]" style={{ color: TEAL }}>
+            No subscriptions yet — create one above
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {subs.map(sub => (
+              <div key={sub.id} className="rounded-2xl p-5 border" style={{ borderColor: `${TEAL}12`, backgroundColor: WHITE }}>
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-[15px] font-medium" style={{ color: TEAL }}>{sub.clientName}</p>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold uppercase ${sub.status === "active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                        {sub.status}
+                      </span>
+                    </div>
+                    <p className="text-[12px] opacity-50 mt-0.5" style={{ color: TEAL }}>{sub.businessName} · {sub.service}</p>
+                  </div>
+                  <span className="text-[14px] font-light" style={{ color: GOLD }}>₦{Number(sub.monthlyFee).toLocaleString()}/mo</span>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => createMonthlyTaskMutation.mutate({ subscriptionId: sub.id, month: currentMonth })}
+                    disabled={createMonthlyTaskMutation.isPending}
+                    className="text-[11px] px-3 py-1.5 rounded-lg font-medium transition-all"
+                    style={{ backgroundColor: `${TEAL}10`, color: TEAL }}
+                  >
+                    + Create {currentMonth} Task
+                  </button>
+                  <span className="text-[11px] opacity-30" style={{ color: TEAL }}>Started {sub.startDate}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: MILK }}>
@@ -155,7 +279,9 @@ export default function CSODashboard() {
             {SECTIONS.map(s => {
               const isActive = activeSection === s.id;
               const hasBadge = s.id === "assign" && unassigned.length > 0;
+              const hasReviewBadge = s.id === "review" && pendingTasks.length > 0;
               const hasUpdBadge = s.id === "updates" && unreadUpdates > 0;
+              const hasPaymentBadge = s.id === "pipeline" && newPayments.length > 0;
               return (
                 <button
                   key={s.id}
@@ -168,12 +294,18 @@ export default function CSODashboard() {
                 >
                   <span className="shrink-0">{s.icon}</span>
                   <span className="hidden md:block text-[13px] font-medium truncate flex-1">{s.label}</span>
-                  {(hasBadge || hasUpdBadge) && (
+                  {(hasBadge || hasUpdBadge || hasReviewBadge) && (
                     <span
                       className="hidden md:flex w-5 h-5 rounded-full items-center justify-center text-[10px] font-bold shrink-0"
-                      style={{ backgroundColor: "#EF4444", color: WHITE }}
+                      style={{ backgroundColor: hasReviewBadge ? "#F59E0B" : "#EF4444", color: WHITE }}
                     >
-                      {hasBadge ? unassigned.length : unreadUpdates}
+                      {hasBadge ? unassigned.length : hasReviewBadge ? pendingTasks.length : unreadUpdates}
+                    </span>
+                  )}
+                  {hasPaymentBadge && (
+                    <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse hidden md:inline-flex"
+                      style={{ backgroundColor: "#C9A97E", color: "#0A1F1C" }}>
+                      {newPayments.length}
                     </span>
                   )}
                 </button>
@@ -221,23 +353,6 @@ export default function CSODashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {/* Cross-nav links */}
-            <div className="hidden md:flex items-center gap-2">
-              {[
-                { href: "/hub/ceo",     label: "CEO" },
-                { href: "/hub/finance", label: "Finance" },
-                { href: "/hub/hr",      label: "HR" },
-              ].map(l => (
-                <Link key={l.href} href={l.href}>
-                  <span
-                    className="text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-lg border transition-all hover:opacity-80 cursor-pointer"
-                    style={{ borderColor: `${TEAL}15`, color: TEAL }}
-                  >
-                    {l.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[13px]"
               style={{ backgroundColor: `${TEAL}10`, color: TEAL }}
@@ -275,10 +390,10 @@ export default function CSODashboard() {
                 {/* Quick actions */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {[
-                    { label: "Assign New Lead",   section: "assign" as Section,      icon: <Send size={18} />,        badge: unassigned.length > 0 ? unassigned.length : null },
-                    { label: "Lead Pipeline",     section: "pipeline" as Section,    icon: <FileSearch size={18} />,  badge: null },
-                    { label: "Dept Updates",      section: "updates" as Section,     icon: <Bell size={18} />,        badge: unreadUpdates > 0 ? unreadUpdates : null },
-                    { label: "Calendar",          section: "calendar" as Section,    icon: <CalendarDays size={18} />, badge: null },
+                    { label: "Assign New Lead",   section: "assign" as Section,      icon: <Send size={18} />,          badge: unassigned.length > 0 ? unassigned.length : null },
+                    { label: "Pending Review",    section: "review" as Section,      icon: <CheckCircle2 size={18} />,  badge: pendingTasks.length > 0 ? pendingTasks.length : null },
+                    { label: "Lead Pipeline",     section: "pipeline" as Section,    icon: <FileSearch size={18} />,    badge: null },
+                    { label: "Dept Updates",      section: "updates" as Section,     icon: <Bell size={18} />,          badge: unreadUpdates > 0 ? unreadUpdates : null },
                   ].map(item => (
                     <button
                       key={item.section}
@@ -335,6 +450,9 @@ export default function CSODashboard() {
               </div>
             )}
 
+            {/* ── Discovery ── */}
+            {activeSection === "discovery" && <DiscoveryView />}
+
             {/* ── Assign Leads ── */}
             {activeSection === "assign" && (
               <AssignmentPanel
@@ -347,9 +465,112 @@ export default function CSODashboard() {
               />
             )}
 
+            {/* ── Pending Review ── */}
+            {activeSection === "review" && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle2 size={16} style={{ color: "#F59E0B" }} />
+                  <h2 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>
+                    Department Submissions — {pendingTasks.length} awaiting your review
+                  </h2>
+                </div>
+                {pendingQuery.isLoading ? (
+                  <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${TEAL}10` }}>
+                    <Loader2 className="animate-spin mx-auto" size={24} style={{ color: GOLD }} />
+                  </div>
+                ) : pendingTasks.length === 0 ? (
+                  <div className="bg-white rounded-2xl border p-14 text-center" style={{ borderColor: `${TEAL}10` }}>
+                    <CheckCircle2 size={44} className="mx-auto mb-4" style={{ color: "#22C55E", opacity: 0.3 }} />
+                    <p className="text-[15px] font-medium opacity-50" style={{ color: TEAL }}>No pending reviews</p>
+                    <p className="text-[12px] opacity-30 mt-2">Submitted department work will appear here for your approval.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {pendingTasks.map((task: any) => {
+                      const dept = DEPARTMENTS.find(d => d.value === task.department);
+                      return (
+                        <div key={task.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+                          <div className="flex flex-col md:flex-row md:items-start gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded opacity-50" style={{ backgroundColor: `${TEAL}08`, color: TEAL }}>{task.ref}</span>
+                                {dept && (
+                                  <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: `${dept.color}18`, color: dept.color }}>
+                                    {dept.label.split(" — ")[0]}
+                                  </span>
+                                )}
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#8B5CF618", color: "#7C3AED" }}>Submitted</span>
+                              </div>
+                              <p className="text-[15px] font-semibold" style={{ color: TEAL }}>{task.clientName}</p>
+                              <p className="text-[12px] opacity-50 mt-0.5">{task.service}{task.businessName ? ` · ${task.businessName}` : ""}</p>
+                              {task.notes && (
+                                <p className="text-[12px] mt-2 p-3 rounded-xl opacity-60 line-clamp-3" style={{ backgroundColor: `${TEAL}05`, color: DARK }}>
+                                  {task.notes}
+                                </p>
+                              )}
+                              {task.deadline && (
+                                <p className="text-[11px] mt-2 opacity-40" style={{ color: DARK }}>
+                                  Deadline: {task.deadline}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0 md:w-52">
+                              <button
+                                onClick={() => approveMutation.mutate({ id: task.id })}
+                                disabled={approveMutation.isPending}
+                                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all hover:opacity-90 disabled:opacity-50"
+                                style={{ backgroundColor: "#22C55E", color: WHITE }}
+                              >
+                                <CheckCircle2 size={14} />
+                                Approve &amp; Deliver
+                              </button>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Rework reason…"
+                                  value={reworkNotes[task.id] || ""}
+                                  onChange={e => setReworkNotes(p => ({ ...p, [task.id]: e.target.value }))}
+                                  className="flex-1 min-w-0 px-3 py-2 text-[12px] rounded-xl border outline-none"
+                                  style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+                                />
+                                <button
+                                  onClick={() => reworkMutation.mutate({ id: task.id, reason: reworkNotes[task.id] })}
+                                  disabled={reworkMutation.isPending}
+                                  className="px-3 py-2 rounded-xl text-[12px] font-semibold transition-all hover:opacity-90 disabled:opacity-50 shrink-0"
+                                  style={{ backgroundColor: "#F59E0B18", color: "#B45309", border: "1px solid #F59E0B30" }}
+                                >
+                                  Rework
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ── Lead Pipeline ── */}
             {activeSection === "pipeline" && (
-              <LeadPipeline leads={allLeads} />
+              <div className="space-y-4">
+                {newPayments.length > 0 && (
+                  <div className="mb-4 p-3 rounded-xl border-l-4" style={{ backgroundColor: "#C9A97E15", borderColor: "#C9A97E" }}>
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#0A1F1C" }}>
+                      🔔 {newPayments.length} New Payment{newPayments.length > 1 ? "s" : ""} — Action Required
+                    </p>
+                    {newPayments.map((lead: any) => (
+                      <div key={lead.id} className="text-xs py-1.5 border-b last:border-0" style={{ borderColor: "#C9A97E30", color: "#2C2C2C" }}>
+                        <span className="font-semibold">{lead.name}</span>
+                        <span className="opacity-60 ml-2">{lead.phone}</span>
+                        <span className="ml-2 font-mono opacity-70">{lead.ref}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <LeadPipeline leads={allLeads} />
+              </div>
             )}
 
             {/* ── All Tasks ── */}
@@ -360,7 +581,7 @@ export default function CSODashboard() {
                     <Briefcase size={15} style={{ color: GOLD }} /> Task Queue — All Departments
                   </h3>
                   <div className="flex gap-2 flex-wrap">
-                    {["all", "bizdoc", "systemise", "skills"].map(d => (
+                    {["all", "bizdoc", "systemise", "media", "skills"].map(d => (
                       <button
                         key={d}
                         onClick={() => setTaskDeptFilter(d)}
@@ -433,6 +654,9 @@ export default function CSODashboard() {
             {/* ── Calendar ── */}
             {activeSection === "calendar" && <CalendarView realAppointments={realAppointments} />}
 
+            {/* ── Subscriptions ── */}
+            {activeSection === "subscriptions" && renderSubscriptions()}
+
           </div>
         </ScrollArea>
       </div>
@@ -460,42 +684,101 @@ function StatCard({ label, value, color, icon, urgent }: {
   );
 }
 
+// ─── LEAD SCORE BADGE ─────────────────────────────────────────────────────────
+function calcLeadScore(lead: any): number {
+  let score = 0;
+  if (lead.phone)  score += 2;
+  if (lead.email)  score += 2;
+  if (lead.service && lead.service.trim()) score += 2;
+  if ((lead.source || "").toLowerCase().includes("referral")) score += 2;
+  const rawValue = parseFloat(String(lead.value || "0").replace(/[^0-9.]/g, ""));
+  if (rawValue > 200000) score += 2;
+  return Math.min(score, 10);
+}
+
+function LeadScore({ lead }: { lead: any }) {
+  const score = calcLeadScore(lead);
+  const color =
+    score >= 8 ? "#16A34A" :
+    score >= 5 ? "#B45309" :
+                 "#EF4444";
+  const bg =
+    score >= 8 ? "#22C55E18" :
+    score >= 5 ? "#EAB30818" :
+                 "#EF444418";
+  return (
+    <span
+      title={`Lead score: ${score}/10`}
+      className="inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-black shrink-0"
+      style={{ backgroundColor: bg, color }}
+    >
+      {score}
+    </span>
+  );
+}
+
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
 function TaskRow({ task }: { task: any }) {
+  const [callNote, setCallNote] = useState("");
+  const [showNote, setShowNote] = useState(false);
   const sc = STATUS_COLORS[task.status] || { bg: "#f3f4f6", text: "#6b7280" };
   const dept = DEPARTMENTS.find(d => d.value === task.department);
   return (
-    <div className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 hover:bg-gray-50/50 transition-colors">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[11px] font-bold tracking-wider font-mono opacity-40" style={{ color: TEAL }}>{task.ref}</span>
-          {dept && (
-            <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${dept.color}12`, color: dept.color }}>
-              {dept.value}
-            </span>
-          )}
+    <div className="px-4 py-3 flex flex-col gap-2 hover:bg-gray-50/50 transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[11px] font-bold tracking-wider font-mono opacity-40" style={{ color: TEAL }}>{task.ref}</span>
+            {dept && (
+              <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${dept.color}12`, color: dept.color }}>
+                {dept.value}
+              </span>
+            )}
+          </div>
+          <p className="text-[14px] font-semibold truncate" style={{ color: TEAL }}>{task.clientName}</p>
+          <p className="text-[12px] opacity-50 truncate">{task.service}</p>
         </div>
-        <p className="text-[14px] font-semibold truncate" style={{ color: TEAL }}>{task.clientName}</p>
-        <p className="text-[12px] opacity-50 truncate">{task.service}</p>
+        <div className="flex items-center gap-2 shrink-0">
+          {task.deadline && (
+            <span className="text-[11px] opacity-40 hidden sm:block">{task.deadline}</span>
+          )}
+          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: sc.bg, color: sc.text }}>
+            {task.status}
+          </span>
+          <button
+            onClick={() => setShowNote(v => !v)}
+            className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{ backgroundColor: `${TEAL}10`, color: TEAL }}
+            title="Log a call"
+          >
+            <Phone size={12} />
+          </button>
+        </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
-        {task.deadline && (
-          <span className="text-[11px] opacity-40 hidden sm:block">{task.deadline}</span>
-        )}
-        <span className="text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ backgroundColor: sc.bg, color: sc.text }}>
-          {task.status}
-        </span>
-        <a
-          href={task.phone ? `https://wa.me/${task.phone.replace(/\D/g, "")}` : "#"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-          style={{ backgroundColor: "#25D36615", color: "#25D366" }}
-          title="Contact on WhatsApp"
-        >
-          <MessageSquare size={12} />
-        </a>
-      </div>
+      {showNote && (
+        <div className="flex gap-2 items-center pl-1">
+          <input
+            type="text"
+            placeholder="Log a call note…"
+            value={callNote}
+            onChange={e => setCallNote(e.target.value)}
+            className="flex-1 px-3 py-1.5 rounded-lg border text-[12px] outline-none"
+            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+          />
+          <button
+            onClick={() => {
+              if (!callNote.trim()) { toast.error("Enter a note first"); return; }
+              toast.success("Call logged");
+              setCallNote("");
+              setShowNote(false);
+            }}
+            className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: TEAL, color: GOLD }}
+          >
+            Save
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -528,11 +811,14 @@ function LeadPipeline({ leads }: { leads: any[] }) {
                 <div key={lead.id} className="p-3 rounded-xl border hover:opacity-80 transition-opacity" style={{ borderColor: `${TEAL}08`, backgroundColor: `${TEAL}04` }}>
                   <div className="flex justify-between items-start mb-1.5">
                     <span className="text-[10px] font-bold tracking-wider font-mono px-2 py-0.5 rounded" style={{ backgroundColor: `${TEAL}08`, color: TEAL }}>{lead.ref}</span>
-                    {lead.assignedDepartment && (
-                      <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>
-                        {lead.assignedDepartment}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5">
+                      {lead.assignedDepartment && (
+                        <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>
+                          {lead.assignedDepartment}
+                        </span>
+                      )}
+                      <LeadScore lead={lead} />
+                    </div>
                   </div>
                   <p className="font-semibold text-[13px]" style={{ color: TEAL }}>{lead.name}</p>
                   <p className="text-[11px] opacity-50 mt-0.5">{lead.service}</p>
@@ -1301,6 +1587,428 @@ function CalendarView({ realAppointments }: { realAppointments: any[] }) {
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DISCOVERY VIEW ───────────────────────────────────────────────────────────
+type StepStatus = "pending" | "done" | "skipped";
+
+interface DiscoveryStep {
+  id: number;
+  title: string;
+  hint: string;
+  status: StepStatus;
+  notes: string;
+}
+
+const INITIAL_STEPS: DiscoveryStep[] = [
+  {
+    id: 1,
+    title: "Identify the Business",
+    hint: "Capture the business name, structure, registration status, and industry.",
+    status: "pending",
+    notes: "",
+  },
+  {
+    id: 2,
+    title: "Understand the Need",
+    hint: "What problem brought them here today? Select the closest match.",
+    status: "pending",
+    notes: "",
+  },
+  {
+    id: 3,
+    title: "Qualify the Budget",
+    hint: "Get a rough idea of their investment range — no pressure, just a bracket.",
+    status: "pending",
+    notes: "",
+  },
+  {
+    id: 4,
+    title: "Map to Services",
+    hint: "Which HAMZURY departments can help this client? Tick all that apply.",
+    status: "pending",
+    notes: "",
+  },
+  {
+    id: 5,
+    title: "Timeline & Urgency",
+    hint: "When do they need this done? Is there a hard deadline?",
+    status: "pending",
+    notes: "",
+  },
+  {
+    id: 6,
+    title: "Next Action",
+    hint: "What's the agreed next step before this call ends?",
+    status: "pending",
+    notes: "",
+  },
+];
+
+function DiscoveryView() {
+  const [steps, setSteps] = useState<DiscoveryStep[]>(INITIAL_STEPS);
+
+  // Per-step field state
+  const [bizName,      setBizName]      = useState("");
+  const [bizType,      setBizType]      = useState("");
+  const [bizRegState,  setBizRegState]  = useState("");
+  const [bizIndustry,  setBizIndustry]  = useState("");
+
+  const [needType,     setNeedType]     = useState("");
+
+  const [budget,       setBudget]       = useState("");
+
+  const [deptMap,      setDeptMap]      = useState<Record<string, boolean>>({
+    bizdoc: false, systemise: false, skills: false, ridi: false,
+  });
+
+  const [timeline,     setTimeline]     = useState("");
+  const [deadline,     setDeadline]     = useState("");
+
+  const [nextAction,   setNextAction]   = useState("");
+
+  const completedCount = steps.filter(s => s.status === "done" || s.status === "skipped").length;
+  const progressPct    = Math.round((completedCount / steps.length) * 100);
+
+  function markStep(id: number, status: StepStatus) {
+    setSteps(prev => prev.map(s => s.id === id ? { ...s, status } : s));
+  }
+
+  function updateNotes(id: number, value: string) {
+    setSteps(prev => prev.map(s => s.id === id ? { ...s, notes: value } : s));
+  }
+
+  function handleSave() {
+    toast.success("Discovery saved");
+  }
+
+  const stepStatusIcon = (status: StepStatus) => {
+    if (status === "done")    return <CheckCircle2 size={16} style={{ color: "#16A34A" }} />;
+    if (status === "skipped") return <AlertCircle  size={16} style={{ color: "#9CA3AF" }} />;
+    return null;
+  };
+
+  return (
+    <div className="space-y-5 max-w-3xl mx-auto">
+      {/* Header */}
+      <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
+            <Target size={18} style={{ color: GOLD }} />
+          </div>
+          <div>
+            <h2 className="text-[15px] font-bold" style={{ color: TEAL }}>Discovery Checklist</h2>
+            <p className="text-[11px] opacity-40 mt-0.5" style={{ color: TEAL }}>
+              6-step guided flow — complete each step during your client conversation
+            </p>
+          </div>
+          <div className="ml-auto text-right shrink-0">
+            <p className="text-[22px] font-black leading-none" style={{ color: GOLD }}>{completedCount}<span className="text-[13px] font-semibold opacity-50">/6</span></p>
+            <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: TEAL }}>steps done</p>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${TEAL}10` }}>
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${progressPct}%`, backgroundColor: progressPct === 100 ? "#16A34A" : GOLD }}
+          />
+        </div>
+        <p className="text-[11px] opacity-30 mt-1.5 text-right" style={{ color: TEAL }}>{progressPct}% complete</p>
+      </div>
+
+      {/* Step 1 — Identify the Business */}
+      <DiscoveryCard step={steps[0]} onMark={markStep} onNotes={updateNotes} stepStatusIcon={stepStatusIcon}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Business Name</label>
+            <input
+              type="text"
+              placeholder="e.g. NorthStar Trading Co"
+              value={bizName}
+              onChange={e => setBizName(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Business Type</label>
+            <select
+              value={bizType}
+              onChange={e => setBizType(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+            >
+              <option value="">Select…</option>
+              <option value="sole_prop">Sole Proprietorship</option>
+              <option value="ltd">Limited (Ltd)</option>
+              <option value="foreign">Foreign Company</option>
+              <option value="ngo">NGO / Foundation</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Registration Status</label>
+            <select
+              value={bizRegState}
+              onChange={e => setBizRegState(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+            >
+              <option value="">Select…</option>
+              <option value="registered">Registered</option>
+              <option value="not_registered">Not Yet Registered</option>
+              <option value="in_progress">Registration In Progress</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Industry</label>
+            <input
+              type="text"
+              placeholder="e.g. Fashion, Tech, Trading…"
+              value={bizIndustry}
+              onChange={e => setBizIndustry(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+            />
+          </div>
+        </div>
+      </DiscoveryCard>
+
+      {/* Step 2 — Understand the Need */}
+      <DiscoveryCard step={steps[1]} onMark={markStep} onNotes={updateNotes} stepStatusIcon={stepStatusIcon}>
+        <div className="mt-3">
+          <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>What problem brought them here?</label>
+          <select
+            value={needType}
+            onChange={e => setNeedType(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+          >
+            <option value="">Select…</option>
+            <option value="registration">Business Registration</option>
+            <option value="compliance">Compliance / Legal</option>
+            <option value="tax">Tax / FIRS</option>
+            <option value="brand">Brand Identity</option>
+            <option value="system">Systems / Operations</option>
+            <option value="skills">Skills / Training</option>
+            <option value="ridi">RIDI / Community Impact</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </DiscoveryCard>
+
+      {/* Step 3 — Qualify the Budget */}
+      <DiscoveryCard step={steps[2]} onMark={markStep} onNotes={updateNotes} stepStatusIcon={stepStatusIcon}>
+        <div className="mt-3">
+          <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Rough investment range</label>
+          <select
+            value={budget}
+            onChange={e => setBudget(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+          >
+            <option value="">Select…</option>
+            <option value="under50k">Under ₦50,000</option>
+            <option value="50to150k">₦50,000 – ₦150,000</option>
+            <option value="150to500k">₦150,000 – ₦500,000</option>
+            <option value="above500k">Above ₦500,000</option>
+          </select>
+        </div>
+      </DiscoveryCard>
+
+      {/* Step 4 — Map to Services */}
+      <DiscoveryCard step={steps[3]} onMark={markStep} onNotes={updateNotes} stepStatusIcon={stepStatusIcon}>
+        <div className="flex flex-wrap gap-3 mt-3">
+          {(["bizdoc", "systemise", "skills", "ridi"] as const).map(dept => {
+            const labels: Record<string, string> = {
+              bizdoc: "BizDoc", systemise: "Systemise", skills: "Skills", ridi: "RIDI",
+            };
+            const colors: Record<string, string> = {
+              bizdoc: "#1B4D3E", systemise: "#0A1F1C", skills: "#8B6914", ridi: GOLD,
+            };
+            const checked = deptMap[dept];
+            return (
+              <button
+                key={dept}
+                onClick={() => setDeptMap(prev => ({ ...prev, [dept]: !prev[dept] }))}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl border text-[13px] font-semibold transition-all"
+                style={{
+                  backgroundColor: checked ? `${colors[dept]}15` : WHITE,
+                  borderColor: checked ? colors[dept] : `${TEAL}15`,
+                  color: checked ? colors[dept] : `${TEAL}80`,
+                }}
+              >
+                {checked && <CheckCircle2 size={13} />}
+                {labels[dept]}
+              </button>
+            );
+          })}
+        </div>
+      </DiscoveryCard>
+
+      {/* Step 5 — Timeline & Urgency */}
+      <DiscoveryCard step={steps[4]} onMark={markStep} onNotes={updateNotes} stepStatusIcon={stepStatusIcon}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>When do they need it?</label>
+            <select
+              value={timeline}
+              onChange={e => setTimeline(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+            >
+              <option value="">Select…</option>
+              <option value="asap">ASAP</option>
+              <option value="this_month">This Month</option>
+              <option value="no_rush">No Rush</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Hard Deadline (if any)</label>
+            <input
+              type="date"
+              value={deadline}
+              onChange={e => setDeadline(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+              style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+            />
+          </div>
+        </div>
+      </DiscoveryCard>
+
+      {/* Step 6 — Next Action */}
+      <DiscoveryCard step={steps[5]} onMark={markStep} onNotes={updateNotes} stepStatusIcon={stepStatusIcon}>
+        <div className="mt-3">
+          <label className="block text-[10px] font-bold uppercase tracking-wider opacity-40 mb-1" style={{ color: TEAL }}>Agreed next step</label>
+          <select
+            value={nextAction}
+            onChange={e => setNextAction(e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+          >
+            <option value="">Select…</option>
+            <option value="send_proposal">Send Proposal</option>
+            <option value="schedule_call">Schedule Follow-up Call</option>
+            <option value="share_pricing">Share Pricing</option>
+            <option value="refer_dept">Refer to Department</option>
+            <option value="do_nothing">Do Nothing (Not Qualified)</option>
+          </select>
+        </div>
+      </DiscoveryCard>
+
+      {/* Save button */}
+      <div className="flex justify-end pb-6">
+        <Button
+          onClick={handleSave}
+          className="px-8 py-2.5 rounded-xl font-bold text-[13px]"
+          style={{ backgroundColor: TEAL, color: GOLD }}
+        >
+          Save Discovery Report
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── DISCOVERY CARD (reusable step wrapper) ────────────────────────────────────
+function DiscoveryCard({
+  step,
+  onMark,
+  onNotes,
+  stepStatusIcon,
+  children,
+}: {
+  step: DiscoveryStep;
+  onMark: (id: number, status: StepStatus) => void;
+  onNotes: (id: number, value: string) => void;
+  stepStatusIcon: (status: StepStatus) => React.ReactNode;
+  children?: React.ReactNode;
+}) {
+  const isDone    = step.status === "done";
+  const isSkipped = step.status === "skipped";
+
+  return (
+    <div
+      className="bg-white rounded-2xl border overflow-hidden transition-all"
+      style={{
+        borderColor: isDone ? "#22C55E30" : isSkipped ? `${TEAL}08` : `${TEAL}10`,
+        opacity: isSkipped ? 0.6 : 1,
+      }}
+    >
+      {/* Step header */}
+      <div
+        className="flex items-center gap-3 px-5 py-4 border-b"
+        style={{ borderColor: isDone ? "#22C55E15" : `${TEAL}06` }}
+      >
+        {/* Step number */}
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-black shrink-0"
+          style={{
+            backgroundColor: isDone ? "#22C55E15" : `${GOLD}18`,
+            color: isDone ? "#16A34A" : GOLD,
+          }}
+        >
+          {isDone ? <CheckCircle2 size={14} /> : step.id}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-bold" style={{ color: TEAL }}>{step.title}</p>
+          <p className="text-[11px] opacity-40 mt-0.5" style={{ color: TEAL }}>{step.hint}</p>
+        </div>
+        {stepStatusIcon(step.status) && (
+          <div className="shrink-0">{stepStatusIcon(step.status)}</div>
+        )}
+      </div>
+
+      {/* Step body */}
+      <div className="px-5 py-4">
+        {children}
+
+        {/* Notes field */}
+        <div className="mt-3">
+          <label className="block text-[10px] font-bold uppercase tracking-wider opacity-30 mb-1" style={{ color: TEAL }}>
+            Notes (optional)
+          </label>
+          <textarea
+            rows={2}
+            placeholder="Add any notes for this step…"
+            value={step.notes}
+            onChange={e => onNotes(step.id, e.target.value)}
+            className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none resize-none"
+            style={{ borderColor: `${TEAL}15`, color: TEAL, backgroundColor: MILK }}
+          />
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={() => onMark(step.id, step.status === "done" ? "pending" : "done")}
+            className="flex items-center gap-1.5 text-[12px] font-bold px-4 py-2 rounded-lg transition-all"
+            style={{
+              backgroundColor: isDone ? "#22C55E15" : TEAL,
+              color: isDone ? "#16A34A" : GOLD,
+              border: isDone ? "1px solid #22C55E30" : "none",
+            }}
+          >
+            <CheckCircle2 size={13} />
+            {isDone ? "Marked Done" : "Mark Done"}
+          </button>
+          {!isDone && (
+            <button
+              onClick={() => onMark(step.id, step.status === "skipped" ? "pending" : "skipped")}
+              className="flex items-center gap-1.5 text-[12px] font-bold px-4 py-2 rounded-lg border transition-all"
+              style={{
+                borderColor: `${TEAL}15`,
+                color: isSkipped ? "#9CA3AF" : `${TEAL}60`,
+              }}
+            >
+              {isSkipped ? "Unskip" : "Skip"}
+            </button>
+          )}
         </div>
       </div>
     </div>

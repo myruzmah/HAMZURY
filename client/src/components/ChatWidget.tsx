@@ -88,7 +88,6 @@ export default function ChatWidget({ open: externalOpen, onClose }: Props) {
           { label: "Tax & FIRS Compliance", value: "Tax" },
           { label: "Legal Documentation", value: "Legal" },
           { label: "Annual Returns", value: "AnnualReturns" },
-          { label: "Track My File", value: "TRACK" },
           { label: "Talk to a Human", value: "SCHEDULE" },
         ]);
         setChatState("MENU");

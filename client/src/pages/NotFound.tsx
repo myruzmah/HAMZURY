@@ -59,7 +59,7 @@ export default function NotFound() {
         <div className="flex gap-4">
           <button onClick={() => setLocation("/systemise")} className="underline hover:opacity-70">Systemise</button>
           <button onClick={() => setLocation("/skills")} className="underline hover:opacity-70">Skills</button>
-          <button onClick={() => setLocation("/track")} className="underline hover:opacity-70">Track my file</button>
+          <button onClick={() => setLocation("/")} className="underline hover:opacity-70">Home</button>
         </div>
       </div>
     </div>

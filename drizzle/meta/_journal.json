@@ -36,6 +36,41 @@
       "when": 1774100552142,
       "tag": "0004_fluffy_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1774482968150,
+      "tag": "0005_premium_namora",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1774515175243,
+      "tag": "0006_aberrant_alex_wilder",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1774515513489,
+      "tag": "0007_married_prism",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1774525842368,
+      "tag": "0008_icy_marvel_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1774529221504,
+      "tag": "0009_giant_ironclad",
+      "breakpoints": true
     }
   ]
 }

@@ -52,6 +52,7 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
   const [initialized, setInitialized]   = useState(false);
   const [showAppt, setShowAppt]         = useState(false);
   const [apptSlot, setApptSlot]         = useState("");
+  const [mounted, setMounted]         = useState(false);
 
   const endRef   = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -67,8 +68,8 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
   useEffect(() => {
     if (open && !initialized) {
       const greeting = preselectedService
-        ? `Hi 👋 I'm Nova, your Systemise advisor. I can see you're interested in ${preselectedService} — before anything, what's your name?`
-        : "Hi 👋 I'm Nova, your Systemise advisor. Before we get into anything — what's your name?";
+        ? `Hi, I'm Nova, your Systemise advisor. I can see you're interested in ${preselectedService}. Before anything, what's your name?`
+        : "Hi, I'm Nova, your Systemise advisor. Before we get into anything, what's your name?";
       setMessages([{ id: uid(), role: "bot", text: greeting }]);
       setInitialized(true);
       setTimeout(() => inputRef.current?.focus(), 300);
@@ -87,6 +88,16 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
       setApptSlot("");
       setContactName("");
       setContactPhone("");
+    }
+  }, [open]);
+
+  // Slide-in animation
+  useEffect(() => {
+    if (open) {
+      const t = setTimeout(() => setMounted(true), 10);
+      return () => clearTimeout(t);
+    } else {
+      setMounted(false);
     }
   }, [open]);
 
@@ -124,7 +135,7 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
       }
     } catch {
       setLoading(false);
-      addBot("I'm having a moment — please try again or reach us on WhatsApp.");
+      addBot("I'm having a moment. Please try again or reach us on WhatsApp.");
     }
   }, [messages, loading, systemiseChat, addBot]);
 
@@ -140,7 +151,7 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
 
     try {
       const res = await systemiseChat.mutateAsync({
-        message: `[System: Contact collected — Name: ${contactName}, Phone: ${contactPhone}. Please confirm warmly and proceed to payment.]`,
+        message: `[System: Contact collected. Name: ${contactName}, Phone: ${contactPhone}. Please confirm warmly and proceed to payment.]`,
         history,
       });
       let reply = res.reply.replace(/\[READY\]/g, "").replace(/\[SHOW_PAYMENT\]/g, "").trim();
@@ -169,13 +180,13 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] flex items-end md:items-center justify-center"
-      style={{ backgroundColor: "rgba(10,31,28,0.65)", backdropFilter: "blur(8px)" }}
-      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+      className="fixed inset-0 z-[60]"
+      style={{ backgroundColor: "rgba(10,31,28,0.50)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
     >
       <div
-        className="w-full md:max-w-lg md:rounded-2xl overflow-hidden shadow-2xl flex flex-col rounded-t-2xl"
-        style={{ height: "90vh", maxHeight: "700px", backgroundColor: CREAM }}
+        className={`absolute bottom-0 right-0 w-full max-h-[85vh] md:top-0 md:bottom-auto md:max-h-full md:h-full md:w-[430px] flex flex-col shadow-2xl transition-transform duration-300 ease-out rounded-t-2xl md:rounded-none ${mounted ? "translate-y-0 md:translate-x-0" : "translate-y-full md:translate-y-0 md:translate-x-full"}`}
+        style={{ backgroundColor: CREAM }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -303,7 +314,7 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
                 href={
                   apptSlot
                     ? `https://wa.me/${SYSTEMISE_WA}?text=${encodeURIComponent(
-                        `Hi HAMZURY Systemise, I'd like to book a discovery call on ${apptSlot} WAT. My name is ${contactName || "—"}.`
+                        `Hi HAMZURY Systemise, I'd like to book a discovery call on ${apptSlot} WAT. My name is ${contactName || "N/A"}.`
                       )}`
                     : "#"
                 }
@@ -345,8 +356,8 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
                     try {
                       await confirmPaymentMutation.mutateAsync({
                         name: contactName || "Client",
-                        phone: contactPhone || "—",
-                        service: "Systemise — General",
+                        phone: contactPhone || "N/A",
+                        service: "Systemise: General",
                       });
                     } catch {
                       // Silent — payment confirmation logged best-effort
@@ -361,7 +372,7 @@ export function ClarityDesk({ open, onClose, preselectedService }: Props) {
                 <div className="rounded-xl p-3 text-xs space-y-2" style={{ backgroundColor: "#E8F4EC", border: `1px solid ${G}20` }}>
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
-                    <strong style={{ color: G }}>Payment received — confirming…</strong>
+                    <strong style={{ color: G }}>Payment received. Confirming...</strong>
                   </div>
                   <p style={{ color: "#374151" }}>
                     We'll verify your transfer and assign your project team within 15 minutes during business hours.

@@ -183,8 +183,6 @@ export default function BizDevDashboard() {
             <p className="text-xs opacity-40" style={{ color: DARK }}>Business Development · {user.name || "BizDev Lead"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/hub/cso" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${DARK}20`, color: DARK }}>CSO Hub</Link>
-            <Link href="/hub/ceo" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${DARK}20`, color: DARK }}>CEO</Link>
           </div>
         </div>
 

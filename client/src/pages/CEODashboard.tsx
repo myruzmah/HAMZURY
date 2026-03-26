@@ -45,33 +45,6 @@ const MOCK_LEAD_SOURCES = [
   { source: "Events", count: 7 },
 ];
 
-const MOCK_DEPT_PERFORMANCE = [
-  { dept: "BizDoc", completed: 24, active: 8, color: "#1B4D3E" },
-  { dept: "Systemise", completed: 11, active: 5, color: "#4285F4" },
-  { dept: "Skills", completed: 18, active: 12, color: "#C9A97E" },
-  { dept: "BizDev", completed: 7, active: 3, color: "#34A853" },
-];
-
-const MOCK_ESCALATIONS = [
-  { id: 1, type: "High-value Lead", title: "Lagos conglomerate — ₦4.2M project scope", from: "BizDev", urgency: "high", time: "2h ago" },
-  { id: 2, type: "Commission Approval", title: "3 commissions pending approval — ₦280,000 total", from: "Finance", urgency: "medium", time: "4h ago" },
-  { id: 3, type: "Brand Conflict", title: "External agency proposal does not meet brand guidelines", from: "BizDev", urgency: "medium", time: "1d ago" },
-];
-
-const MOCK_EVENTS = [
-  { day: "Mon", date: "23", title: "Weekly Strategy Sync — All Dept Leads", time: "9:00 AM" },
-  { day: "Wed", date: "25", title: "BizDoc Client Review — Q1 Compliance Batch", time: "2:00 PM" },
-  { day: "Fri", date: "27", title: "HAMZURY Monthly All-Hands", time: "4:00 PM" },
-];
-
-const MOCK_DEPT_LEADS = [
-  { name: "Emeka Okafor", dept: "bizdoc", label: "BizDoc" },
-  { name: "Abiodun Salami", dept: "systemise", label: "Systemise" },
-  { name: "Ngozi Chukwu", dept: "skills", label: "Skills" },
-  { name: "Kemi Adeyemi", dept: "bizdev", label: "BizDev" },
-  { name: "Aisha Okonkwo", dept: "cso", label: "CSO" },
-  { name: "Fatima Ibrahim", dept: "finance", label: "Finance" },
-];
 
 const FILES = [
   { icon: FileText, title: "Brand Voice Guide", desc: "Tone, messaging, and positioning standards" },
@@ -181,9 +154,6 @@ export default function CEODashboard() {
             <p className="text-xs opacity-40" style={{ color: GREEN }}>{user.name || "Idris Ibrahim"}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/hub/cso" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${GREEN}20`, color: GREEN }}>CSO Hub</Link>
-            <Link href="/hub/finance" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${GREEN}20`, color: GREEN }}>Finance</Link>
-            <Link href="/hub/bizdev" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${GREEN}20`, color: GREEN }}>BizDev</Link>
           </div>
         </div>
 
@@ -347,21 +317,15 @@ function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingCom
         <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} onClick={onSwitchToAssign}>
           + Assign Task to Dept Lead
         </Button>
-        <Link href="/hub/finance">
-          <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
-            Commission Queue ({pendingComms})
-          </Button>
-        </Link>
-        <Link href="/hub/cso">
-          <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
-            Lead Pipeline
-          </Button>
-        </Link>
-        <Link href="/hub/hr">
-          <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
-            HR & Attendance
-          </Button>
-        </Link>
+        <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
+          Commission Queue ({pendingComms})
+        </Button>
+        <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
+          Lead Pipeline
+        </Button>
+        <Button size="sm" variant="outline" style={{ borderColor: `${GREEN}20`, color: GREEN }}>
+          HR & Attendance
+        </Button>
       </div>
 
       {/* Real Escalations */}
@@ -517,42 +481,71 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
 // ─── Calendar Section ────────────────────────────────────────────────────────
 function CalendarSection() {
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const dates = ["23", "24", "25", "26", "27", "28", "29"];
+  const tasksQuery = trpc.tasks.list.useQuery(undefined, { refetchInterval: 30000 });
+
+  const upcomingTasks = (tasksQuery.data || [])
+    .filter(t => t.deadline && t.status !== "Completed")
+    .sort((a, b) => (a.deadline || "").localeCompare(b.deadline || ""))
+    .slice(0, 5);
+
+  // Determine which days of the current week have deadlines
+  const today = new Date();
+  const currentDay = today.getDay(); // 0=Sun,1=Mon,...
+  const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+  const weekDates = days.map((_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() + mondayOffset + i);
+    return d.toISOString().slice(0, 10);
+  });
+
+  const daysWithDeadlines = new Set(
+    (tasksQuery.data || [])
+      .filter(t => t.deadline && t.status !== "Completed")
+      .map(t => t.deadline)
+  );
 
   return (
     <div className="space-y-6 max-w-3xl">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: GREEN }}>Company Calendar</h2>
-        <p className="text-xs opacity-30" style={{ color: GREEN }}>Only the Founder creates company-wide events — these appear in all department calendars.</p>
+        <p className="text-xs opacity-30" style={{ color: GREEN }}>Upcoming task deadlines from all departments.</p>
       </div>
 
       {/* Week strip */}
       <div className="bg-white rounded-2xl border p-4" style={{ borderColor: `${GREEN}08` }}>
         <div className="flex justify-between mb-4 gap-1">
           {days.map((d, i) => {
-            const hasEvent = MOCK_EVENTS.some(e => e.day === d);
+            const dateStr = weekDates[i];
+            const hasDeadline = daysWithDeadlines.has(dateStr);
+            const dateNum = new Date(dateStr).getDate().toString();
             return (
-              <div key={d} className="flex-1 flex flex-col items-center py-2 rounded-xl" style={{ backgroundColor: hasEvent ? `${GOLD}12` : "transparent" }}>
+              <div key={d} className="flex-1 flex flex-col items-center py-2 rounded-xl" style={{ backgroundColor: hasDeadline ? `${GOLD}12` : "transparent" }}>
                 <p className="text-[10px] uppercase tracking-wider mb-1" style={{ color: GREEN, opacity: 0.4 }}>{d}</p>
-                <p className="text-base font-normal" style={{ color: hasEvent ? GOLD : GREEN, opacity: hasEvent ? 1 : 0.5 }}>{dates[i]}</p>
-                {hasEvent && <div className="w-1.5 h-1.5 rounded-full mt-1" style={{ backgroundColor: GOLD }} />}
+                <p className="text-base font-normal" style={{ color: hasDeadline ? GOLD : GREEN, opacity: hasDeadline ? 1 : 0.5 }}>{dateNum}</p>
+                {hasDeadline && <div className="w-1.5 h-1.5 rounded-full mt-1" style={{ backgroundColor: GOLD }} />}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Events */}
+      {/* Upcoming deadlines */}
       <div className="space-y-3">
-        <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>This Week's Events</p>
-        {MOCK_EVENTS.map((e, i) => (
-          <div key={i} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${GREEN}08` }}>
+        <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>Upcoming Deadlines</p>
+        {upcomingTasks.length === 0 ? (
+          <div className="bg-white rounded-2xl border p-8 text-center" style={{ borderColor: `${GREEN}08` }}>
+            <p className="text-sm opacity-40" style={{ color: GREEN }}>No upcoming deadlines</p>
+          </div>
+        ) : upcomingTasks.map((t) => (
+          <div key={t.id} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${GREEN}08` }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
               <CalendarDays size={16} style={{ color: GOLD }} />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-normal" style={{ color: GREEN }}>{e.title}</p>
-              <p className="text-xs opacity-40 mt-0.5" style={{ color: GREEN }}>{e.day} {e.date} Mar · {e.time}</p>
+              <p className="text-sm font-normal" style={{ color: GREEN }}>{t.clientName} — {t.service}</p>
+              <p className="text-xs opacity-40 mt-0.5" style={{ color: GREEN }}>
+                Due: {t.deadline} · {t.status}
+              </p>
             </div>
           </div>
         ))}

@@ -34,7 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const GOLD = "#C9A97E";
+const GOLD = "#6B7280";
 const PAGE_SIZE = 20;
 
 type AppStatus = "submitted" | "under_review" | "accepted" | "waitlisted" | "rejected";
@@ -282,10 +282,10 @@ function CohortsPanel({ cohorts }: { cohorts: any }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {(cohorts ?? []).length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center py-24 text-center">
-            <BookOpen size={40} className="mb-4 opacity-20" style={{ color: "#C9A97E" }} />
+            <BookOpen size={40} className="mb-4 opacity-20" style={{ color: "#6B7280" }} />
             <p className="text-lg font-medium text-gray-700 mb-2">No cohorts yet</p>
             <p className="text-sm text-gray-400 mb-6">Create your first cohort to start enrolling students.</p>
-            <Button className="text-white" style={{ backgroundColor: "#C9A97E" }} onClick={() => toast("New cohort creation coming soon")}>
+            <Button className="text-white" style={{ backgroundColor: "#6B7280" }} onClick={() => toast("New cohort creation coming soon")}>
               + Create First Cohort
             </Button>
           </div>

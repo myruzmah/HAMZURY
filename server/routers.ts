@@ -8,12 +8,12 @@ import {
   generateHZRefNumber, createSystemiseLead, getSystemiseLeads, getSystemiseLeadByRef,
   createAppointment, getAppointments,
   createJoinApplication, getJoinApplications,
-  createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getCompletedTasksWithPrice,
+  createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, getCompletedTasksWithPrice, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore,
   getChecklistItemsByTaskId, toggleChecklistItem, getChecklistTemplates,
   createDocument, getDocumentsByTaskId, deleteDocument,
   createActivityLog, getActivityLogsByTaskId, getRecentActivityLogs,
   getDashboardStats,
-  getAllStaff, updateUserRole,
+  getAllStaff, updateUserRole, listAllStaffUsers,
   createCommission, getCommissions, updateCommissionStatus,
   recordAttendance, getAttendanceByDate, getAttendanceByUser,
   createWeeklyReport, getWeeklyReports,
@@ -27,8 +27,17 @@ import {
   getAffiliateRecordsByAffiliate, getAffiliateWithdrawals, createAffiliateWithdrawal,
   getAffiliateStats, getAllAffiliates,
   getSkillsApplicationByEmail, getCohortModules, getStudentAssignments, getLiveSessions, updateStudentAssignment,
+  createSubscription, getSubscriptions, getSubscriptionById, updateSubscriptionStatus,
+  createSubscriptionPayment, getPaymentsBySubscription, getAllSubscriptionPayments,
+  updateSubscriptionPayment, getOrCreateMonthlyPayment,
+  createClientCredential, getCredentialsByTaskId, getCredentialsBySubscriptionId,
+  deleteClientCredential, getTasksBySubscriptionId, getSubscriptionByLeadRef,
+  getDb,
 } from "./db";
 import { storagePut } from "./storage";
+import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
+import { clientCredentials, tasks } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
@@ -57,7 +66,7 @@ export const appRouter = router({
         context: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const ref = generateRefNumber();
+        const ref = generateRefNumber(input.phone);
         const lead = await createLead({ ...input, ref });
         const task = await createTaskFromLead(lead);
         return { ref: lead.ref, leadId: lead.id, taskId: task.id };
@@ -86,6 +95,8 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const lead = await assignLead(input.leadId, input.department, ctx.user.id);
+        // ✅ Sync the linked task's department so dept staff can see it
+        await updateTaskDepartmentByLeadId(input.leadId, input.department);
         await createActivityLog({
           leadId: input.leadId,
           userId: ctx.user.id,
@@ -103,11 +114,36 @@ export const appRouter = router({
         return lead;
       }),
 
+    updateScore: csoProcedure
+      .input(z.object({ leadId: z.number(), score: z.number().min(0).max(10) }))
+      .mutation(async ({ input, ctx }) => {
+        await updateLeadScore(input.leadId, input.score);
+        await createActivityLog({
+          leadId: input.leadId,
+          userId: ctx.user.id,
+          action: "lead_scored",
+          details: `Lead score set to ${input.score}/10 by ${ctx.user.name ?? ctx.user.openId}`,
+        });
+        return { success: true };
+      }),
+
     /** Client portal lookup — phone-based, rate limited, no auth needed */
     clientPortal: rateLimitedProcedure
       .input(z.object({ phone: z.string().min(10) }))
       .query(async ({ input }) => {
         const task = await getTaskByPhone(input.phone);
+        if (!task) return null;
+        const checklist = await getChecklistItemsByTaskId(task.id);
+        const docs = await getDocumentsByTaskId(task.id);
+        const activity = await getActivityLogsByTaskId(task.id);
+        return { task, checklist, docs, activity };
+      }),
+
+    /** Client portal lookup — ref-based, rate limited, no auth needed */
+    clientPortalByRef: rateLimitedProcedure
+      .input(z.object({ ref: z.string().min(4) }))
+      .query(async ({ input }) => {
+        const task = await getTaskByRef(input.ref.trim().toUpperCase());
         if (!task) return null;
         const checklist = await getChecklistItemsByTaskId(task.id);
         const docs = await getDocumentsByTaskId(task.id);
@@ -121,14 +157,43 @@ export const appRouter = router({
     list: protectedProcedure
       .input(z.object({ department: z.string().optional() }).optional())
       .query(async ({ input, ctx }) => {
-        // Department staff only see their own department's tasks
         const role = ctx.user.hamzuryRole;
-        if (role === "department_staff" && ctx.user.department) {
-          return getTasksByDepartment(ctx.user.department);
-        }
-        // Senior staff can filter or see all
+        // Map roles to their departments for automatic filtering
+        const ROLE_DEPT_MAP: Record<string, string> = {
+          bizdev: "bizdoc",
+          compliance_staff: "bizdoc",
+          security_staff: "bizdoc",
+          systemise_head: "systemise",
+          tech_lead: "systemise",
+          media: "media",
+          skills_staff: "skills",
+          department_staff: ctx.user.department || "bizdoc",
+        };
+        const restrictedDept = role ? ROLE_DEPT_MAP[role] : undefined;
+        if (restrictedDept) return getTasksByDepartment(restrictedDept);
+        // Senior roles (founder, ceo, cso, finance, hr) can filter or see all
         if (input?.department) return getTasksByDepartment(input.department);
         return getTasks();
+      }),
+
+    myTasks: protectedProcedure
+      .query(async ({ ctx }) => {
+        const role = ctx.user.hamzuryRole;
+        const ROLE_DEPT_MAP: Record<string, string> = {
+          bizdev: "bizdoc",
+          compliance_staff: "bizdoc",
+          security_staff: "bizdoc",
+          systemise_head: "systemise",
+          tech_lead: "systemise",
+          media: "media",
+          skills_staff: "skills",
+          bizdev_staff: "bizdev",
+          department_staff: ctx.user.department || "bizdoc",
+        };
+        const dept = role ? ROLE_DEPT_MAP[role] : undefined;
+        if (dept) return getTasksByDeptForStaff(dept);
+        if (ctx.user.department) return getTasksByDeptForStaff(ctx.user.department);
+        return [];
       }),
 
     getById: protectedProcedure
@@ -188,6 +253,118 @@ export const appRouter = router({
     byDepartment: protectedProcedure
       .input(z.object({ department: z.string() }))
       .query(async ({ input }) => getTasksByDepartment(input.department)),
+
+    // CSO review queue — tasks submitted by depts awaiting CSO approval/rework
+    pending: csoProcedure
+      .query(async () => getSubmittedTasksForReview()),
+
+    // KPI Engine: manager approves a completed task → counts as smooth task
+    approve: seniorProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const task = await getTaskById(input.id);
+        if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
+        // Guard: prevent double-approval
+        if (task.kpiApproved) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Task is already approved" });
+        }
+        const updated = await updateTask(input.id, { kpiApproved: true, isRework: false, status: "Completed" });
+        await createActivityLog({
+          taskId: input.id,
+          userId: ctx.user.id,
+          action: "kpi_approved",
+          details: `Task approved as smooth task by ${ctx.user.name ?? ctx.user.openId}`,
+        });
+        // Auto-create commission if task has a price and no commission exists yet
+        if (task.quotedPrice && parseFloat(task.quotedPrice) > 0) {
+          const existing = await getCommissionByTaskRef(task.ref);
+          if (!existing) {
+            const price = parseFloat(task.quotedPrice);
+            const breakdown = calculateCommission(price);
+            const commission = await createCommission({
+              taskId: task.id,
+              taskRef: task.ref,
+              clientName: task.clientName,
+              service: task.service,
+              quotedPrice: task.quotedPrice,
+              institutionalAmount: String(breakdown.institutionalAmount),
+              commissionPool: String(breakdown.commissionPool),
+              tierBreakdown: breakdown.tiers,
+              status: "pending",
+            });
+            await createAuditLog({
+              userId: ctx.user.id,
+              userName: ctx.user.name || ctx.user.email || "Unknown",
+              action: "commission_auto_created",
+              resource: "commissions",
+              resourceId: commission.id,
+              details: `Auto-commission created on task approval: ${task.ref} — ₦${task.quotedPrice}`,
+            });
+          }
+        }
+        return updated;
+      }),
+
+    // KPI Engine: manager flags a task for rework → staff must redo
+    flagRework: seniorProcedure
+      .input(z.object({ id: z.number(), reason: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const task = await updateTask(input.id, {
+          isRework: true,
+          kpiApproved: false,
+          status: "In Progress",
+          reworkNote: input.reason || null,
+        });
+        await createActivityLog({
+          taskId: input.id,
+          userId: ctx.user.id,
+          action: "flagged_rework",
+          details: `Task flagged for rework${input.reason ? `: ${input.reason}` : ""}`,
+        });
+        return task;
+      }),
+
+    // Staff submits a completed task for manager review
+    submit: protectedProcedure
+      .input(z.object({ id: z.number(), notes: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        const updateData: Parameters<typeof updateTask>[1] = {
+          status: "Submitted",
+          kpiApproved: false,
+        };
+        if (input.notes) updateData.notes = input.notes;
+        const task = await updateTask(input.id, updateData);
+        await createActivityLog({
+          taskId: input.id,
+          userId: ctx.user.id,
+          action: "submitted",
+          details: `Task submitted for review by ${ctx.user.name ?? ctx.user.openId}`,
+        });
+        return task;
+      }),
+
+    // KPI stats for the logged-in staff member
+    myKPI: protectedProcedure
+      .query(async ({ ctx }) => {
+        const role = ctx.user.hamzuryRole;
+        const ROLE_DEPT_MAP: Record<string, string> = {
+          bizdev: "bizdoc",
+          compliance_staff: "bizdoc",
+          security_staff: "bizdoc",
+          systemise_head: "systemise",
+          tech_lead: "systemise",
+          media: "media",
+          skills_staff: "skills",
+          bizdev_staff: "bizdev",
+          department_staff: ctx.user.department || "bizdoc",
+        };
+        const dept = role ? ROLE_DEPT_MAP[role] : undefined;
+        const myTasks = dept ? await getTasksByDeptForStaff(dept) : [];
+        const completed = myTasks.filter(t => t.status === "Completed" || t.status === "Submitted" || t.kpiApproved);
+        const smooth = myTasks.filter(t => t.kpiApproved && !t.isRework).length;
+        const rework = myTasks.filter(t => t.isRework).length;
+        return { smooth, total: myTasks.length, rework, completed: completed.length };
+      }),
   }),
 
   // ─── Checklist (Protected) ────────────────────────────────────────────────
@@ -442,30 +619,52 @@ ${input.taskContext ? `Current task context:
         clientRef: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const systemPrompt = `You are Amara — a warm, calm, professional compliance advisor at HAMZURY BizDoc Consult in Abuja, Nigeria.
-You are NOT an AI assistant. You are Amara — a person. Never say you are AI. If asked, say: "I'm Amara, your BizDoc advisor — here to help you sort this out."
-Never mention Claude, Anthropic, or any AI company.
+        const systemPrompt = `You are Amara — a wise, calm, strategic compliance guide at HAMZURY BizDoc Consult in Abuja, Nigeria.
+You are NOT an AI. You are Amara — a person. Never say you are AI. If asked: "I'm Amara, your BizDoc advisor — here to help you sort this out."
+Never mention Claude, Qwen, Anthropic, Alibaba, or any AI company. Never say you are a chatbot.
 
-HOW YOU SPEAK
-- Warm, calm, professional. Like a knowledgeable friend who works in compliance — not a salesperson.
-- Short responses: 2–4 sentences. Never write essays.
-- Use the client's name once you know it — naturally, not robotically.
-- Acknowledge what they said or felt BEFORE jumping to solutions. Always.
-- Ask exactly ONE question at a time. Never two.
-- Never say "Certainly!", "Absolutely!", "Great question!", "Of course!" — sounds robotic.
-- Use contractions: "I'll", "you're", "we've", "it's", "that's"
-- Natural openers: "Right.", "Got it.", "That makes sense.", "Here's the thing.", "Good news —"
-- If their message is unclear or has broken English — interpret generously, restate it, then respond. Never say "I don't understand."
+CORE MISSION: "Everything your business owes the system — handled completely."
 
-YOUR CONVERSATION FLOW — FOLLOW THIS EXACTLY
-Step 1 — Your VERY FIRST message: Ask for their name only. Nothing else. Example: "Hi 👋 I'm Amara, your BizDoc advisor. Before anything — what's your name?"
-Step 2 — Once you know their name: Ask openly what's going on. "What's brought you to BizDoc today, [name]?" Let them talk freely.
-Step 3 — When they share their situation: Restate it briefly to show you heard them. Then ask ONE focused follow-up question to understand fully.
-Step 4 — After 2–3 exchanges of understanding: Give your recommendation. Use their name. Be specific about the service, cost, and timeline.
-Step 5 — When they signal readiness (say yes, ask how to pay, say ready, want to proceed, etc.): Write [READY] on a line by itself, then say something like "Let me get a couple of details to open your file."
-Step 6 — When the system message says contact was collected: Write [SHOW_PAYMENT] on a line by itself, then confirm the next step warmly.
+═══════════════════════════════════════════
+NEURO-CONVERSION PRINCIPLES (use in every response)
+═══════════════════════════════════════════
+1. ILLUSION OF CHOICE — Never say "You should do X." Say: "Some businesses in your situation start with [A]. Others prefer [B]. What feels more aligned with where you are?"
+2. CURIOSITY GAP — Before asking direct questions, open with: "What if you could [outcome] without [pain]?" or "Imagine your business 6 months from now — what would make you most confident?"
+3. FOOT-IN-THE-DOOR — Start with tiny commitment ("Would you like a quick compliance check?") → escalate naturally after they agree.
+4. LOSS AVERSION (not fear) — "Many business owners who delay their annual returns end up paying 2% interest + penalties. Want to sort that before the deadline?" NOT "You'll lose money!"
+5. SOCIAL PROOF (subtle) — "Based on 250+ businesses we've helped, here's what typically works…" — not "Only 3 slots left!!!"
+6. AUTHORITY + EMPATHY — Mix: "Here's what the CAC process looks like…" with "I understand this feels overwhelming — let's take it one step at a time."
+7. "FEELS LIKE YOUR IDEA" CLOSE — Before recommending: "Here's what I'd suggest if this were my business. What do you think?" Let them own the decision.
 
-SERVICES & PRICING (know these, share naturally — not as a dump)
+═══════════════════════════════════════════
+CLIENT TYPE ADAPTATION
+═══════════════════════════════════════════
+CONFUSED ("I don't know what I need", vague): Listen patiently → use curiosity gap questions → offer one low-risk first step → "What feels right to you?"
+DIRECT ("I need CAC registration", specific): Confirm clearly → transparent pricing → frictionless payment → warm confirmation → "Anything else?"
+STRESSED/OVERWHELMED ("I'm behind", anxious): Calm first — "Take a breath. We'll handle this together." → prioritize: "Let's start with the one thing that matters most." → "You're not alone in this."
+ELITE/BUSY ("I'm busy", status-focused): "I understand your time is valuable." → premium path → let them feel in control: "Which option aligns better with your vision?"
+PRICE-SENSITIVE ("Is there cheaper?"): Validate: "Smart to be cautious." → show what they're protecting → offer phased approach.
+RETURNING CLIENT (has reference number, mentions renewal): Recognize immediately: "Welcome back. Let me pull up your file." → personalize → offer seamless continuation.
+
+═══════════════════════════════════════════
+LANGUAGE DETECTION
+═══════════════════════════════════════════
+Detect the client's language from their first message. If they write in Hausa, respond in Hausa. Yoruba → Yoruba. Igbo → Igbo. Nigerian Pidgin → Pidgin. English → English.
+If mixed (e.g., Pidgin + English), follow their lead naturally.
+
+═══════════════════════════════════════════
+CONVERSATION FLOW
+═══════════════════════════════════════════
+Step 1 — FIRST message only: "Hi 👋 I'm Amara, your BizDoc advisor. Before anything — what's your name?"
+Step 2 — Know name: Use curiosity gap: "What's brought you to BizDoc today, [name]? What's one thing that, if sorted, would make everything else easier?"
+Step 3 — They share: Restate briefly ("So you're [paraphrase] — that's a really common challenge.") → ONE focused follow-up question.
+Step 4 — After 2–3 exchanges: Give recommendation using "feels like your idea" close. Use name. Be specific: service, cost, timeline.
+Step 5 — Client signals readiness (says yes, asks how to pay, says ready): Write [READY] on its own line, then "Let me get a couple of details to open your file."
+Step 6 — System says contact collected: Write [SHOW_PAYMENT] on its own line, then confirm warmly.
+
+═══════════════════════════════════════════
+SERVICES & PRICING (share naturally — not as a list dump)
+═══════════════════════════════════════════
 Business Name Registration — ₦50,000–₦80,000 · 3–5 working days
 CAC Limited Company (RC number) — ₦150,000 · 7–14 working days
 Annual Returns Filing — ₦50,000–₦80,000 · 3–5 days
@@ -476,16 +675,13 @@ Legal Documents (NDA, service agreement, employment contract) — ₦30,000–�
 Business Restructuring (add director, convert BN to Ltd, share transfer) — custom quote · 14–21 days
 Tax Pro Max (monthly managed compliance) — from ₦15,000/month
 
-PAYMENT DETAILS (only shown via [SHOW_PAYMENT] — never type them in chat)
+PAYMENT DETAILS (only via [SHOW_PAYMENT] token — never type in chat)
 Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT
 
-EXAMPLE — how you should sound:
-Client says: "my business isnt registered i keep losing clients"
-You say: "That's genuinely frustrating — especially when you're doing the work but losing opportunities because of something that's fixable. What kind of business are you running, [name]? I want to make sure we get you the right structure from the start."
+ESCALATION (if human needed): "I can connect you with a BizDoc specialist. To make the most of your call — what's your ideal timeline? A specialist will reach out within 4 hours."
 
-NOT like this: "Great! Here are your options: [1] Business Name ₦50k [2] Limited Company ₦150k. Which would you prefer?"
-
-IMPORTANT: Never output [READY] or [SHOW_PAYMENT] before the client signals they want to proceed. Let the conversation breathe.`;
+ALWAYS END WITH: "No pressure. Just clarity." or "With purpose, BizDoc."
+NEVER: hype words, urgency pressure, dumping all services at once, [READY] or [SHOW_PAYMENT] before client signals readiness.`;
 
         const historyMessages = (input.history ?? []).map(h => ({
           role: h.role as "user" | "assistant",
@@ -520,7 +716,7 @@ IMPORTANT: Never output [READY] or [SHOW_PAYMENT] before the client signals they
         leadRef: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const ref = generateRefNumber();
+        const ref = generateRefNumber(input.phone);
         const lead = await createLead({
           name: input.name,
           phone: input.phone,
@@ -535,7 +731,34 @@ IMPORTANT: Never output [READY] or [SHOW_PAYMENT] before the client signals they
           action: "payment_confirmed",
           details: `Payment confirmed via BizDocDesk by ${input.name} (${input.phone})`,
         });
-        return { ref: lead.ref, taskId: task.id };
+
+        // ─── Notify CSO ──────────────────────────────────────────────────────────
+        const csoPhone = process.env.CSO_NOTIFY_PHONE ?? "2348067149356";
+        const notifyMsg = encodeURIComponent(
+          `🔔 New BizDoc payment confirmed!\nClient: ${input.name}\nPhone: ${input.phone}\nRef: ${ref}\nService: ${input.service ?? "General"}`
+        );
+        const csoNotifyUrl = `https://wa.me/${csoPhone}?text=${notifyMsg}`;
+
+        // Optional: Termii SMS if configured
+        const termiiKey = process.env.TERMII_API_KEY;
+        if (termiiKey) {
+          try {
+            await fetch("https://api.ng.termii.com/api/sms/send", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                to: csoPhone,
+                from: "HAMZURY",
+                sms: `New BizDoc payment: ${input.name} | ${input.phone} | Ref: ${ref}`,
+                type: "plain",
+                api_key: termiiKey,
+                channel: "generic",
+              }),
+            });
+          } catch { /* silent — notification is best-effort */ }
+        }
+
+        return { ref: lead.ref, taskId: task.id, csoNotifyUrl };
       }),
   }),
 
@@ -546,13 +769,20 @@ IMPORTANT: Never output [READY] or [SHOW_PAYMENT] before the client signals they
         history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string() })).optional(),
       }))
       .query(async ({ input }) => {
-        const systemPrompt = `You are the HAMZURY assistant. HAMZURY is a business infrastructure company with three departments:
+        const systemPrompt = `You are a calm, wise HAMZURY guide. HAMZURY is a business infrastructure company with three departments:
 1. BizDoc Consult — CAC business registration, industry licenses (NAFDAC, SON, DPR), tax compliance (VAT, PAYE, TCC), corporate contracts, trademarks, business bank account setup.
-2. Systemize — premium brand identity, website design, business automation, CRM systems, social media systems, growth strategy.
-3. Hamzury Skills — cohort-based business education: digital marketing, IT training, business essentials, CEO development programs.
+2. Systemise — premium brand identity, website design, business automation, CRM systems, social media systems, growth strategy.
+3. HAMZURY Skills — cohort-based business education: digital marketing, data analysis, AI-powered business, faceless content, business development programs, and RIDI scholarship.
 
-Answer in 2–3 short, direct sentences. Be helpful and specific. At the end, name which department is most relevant.
-Do not mention specific countries, cities, or locations in your answer.`;
+HOW TO RESPOND:
+- Answer in 2–3 short, calm, confident sentences. Never write essays.
+- Use curiosity or empathy to open if the question is vague: "That's an interesting situation — here's what typically helps…"
+- Never say "Certainly!", "Absolutely!", "Great question!" — sounds robotic.
+- At the end, naturally name which department is most relevant: "This falls under BizDoc. Want me to connect you with Amara?"
+- If the client seems confused or overwhelmed: calm them first, then answer.
+- Never mention Claude, Qwen, Anthropic, Alibaba, or any AI company. You are HAMZURY.
+- CORE LINE: "Everything your business owes the system — handled completely."`;
+
         const historyMessages = (input.history ?? []).map(h => ({ role: h.role as "user" | "assistant", content: h.text }));
         try {
           const response = await invokeLLM({
@@ -696,27 +926,50 @@ Do not mention specific countries, cities, or locations in your answer.`;
         history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string() })).optional(),
       }))
       .mutation(async ({ input }) => {
-        const systemPrompt = `You are Nova — a sharp, creative brand and systems advisor at HAMZURY Systemise in Nigeria.
-You are NOT an AI. You are Nova. Never say you are AI. If asked: "I'm Nova, your Systemise advisor." Never mention Claude, Anthropic.
+        const systemPrompt = `You are Nova — a sharp, creative, strategic brand and systems guide at HAMZURY Systemise in Nigeria.
+You are NOT an AI. You are Nova — a person. Never say you are AI. If asked: "I'm Nova, your Systemise advisor." Never mention Claude, Qwen, Anthropic, Alibaba, or any AI company.
 
-HOW YOU SPEAK
-- Sharp, creative, strategic. Like a senior brand consultant who genuinely cares about their client's growth.
-- Short: 2–4 sentences per response. Never dump information.
-- Use the client's name once you know it.
-- Acknowledge their situation before jumping to solutions.
-- Ask ONE question at a time.
-- Never say "Certainly!", "Absolutely!", "Great question!" — too robotic.
-- Contractions always: "I'll", "you're", "we've", "it's"
+CORE MISSION: "Everything your business owes the system — handled completely."
 
-YOUR CONVERSATION FLOW
-Step 1 — First message ONLY: Ask their name. "Hi 👋 I'm Nova, your Systemise advisor. What's your name?"
-Step 2 — Know their name: Ask what's going on with their business. Let them describe freely.
-Step 3 — They share: Restate what you heard, then ask ONE follow-up question.
-Step 4 — After 2–3 exchanges: Give a clear, specific recommendation with cost and timeline.
-Step 5 — They signal readiness: Write [READY] on its own line, then say "Let me grab a couple of details."
+═══════════════════════════════════════════
+NEURO-CONVERSION PRINCIPLES
+═══════════════════════════════════════════
+1. ILLUSION OF CHOICE — "Some businesses at your stage invest first in [brand identity]. Others start with [website]. Which feels more urgent for where you are now?"
+2. CURIOSITY GAP — Open with: "What if your brand could attract premium clients without cold outreach?" or "Imagine your business 6 months from now — what would people say when they find you online?"
+3. FOOT-IN-THE-DOOR — Start with: "Would you like a free 2-minute brand positioning check?" → after yes: "Since you're serious about this, want to see the full brand roadmap?"
+4. LOSS AVERSION (subtle) — "Businesses that delay fixing their brand positioning often find they attract the wrong clients — or none at all." Not: "You'll lose money!"
+5. SOCIAL PROOF — "Based on 250+ brands we've built, here's what separates the ones that grow fast…" — never hype or fake urgency.
+6. AUTHORITY + EMPATHY — "Here's what I'd recommend technically…" + "I know this can feel like a lot — let's prioritise what moves the needle first."
+7. "FEELS LIKE YOUR IDEA" CLOSE — "Here's what I'd do if this were my brand. What do you think?" Let them own the decision.
+
+═══════════════════════════════════════════
+CLIENT TYPE ADAPTATION
+═══════════════════════════════════════════
+CONFUSED: Listen → curiosity gap → offer Clarity Audit (₦5,000) as low-risk first step → "What feels right?"
+DIRECT: Confirm their ask → transparent pricing → frictionless payment → warm confirmation.
+STRESSED: Calm first → "Let's focus on one thing." → prioritize the quick win.
+ELITE/BUSY: Acknowledge: "I get it — every hour counts." → present the premium Full System path → let them lead.
+PRICE-SENSITIVE: "Smart to be strategic." → start with Clarity Audit → show the roadmap → phase the investment.
+RETURNING: "Welcome back. Let me pull up your file." → continue where you left off.
+
+═══════════════════════════════════════════
+LANGUAGE DETECTION
+═══════════════════════════════════════════
+Detect language from first message. Respond in the client's language: Hausa, Yoruba, Igbo, Pidgin, or English.
+
+═══════════════════════════════════════════
+CONVERSATION FLOW
+═══════════════════════════════════════════
+Step 1 — FIRST message only: "Hi 👋 I'm Nova, your Systemise advisor. What's your name?"
+Step 2 — Know name: Use curiosity gap: "What's one thing about your brand or online presence that, if fixed, would change everything for you, [name]?"
+Step 3 — They share: Restate briefly → ONE follow-up question.
+Step 4 — After 2–3 exchanges: Specific recommendation with cost + timeline. Use "feels like your idea" close.
+Step 5 — Client signals readiness: Write [READY] on its own line, then "Let me grab a couple of details."
 Step 6 — System says contact collected: Write [SHOW_PAYMENT] on its own line, then confirm warmly.
 
-SERVICES & PRICING
+═══════════════════════════════════════════
+SERVICES & PRICING (share naturally, not as a dump)
+═══════════════════════════════════════════
 Brand Identity (logo, colours, typography, brand guide) — ₦150,000–₦300,000 · 7–14 days
 Website Design (business, landing page, e-commerce) — ₦200,000–₦400,000 · 14–21 days
 Full System (Brand + Website + CRM) — ₦500,000–₦800,000 · 4–6 weeks
@@ -726,7 +979,11 @@ CRM & Automation Setup — ₦100,000–₦250,000 · 2–3 weeks
 Clarity Audit (brand/systems gap report) — ₦5,000 · 48 hours
 
 PAYMENT (only via [SHOW_PAYMENT] token — never type in chat)
-Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
+Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT
+
+ESCALATION: "I can connect you with a Systemise specialist. What's your ideal timeline? They'll reach out within 4 hours."
+ALWAYS END WITH: "No pressure. Just clarity." or "With purpose, Systemise."
+NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client signals readiness.`;
 
         const historyMessages = (input.history ?? []).map(h => ({
           role: h.role as "user" | "assistant",
@@ -761,6 +1018,30 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
   // ─── Staff Management ─────────────────────────────────────────────────────
   staff: router({
     list: protectedProcedure.query(async () => getAllStaff()),
+
+    /** Real staff from staffUsers table — used by HR dashboard */
+    listInternal: protectedProcedure.query(async () => {
+      // Derive dept label from hamzuryRole
+      const roleToDept: Record<string, string> = {
+        founder: "Executive", ceo: "Executive", cso: "CSO",
+        finance: "Finance", hr: "HR", bizdev: "BizDev",
+        bizdev_staff: "BizDev", media: "Media", skills_staff: "Skills",
+        systemise_head: "Systemise", tech_lead: "Systemise",
+        compliance_staff: "BizDoc", security_staff: "BizDoc",
+        department_staff: "General",
+      };
+      const rows = await listAllStaffUsers();
+      return rows.map(s => ({
+        id: `HMZ-${String(s.id).padStart(3, "0")}`,
+        name: s.name || s.email || "Unknown",
+        role: s.hamzuryRole || "department_staff",
+        dept: roleToDept[s.hamzuryRole] || "General",
+        email: s.email,
+        status: s.isActive ? "Active" as const : "Inactive" as const,
+        hireDate: s.createdAt ? new Date(s.createdAt).toISOString().split("T")[0] : "—",
+        lastLogin: s.lastLogin ? new Date(s.lastLogin).toISOString().split("T")[0] : null,
+      }));
+    }),
 
     updateRole: founderCEOProcedure
       .input(z.object({
@@ -1110,27 +1391,50 @@ Bank: Moniepoint · Account: 8067149356 · Name: BIZDOC CONSULT`;
         history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string() })).optional(),
       }))
       .mutation(async ({ input }) => {
-        const systemPrompt = `You are Zara — a warm, encouraging Skills advisor at HAMZURY Innovation Hub in Nigeria.
-You are NOT an AI. You are Zara. Never say you are AI. If asked: "I'm Zara, your Skills advisor." Never mention Claude, Anthropic.
+        const systemPrompt = `You are Zara — a warm, encouraging, strategic Skills guide at HAMZURY Innovation Hub in Nigeria.
+You are NOT an AI. You are Zara — a person. Never say you are AI. If asked: "I'm Zara, your Skills advisor." Never mention Claude, Qwen, Anthropic, Alibaba, or any AI company.
 
-HOW YOU SPEAK
-- Warm, encouraging, direct. Like a mentor who genuinely wants to see people grow.
-- Short: 2–4 sentences. Never overwhelm.
-- Use their name once you know it.
-- Speak to their ambitions — not their gaps.
-- Ask ONE question at a time.
-- Never say "Certainly!", "Absolutely!", "Great question!"
-- Contractions always: "I'll", "you're", "we've"
+CORE MISSION: "Everything your business owes the system — handled completely."
 
-YOUR CONVERSATION FLOW
-Step 1 — First message ONLY: Ask their name. "Hi 👋 I'm Zara, your Skills advisor. What's your name?"
-Step 2 — Know their name: Ask about their goal. "What are you hoping to learn or achieve, [name]?"
-Step 3 — They share goal: Restate it, then ask ONE clarifying question about where they are now.
-Step 4 — After 1–2 exchanges: Recommend the specific program that fits. Be direct: "Based on what you've told me, [Program] is the right fit for you."
-Step 5 — They signal readiness to enrol: Write [READY] on its own line, then say "Let me get a couple of details."
+═══════════════════════════════════════════
+NEURO-CONVERSION PRINCIPLES
+═══════════════════════════════════════════
+1. ILLUSION OF CHOICE — "Some people in your position start with [Digital Marketing]. Others who want faster income go with [Faceless Content]. Which feels closer to what you're after?"
+2. CURIOSITY GAP — "What if you could build a skill that pays you every month — without quitting what you're doing now?" or "Imagine yourself 3 months from today. What would you want to be able to do that you can't do yet?"
+3. FOOT-IN-THE-DOOR — "Would you like to take our free 2-minute skills match test to see which program fits you best?" → after yes: "Since you're serious about growth, want to see the full 6-month learning roadmap?"
+4. LOSS AVERSION (not fear) — "Every month without in-demand skills is a month your competitors get ahead. But there's no pressure — just worth knowing." NOT: "You'll fall behind!"
+5. SOCIAL PROOF — "Based on 500+ students we've trained, here's what gets people results fastest…" — never fake urgency.
+6. AUTHORITY + EMPATHY — "Here's what I know from watching hundreds of students transform…" + "I understand — picking the right program when you're not sure is genuinely hard."
+7. "FEELS LIKE YOUR IDEA" CLOSE — "Based on everything you've told me, here's the program I'd pick if I were in your position. What do you think, [name]?"
+
+═══════════════════════════════════════════
+CLIENT TYPE ADAPTATION
+═══════════════════════════════════════════
+CONFUSED: Curiosity gap first → scenario questions about their goals → recommend one specific program with clear reason.
+DIRECT ("I want Digital Marketing"): Confirm → share the program details clearly → frictionless enrolment.
+STRESSED/OVERWHELMED: Calm first → "Let's figure out the one skill that'll move the needle most." → simplify.
+ELITE/AMBITIOUS: Speak to their vision → recommend the premium pathway → let them feel they're investing in themselves.
+PRICE-SENSITIVE: Validate ("Smart to think about ROI.") → show earning potential → mention RIDI scholarship if eligible.
+RETURNING (has reference/enrolled): "Welcome back, [name]." → check their progress → offer the next program naturally.
+
+═══════════════════════════════════════════
+LANGUAGE DETECTION
+═══════════════════════════════════════════
+Detect language from first message. Respond in the client's language: Hausa, Yoruba, Igbo, Pidgin, or English.
+
+═══════════════════════════════════════════
+CONVERSATION FLOW
+═══════════════════════════════════════════
+Step 1 — FIRST message only: "Hi 👋 I'm Zara, your Skills advisor. What's your name?"
+Step 2 — Know name: Curiosity gap: "Imagine yourself 3 months from now, [name] — what's one skill you wish you had that you don't have yet?"
+Step 3 — They share goal: Restate it warmly → ONE clarifying question about where they are now.
+Step 4 — After 1–2 exchanges: "Based on what you've told me, [Program] is the right fit. Here's why…" — specific, warm, direct.
+Step 5 — Client signals readiness: Write [READY] on its own line, then "Let me get a couple of details."
 Step 6 — System says contact collected: Write [SHOW_PAYMENT] on its own line, then confirm warmly.
 
-PROGRAMS
+═══════════════════════════════════════════
+PROGRAMS (share naturally — one at a time, not as a dump)
+═══════════════════════════════════════════
 1. Digital Marketing — ₦45,000 · 8 weeks
    Social media strategy, SEO, paid ads, content, analytics. For business owners and marketers.
 
@@ -1149,7 +1453,11 @@ PROGRAMS
 6. RIDI Scholarship — Full fee waiver for qualifying applicants who cannot afford tuition.
 
 PAYMENT (only via [SHOW_PAYMENT] — never type in chat)
-Bank: Moniepoint · Account: 8067149356 · Name: HAMZURY SKILLS · Reference: applicant full name`;
+Bank: Moniepoint · Account: 8067149356 · Name: HAMZURY SKILLS · Reference: applicant full name
+
+ESCALATION: "I can connect you with a Skills specialist. What's your ideal start date? They'll reach out within 4 hours."
+ALWAYS END WITH: "No pressure. Just clarity." or "With purpose, HAMZURY Skills."
+NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client signals readiness.`;
 
         const historyMessages = (input.history ?? []).map(h => ({
           role: h.role as "user" | "assistant",
@@ -1301,6 +1609,275 @@ Bank: Moniepoint · Account: 8067149356 · Name: HAMZURY SKILLS · Reference: ap
           details: `Affiliate tier set to ${tier} based on ${converted} confirmed conversions`,
         });
         return { tier, converted };
+      }),
+  }),
+
+  // ─── Subscriptions (CSO/Finance) ──────────────────────────────────────────
+  subscriptions: router({
+    create: csoProcedure
+      .input(z.object({
+        clientName: z.string().min(1),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        service: z.string().min(1),
+        department: z.string().default("bizdoc"),
+        monthlyFee: z.number().positive(),
+        billingDay: z.number().min(1).max(28).default(1),
+        startDate: z.string().min(1),
+        assignedStaffEmail: z.string().optional(),
+        notesForStaff: z.string().optional(),
+        leadId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const sub = await createSubscription({
+          ...input,
+          monthlyFee: String(input.monthlyFee),
+          status: "active",
+          createdBy: ctx.user.name || ctx.user.email || ctx.user.openId,
+        });
+        const currentMonth = new Date().toISOString().slice(0, 7);
+        await getOrCreateMonthlyPayment(sub.id, currentMonth, String(input.monthlyFee));
+        await createActivityLog({
+          action: "subscription_created",
+          details: `Subscription created for ${input.clientName} — ${input.service} @ ₦${input.monthlyFee}/month`,
+          userId: ctx.user.id,
+        });
+        return sub;
+      }),
+
+    list: protectedProcedure.query(async () => getSubscriptions()),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const sub = await getSubscriptionById(input.id);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+        const [payments, subTasks, creds] = await Promise.all([
+          getPaymentsBySubscription(sub.id),
+          getTasksBySubscriptionId(sub.id),
+          getCredentialsBySubscriptionId(sub.id),
+        ]);
+        const maskedCreds = creds.map(c => ({
+          ...c,
+          passwordEnc: maskPassword(8),
+          iv: "",
+        }));
+        return { sub, payments, tasks: subTasks, creds: maskedCreds };
+      }),
+
+    updateStatus: csoProcedure
+      .input(z.object({ id: z.number(), status: z.enum(["active", "paused", "cancelled"]) }))
+      .mutation(async ({ input }) => {
+        await updateSubscriptionStatus(input.id, input.status);
+        return { success: true };
+      }),
+
+    createMonthlyTask: csoProcedure
+      .input(z.object({
+        subscriptionId: z.number(),
+        month: z.string().min(7).max(7),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const sub = await getSubscriptionById(input.subscriptionId);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND", message: "Subscription not found" });
+        if (sub.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Subscription is not active" });
+        const existing = await getTasksBySubscriptionId(sub.id);
+        const alreadyExists = existing.find(t => t.taskMonth === input.month);
+        if (alreadyExists) throw new TRPCError({ code: "BAD_REQUEST", message: `Task for ${input.month} already exists` });
+        const ref = generateRefNumber(sub.phone);
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        await db.insert(tasks).values({
+          ref,
+          leadId: sub.leadId ?? undefined,
+          subscriptionId: sub.id,
+          taskMonth: input.month,
+          clientName: sub.clientName,
+          businessName: sub.businessName,
+          phone: sub.phone,
+          service: `${sub.service} — ${input.month}`,
+          status: "Not Started",
+          department: sub.department,
+          quotedPrice: sub.monthlyFee,
+          notes: sub.notesForStaff || `Monthly ${sub.service} task for ${input.month}`,
+        });
+        await getOrCreateMonthlyPayment(sub.id, input.month, sub.monthlyFee);
+        await createActivityLog({
+          action: "monthly_task_created",
+          details: `Monthly task created for ${sub.clientName} — ${input.month}`,
+          userId: ctx.user.id,
+        });
+        return { ref };
+      }),
+
+    recordPayment: financeProcedure
+      .input(z.object({
+        subscriptionId: z.number(),
+        month: z.string(),
+        amountPaid: z.number().positive(),
+        paymentRef: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const sub = await getSubscriptionById(input.subscriptionId);
+        if (!sub) throw new TRPCError({ code: "NOT_FOUND" });
+        const payment = await getOrCreateMonthlyPayment(input.subscriptionId, input.month, sub.monthlyFee);
+        await updateSubscriptionPayment(payment.id, {
+          status: "paid",
+          amountPaid: String(input.amountPaid),
+          paidAt: new Date(),
+          recordedBy: ctx.user.name || ctx.user.email || "Finance",
+          paymentRef: input.paymentRef,
+          notes: input.notes,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Finance",
+          action: "subscription_payment_recorded",
+          resource: "subscriptions",
+          resourceId: input.subscriptionId,
+          details: `Payment ₦${input.amountPaid} recorded for ${sub.clientName} — ${input.month}`,
+        });
+        return { success: true };
+      }),
+
+    allPayments: financeProcedure.query(async () => {
+      const [subs, payments] = await Promise.all([getSubscriptions(), getAllSubscriptionPayments()]);
+      return payments.map(p => {
+        const sub = subs.find(s => s.id === p.subscriptionId);
+        return { ...p, clientName: sub?.clientName, service: sub?.service };
+      });
+    }),
+
+    clientHistory: publicProcedure
+      .input(z.object({ ref: z.string().min(4) }))
+      .query(async ({ input }) => {
+        const sub = await getSubscriptionByLeadRef(input.ref.trim().toUpperCase());
+        if (!sub) return null;
+        const [payments, monthlyTasks] = await Promise.all([
+          getPaymentsBySubscription(sub.id),
+          getTasksBySubscriptionId(sub.id),
+        ]);
+        return {
+          clientName: sub.clientName,
+          businessName: sub.businessName,
+          service: sub.service,
+          status: sub.status,
+          startDate: sub.startDate,
+          payments,
+          monthlyTasks: monthlyTasks.map(t => ({
+            month: t.taskMonth,
+            status: t.status,
+            service: t.service,
+            kpiApproved: t.kpiApproved,
+            completedAt: t.completedAt,
+          })),
+        };
+      }),
+  }),
+
+  // ─── Client Credentials (BizDoc staff) ───────────────────────────────────
+  credentials: router({
+    add: protectedProcedure
+      .input(z.object({
+        taskId: z.number().optional(),
+        subscriptionId: z.number().optional(),
+        platform: z.string().min(1),
+        loginUrl: z.string().optional(),
+        username: z.string().min(1),
+        password: z.string().min(1),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { encrypted, iv } = encryptCredential(input.password);
+        const cred = await createClientCredential({
+          taskId: input.taskId,
+          subscriptionId: input.subscriptionId,
+          platform: input.platform,
+          loginUrl: input.loginUrl,
+          username: input.username,
+          passwordEnc: encrypted,
+          iv,
+          notes: input.notes,
+          addedBy: ctx.user.email || ctx.user.name || ctx.user.openId,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Staff",
+          action: "credential_added",
+          resource: "client_credentials",
+          resourceId: cred.id,
+          details: `Credentials added for platform: ${input.platform}${input.taskId ? ` (task ${input.taskId})` : ""}`,
+        });
+        return { id: cred.id, platform: cred.platform, username: cred.username };
+      }),
+
+    listByTask: protectedProcedure
+      .input(z.object({ taskId: z.number() }))
+      .query(async ({ input }) => {
+        const creds = await getCredentialsByTaskId(input.taskId);
+        return creds.map(c => ({
+          id: c.id,
+          platform: c.platform,
+          loginUrl: c.loginUrl,
+          username: c.username,
+          passwordMasked: maskPassword(12),
+          notes: c.notes,
+          addedBy: c.addedBy,
+          createdAt: c.createdAt,
+        }));
+      }),
+
+    listBySubscription: protectedProcedure
+      .input(z.object({ subscriptionId: z.number() }))
+      .query(async ({ input }) => {
+        const creds = await getCredentialsBySubscriptionId(input.subscriptionId);
+        return creds.map(c => ({
+          id: c.id,
+          platform: c.platform,
+          loginUrl: c.loginUrl,
+          username: c.username,
+          passwordMasked: maskPassword(12),
+          notes: c.notes,
+          addedBy: c.addedBy,
+          createdAt: c.createdAt,
+        }));
+      }),
+
+    reveal: protectedProcedure
+      .input(z.object({ credentialId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+        const result = await db.select().from(clientCredentials).where(eq(clientCredentials.id, input.credentialId)).limit(1);
+        if (!result[0]) throw new TRPCError({ code: "NOT_FOUND" });
+        const cred = result[0];
+        const password = decryptCredential(cred.passwordEnc, cred.iv);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Staff",
+          action: "credential_revealed",
+          resource: "client_credentials",
+          resourceId: cred.id,
+          details: `Password revealed for ${cred.platform} by ${ctx.user.email || ctx.user.name}`,
+        });
+        return { username: cred.username, password, loginUrl: cred.loginUrl };
+      }),
+
+    delete: seniorProcedure
+      .input(z.object({ credentialId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Staff",
+          action: "credential_deleted",
+          resource: "client_credentials",
+          resourceId: input.credentialId,
+          details: "Credential deleted",
+        });
+        await deleteClientCredential(input.credentialId);
+        return { success: true };
       }),
   }),
 

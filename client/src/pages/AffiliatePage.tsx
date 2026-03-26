@@ -97,8 +97,17 @@ export default function AffiliatePage() {
   const formRef = useRef<HTMLDivElement>(null);
 
   const login = trpc.affiliate.login.useMutation({
-    onSuccess: (data: Record<string, unknown>) => {
+    onSuccess: async (data: Record<string, unknown>) => {
       saveAffiliateSession(data);
+      // Also set server-side cookie session for persistence
+      try {
+        await fetch("/api/affiliate-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: email.trim(), password }),
+        });
+      } catch { /* best-effort */ }
       navigate("/affiliate/dashboard");
     },
     onError: (err: { message?: string }) => {

@@ -191,7 +191,7 @@ export default function TrackPage() {
 
           {/* FOUND — RESULT */}
           {submitted && !isLoading && data?.found === true && (
-            <TrackResult data={data} onReset={handleReset} />
+            <TrackResult data={data} phone={queryPhone} onReset={handleReset} />
           )}
         </div>
       </section>
@@ -213,6 +213,7 @@ export default function TrackPage() {
 
 function TrackResult({
   data,
+  phone,
   onReset,
 }: {
   data: {
@@ -230,6 +231,7 @@ function TrackResult({
     lastUpdated: Date | string;
     createdAt: Date | string;
   };
+  phone: string;
   onReset: () => void;
 }) {
   const cfg = STATUS_CONFIG[data.status];
@@ -358,7 +360,7 @@ function TrackResult({
         <p className="text-[12px] opacity-40" style={{ color: BRAND.text }}>
           Last updated: {new Date(data.lastUpdated).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short" })}
         </p>
-        <div className="flex gap-3">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={onReset}
             className="text-[12px] font-semibold px-4 py-2 rounded-lg border hover:opacity-70 transition-opacity"
@@ -375,6 +377,24 @@ function TrackResult({
           >
             Contact CSO <ArrowRight size={12} />
           </a>
+          <button
+            onClick={() => {
+              localStorage.setItem("hamzury-client-session", JSON.stringify({
+                phone,
+                name: data.clientName,
+                ref: data.ref,
+                businessName: data.businessName,
+                service: data.service,
+                status: data.status,
+                expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+              }));
+              window.location.href = "/client/dashboard";
+            }}
+            className="flex items-center gap-1.5 text-[12px] font-semibold px-4 py-2 rounded-lg transition-opacity hover:opacity-80"
+            style={{ backgroundColor: BRAND.gold, color: BRAND.federal }}
+          >
+            My Dashboard <ArrowRight size={12} />
+          </button>
         </div>
       </div>
     </div>

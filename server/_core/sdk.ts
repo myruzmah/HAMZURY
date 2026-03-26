@@ -298,6 +298,41 @@ class SDKServer {
         lastSignedIn: new Date(),
       } as User;
     }
+    // ─── New unified email+password login bypass ─────────────────────────────
+    if (sessionUserId.startsWith("staffuser__")) {
+      const parts = sessionUserId.split("__");
+      const hamzuryRole = parts[1] || "department_staff";
+      const staffId = Number(parts[2]) || 0;
+      return {
+        id: staffId,
+        openId: sessionUserId,
+        name: session.name,
+        email: `${hamzuryRole}@hamzuryos.biz`,
+        loginMethod: "password",
+        role: "admin" as "admin" | "user",
+        hamzuryRole,
+        lastSignedIn: new Date(),
+      } as User;
+    }
+    // ─── Affiliate session bypass — handled via REST /api/affiliate/* ─────────
+    if (sessionUserId.startsWith("affiliate__")) {
+      const affiliateId = Number(sessionUserId.split("__")[1]) || 0;
+      const now = new Date();
+      return {
+        id: affiliateId,
+        openId: sessionUserId,
+        name: session.name,
+        email: `affiliate-${affiliateId}@hamzury.com`,
+        loginMethod: "password",
+        role: "user" as "admin" | "user",
+        hamzuryRole: null,
+        department: null,
+        phone: null,
+        createdAt: now,
+        updatedAt: now,
+        lastSignedIn: now,
+      } as unknown as User;
+    }
     // ────────────────────────────────────────────────────────────────────────
 
     const signedInAt = new Date();

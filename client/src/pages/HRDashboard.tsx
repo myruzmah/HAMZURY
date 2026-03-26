@@ -119,10 +119,11 @@ export default function HRDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [activeSection, setActiveSection] = useState<Section>("overview");
 
-  const statsQuery = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
-  const activityQuery = trpc.activity.recent.useQuery({ limit: 10 });
-  const staffQuery = trpc.staff.list.useQuery();
-  const today = new Date().toISOString().split("T")[0];
+  const statsQuery      = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
+  const activityQuery   = trpc.activity.recent.useQuery({ limit: 10 });
+  const staffQuery      = trpc.staff.listInternal.useQuery(undefined, { refetchInterval: 60000 });
+  const joinAppsQuery   = trpc.systemise.joinApplications.useQuery(undefined, { refetchInterval: 30000 });
+  const today           = new Date().toISOString().split("T")[0];
   const attendanceQuery = trpc.attendance.byDate.useQuery({ date: today }, { refetchInterval: 30000 });
 
   if (loading) {
@@ -134,21 +135,15 @@ export default function HRDashboard() {
   }
   if (!user) return null;
 
-  const stats = statsQuery.data;
-  const activity = activityQuery.data || [];
-  const realStaff = staffQuery.data || [];
+  const stats         = statsQuery.data;
+  const activity      = activityQuery.data || [];
+  const realStaff     = staffQuery.data || [];
+  const joinApps      = joinAppsQuery.data || [];
   const todayAttendance = attendanceQuery.data || [];
-  // Use real staff if available, otherwise fall back to mock
-  const staffList = realStaff.length > 0
-    ? realStaff.map(s => ({
-        id: `STF-${String(s.id).padStart(3, "0")}`,
-        name: s.name || s.email || "Unknown",
-        role: s.hamzuryRole || "staff",
-        dept: s.department || "General",
-        status: "Active",
-        hireDate: s.createdAt ? new Date(s.createdAt).toISOString().split("T")[0] : "—",
-      }))
-    : MOCK_STAFF;
+
+  // Map real staffUsers to display format — fall back to MOCK_STAFF while DB is empty
+  const staffList = realStaff.length > 0 ? realStaff : MOCK_STAFF;
+
   // Build today's attendance from real data
   const attendanceList = todayAttendance.length > 0
     ? todayAttendance.map((a: any) => ({
@@ -227,9 +222,6 @@ export default function HRDashboard() {
             <p className="text-xs opacity-40" style={{ color: GREEN }}>{user.name || "HR Lead"}</p>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/hub/ceo" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${GREEN}20`, color: GREEN }}>CEO Hub</Link>
-            <Link href="/hub/cso" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${GREEN}20`, color: GREEN }}>CSO</Link>
-            <Link href="/hub/finance" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${GREEN}20`, color: GREEN }}>Finance</Link>
           </div>
         </div>
 
@@ -240,7 +232,7 @@ export default function HRDashboard() {
             {activeSection === "staff"       && <StaffSection staffList={staffList} />}
             {activeSection === "attendance"  && <AttendanceSection attendanceList={attendanceList} />}
             {activeSection === "performance" && <PerformanceSection />}
-            {activeSection === "hiring"      && <HiringSection />}
+            {activeSection === "hiring"      && <HiringSection joinApps={joinApps} />}
             {activeSection === "training"    && <TrainingSection />}
             {activeSection === "commissions" && <CommissionsSection />}
             {activeSection === "reports"     && <ReportsSection />}
@@ -666,7 +658,7 @@ const HIRING_SOP = {
   ],
 };
 
-function HiringSection() {
+function HiringSection({ joinApps }: { joinApps: any[] }) {
   const [checked, setChecked] = useState<Record<string, boolean>>(
     Object.fromEntries(Object.values(HIRING_SOP).flat().map(item => [item, false]))
   );
@@ -719,24 +711,37 @@ function HiringSection() {
 
       {/* Applications */}
       <div>
-        <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Applications</h2>
+        <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>
+          Join Applications {joinApps.length > 0 && <span className="normal-case px-2 py-0.5 rounded-full text-[10px]" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>{joinApps.length} received</span>}
+        </h2>
         <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
-          {MOCK_APPS.map((a, i) => {
-            const sc = appStatusColor(a.status);
+          {joinApps.length === 0 ? (
+            <div className="py-10 text-center">
+              <p className="text-sm opacity-40" style={{ color: GREEN }}>No join applications yet. They appear here when candidates apply via the website.</p>
+            </div>
+          ) : joinApps.map((a: any, i: number) => {
+            const statusMap: Record<string, { bg: string; text: string }> = {
+              new:       { bg: "#6B728015", text: "#6B7280" },
+              reviewed:  { bg: "#3B82F615", text: "#3B82F6" },
+              interview: { bg: "#8B5CF615", text: "#8B5CF6" },
+              accepted:  { bg: "#22C55E15", text: "#22C55E" },
+              rejected:  { bg: "#EF444415", text: "#EF4444" },
+            };
+            const sc = statusMap[a.status] || statusMap.new;
             return (
               <div
                 key={a.id}
                 className="flex items-center gap-4 px-5 py-4 border-b last:border-0"
                 style={{ borderColor: `${GREEN}06`, backgroundColor: i % 2 === 0 ? "white" : `${GREEN}02` }}
               >
-                <span className="text-[10px] font-mono opacity-40 shrink-0" style={{ color: GREEN }}>{a.id}</span>
+                <span className="text-[10px] font-mono opacity-40 shrink-0" style={{ color: GREEN }}>#{a.id}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: GREEN }}>{a.candidate}</p>
-                  <p className="text-xs opacity-50 truncate" style={{ color: GREEN }}>{a.job}</p>
+                  <p className="text-sm font-medium truncate" style={{ color: GREEN }}>{a.fullName}</p>
+                  <p className="text-xs opacity-50 truncate" style={{ color: GREEN }}>{a.roleInterest || "Open Application"}</p>
                 </div>
-                {a.score && <span className="text-xs opacity-50 shrink-0" style={{ color: GREEN }}>Score: {a.score}</span>}
-                {a.date && <span className="text-xs opacity-40 shrink-0 hidden sm:block" style={{ color: GREEN }}>{a.date}</span>}
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{a.status}</span>
+                {a.phone && <span className="text-xs opacity-40 shrink-0 hidden sm:block" style={{ color: GREEN }}>{a.phone}</span>}
+                <span className="text-xs opacity-30 shrink-0 hidden md:block" style={{ color: GREEN }}>{new Date(a.createdAt).toLocaleDateString("en-NG")}</span>
+                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal shrink-0 capitalize" style={{ backgroundColor: sc.bg, color: sc.text }}>{a.status}</span>
               </div>
             );
           })}

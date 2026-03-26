@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff, LogIn, ChevronDown } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
 
 const TEAL  = "#0A1F1C";
 const GOLD  = "#C9A97E";
@@ -7,21 +7,39 @@ const CREAM = "#F8F5F0";
 const WHITE = "#FFFFFF";
 const DARK  = "#2C2C2C";
 
-const ROLES = [
-  { id: "founder", label: "Founder — Muhammad Hamzury",  dashboard: "/founder/dashboard" },
-  { id: "ceo",     label: "CEO — Idris Ibrahim",         dashboard: "/hub/ceo"           },
-  { id: "cso",     label: "Client Success Officer",      dashboard: "/hub/cso"           },
-  { id: "finance", label: "Finance Officer",             dashboard: "/hub/finance"       },
-  { id: "hr",      label: "HR Officer",                  dashboard: "/hub/hr"            },
-  { id: "bizdev",  label: "Business Development",        dashboard: "/hub/bizdev"        },
+const ROLE_META: Record<string, { label: string; name: string; hint: string; dashboard: string }> = {
+  founder: { label: "Founder Access",        name: "Muhammad Hamzury", hint: "Enter your founder password", dashboard: "/founder/dashboard" },
+  ceo:     { label: "CEO Access",            name: "Idris Ibrahim",    hint: "Enter your CEO password",     dashboard: "/hub/ceo"           },
+  cso:     { label: "BizDoc Staff Login",    name: "CSO",              hint: "Enter your staff password",   dashboard: "/hub/cso"           },
+  finance: { label: "Finance Staff Login",   name: "Finance",          hint: "Enter your staff password",   dashboard: "/hub/finance"       },
+  hr:      { label: "HR Staff Login",        name: "HR",               hint: "Enter your staff password",   dashboard: "/hub/hr"            },
+  bizdev:  { label: "BizDev Staff Login",    name: "BizDev",           hint: "Enter your staff password",   dashboard: "/hub/bizdev"        },
+};
+
+// All roles for the generic /staff-login page (no ?role= param)
+const ALL_ROLES = [
+  { id: "founder", label: "Founder — Muhammad Hamzury" },
+  { id: "ceo",     label: "CEO — Idris Ibrahim"        },
+  { id: "cso",     label: "Client Success Officer"     },
+  { id: "finance", label: "Finance Officer"            },
+  { id: "hr",      label: "HR Officer"                 },
+  { id: "bizdev",  label: "Business Development"       },
 ];
 
 export default function StaffLoginPage() {
-  const [role, setRole]       = useState(ROLES[0].id);
+  // Read ?role= from URL
+  const params  = new URLSearchParams(window.location.search);
+  const roleParam = params.get("role") ?? "";
+  const isLocked  = roleParam in ROLE_META;               // true = came from a specific portal
+  const meta      = ROLE_META[roleParam] ?? null;
+
+  const [role, setRole]         = useState(isLocked ? roleParam : ALL_ROLES[0].id);
   const [password, setPassword] = useState("");
-  const [showPw, setShowPw]   = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState("");
+  const [showPw, setShowPw]     = useState(false);
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState("");
+
+  const currentMeta = ROLE_META[role];
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -29,7 +47,7 @@ export default function StaffLoginPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/staff-login", {
+      const res  = await fetch("/api/staff-login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -51,11 +69,11 @@ export default function StaffLoginPage() {
 
         {/* Logo */}
         <div className="text-center mb-10">
-          <div className="text-3xl font-light tracking-tight mb-1" style={{ color: TEAL, letterSpacing: "-0.04em" }}>
+          <a href="/" className="text-3xl font-light tracking-tight" style={{ color: TEAL, letterSpacing: "-0.04em" }}>
             HAMZURY
-          </div>
-          <p className="text-[11px] font-medium tracking-[0.25em] uppercase" style={{ color: GOLD }}>
-            Staff Portal
+          </a>
+          <p className="text-[11px] font-medium tracking-[0.25em] uppercase mt-1" style={{ color: GOLD }}>
+            {isLocked ? currentMeta?.label : "Staff Portal"}
           </p>
         </div>
 
@@ -67,32 +85,31 @@ export default function StaffLoginPage() {
         >
           <div>
             <h1 className="text-xl font-semibold tracking-tight" style={{ color: TEAL }}>
-              Welcome back
+              Welcome back{isLocked && meta ? `, ${meta.name.split(" ")[0]}` : ""}
             </h1>
-            <p className="text-[13px] mt-1" style={{ color: DARK, opacity: 0.5 }}>
-              Sign in to your dashboard
+            <p className="text-[13px] mt-1" style={{ color: DARK, opacity: 0.45 }}>
+              {isLocked && currentMeta ? currentMeta.hint : "Select your role and sign in"}
             </p>
           </div>
 
-          {/* Role selector */}
-          <div>
-            <label className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: DARK, opacity: 0.5 }}>
-              Your Role
-            </label>
-            <div className="relative">
+          {/* Role selector — only shown on generic /staff-login */}
+          {!isLocked && (
+            <div>
+              <label className="text-[11px] font-semibold uppercase tracking-wider block mb-2" style={{ color: DARK, opacity: 0.5 }}>
+                Your Role
+              </label>
               <select
                 value={role}
                 onChange={e => setRole(e.target.value)}
-                className="w-full rounded-xl border px-4 py-3 text-sm outline-none appearance-none pr-10"
+                className="w-full rounded-xl border px-4 py-3 text-sm outline-none appearance-none"
                 style={{ borderColor: `${GOLD}40`, backgroundColor: CREAM, color: TEAL }}
               >
-                {ROLES.map(r => (
+                {ALL_ROLES.map(r => (
                   <option key={r.id} value={r.id}>{r.label}</option>
                 ))}
               </select>
-              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: TEAL, opacity: 0.4 }} />
             </div>
-          </div>
+          )}
 
           {/* Password */}
           <div>
@@ -106,17 +123,15 @@ export default function StaffLoginPage() {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 disabled={loading}
-                className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-10 disabled:opacity-50 transition-all"
+                autoFocus
+                className="w-full rounded-xl border px-4 py-3 text-sm outline-none pr-11 disabled:opacity-50 transition-all"
                 style={{ borderColor: error ? "#EF4444" : `${GOLD}40`, backgroundColor: CREAM, color: DARK }}
                 onFocus={e => (e.currentTarget.style.borderColor = TEAL)}
                 onBlur={e => (e.currentTarget.style.borderColor = error ? "#EF4444" : `${GOLD}40`)}
               />
-              <button
-                type="button"
-                onClick={() => setShowPw(p => !p)}
+              <button type="button" onClick={() => setShowPw(p => !p)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-70 transition-opacity"
-                style={{ color: TEAL }}
-              >
+                style={{ color: TEAL }}>
                 {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
@@ -124,16 +139,12 @@ export default function StaffLoginPage() {
           </div>
 
           {/* Submit */}
-          <button
-            type="submit"
-            disabled={loading}
+          <button type="submit" disabled={loading}
             className="w-full py-3.5 rounded-xl font-semibold text-sm transition-all hover:opacity-90 disabled:opacity-60 flex items-center justify-center gap-2"
-            style={{ backgroundColor: TEAL, color: WHITE }}
-          >
+            style={{ backgroundColor: TEAL, color: WHITE }}>
             <LogIn size={16} />
             {loading ? "Signing in…" : "Sign In"}
           </button>
-
         </form>
 
         <div className="text-center mt-6">
