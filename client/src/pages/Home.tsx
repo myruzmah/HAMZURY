@@ -650,66 +650,23 @@ export default function Home() {
 
       {/* ── OUR TEAM ── */}
       <section className="py-16 md:py-24 px-6 md:px-12" style={{ backgroundColor: CREAM }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-8">
-            <span className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[0.25em] uppercase border"
-              style={{ color: GREEN, borderColor: CREAM, backgroundColor: CREAM }}>
-              Our Team
-            </span>
-          </div>
+        <div className="max-w-7xl mx-auto text-center">
+          <span className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[0.25em] uppercase border inline-block mb-6"
+            style={{ color: GREEN, borderColor: `${GREEN}20` }}>
+            Our Team
+          </span>
           <h2 className="text-[clamp(28px,4vw,42px)] font-light tracking-tight mb-3" style={{ color: TEAL, letterSpacing: "-0.02em" }}>
             The people behind HAMZURY.
           </h2>
-          <p className="text-[15px] mb-12 max-w-xl opacity-55" style={{ color: DARK }}>
-            Operators and educators who built what they now teach.
+          <p className="text-[15px] mb-8 max-w-md mx-auto opacity-55" style={{ color: DARK }}>
+            15 operators, advisors, and educators. Each role is deliberate.
           </p>
-          <div className="flex flex-col gap-3 sm:grid sm:grid-cols-2 md:grid-cols-4 sm:gap-6">
-            {[
-              { name: "Barrister Abdullahi Musa", role: "Head of Compliance", dept: "BizDoc Consult", href: "/consultant", initials: "AM", color: "#1B4D3E" },
-              { name: "Idris Ibrahim",             role: "Chief Executive Officer", dept: "HAMZURY",   href: "/team",       initials: "II", color: "#0A1F1C" },
-              { name: "Idris Ibrahim",             role: "Systemise Lead",    dept: "Systemize",       href: "/systemise/cto", initials: "II", color: "#0A1F1C" },
-              { name: "Abdulmalik Musa",           role: "Skills Lead",       dept: "HAMZURY Skills",  href: "/skills/ceo", initials: "AM", color: "#1B2A4A" },
-            ].map(member => (
-              <Link key={member.href} href={member.href}>
-                {/* Mobile: compact row */}
-                <div className="sm:hidden flex items-center gap-4 px-4 py-3 rounded-xl border cursor-pointer transition-all active:scale-[0.98]"
-                  style={{ borderColor: `${member.color}15`, backgroundColor: WHITE }}>
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{ backgroundColor: member.color, color: GOLD }}>
-                    {member.initials}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[14px] font-semibold truncate" style={{ color: TEAL }}>{member.name}</p>
-                    <p className="text-[11px] opacity-50" style={{ color: DARK }}>{member.role}</p>
-                  </div>
-                  <span className="ml-auto text-[11px] opacity-25 shrink-0" style={{ color: TEAL }}>→</span>
-                </div>
-                {/* Desktop: card */}
-                <div className="hidden sm:block rounded-2xl overflow-hidden border cursor-pointer transition-all hover:-translate-y-1 hover:shadow-md"
-                  style={{ borderColor: `${member.color}18`, backgroundColor: WHITE }}>
-                  <div className="h-28 flex items-center justify-center"
-                    style={{ backgroundColor: `${member.color}12` }}>
-                    <div className="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold"
-                      style={{ backgroundColor: member.color, color: GOLD }}>
-                      {member.initials}
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <p className="text-[14px] font-semibold mb-0.5" style={{ color: TEAL }}>{member.name}</p>
-                    <p className="text-[12px] mb-1 opacity-55" style={{ color: DARK }}>{member.role}</p>
-                    <p className="text-[10px] font-bold tracking-wider uppercase" style={{ color: member.color, opacity: 0.6 }}>{member.dept}</p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-          <div className="mt-8 text-center">
-            <Link href="/team">
-              <span className="text-[13px] font-medium cursor-pointer transition-opacity hover:opacity-100" style={{ color: TEAL, opacity: 0.45 }}>
-                Meet the full team →
-              </span>
-            </Link>
-          </div>
+          <Link href="/team">
+            <span className="inline-block px-8 py-3 rounded-full text-[13px] font-medium cursor-pointer transition-all hover:scale-105"
+              style={{ backgroundColor: TEAL, color: CREAM }}>
+              Meet the team
+            </span>
+          </Link>
         </div>
       </section>
 
