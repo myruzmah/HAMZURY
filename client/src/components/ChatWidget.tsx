@@ -570,7 +570,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       className={
         isControlled
           ? "w-full h-full flex flex-col overflow-hidden"
-          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl border-t border-[#0A1F1C]/10 bottom-0 left-0 right-0 max-h-[85vh] md:bottom-4 md:right-4 md:left-auto md:w-[420px] md:rounded-2xl md:max-h-[600px] md:border"
+          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl border border-[#0A1F1C]/10 bottom-4 right-4 left-4 rounded-2xl max-h-[65vh] md:bottom-4 md:right-4 md:left-auto md:w-[420px] md:rounded-2xl md:max-h-[600px]"
       }
       style={isControlled ? {} : { backgroundColor: "white", transform: mounted ? "translateY(0)" : "translateY(100%)", transition: "transform 0.3s ease-out" }}
     >
@@ -584,8 +584,8 @@ export default function ChatWidget({ department = "general", open: externalOpen,
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-[14px] text-white">{persona.name}</h3>
-                <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center" title="Verified">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center" title="Verified">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
