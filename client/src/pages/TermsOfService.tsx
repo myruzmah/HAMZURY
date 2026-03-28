@@ -4,18 +4,18 @@ import PageMeta from "@/components/PageMeta";
 
 export default function TermsOfService() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#F8F5F0" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FAFAF8" }}>
       <PageMeta
         title="Terms of Service — HAMZURY"
         description="Read the terms and conditions governing your use of HAMZURY Innovation Hub services including BizDoc Consult, Systemise, and Skills."
         canonical="https://hamzury.com/terms"
       />
       {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 px-6 md:px-12 py-4 bg-[#F8F5F0]/90 backdrop-blur-md border-b border-[#C9A97E]/20 z-50 flex justify-between items-center">
-        <Link href="/" className="text-[13px] font-semibold flex items-center gap-1 hover:text-[#C9A97E] transition-colors" style={{ color: "#2C2C2C" }}>
+      <nav className="fixed top-0 left-0 right-0 px-6 md:px-12 py-4 bg-[#FAFAF8]/90 backdrop-blur-md border-b border-[#C9A97E]/20 z-50 flex justify-between items-center">
+        <Link href="/" className="text-[13px] font-semibold flex items-center gap-1 hover:text-[#C9A97E] transition-colors" style={{ color: "#1D1D1F" }}>
           <ArrowLeft size={14} /> HAMZURY
         </Link>
-        <span className="text-[13px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#2C2C2C" }}>
+        <span className="text-[13px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#1D1D1F" }}>
           Terms of Service
         </span>
       </nav>
@@ -26,22 +26,22 @@ export default function TermsOfService() {
           <span className="text-[12px] font-bold tracking-[0.3em] uppercase mb-6 block" style={{ color: "#C9A97E" }}>
             Legal
           </span>
-          <h1 className="text-4xl md:text-5xl font-medium tracking-tight mb-4 leading-[1.1]" style={{ color: "#0A1F1C" }}>
+          <h1 className="text-4xl md:text-5xl font-medium tracking-tight mb-4 leading-[1.1]" style={{ color: "#1D1D1F" }}>
             Terms of Service
           </h1>
-          <p className="text-[14px] opacity-50 mb-16" style={{ color: "#2C2C2C" }}>
+          <p className="text-[14px] opacity-50 mb-16" style={{ color: "#1D1D1F" }}>
             Last updated: {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           </p>
 
-          <div className="space-y-12 text-[15px] font-light leading-relaxed" style={{ color: "#2C2C2C" }}>
+          <div className="space-y-12 text-[15px] font-light leading-relaxed" style={{ color: "#1D1D1F" }}>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>1. Acceptance of Terms</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>1. Acceptance of Terms</h2>
               <p>By accessing or using any HAMZURY platform — including BizDoc Consult, Systemise, and HAMZURY Skills — you agree to be bound by these Terms of Service. If you do not agree, please do not use our services.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>2. Description of Services</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>2. Description of Services</h2>
               <p className="mb-4">HAMZURY provides the following services through its platform:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li><strong>BizDoc Consult:</strong> Business registration, compliance filing, regulatory licensing, and related advisory services.</li>
@@ -51,7 +51,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>3. Service Engagement</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>3. Service Engagement</h2>
               <p className="mb-4">Submitting an enquiry or application does not constitute a binding service agreement. A service engagement is only confirmed upon:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Written confirmation from HAMZURY (email or in-platform notification)</li>
@@ -61,7 +61,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>4. Client Responsibilities</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>4. Client Responsibilities</h2>
               <p className="mb-4">You agree to:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Provide accurate, complete, and up-to-date information for all filings and applications</li>
@@ -72,7 +72,7 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>5. Fees and Payment</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>5. Fees and Payment</h2>
               <p className="mb-4">Service fees are communicated prior to engagement commencement. All fees are in Nigerian Naira (NGN) unless otherwise stated. HAMZURY reserves the right to:</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Pause or suspend services where payment obligations are not met</li>
@@ -82,37 +82,37 @@ export default function TermsOfService() {
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>6. Timelines and Delivery</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>6. Timelines and Delivery</h2>
               <p>HAMZURY provides estimated timelines for all engagements based on standard regulatory processing times. These timelines are estimates and may be affected by agency delays, public holidays, or incomplete client documentation. HAMZURY is not liable for delays caused by government agencies or factors outside its control.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>7. Confidentiality</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>7. Confidentiality</h2>
               <p>HAMZURY treats all client information as strictly confidential. We will not share your business documents, financial information, or identity documents with any third party except as required to perform the requested service (e.g., submitting to CAC, FIRS, or other regulatory bodies) or as required by law.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>8. Intellectual Property</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>8. Intellectual Property</h2>
               <p>All content on HAMZURY platforms — including text, design, frameworks, and educational materials — is the property of HAMZURY. You may not reproduce, distribute, or create derivative works from our content without explicit written permission.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>9. Limitation of Liability</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>9. Limitation of Liability</h2>
               <p>HAMZURY's liability for any service engagement is limited to the fees paid for that specific engagement. We are not liable for indirect, consequential, or incidental damages arising from regulatory outcomes, government decisions, or circumstances beyond our control.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>10. Termination</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>10. Termination</h2>
               <p>Either party may terminate a service engagement by written notice. Upon termination, any fees for work completed to the point of termination remain due. HAMZURY will return all original documents provided by the client within a reasonable timeframe.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>11. Governing Law</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>11. Governing Law</h2>
               <p>These Terms are governed by the laws of the Federal Republic of Nigeria. Any disputes shall be resolved through good-faith negotiation before pursuing formal legal remedies. The courts of the Federal Capital Territory, Abuja shall have jurisdiction over any formal disputes.</p>
             </section>
 
             <section>
-              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#0A1F1C" }}>12. Contact</h2>
+              <h2 className="text-[18px] font-semibold mb-4" style={{ color: "#1D1D1F" }}>12. Contact</h2>
               <p>For questions about these Terms, contact us through the enquiry form on our website. We aim to respond within 2 business days.</p>
             </section>
 
@@ -121,9 +121,9 @@ export default function TermsOfService() {
       </main>
 
       {/* FOOTER */}
-      <footer className="py-8 px-6 md:px-12 border-t border-[#0A1F1C]/10 flex justify-between items-center">
-        <span className="text-[12px] font-bold tracking-wider" style={{ color: "#0A1F1C" }}>HAMZURY</span>
-        <Link href="/privacy" className="text-[12px] opacity-40 hover:opacity-70 transition-opacity" style={{ color: "#2C2C2C" }}>Privacy Policy</Link>
+      <footer className="py-8 px-6 md:px-12 border-t border-[#1D1D1F]/10 flex justify-between items-center">
+        <span className="text-[12px] font-bold tracking-wider" style={{ color: "#1D1D1F" }}>HAMZURY</span>
+        <Link href="/privacy" className="text-[12px] opacity-40 hover:opacity-70 transition-opacity" style={{ color: "#1D1D1F" }}>Privacy Policy</Link>
       </footer>
     </div>
   );

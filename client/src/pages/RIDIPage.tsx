@@ -5,9 +5,10 @@ import PageMeta from "@/components/PageMeta";
 import { trpc } from "@/lib/trpc";
 
 const ORANGE = "#E86A2E";
-const CREAM  = "#F8F5F0";
+const GOLD   = "#C9A97E";   // RIDI primary
+const CREAM  = "#FAFAF8";   // Milk white
 const WHITE  = "#FFFFFF";
-const DARK   = "#2C2C2C";
+const DARK   = "#1D1D1F";
 
 const SDG_BADGES = [
   { n: "SDG 4",  label: "Quality Education" },
@@ -77,7 +78,7 @@ export default function RIDIPage() {
 
   const applyMutation = trpc.skills.submitApplication.useMutation({
     onSuccess: (data: any) => {
-      setReference(data?.ref ?? "SKL-000000");
+      setReference(data?.ref ?? "HAM-0000-0000");
       setSubmitted(true);
       setSubmitError("");
     },

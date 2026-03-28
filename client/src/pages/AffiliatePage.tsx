@@ -17,40 +17,47 @@ import {
   Gem,
 } from "lucide-react";
 
-const TEAL = "#0A1F1C";
+const TEAL = "#C9A97E";   // Affiliate uses gold as primary
 const GOLD = "#C9A97E";
-const MILK = "#FBF8EE";
+const MILK = "#FAFAF8";   // Milk white
 const WHITE = "#FFFFFF";
-const TEXT = "#2C2C2C";
+const TEXT = "#1D1D1F";
 
 // ─── Tier data ──────────────────────────────────────────────────────────────
 const TIERS = [
   {
-    label: "Bronze",
-    icon: <Medal size={28} color="#CD7F32" />,
-    range: "1–5 referrals",
-    commission: "5%",
-    highlight: false,
-  },
-  {
-    label: "Silver",
-    icon: <Medal size={28} color="#A8A9AD" />,
-    range: "6–15 referrals",
-    commission: "7%",
-    highlight: false,
-  },
-  {
-    label: "Gold",
-    icon: <Star size={28} color={GOLD} />,
-    range: "16–30 referrals",
-    commission: "10%",
+    label: "Elite",
+    icon: <Gem size={28} color={GOLD} />,
+    range: "Top 10 affiliates",
+    commission: "15%",
     highlight: true,
   },
   {
-    label: "Platinum",
-    icon: <Gem size={28} color="#7B68EE" />,
-    range: "31+ referrals",
-    commission: "13%",
+    label: "Premier",
+    icon: <Star size={28} color="#3B82F6" />,
+    range: "Rank 11–20",
+    commission: "12%",
+    highlight: false,
+  },
+  {
+    label: "Standard",
+    icon: <Medal size={28} color="#16A34A" />,
+    range: "Rank 21–30",
+    commission: "10%",
+    highlight: false,
+  },
+  {
+    label: "Entry",
+    icon: <Medal size={28} color="#6B7280" />,
+    range: "Rank 31–40",
+    commission: "8%",
+    highlight: false,
+  },
+  {
+    label: "Waiting Pool",
+    icon: <ShieldCheck size={28} color="#94A3B8" />,
+    range: "Rank 41–50",
+    commission: "₦1K flat",
     highlight: false,
   },
 ];
@@ -58,7 +65,7 @@ const TIERS = [
 // ─── Terms data ───────────────────────────────────────────────────────────
 const TERMS = [
   "Commissions are paid 30 days after client payment confirmation",
-  "Minimum withdrawal: ₦20,000",
+  "Minimum withdrawal: ₦10,000",
   "Referrals must complete at least 70% deposit to qualify",
   "Self-referrals are not allowed",
   "HAMZURY reserves the right to verify all referrals",
@@ -73,7 +80,7 @@ const PROCEDURES = [
   "Receive your unique affiliate code and dashboard access",
   "Access marketing materials from your dashboard",
   "Track referrals and earnings in real-time",
-  "Request withdrawals once you hit ₦20,000 minimum",
+  "Request withdrawals once you hit ₦10,000 minimum",
 ];
 
 export default function AffiliatePage() {
@@ -139,7 +146,7 @@ export default function AffiliatePage() {
     <div style={{ background: WHITE, minHeight: "100vh", color: TEXT }}>
       <PageMeta
         title="Affiliate Program — HAMZURY Innovation Hub"
-        description="Join the HAMZURY Affiliate Program. Earn 5–13% commission for every business you refer to us."
+        description="Join the HAMZURY Affiliate Program. Earn 8–15% commission for every business you refer to us."
       />
 
       {/* ────────────────────────────── SECTION 1 — HERO ─────────────────────────────── */}
@@ -289,7 +296,7 @@ export default function AffiliatePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
             {TIERS.map((tier) => (
               <div
                 key={tier.label}

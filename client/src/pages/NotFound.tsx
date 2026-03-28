@@ -1,10 +1,10 @@
 import { useLocation } from "wouter";
 import PageMeta from "@/components/PageMeta";
 
-const TEAL = "#0A1F1C";
+const TEAL = "#86868B";    // Apple grey — general
 const GOLD = "#C9A97E";
-const CREAM = "#FBF8EE";
-const DARK = "#2C2C2C";
+const CREAM = "#FAFAF8";   // Milk white
+const DARK = "#1D1D1F";
 
 export default function NotFound() {
   const [, setLocation] = useLocation();

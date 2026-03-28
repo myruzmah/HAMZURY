@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Eye, EyeOff, X } from "lucide-react";
 
-const TEAL  = "#0A1F1C";
+const TEAL  = "#86868B";   // Apple grey — general
 const GOLD  = "#C9A97E";
-const CREAM = "#F8F5F0";
+const CREAM = "#FAFAF8";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK  = "#2C2C2C";
+const DARK  = "#1D1D1F";
 
 export default function LoginPage() {
   const [staffId, setStaffId]   = useState("");

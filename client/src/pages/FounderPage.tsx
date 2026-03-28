@@ -4,10 +4,10 @@ import PageMeta from "@/components/PageMeta";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const WHITE = "#FFFFFF";
-const MILK  = "#FBF8EE";
+const MILK  = "#FAFAF8";   // Milk white
 const CHOCO = "#2C1A0E";
 const GOLD  = "#C9A97E";
-const DARK  = "#2C2C2C";
+const DARK  = "#1D1D1F";
 
 // ─── Social links ─────────────────────────────────────────────────────────────
 const SOCIALS = [

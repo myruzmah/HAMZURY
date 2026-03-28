@@ -8,11 +8,11 @@ import {
    HAMZURY SKILLS — COURSE BLUEPRINT PAGE  /skills/blueprint
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const DARK  = "#2D2D2D";   // Charcoal — Skills primary
-const GOLD  = "#6B7280";   // Slate grey — Skills accent
-const TEXT  = "#1A1A1A";
-const BG    = "#F5F5F5";   // Light grey background
-const CREAM = "#EBEBEB";   // Slightly darker grey for cards
+const DARK  = "#1B2A4A";   // Dark navy blue — Skills primary
+const GOLD  = "#C9A97E";   // Gold accent (5% usage)
+const TEXT  = "#1D1D1F";
+const BG    = "#FAFAF8";   // Milk white background
+const CREAM = "#F5F3EF";   // Soft cream for cards
 const W     = "#FFFFFF";
 
 // ── COURSE BLUEPRINT ──────────────────────────────────────────────────────────

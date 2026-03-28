@@ -4,7 +4,7 @@ import PageMeta from "@/components/PageMeta";
 
 const DARK = "#1D1D1F";
 const ACCENT = "#C9A97E";
-const BG = "#F5F5F7";
+const BG = "#FAFAF8";   // Milk white
 
 const SERVICES = [
   { icon: <Cpu size={24} />, title: "Robotics", desc: "Custom robotics solutions for automation and industrial use." },

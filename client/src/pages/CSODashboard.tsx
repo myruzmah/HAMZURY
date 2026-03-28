@@ -18,12 +18,12 @@ import { Link } from "wouter";
 import { toast } from "sonner";
 import { BRAND } from "@/lib/brand";
 
-// ─── Palette ──────────────────────────────────────────────────────────────────
-const TEAL  = "#0A1F1C";
+// ─── Palette (CSO = general/federal → Apple grey) ────────────────────────────
+const TEAL  = "#86868B";   // Apple grey — general departments
 const GOLD  = "#C9A97E";
-const MILK  = "#FBF8EE";
+const MILK  = "#FAFAF8";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK  = "#1A1A1A";
+const DARK  = "#1D1D1F";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section =
@@ -785,6 +785,20 @@ function TaskRow({ task }: { task: any }) {
 
 // ─── LEAD PIPELINE ────────────────────────────────────────────────────────────
 function LeadPipeline({ leads }: { leads: any[] }) {
+  const [expandedLead, setExpandedLead] = useState<number | null>(null);
+  const [quickDept, setQuickDept] = useState<Record<number, string>>({});
+
+  const utils = trpc.useUtils();
+  const quickAssign = trpc.leads.assign.useMutation({
+    onSuccess: () => {
+      toast.success("Lead assigned to department");
+      setExpandedLead(null);
+      utils.leads.list.invalidate();
+      utils.leads.unassigned.invalidate();
+    },
+    onError: () => toast.error("Failed to assign lead"),
+  });
+
   const groups = {
     new:       leads.filter(l => l.status === "new"),
     contacted: leads.filter(l => l.status === "contacted"),
@@ -808,7 +822,12 @@ function LeadPipeline({ leads }: { leads: any[] }) {
               {items.length === 0 ? (
                 <p className="text-center text-[12px] opacity-30 p-4" style={{ color: TEAL }}>Empty</p>
               ) : items.map((lead: any) => (
-                <div key={lead.id} className="p-3 rounded-xl border hover:opacity-80 transition-opacity" style={{ borderColor: `${TEAL}08`, backgroundColor: `${TEAL}04` }}>
+                <div
+                  key={lead.id}
+                  className="p-3 rounded-xl border transition-all cursor-pointer"
+                  style={{ borderColor: expandedLead === lead.id ? `${GOLD}40` : `${TEAL}08`, backgroundColor: expandedLead === lead.id ? `${GOLD}06` : `${TEAL}04` }}
+                  onClick={() => setExpandedLead(expandedLead === lead.id ? null : lead.id)}
+                >
                   <div className="flex justify-between items-start mb-1.5">
                     <span className="text-[10px] font-bold tracking-wider font-mono px-2 py-0.5 rounded" style={{ backgroundColor: `${TEAL}08`, color: TEAL }}>{lead.ref}</span>
                     <div className="flex items-center gap-1.5">
@@ -823,6 +842,58 @@ function LeadPipeline({ leads }: { leads: any[] }) {
                   <p className="font-semibold text-[13px]" style={{ color: TEAL }}>{lead.name}</p>
                   <p className="text-[11px] opacity-50 mt-0.5">{lead.service}</p>
                   {lead.phone && <p className="text-[10px] opacity-30 mt-1">{lead.phone}</p>}
+
+                  {/* Inline quick-assign when expanded and unassigned */}
+                  {expandedLead === lead.id && !lead.assignedDepartment && (
+                    <div
+                      className="mt-3 pt-3 flex items-center gap-2"
+                      style={{ borderTop: `1px solid ${TEAL}10` }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <Select
+                        value={quickDept[lead.id] || ""}
+                        onValueChange={v => setQuickDept(prev => ({ ...prev, [lead.id]: v }))}
+                      >
+                        <SelectTrigger className="h-8 text-[11px] flex-1" style={{ borderColor: `${TEAL}20` }}>
+                          <SelectValue placeholder="Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {DEPARTMENTS.map(d => (
+                            <SelectItem key={d.value} value={d.value}>
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+                                {d.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        className="h-8 shrink-0 rounded-lg text-[11px]"
+                        style={{ backgroundColor: TEAL, color: GOLD }}
+                        disabled={quickAssign.isPending || !quickDept[lead.id]}
+                        onClick={() => {
+                          if (quickDept[lead.id]) {
+                            quickAssign.mutate({ leadId: lead.id, department: quickDept[lead.id] });
+                          }
+                        }}
+                      >
+                        {quickAssign.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                        <span className="ml-1">Assign</span>
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Show assigned dept info when expanded */}
+                  {expandedLead === lead.id && lead.assignedDepartment && (
+                    <div className="mt-3 pt-3 flex items-center gap-2" style={{ borderTop: `1px solid ${TEAL}10` }}>
+                      <CheckCircle2 size={12} style={{ color: "#22C55E" }} />
+                      <span className="text-[11px] font-medium" style={{ color: TEAL }}>
+                        Assigned to <span className="font-bold uppercase">{lead.assignedDepartment}</span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1078,7 +1149,7 @@ function HelpersView({ staffList }: { staffList: any[] }) {
               <label className="text-[10px] font-bold uppercase tracking-wider opacity-40 block mb-1" style={{ color: TEAL }}>Lead Reference</label>
               <input
                 type="text"
-                placeholder="e.g. HZ-AB1234"
+                placeholder="e.g. HAM-AB12-3456"
                 value={leadRef}
                 onChange={e => setLeadRef(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
@@ -1477,10 +1548,10 @@ const APPOINTMENT_TYPES = [
 ];
 
 const MOCK_APPOINTMENTS = [
-  { id: 1, client: "Kemi Adeyemi Properties", ref: "HZ-AB1234", type: "discovery", date: "2026-03-23", time: "10:00 AM", duration: 30, notes: "Interested in CAC + trademark",      status: "confirmed" },
-  { id: 2, client: "NorthStar Trading Co",    ref: "HZ-CD5678", type: "follow_up", date: "2026-03-23", time: "2:00 PM",  duration: 20, notes: "Check on document upload",          status: "pending" },
-  { id: 3, client: "Abuja Digital Ventures",  ref: "HZ-EF9012", type: "delivery",  date: "2026-03-25", time: "11:00 AM", duration: 45, notes: "Final handover — Systemise website", status: "confirmed" },
-  { id: 4, client: "Lagos Fashion House",     ref: "HZ-GH3456", type: "retention", date: "2026-03-27", time: "3:00 PM",  duration: 15, notes: "30-day retention check",             status: "confirmed" },
+  { id: 1, client: "Kemi Adeyemi Properties", ref: "HAM-AB12-1234", type: "discovery", date: "2026-03-23", time: "10:00 AM", duration: 30, notes: "Interested in CAC + trademark",      status: "confirmed" },
+  { id: 2, client: "NorthStar Trading Co",    ref: "HAM-CD56-5678", type: "follow_up", date: "2026-03-23", time: "2:00 PM",  duration: 20, notes: "Check on document upload",          status: "pending" },
+  { id: 3, client: "Abuja Digital Ventures",  ref: "HAM-EF90-9012", type: "delivery",  date: "2026-03-25", time: "11:00 AM", duration: 45, notes: "Final handover — Systemise website", status: "confirmed" },
+  { id: 4, client: "Lagos Fashion House",     ref: "HAM-GH34-3456", type: "retention", date: "2026-03-27", time: "3:00 PM",  duration: 15, notes: "30-day retention check",             status: "confirmed" },
 ];
 
 const STATUS_C: Record<string, { bg: string; text: string }> = {

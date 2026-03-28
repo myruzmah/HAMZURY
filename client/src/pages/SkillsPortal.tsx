@@ -838,7 +838,7 @@ export default function SkillsPortal() {
               value={trackRef}
               onChange={e => { setTrackRef(e.target.value); setTrackSubmitted(false); }}
               onKeyDown={e => e.key === "Enter" && handleTrack()}
-              placeholder="e.g. SKL-A4K9P2"
+              placeholder="e.g. HAM-A4K9-1234"
               className="flex-1 px-4 py-3 rounded-xl border text-[14px] font-mono outline-none transition-all"
               style={{ borderColor: `${TEXT}20`, backgroundColor: `${TEXT}04`, color: TEXT }}
             />
@@ -886,7 +886,7 @@ export default function SkillsPortal() {
                 <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: `${TEXT}05` }}>
                   <p className="text-[14px] font-light mb-1" style={{ color: TEXT }}>Reference not found</p>
                   <p className="text-[12px] opacity-40" style={{ color: TEXT }}>
-                    Check the ref format. E.g. SKL-A4K9P2. Or WhatsApp us on 08067149356.
+                    Check the ref format. E.g. HAM-A4K9-1234. Or WhatsApp us on 08067149356.
                   </p>
                 </div>
               )}

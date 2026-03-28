@@ -58,9 +58,9 @@ type Props = {
   onClose?: () => void;
 };
 
-const TEAL = "#0A1F1C";
+const TEAL = "#1B4D3E";   // BizDoc leaf green
 const GOLD = "#C9A97E";
-const CREAM = "#F8F5F0";
+const CREAM = "#FAFAF8";
 
 const SLOGANS = [
   "Without clarity, we cannot serve you better.",
@@ -823,7 +823,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                 const wa = department === "bizdoc" ? "2348067149356" : "2349130700056";
                 window.open(`https://wa.me/${wa}`, "_blank");
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#F8F5F0] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors flex items-center gap-2"
               style={{ color: TEAL }}
             >
               <Phone size={14} />
@@ -835,7 +835,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                 reset();
                 showInitialPaths();
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#F8F5F0] transition-colors"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors"
               style={{ color: "#DC2626" }}
             >
               Clear conversation
@@ -859,14 +859,14 @@ export default function ChatWidget({ department = "general", open: externalOpen,
               <div className="flex justify-start mb-4">
                 <div
                   className="max-w-[85%] px-4 py-3 text-[13px] leading-relaxed rounded-2xl rounded-tl-sm"
-                  style={{ backgroundColor: "#F5F5F5", color: "#2C2C2C" }}
+                  style={{ backgroundColor: "#F5F5F5", color: "#1D1D1F" }}
                   dangerouslySetInnerHTML={{ __html: formatText(messages.find(m => m.sender === "bot" && m.text)?.text || "") }}
                 />
               </div>
             )}
 
             {/* "Want help getting started?" + pills */}
-            <p className="text-[14px] font-semibold mb-1" style={{ color: "#2C2C2C" }}>
+            <p className="text-[14px] font-semibold mb-1" style={{ color: "#1D1D1F" }}>
               Want help getting started?
             </p>
             <p className="text-[13px] mb-4" style={{ color: "#6B7280" }}>
@@ -952,7 +952,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                 const wa = department === "bizdoc" ? "2348067149356" : "2349130700056";
                 window.open(`https://wa.me/${wa}`, "_blank");
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#F8F5F0] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors flex items-center gap-2"
               style={{ color: TEAL }}
             >
               <Phone size={14} />
@@ -964,7 +964,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                 reset();
                 showInitialPaths();
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#F8F5F0] transition-colors"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors"
               style={{ color: "#DC2626" }}
             >
               Clear conversation
@@ -987,7 +987,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                   }`}
                   style={{
                     backgroundColor: msg.sender === "user" ? persona.color : "white",
-                    color: msg.sender === "user" ? "#F8F5F0" : "#2C2C2C",
+                    color: msg.sender === "user" ? "#FAFAF8" : "#1D1D1F",
                     ...(msg.sender === "bot" ? { border: "1px solid rgba(10,31,28,0.06)" } : {}),
                   }}
                   dangerouslySetInnerHTML={{ __html: formatText(msg.text) }}

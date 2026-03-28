@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
-const GREEN = "#34A853";   // BizDev growth green
-const DARK = "#0A1F1C";    // base dark
+const GREEN = "#86868B";   // Apple grey — general departments
+const DARK = "#1D1D1F";    // base dark
 const GOLD = "#C9A97E";    // accent
-const MILK = "#FBF8EE";    // background
+const MILK = "#FAFAF8";    // background
 
 type Section = "overview" | "leads" | "partnerships" | "brandqa" | "affiliates" | "files";
 type LeadRow = { id: number; ref: string; name: string; contact: string; source: string; score: number; budget: string; timeline: string; service: string; status: "handoff_ready" | "qualifying" | "nurturing" | "handed_off" };
@@ -38,11 +38,11 @@ const MOCK_KPI = {
 };
 
 const MOCK_LEADS: LeadRow[] = [
-  { id: 1, ref: "BZ-LEAD-0041", name: "Chukwuemeka Foods Ltd", contact: "CEO — Chukwuemeka Obi", source: "Referral", score: 5, budget: "₦1.2M", timeline: "4 weeks", service: "BizDoc + Systemise", status: "handoff_ready" },
-  { id: 2, ref: "BZ-LEAD-0040", name: "Kemi Adeyemi Properties", contact: "Director — Kemi Adeyemi", source: "Content", score: 4, budget: "₦750K", timeline: "6 weeks", service: "BizDoc", status: "qualifying" },
-  { id: 3, ref: "BZ-LEAD-0039", name: "Abuja Digital Ventures", contact: "Co-founder — Tunde Salami", source: "Events", score: 3, budget: "₦500K", timeline: "8 weeks", service: "Systemise", status: "qualifying" },
-  { id: 4, ref: "BZ-LEAD-0038", name: "NorthStar Trading Co", contact: "GM — Fatima Yusuf", source: "Partnership", score: 5, budget: "₦2.1M", timeline: "2 weeks", service: "BizDoc + Skills", status: "handed_off" },
-  { id: 5, ref: "BZ-LEAD-0037", name: "Lagos Fashion House", contact: "Owner — Amaka Chidi", source: "Content", score: 2, budget: "₦300K", timeline: "Unclear", service: "TBD", status: "nurturing" },
+  { id: 1, ref: "HAM-KX41-0041", name: "Chukwuemeka Foods Ltd", contact: "CEO — Chukwuemeka Obi", source: "Referral", score: 5, budget: "₦1.2M", timeline: "4 weeks", service: "BizDoc + Systemise", status: "handoff_ready" },
+  { id: 2, ref: "HAM-PA40-0040", name: "Kemi Adeyemi Properties", contact: "Director — Kemi Adeyemi", source: "Content", score: 4, budget: "₦750K", timeline: "6 weeks", service: "BizDoc", status: "qualifying" },
+  { id: 3, ref: "HAM-QD39-0039", name: "Abuja Digital Ventures", contact: "Co-founder — Tunde Salami", source: "Events", score: 3, budget: "₦500K", timeline: "8 weeks", service: "Systemise", status: "qualifying" },
+  { id: 4, ref: "HAM-TF38-0038", name: "NorthStar Trading Co", contact: "GM — Fatima Yusuf", source: "Partnership", score: 5, budget: "₦2.1M", timeline: "2 weeks", service: "BizDoc + Skills", status: "handed_off" },
+  { id: 5, ref: "HAM-AC37-0037", name: "Lagos Fashion House", contact: "Owner — Amaka Chidi", source: "Content", score: 2, budget: "₦300K", timeline: "Unclear", service: "TBD", status: "nurturing" },
 ];
 
 const KANBAN_STAGES = ["Researching", "Outreach", "Agreed", "Active", "Paused"] as const;
@@ -104,7 +104,7 @@ export default function BizDevDashboard() {
   const leadsList: LeadRow[] = realLeads.length > 0
     ? realLeads.map(l => ({
         id: l.id,
-        ref: l.ref || `BZ-LEAD-${String(l.id).padStart(4, "0")}`,
+        ref: l.ref || `HAM-LD${String(l.id).padStart(2, "0")}-0000`,
         name: l.businessName || l.name || "Unknown",
         contact: l.name || "—",
         source: l.source || "Unknown",
@@ -575,7 +575,7 @@ function BrandQASection() {
           <div className="px-4 pb-5 space-y-5 border-t" style={{ borderColor: `${DARK}06` }}>
             {[
               { title: "Tone Check", items: ["Calm — no urgency, no pressure", "Confident — no hedging, no over-explaining", "Strategic — focused on outcomes, not features", "Minimal — no clutter, no filler words", "Professional — no slang, no hype"] },
-              { title: "Visual Check", items: ["Colors: Green #0A1F1C / Milk #FBF8EE / Gold #C9A97E", "Typography: Inter font family", "Layout: generous whitespace, clear hierarchy", "Imagery: premium, relevant, non-stock"] },
+              { title: "Visual Check", items: ["Colors: Green #0A1F1C / Milk #FAFAF8 / Gold #C9A97E", "Typography: Inter font family", "Layout: generous whitespace, clear hierarchy", "Imagery: premium, relevant, non-stock"] },
               { title: "Message Check", items: ["Core line present: \"No pressure. Just clarity.\"", "Value proposition clear in <10 seconds", "No misleading claims or overpromises", "Compliant with Nigerian business communication standards"] },
             ].map(({ title, items }) => (
               <div key={title} className="pt-4">

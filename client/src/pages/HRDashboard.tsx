@@ -16,10 +16,10 @@ import {
   ChevronRight, Search, Download, FileText,
 } from "lucide-react";
 
-// ─── Brand ───────────────────────────────────────────────────────────────────
-const GREEN = "#2D5A27";
+// ─── Brand (HR = general → Apple grey) ───────────────────────────────────────
+const GREEN = "#86868B";   // Apple grey — general departments
 const GOLD  = "#C9A97E";
-const MILK  = "#FBF8EE";
+const MILK  = "#FAFAF8";   // Milk white
 
 type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "training" | "commissions" | "reports";
 

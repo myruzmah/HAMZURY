@@ -2,9 +2,9 @@ import { useState } from "react";
 import { TrendingUp, ChevronDown } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
-const TEAL  = "#0A1F1C";
+const TEAL  = "#86868B";   // Apple grey — general
 const GOLD  = "#C9A97E";
-const CREAM = "#F8F5F0";
+const CREAM = "#FAFAF8";
 const WHITE = "#FFFFFF";
 
 export default function MyUpdateWidget() {

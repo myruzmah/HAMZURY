@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+const NAVY = "#1B2A4A";  // Skills primary — dark navy blue
 const GOLD = "#C9A97E";
 const PAGE_SIZE = 20;
 
@@ -136,6 +138,7 @@ export default function SkillsAdmin() {
         <div className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
           <h1 className="text-xl font-bold text-gray-800">{sectionTitles[activeSection]}</h1>
           <div className="flex items-center space-x-4">
+            <NotificationBell />
             <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex items-center justify-center text-xs font-bold">
               {(user?.name || "A").charAt(0)}
             </div>
@@ -216,7 +219,7 @@ function OverviewPanel({ stats, cohorts }: { stats: any; cohorts: any }) {
                   <div key={cohort.id} className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-gray-50 transition-colors">
                     <div className="col-span-5">
                       <p className="font-bold text-gray-900 text-sm">{cohort.title}</p>
-                      <p className="text-xs text-gray-500">{cohort.pathway} • Ref: HAM-SKL-{String(cohort.id).padStart(3, "0")}</p>
+                      <p className="text-xs text-gray-500">{cohort.pathway} • Cohort #{String(cohort.id).padStart(3, "0")}</p>
                     </div>
                     <div className="col-span-3">
                       <Badge variant="secondary" className={`text-[10px] mb-1 ${cohort.status === "enrolling" ? "bg-green-100 text-green-700 hover:bg-green-100" : cohort.status === "in_progress" ? "bg-blue-100 text-blue-700 hover:bg-blue-100" : ""}`}>

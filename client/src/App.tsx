@@ -31,13 +31,18 @@ import LoginPage from "./pages/LoginPage";
 import StaffWorkspace from "./pages/StaffWorkspace";
 import SkillsCEOPage from "./pages/SkillsCEOPage";
 import CTOPage from "./pages/CTOPage";
+import ClientPage from "./pages/ClientPage";
 import ClientDashboard from "./pages/ClientDashboard";
 import AlumniPage from "./pages/AlumniPage";
 import RIDIPage from "./pages/RIDIPage";
 import RIDIDashboard from "./pages/RIDIDashboard";
 import MediaDashboard from "./pages/MediaDashboard";
+import BizDocLeadDashboard from "./pages/BizDocLeadDashboard";
+import SystemiseLeadDashboard from "./pages/SystemiseLeadDashboard";
 import TeamPage from "./pages/TeamPage";
 import MetFixPage from "./pages/MetFixPage";
+import FederalHub from "./pages/FederalHub";
+import SocialTemplates from "./pages/SocialTemplates";
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
@@ -53,12 +58,14 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "/hub/hr":            ["founder", "hr"],
   "/hub/bizdev":        ["founder", "bizdev"],
   "/hub/workspace":     ["founder", "bizdev_staff", "compliance_staff", "security_staff", "department_staff"],
-  "/bizdoc/dashboard":  ["founder", "cso", "bizdev"],
+  "/bizdoc/dashboard":  ["founder", "cso", "bizdev", "bizdoc_lead"],
   "/skills/admin":      ["founder", "skills_staff"],
   "/ridi/dashboard":    ["founder", "skills_staff"],
   "/media/dashboard":   ["founder", "media"],
   "/skills/ceo":        ["founder", "ceo"],
   "/systemise/cto":     ["founder", "ceo", "systemise_head", "tech_lead", "media"],
+  "/systemise/dashboard": ["founder", "ceo", "systemise_head", "tech_lead"],
+  "/hub/federal":         ["founder", "ceo"],
 };
 
 /** Wrapper that enforces hamzuryRole-based access on /hub/* and sensitive routes */
@@ -68,7 +75,7 @@ function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; childre
 
   if (me.isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#0A1F1C]">
+      <div className="fixed inset-0 flex items-center justify-center bg-[#1D1D1F]">
         <div className="w-6 h-6 rounded-full border-2 border-[#C9A97E] border-t-transparent animate-spin" />
       </div>
     );
@@ -99,12 +106,17 @@ function Router() {
       <Route path={"/bizdoc"} component={BizDocPortal} />
       <Route path={"/bizdoc/dashboard"}>
         <RoleGuard allowedRoles={ROLE_ACCESS["/bizdoc/dashboard"]}>
-          <Dashboard />
+          <BizDocLeadDashboard />
         </RoleGuard>
       </Route>
 
       {/* Systemise Department Portal */}
       <Route path={"/systemise"} component={SystemisePortal} />
+      <Route path={"/systemise/dashboard"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/systemise/dashboard"]}>
+          <SystemiseLeadDashboard />
+        </RoleGuard>
+      </Route>
 
       {/* Skills Department Portal */}
       <Route path={"/skills"} component={SkillsPortal} />
@@ -148,8 +160,14 @@ function Router() {
           <StaffWorkspace />
         </RoleGuard>
       </Route>
+      <Route path={"/hub/federal"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/hub/federal"]}>
+          <FederalHub />
+        </RoleGuard>
+      </Route>
 
-      {/* Client Dashboard */}
+      {/* Client Portal */}
+      <Route path={"/client"} component={ClientPage} />
       <Route path={"/client/dashboard"} component={ClientDashboard} />
 
       {/* Affiliate Portal */}
@@ -195,6 +213,7 @@ function Router() {
       <Route path={"/consultant"} component={ConsultantPage} />
       <Route path={"/pricing"} component={PricingPage} />
       <Route path={"/metfix"} component={MetFixPage} />
+      <Route path={"/templates"} component={SocialTemplates} />
       <Route path={"/login"} component={LoginPage} />
 
       {/* Fallback */}
@@ -219,7 +238,7 @@ function FloatingChat() {
   const [location] = useLocation();
 
   // Don't show on dashboards, login, admin, or affiliate pages
-  const hiddenPaths = ["/hub/", "/bizdoc/dashboard", "/skills/admin", "/founder/dashboard", "/ridi/dashboard", "/media/dashboard", "/affiliate/dashboard", "/login", "/client/dashboard"];
+  const hiddenPaths = ["/hub/", "/bizdoc/dashboard", "/skills/admin", "/founder/dashboard", "/ridi/dashboard", "/media/dashboard", "/affiliate/dashboard", "/login", "/client"];
   if (hiddenPaths.some(p => location.startsWith(p))) return null;
 
   // Detect department from route

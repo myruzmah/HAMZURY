@@ -30,6 +30,12 @@ import {
   subscriptions, InsertSubscription, Subscription,
   subscriptionPayments, InsertSubscriptionPayment, SubscriptionPayment,
   clientCredentials, InsertClientCredential, ClientCredential,
+  servicePricing, InsertServicePricing, ServicePricing,
+  invoices, InsertInvoice, Invoice,
+  notifications, InsertNotification, Notification,
+  proposals, InsertProposal, Proposal,
+  certificates, InsertCertificate, Certificate,
+  contentPosts, InsertContentPost, ContentPost,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -119,16 +125,30 @@ export async function updateUserRole(userId: number, hamzuryRole: string, depart
 
 // ─── Reference Number Generator ──────────────────────────────────────────────
 
-export function generateHMZRef(phone?: string | null): string {
-  const now = new Date();
-  const day = now.getDate();
-  const month = now.getMonth() + 1;
-  const digits = phone ? phone.replace(/\D/g, "").slice(-4).padStart(4, "0") : randomBytes(2).toString("hex").toUpperCase();
-  return `HMZ-${day}/${month}-${digits}`;
+/**
+ * Unified ref format: HAM-XXXX-YYYY
+ *   XXXX = 4 random alphanumeric (A-Z, 0-9)
+ *   YYYY = last 4 digits of phone (or 4 random digits if phone missing/short)
+ */
+export function generateRef(phone?: string | null): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let random4 = "";
+  const bytes = randomBytes(4);
+  for (let i = 0; i < 4; i++) random4 += chars[bytes[i] % chars.length];
+
+  const digits = phone ? phone.replace(/\D/g, "") : "";
+  const last4 = digits.length >= 4
+    ? digits.slice(-4)
+    : String(Math.floor(1000 + Math.random() * 9000));
+
+  return `HAM-${random4}-${last4}`;
 }
 
-// Backward-compat alias
-export const generateRefNumber = generateHMZRef;
+// Backward-compat aliases
+export const generateHMZRef = generateRef;
+export const generateRefNumber = generateRef;
+export const generateHZRefNumber = (phone?: string | null) => generateRef(phone);
+export const generateSKLRefNumber = (phone?: string | null) => generateRef(phone);
 
 // ─── Leads ───────────────────────────────────────────────────────────────────
 
@@ -488,15 +508,12 @@ export async function getAuditLogs(limit: number = 100): Promise<AuditLog[]> {
 // SYSTEMISE DEPARTMENT HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function generateHZRefNumber(): string {
-  const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
-  return `HZ-${token}`;
-}
+// generateHZRefNumber is now an alias defined at the top — see generateRef()
 
 export async function createSystemiseLead(data: Omit<InsertSystemiseLead, "id" | "createdAt" | "updatedAt">): Promise<SystemiseLead> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const ref = data.ref || generateHZRefNumber();
+  const ref = data.ref || generateRef(data.phone);
   await db.insert(systemiseLeads).values({ ...data, ref });
   const result = await db.select().from(systemiseLeads).where(eq(systemiseLeads.ref, ref)).limit(1);
   return result[0];
@@ -571,10 +588,7 @@ export async function getInstitutionalStats() {
 // SKILLS DEPARTMENT HELPERS
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function generateSKLRefNumber(): string {
-  const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
-  return `SKL-${token}`;
-}
+// generateSKLRefNumber is now an alias defined at the top — see generateRef()
 
 // ─── Cohorts ────────────────────────────────────────────────────────────────
 
@@ -596,7 +610,7 @@ export async function getCohortById(id: number): Promise<Cohort | undefined> {
 export async function createSkillsApplication(data: Omit<InsertSkillsApplication, "id" | "createdAt" | "updatedAt">): Promise<SkillsApplication> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const ref = data.ref || generateSKLRefNumber();
+  const ref = data.ref || generateRef(data.phone);
   await db.insert(skillsApplications).values({ ...data, ref });
   const result = await db.select().from(skillsApplications).where(eq(skillsApplications.ref, ref)).limit(1);
   return result[0];
@@ -974,4 +988,406 @@ export async function getSubscriptionByLeadRef(ref: string): Promise<Subscriptio
   if (!leadRow[0]) return undefined;
   const subRow = await db.select().from(subscriptions).where(eq(subscriptions.leadId, leadRow[0].id)).limit(1);
   return subRow[0];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE PRICING, INVOICING, NOTIFICATIONS, PROPOSALS & CERTIFICATES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ─── Service Pricing ─────────────────────────────────────────────────────────
+
+export async function createServicePricing(data: Omit<InsertServicePricing, "id" | "createdAt" | "updatedAt">): Promise<ServicePricing> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(servicePricing).values(data);
+  const row = await db.select().from(servicePricing).where(eq(servicePricing.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getServicePricing(department?: string): Promise<ServicePricing[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (department) {
+    return db.select().from(servicePricing)
+      .where(and(eq(servicePricing.department, department as any), eq(servicePricing.isActive, true)))
+      .orderBy(servicePricing.category, servicePricing.serviceName);
+  }
+  return db.select().from(servicePricing)
+    .where(eq(servicePricing.isActive, true))
+    .orderBy(servicePricing.department, servicePricing.category, servicePricing.serviceName);
+}
+
+export async function getServicePricingById(id: number): Promise<ServicePricing | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(servicePricing).where(eq(servicePricing.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateServicePricing(id: number, data: Partial<Pick<ServicePricing, "serviceName" | "description" | "basePrice" | "maxPrice" | "unit" | "commissionPercent" | "isActive" | "category">>): Promise<ServicePricing | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(servicePricing).set(data).where(eq(servicePricing.id, id));
+  const result = await db.select().from(servicePricing).where(eq(servicePricing.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function seedDefaultPricing(): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  // Check if pricing already seeded
+  const existing = await db.select().from(servicePricing).limit(1);
+  if (existing.length > 0) return;
+
+  const defaults: Omit<InsertServicePricing, "id" | "createdAt" | "updatedAt">[] = [
+    // ── BizDoc ──
+    { department: "bizdoc", category: "Registration", serviceName: "Business Registration (CAC)", basePrice: 50000, maxPrice: 150000, unit: "one_time", commissionPercent: 10 },
+    { department: "bizdoc", category: "Registration", serviceName: "Business Name Registration", basePrice: 25000, maxPrice: null, unit: "one_time", commissionPercent: 10 },
+    { department: "bizdoc", category: "Compliance", serviceName: "Tax Compliance (TIN/VAT/PAYE)", basePrice: 40000, maxPrice: 100000, unit: "one_time", commissionPercent: 10 },
+    { department: "bizdoc", category: "Compliance", serviceName: "SCUML Registration", basePrice: 35000, maxPrice: null, unit: "one_time", commissionPercent: 10 },
+    { department: "bizdoc", category: "License", serviceName: "Industry License (NAFDAC/SON/DPR)", basePrice: 100000, maxPrice: 500000, unit: "one_time", commissionPercent: 8 },
+    { department: "bizdoc", category: "IP", serviceName: "Trademark Registration", basePrice: 80000, maxPrice: 200000, unit: "one_time", commissionPercent: 8 },
+    { department: "bizdoc", category: "Legal", serviceName: "Contract Drafting", basePrice: 30000, maxPrice: 100000, unit: "one_time", commissionPercent: 10 },
+    { department: "bizdoc", category: "Package", serviceName: "Full Business Setup (Local)", basePrice: 250000, maxPrice: 500000, unit: "one_time", commissionPercent: 8 },
+    { department: "bizdoc", category: "Package", serviceName: "Full Business Setup (Foreign)", basePrice: 500000, maxPrice: 2000000, unit: "one_time", commissionPercent: 8 },
+    { department: "bizdoc", category: "Recurring", serviceName: "Compliance Management", basePrice: 50000, maxPrice: null, unit: "monthly", commissionPercent: 15 },
+    { department: "bizdoc", category: "Compliance", serviceName: "Annual Returns Filing", basePrice: 30000, maxPrice: null, unit: "one_time", commissionPercent: 10 },
+
+    // ── Systemise ──
+    { department: "systemise", category: "Branding", serviceName: "Brand Identity Package", basePrice: 150000, maxPrice: 400000, unit: "one_time", commissionPercent: 10 },
+    { department: "systemise", category: "Web", serviceName: "Website Design & Development", basePrice: 200000, maxPrice: 1000000, unit: "one_time", commissionPercent: 10 },
+    { department: "systemise", category: "Social", serviceName: "Social Media Management", basePrice: 80000, maxPrice: 200000, unit: "monthly", commissionPercent: 15 },
+    { department: "systemise", category: "Automation", serviceName: "Business Process Automation", basePrice: 150000, maxPrice: 500000, unit: "one_time", commissionPercent: 10 },
+    { department: "systemise", category: "Automation", serviceName: "CRM Setup & Configuration", basePrice: 100000, maxPrice: 300000, unit: "one_time", commissionPercent: 10 },
+    { department: "systemise", category: "Media", serviceName: "Podcast Production", basePrice: 100000, maxPrice: 250000, unit: "monthly", commissionPercent: 12 },
+    { department: "systemise", category: "Media", serviceName: "Faceless Channel Setup", basePrice: 150000, maxPrice: 350000, unit: "one_time", commissionPercent: 10 },
+    { department: "systemise", category: "Strategy", serviceName: "Growth Strategy Consulting", basePrice: 200000, maxPrice: 500000, unit: "one_time", commissionPercent: 8 },
+    { department: "systemise", category: "Package", serviceName: "Full Digital Setup Package", basePrice: 500000, maxPrice: 2000000, unit: "one_time", commissionPercent: 8 },
+
+    // ── Skills ──
+    { department: "skills", category: "Cohort", serviceName: "Business Essentials Cohort", basePrice: 35000, maxPrice: null, unit: "per_cohort", commissionPercent: 10 },
+    { department: "skills", category: "Cohort", serviceName: "Digital Marketing Program", basePrice: 50000, maxPrice: null, unit: "per_cohort", commissionPercent: 10 },
+    { department: "skills", category: "Cohort", serviceName: "IT Internship Program", basePrice: 25000, maxPrice: null, unit: "per_cohort", commissionPercent: 10 },
+    { department: "skills", category: "Cohort", serviceName: "CEO Development Program", basePrice: 100000, maxPrice: null, unit: "per_cohort", commissionPercent: 8 },
+    { department: "skills", category: "Cohort", serviceName: "AI-Powered Learning Track", basePrice: 45000, maxPrice: null, unit: "per_cohort", commissionPercent: 10 },
+  ];
+
+  await db.insert(servicePricing).values(defaults);
+}
+
+// ─── Invoices ────────────────────────────────────────────────────────────────
+
+export function generateInvoiceNumber(): string {
+  const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
+  return `INV-${token}`;
+}
+
+export async function createInvoice(data: Omit<InsertInvoice, "id" | "createdAt" | "updatedAt">): Promise<Invoice> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const invoiceNumber = data.invoiceNumber || generateInvoiceNumber();
+  const result = await db.insert(invoices).values({ ...data, invoiceNumber });
+  const row = await db.select().from(invoices).where(eq(invoices.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getInvoices(status?: string): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (status) {
+    return db.select().from(invoices)
+      .where(eq(invoices.status, status as any))
+      .orderBy(desc(invoices.createdAt));
+  }
+  return db.select().from(invoices).orderBy(desc(invoices.createdAt));
+}
+
+export async function getInvoiceById(id: number): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getInvoiceByNumber(invoiceNumber: string): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(invoices).where(eq(invoices.invoiceNumber, invoiceNumber)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateInvoice(id: number, data: Partial<Pick<Invoice, "status" | "amountPaid" | "paidAt" | "notes" | "dueDate" | "discount" | "tax" | "total">>): Promise<Invoice | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(invoices).set(data).where(eq(invoices.id, id));
+  const result = await db.select().from(invoices).where(eq(invoices.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getInvoicesByTaskId(taskId: number): Promise<Invoice[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invoices).where(eq(invoices.taskId, taskId)).orderBy(desc(invoices.createdAt));
+}
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+
+export async function createNotification(data: Omit<InsertNotification, "id" | "createdAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(notifications).values(data);
+}
+
+export async function getNotifications(userId: string): Promise<Notification[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(notifications)
+    .where(eq(notifications.userId, userId))
+    .orderBy(desc(notifications.createdAt));
+}
+
+export async function getUnreadNotifications(userId: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.select().from(notifications)
+    .where(and(eq(notifications.userId, userId), eq(notifications.isRead, false)));
+  return result.length;
+}
+
+export async function markNotificationRead(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
+}
+
+export async function markAllNotificationsRead(userId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true }).where(eq(notifications.userId, userId));
+}
+
+export async function createAssignmentNotification(userId: string, title: string, message: string, link?: string): Promise<void> {
+  await createNotification({ userId, type: "assignment", title, message, link });
+}
+
+// ─── Proposals ───────────────────────────────────────────────────────────────
+
+export function generateProposalNumber(): string {
+  const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
+  return `PROP-${token}`;
+}
+
+export async function createProposal(data: Omit<InsertProposal, "id" | "createdAt" | "updatedAt">): Promise<Proposal> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const proposalNumber = data.proposalNumber || generateProposalNumber();
+  const result = await db.insert(proposals).values({ ...data, proposalNumber });
+  const row = await db.select().from(proposals).where(eq(proposals.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getProposals(status?: string): Promise<Proposal[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (status) {
+    return db.select().from(proposals)
+      .where(eq(proposals.status, status as any))
+      .orderBy(desc(proposals.createdAt));
+  }
+  return db.select().from(proposals).orderBy(desc(proposals.createdAt));
+}
+
+export async function getProposalById(id: number): Promise<Proposal | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(proposals).where(eq(proposals.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getProposalByNumber(proposalNumber: string): Promise<Proposal | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(proposals).where(eq(proposals.proposalNumber, proposalNumber)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function updateProposal(id: number, data: Partial<Pick<Proposal, "status" | "notes" | "totalAmount" | "validUntil" | "services" | "clientName" | "clientEmail" | "clientPhone" | "businessName">>): Promise<Proposal | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(proposals).set(data).where(eq(proposals.id, id));
+  const result = await db.select().from(proposals).where(eq(proposals.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ─── Certificates ────────────────────────────────────────────────────────────
+
+export function generateCertificateNumber(): string {
+  const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
+  return `CERT-${token}`;
+}
+
+export async function createCertificate(data: Omit<InsertCertificate, "id" | "createdAt">): Promise<Certificate> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const certificateNumber = data.certificateNumber || generateCertificateNumber();
+  const result = await db.insert(certificates).values({ ...data, certificateNumber });
+  const row = await db.select().from(certificates).where(eq(certificates.id, result[0].insertId)).limit(1);
+  return row[0];
+}
+
+export async function getCertificates(cohortId?: number): Promise<Certificate[]> {
+  const db = await getDb();
+  if (!db) return [];
+  if (cohortId) {
+    return db.select().from(certificates)
+      .where(eq(certificates.cohortId, cohortId))
+      .orderBy(desc(certificates.createdAt));
+  }
+  return db.select().from(certificates).orderBy(desc(certificates.createdAt));
+}
+
+export async function getCertificateByNumber(certificateNumber: string): Promise<Certificate | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(certificates).where(eq(certificates.certificateNumber, certificateNumber)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function getCertificatesByStudent(studentEmail: string): Promise<Certificate[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(certificates)
+    .where(eq(certificates.studentEmail, studentEmail))
+    .orderBy(desc(certificates.createdAt));
+}
+
+// ─── Content Calendar ──────────────────────────────────────────────────────
+
+export async function createContentPost(data: Omit<InsertContentPost, "id" | "createdAt">): Promise<ContentPost> {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [result] = await db.insert(contentPosts).values(data);
+  const [row] = await db.select().from(contentPosts).where(eq(contentPosts.id, (result as any).insertId));
+  return row;
+}
+
+export async function getContentPosts(
+  department?: string,
+  status?: string,
+  limit = 50,
+): Promise<ContentPost[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: any[] = [];
+  if (department && department !== "all") conditions.push(eq(contentPosts.department, department as any));
+  if (status && status !== "all") conditions.push(eq(contentPosts.status, status as any));
+  const q = db.select().from(contentPosts);
+  const filtered = conditions.length > 0
+    ? q.where(conditions.length === 1 ? conditions[0] : and(...conditions))
+    : q;
+  return filtered.orderBy(desc(contentPosts.scheduledFor)).limit(limit);
+}
+
+export async function updateContentPost(id: number, data: Partial<Omit<InsertContentPost, "id" | "createdAt">>): Promise<ContentPost | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  await db.update(contentPosts).set(data as any).where(eq(contentPosts.id, id));
+  const [row] = await db.select().from(contentPosts).where(eq(contentPosts.id, id));
+  return row;
+}
+
+export async function getContentCalendar(startDate: Date, endDate: Date): Promise<ContentPost[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(contentPosts)
+    .where(and(
+      gte(contentPosts.scheduledFor, startDate),
+      lte(contentPosts.scheduledFor, endDate),
+    ))
+    .orderBy(contentPosts.scheduledFor);
+}
+
+export async function seedContentPosts(): Promise<{ inserted: number; skipped: boolean }> {
+  const db = await getDb();
+  if (!db) return { inserted: 0, skipped: true };
+
+  const existing = await db.select().from(contentPosts).limit(1);
+  if (existing.length > 0) return { inserted: 0, skipped: true };
+
+  const departments = ["general", "bizdoc", "systemise", "skills"] as const;
+  const platforms = ["instagram", "tiktok", "twitter", "linkedin"] as const;
+  const types = ["educational", "success_story", "service_spotlight", "behind_scenes", "quote", "carousel"] as const;
+  const statuses = ["draft", "scheduled", "posted"] as const;
+
+  const posts: Omit<InsertContentPost, "id" | "createdAt">[] = [
+    { department: "bizdoc", platform: "instagram", contentType: "educational", caption: "5 documents you MUST have before approaching any investor in Nigeria. Number 3 surprises most founders.", hashtags: "#BusinessRegistration #NigerianBusiness #CAC #InvestorReady #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-03-30T09:00:00"), createdBy: "ai_muse" },
+    { department: "general", platform: "linkedin", contentType: "quote", caption: "\"Systems don't replace people. They free people to do what only people can do.\" — Muhammad Hamzury, Founder @HAMZURY", hashtags: "#Leadership #Systems #AfricanBusiness #Entrepreneurship", status: "scheduled", scheduledFor: new Date("2026-03-30T12:00:00"), createdBy: "ai_muse" },
+    { department: "skills", platform: "tiktok", contentType: "behind_scenes", caption: "POV: You just finished your first week of the HAMZURY Skills Intensive and your content calendar is FULL. This is what structured learning looks like.", hashtags: "#FacelessContent #SkillsIntensive #LearnWithHAMZURY #ContentCreation", status: "scheduled", scheduledFor: new Date("2026-03-30T15:00:00"), createdBy: "hikma@hamzury.com" },
+    { department: "bizdoc", platform: "twitter", contentType: "educational", caption: "CAC name search takes 24-48 hours. Budget ₦500 per search. Pro tip: have 3 backup names ready before you start. Thread below on the full CAC registration timeline.", hashtags: "#CACRegistration #Nigeria #StartupTips", status: "scheduled", scheduledFor: new Date("2026-03-31T08:30:00"), createdBy: "ai_muse" },
+    { department: "systemise", platform: "instagram", contentType: "service_spotlight", caption: "Your business needs more than a website — it needs a SYSTEM. We build brands, websites, CRMs, and social funnels that work while you sleep. Link in bio.", hashtags: "#Systemise #DigitalBusiness #WebDevelopment #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-03-31T11:00:00"), createdBy: "ai_muse" },
+    { department: "general", platform: "linkedin", contentType: "success_story", caption: "From market stall to registered, tax-compliant business in 14 days. Meet Amina, our client from Kano who used BizDoc + Systemise to transform her garment business.", hashtags: "#ClientStory #NigerianEntrepreneur #WomenInBusiness #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-03-31T14:00:00"), createdBy: "khadija@hamzury.com" },
+    { department: "skills", platform: "linkedin", contentType: "educational", caption: "The RIDI programme is bridging the rural-urban skills gap. Applications for Q2 2026 are now open. No laptop? No problem — we provide equipment for physical pathway students.", hashtags: "#RIDI #RuralDevelopment #DigitalInclusion #HAMZURY #Nigeria", status: "scheduled", scheduledFor: new Date("2026-04-01T09:00:00"), createdBy: "ai_muse" },
+    { department: "bizdoc", platform: "tiktok", contentType: "educational", caption: "If you're running a business in Nigeria without a TIN, you're leaving money on the table. Here's why every business needs a Tax Identification Number.", hashtags: "#TaxCompliance #FIRS #TIN #NigerianBusiness", status: "scheduled", scheduledFor: new Date("2026-04-01T12:00:00"), createdBy: "ai_muse" },
+    { department: "general", platform: "instagram", contentType: "carousel", caption: "HAMZURY in numbers — Q1 2026 recap: 87 businesses registered, 42 systems deployed, 120+ students trained. Slide through for the full breakdown.", hashtags: "#Q1Recap #HAMZURY #Impact #AfricanBusiness", status: "draft", scheduledFor: new Date("2026-04-01T15:00:00"), createdBy: "lalo@hamzury.com" },
+    { department: "systemise", platform: "twitter", contentType: "quote", caption: "Most Nigerian businesses fail not because of bad ideas, but because of bad systems. Fix the system, fix the business.", hashtags: "#BusinessSystems #Systemise #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-04-02T08:00:00"), createdBy: "ai_muse" },
+    { department: "bizdoc", platform: "instagram", contentType: "service_spotlight", caption: "Foreign Business Registration in Nigeria: CAMA 2020 compliance, CERPAC, Expatriate Quota, Business Permit — we handle the full stack. DM 'FOREIGN' to start.", hashtags: "#ForeignBusiness #NigeriaRegistration #CAMA2020 #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-04-02T11:00:00"), createdBy: "ai_muse" },
+    { department: "skills", platform: "tiktok", contentType: "success_story", caption: "She started the Faceless Content programme with zero followers. 10 days later, she had 2,400 and her first brand deal. Real student, real results.", hashtags: "#FacelessContent #StudentSuccess #HAMZURYSkills", status: "draft", scheduledFor: new Date("2026-04-02T14:00:00"), createdBy: "hikma@hamzury.com" },
+    { department: "general", platform: "linkedin", contentType: "educational", caption: "3 reasons Nigerian SMEs should separate their business and personal bank accounts. Reason 1: CAC requires it for compliance. Thread.", hashtags: "#BusinessBanking #SME #Compliance #NigerianBusiness", status: "scheduled", scheduledFor: new Date("2026-04-03T09:00:00"), createdBy: "ai_muse" },
+    { department: "systemise", platform: "instagram", contentType: "behind_scenes", caption: "Behind the scenes at HAMZURY HQ in Abuja — our CTO reviewing the latest client portal build. Every pixel, every API call, every user flow tested.", hashtags: "#TechTeam #BuildingInAfrica #BehindTheScenes #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-04-03T12:00:00"), createdBy: "maryam@hamzury.com" },
+    { department: "bizdoc", platform: "linkedin", contentType: "educational", caption: "SCUML registration is mandatory for all designated non-financial businesses in Nigeria. Here is who needs it and what happens if you skip it.", hashtags: "#SCUML #AML #NigerianCompliance #BizDoc", status: "scheduled", scheduledFor: new Date("2026-04-04T09:00:00"), createdBy: "ai_muse" },
+    { department: "skills", platform: "instagram", contentType: "carousel", caption: "Meet the 6 facilitators powering HAMZURY Skills Q2 2026. Each one is a practitioner — not just a teacher. Swipe to meet the team.", hashtags: "#HAMZURYSkills #Facilitators #MeetTheTeam #Education", status: "draft", scheduledFor: new Date("2026-04-04T12:00:00"), createdBy: "lalo@hamzury.com" },
+    { department: "general", platform: "tiktok", contentType: "behind_scenes", caption: "Day in the life of a HAMZURY CSO: 6 client calls, 3 proposals, 1 site visit, and a podcast recording. This is how we serve 80+ active clients.", hashtags: "#DayInTheLife #CSO #HAMZURYTeam #ClientService", status: "scheduled", scheduledFor: new Date("2026-04-04T15:00:00"), createdBy: "ai_muse" },
+    { department: "bizdoc", platform: "twitter", contentType: "service_spotlight", caption: "Annual returns due? We file for all business types — BN, LTD, LLP. Same-week turnaround. No stress. WhatsApp the link in bio or visit hamzury.com/bizdoc", hashtags: "#AnnualReturns #CAC #BusinessCompliance #HAMZURY", status: "scheduled", scheduledFor: new Date("2026-04-05T08:30:00"), createdBy: "ai_muse" },
+    { department: "systemise", platform: "linkedin", contentType: "success_story", caption: "Tilz Spar went from zero online presence to a fully integrated booking + payment system in 3 weeks. Systemise built the brand identity, website, and CRM. Results: 40% increase in bookings month 1.", hashtags: "#ClientSuccess #Systemise #DigitalTransformation #HAMZURY", status: "posted", scheduledFor: new Date("2026-03-25T09:00:00"), postedAt: new Date("2026-03-25T09:02:00"), createdBy: "khadija@hamzury.com", engagement: { likes: 47, comments: 8, shares: 12 } },
+    { department: "general", platform: "instagram", contentType: "quote", caption: "\"If your business can't run without you for a week, you don't have a business — you have a job.\" Start systemising today.", hashtags: "#BusinessQuote #Entrepreneurship #HAMZURY #Systems", status: "posted", scheduledFor: new Date("2026-03-26T10:00:00"), postedAt: new Date("2026-03-26T10:01:00"), createdBy: "ai_muse", engagement: { likes: 134, comments: 21, shares: 38 } },
+  ];
+
+  for (const post of posts) {
+    await db.insert(contentPosts).values(post);
+  }
+
+  return { inserted: posts.length, skipped: false };
+}
+
+// ─── QA Checklist Seed ─────────────────────────────────────────────────────
+
+export async function seedQAChecklists(): Promise<{ inserted: number; skipped: boolean }> {
+  const db = await getDb();
+  if (!db) return { inserted: 0, skipped: true };
+
+  // Check if QA templates already exist to avoid duplicates
+  const existing = await db.select().from(checklistTemplates).where(eq(checklistTemplates.phase, "post"));
+  if (existing.length > 0) return { inserted: 0, skipped: true };
+
+  const templates: { department: string; phase: "post"; label: string; sortOrder: number }[] = [
+    // BizDoc QA
+    { department: "bizdoc", phase: "post", label: "All documents reviewed for accuracy", sortOrder: 1 },
+    { department: "bizdoc", phase: "post", label: "Client name and details verified", sortOrder: 2 },
+    { department: "bizdoc", phase: "post", label: "Filing numbers confirmed with regulatory body", sortOrder: 3 },
+    { department: "bizdoc", phase: "post", label: "Scanned copies saved to client file", sortOrder: 4 },
+    { department: "bizdoc", phase: "post", label: "Original documents packaged for delivery", sortOrder: 5 },
+    { department: "bizdoc", phase: "post", label: "Invoice generated and sent", sortOrder: 6 },
+    { department: "bizdoc", phase: "post", label: "Client notified of completion", sortOrder: 7 },
+    // Systemise QA
+    { department: "systemise", phase: "post", label: "All deliverables match project scope", sortOrder: 1 },
+    { department: "systemise", phase: "post", label: "Website tested on mobile and desktop", sortOrder: 2 },
+    { department: "systemise", phase: "post", label: "Social media accounts configured and verified", sortOrder: 3 },
+    { department: "systemise", phase: "post", label: "Client credentials securely stored", sortOrder: 4 },
+    { department: "systemise", phase: "post", label: "Training session completed with client", sortOrder: 5 },
+    { department: "systemise", phase: "post", label: "Handover document prepared", sortOrder: 6 },
+    { department: "systemise", phase: "post", label: "Invoice generated and sent", sortOrder: 7 },
+    // Skills QA
+    { department: "skills", phase: "post", label: "Student completed all required modules", sortOrder: 1 },
+    { department: "skills", phase: "post", label: "Assignments graded and feedback given", sortOrder: 2 },
+    { department: "skills", phase: "post", label: "Attendance meets minimum threshold", sortOrder: 3 },
+    { department: "skills", phase: "post", label: "Certificate details verified", sortOrder: 4 },
+    { department: "skills", phase: "post", label: "Student added to alumni records", sortOrder: 5 },
+  ];
+
+  for (const t of templates) {
+    await db.insert(checklistTemplates).values(t);
+  }
+
+  return { inserted: templates.length, skipped: false };
 }

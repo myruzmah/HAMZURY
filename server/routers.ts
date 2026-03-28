@@ -13,7 +13,7 @@ import {
   createDocument, getDocumentsByTaskId, deleteDocument,
   createActivityLog, getActivityLogsByTaskId, getRecentActivityLogs,
   getDashboardStats,
-  getAllStaff, updateUserRole, listAllStaffUsers,
+  getAllStaff, updateUserRole, listAllStaffUsers, getStaffUserByEmail, hashPassword, createStaffUser,
   createCommission, getCommissions, updateCommissionStatus,
   recordAttendance, getAttendanceByDate, getAttendanceByUser,
   createWeeklyReport, getWeeklyReports,
@@ -33,6 +33,18 @@ import {
   createClientCredential, getCredentialsByTaskId, getCredentialsBySubscriptionId,
   deleteClientCredential, getTasksBySubscriptionId, getSubscriptionByLeadRef,
   getDb,
+  // Pricing
+  getServicePricing, getServicePricingById, createServicePricing, updateServicePricing, seedDefaultPricing,
+  // Invoices
+  createInvoice, getInvoices, getInvoiceById, getInvoiceByNumber, updateInvoice, getInvoicesByTaskId,
+  // Notifications
+  createNotification, getNotifications, getUnreadNotifications, markNotificationRead, markAllNotificationsRead,
+  // Proposals
+  createProposal, getProposals, getProposalById, getProposalByNumber, updateProposal,
+  // Certificates
+  createCertificate, getCertificates, getCertificateByNumber, getCertificatesByStudent,
+  // Content Calendar
+  createContentPost, getContentPosts, updateContentPost, getContentCalendar, seedContentPosts,
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
@@ -42,6 +54,7 @@ import { invokeLLM } from "./_core/llm";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { calculateCommission } from "@shared/commission";
+import { executeAgent, getAgentStatus, toggleAgent } from "./agents/agent-runner";
 
 export const appRouter = router({
   system: systemRouter,
@@ -149,6 +162,14 @@ export const appRouter = router({
         const docs = await getDocumentsByTaskId(task.id);
         const activity = await getActivityLogsByTaskId(task.id);
         return { task, checklist, docs, activity };
+      }),
+
+    /** Seed sample client leads, tasks, invoices — founder/CEO only */
+    seedSample: founderCEOProcedure
+      .mutation(async () => {
+        const { seedSampleClients } = await import("./seed-staff");
+        const result = await seedSampleClients();
+        return { success: true, ...result };
       }),
   }),
 
@@ -517,6 +538,109 @@ export const appRouter = router({
           progress: Math.round(((statusIndex + 1) / STATUS_ORDER.length) * 100),
         };
       }),
+
+    /** Full client portal lookup — returns task + checklist + activity + invoices */
+    fullLookup: rateLimitedProcedure
+      .input(z.object({
+        ref: z.string().min(1),
+        phone: z.string().optional(),
+      }))
+      .query(async ({ input }) => {
+        const task = await getTaskByRef(input.ref.trim().toUpperCase());
+        if (!task) return { found: false as const, reason: "not_found" as const };
+
+        // Phone verification
+        if (input.phone) {
+          const storedDigits = (task.phone || "").replace(/\D/g, "").slice(-6);
+          const inputDigits = input.phone.replace(/\D/g, "").slice(-6);
+          if (storedDigits && inputDigits && storedDigits !== inputDigits) {
+            return { found: false as const, reason: "phone_mismatch" as const };
+          }
+        }
+
+        const [checklist, activity, taskInvoices] = await Promise.all([
+          getChecklistItemsByTaskId(task.id),
+          getActivityLogsByTaskId(task.id),
+          getInvoicesByTaskId(task.id),
+        ]);
+
+        const STATUS_ORDER = ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"];
+        const statusIndex = STATUS_ORDER.indexOf(task.status);
+
+        // Summarize invoices
+        const invoiceSummary = taskInvoices.length > 0 ? {
+          total: taskInvoices.reduce((s, inv) => s + inv.total, 0),
+          paid: taskInvoices.reduce((s, inv) => s + (inv.amountPaid ?? 0), 0),
+          invoices: taskInvoices.map(inv => ({
+            number: inv.invoiceNumber,
+            total: inv.total,
+            paid: inv.amountPaid ?? 0,
+            status: inv.status,
+            dueDate: inv.dueDate,
+            createdAt: inv.createdAt,
+          })),
+        } : null;
+
+        // Filter activity for client-safe display
+        const clientActivity = activity
+          .filter(a => !["lead_scored", "whatsapp_sent"].includes(a.action))
+          .slice(0, 20)
+          .map(a => ({
+            id: a.id,
+            action: a.action,
+            details: a.details,
+            createdAt: a.createdAt,
+          }));
+
+        return {
+          found: true as const,
+          task: {
+            id: task.id,
+            ref: task.ref,
+            clientName: task.clientName,
+            businessName: task.businessName,
+            phone: task.phone ? `***${task.phone.slice(-4)}` : null,
+            service: task.service,
+            department: task.department,
+            status: task.status,
+            statusIndex,
+            statusTotal: STATUS_ORDER.length,
+            statusSteps: STATUS_ORDER,
+            progress: Math.round(((statusIndex + 1) / STATUS_ORDER.length) * 100),
+            deadline: task.deadline,
+            notes: task.notes,
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt,
+          },
+          checklist: checklist.map(c => ({
+            id: c.id,
+            label: c.label,
+            checked: c.checked,
+            phase: c.phase,
+          })),
+          invoiceSummary,
+          activity: clientActivity,
+        };
+      }),
+
+    /** Client submits a note/message visible to the internal team */
+    submitClientNote: rateLimitedProcedure
+      .input(z.object({
+        ref: z.string().min(1),
+        message: z.string().min(1).max(1000),
+      }))
+      .mutation(async ({ input }) => {
+        const task = await getTaskByRef(input.ref.trim().toUpperCase());
+        if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
+
+        await createActivityLog({
+          taskId: task.id,
+          action: "client_note",
+          details: `Client message: ${input.message}`,
+        });
+
+        return { success: true };
+      }),
   }),
 
   // ─── WhatsApp Messaging ───────────────────────────────────────────────────
@@ -819,7 +943,7 @@ HOW TO RESPOND:
         recommendedStep: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const ref = generateHZRefNumber();
+        const ref = generateHZRefNumber(input.phone);
         const lead = await createSystemiseLead({
           ref,
           name: input.name,
@@ -902,7 +1026,7 @@ HOW TO RESPOND:
         leadRef: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
-        const ref = generateHZRefNumber();
+        const ref = generateHZRefNumber(input.phone);
         const lead = await createSystemiseLead({
           ref,
           name: input.name,
@@ -1060,6 +1184,49 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
           details: `Role changed to: ${input.hamzuryRole}${input.department ? `, department: ${input.department}` : ""}`,
         });
         return updated;
+      }),
+
+    /** Create a single staff user. Founder/CEO only. */
+    create: founderCEOProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        hamzuryRole: z.enum(["founder","ceo","cso","cso_assist","finance","hr","bizdev","department_lead","department_staff","media","tech_lead","compliance_staff","security_staff","skills_staff","systemise_head","bizdev_staff"]),
+        department: z.enum(["general","bizdoc","systemise","skills"]).default("general"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const existing = await getStaffUserByEmail(input.email);
+        if (existing) throw new TRPCError({ code: "CONFLICT", message: "A staff user with this email already exists." });
+        const DEFAULT_PASSWORD = "Hamzury@2026";
+        const { hash, salt } = await hashPassword(DEFAULT_PASSWORD);
+        await createStaffUser({
+          email: input.email.toLowerCase(),
+          passwordHash: hash,
+          passwordSalt: salt,
+          name: input.name,
+          hamzuryRole: input.hamzuryRole as any,
+          isActive: true,
+          firstLogin: true,
+          passwordChanged: false,
+          failedAttempts: 0,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Unknown",
+          action: "staff_created",
+          resource: "staffUsers",
+          resourceId: 0,
+          details: `Created staff: ${input.name} (${input.email}) as ${input.hamzuryRole}`,
+        });
+        return { success: true, email: input.email, name: input.name };
+      }),
+
+    /** Seed default staff users + pricing. Founder/CEO only. */
+    seed: founderCEOProcedure
+      .mutation(async () => {
+        const { seedAll } = await import("./seed-staff");
+        const result = await seedAll();
+        return { success: true, ...result };
       }),
   }),
 
@@ -1254,6 +1421,12 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         };
       });
     }),
+
+    /** Audit log — all system audit entries. Founder/CEO only. */
+    auditLog: founderCEOProcedure.query(async () => {
+      const logs = await getAuditLogs();
+      return logs;
+    }),
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -1298,7 +1471,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         agreedToEffort: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
-        const ref = generateSKLRefNumber();
+        const ref = generateSKLRefNumber(input.phone);
         const app = await createSkillsApplication({
           ref,
           program: input.program,
@@ -1610,6 +1783,14 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         });
         return { tier, converted };
       }),
+
+    /** Seed sample affiliates and referral records — founder/CEO only */
+    seedSample: founderCEOProcedure
+      .mutation(async () => {
+        const { seedSampleAffiliates } = await import("./seed-staff");
+        const result = await seedSampleAffiliates();
+        return { success: true, ...result };
+      }),
   }),
 
   // ─── Subscriptions (CSO/Finance) ──────────────────────────────────────────
@@ -1878,6 +2059,523 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         });
         await deleteClientCredential(input.credentialId);
         return { success: true };
+      }),
+  }),
+
+  // ─── Pricing (Service Price List) ───────────────────────────────────────────
+  pricing: router({
+    list: publicProcedure
+      .input(z.object({ department: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return getServicePricing(input?.department);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const pricing = await getServicePricingById(input.id);
+        if (!pricing) throw new TRPCError({ code: "NOT_FOUND", message: "Pricing entry not found" });
+        return pricing;
+      }),
+
+    create: founderCEOProcedure
+      .input(z.object({
+        department: z.enum(["bizdoc", "systemise", "skills", "metfix"]),
+        category: z.string().min(1),
+        serviceName: z.string().min(1),
+        description: z.string().optional(),
+        basePrice: z.number().min(0),
+        maxPrice: z.number().optional(),
+        unit: z.enum(["one_time", "monthly", "per_cohort", "per_session", "custom"]).default("one_time"),
+        commissionPercent: z.number().min(0).max(100).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        return createServicePricing(input as any);
+      }),
+
+    update: founderCEOProcedure
+      .input(z.object({
+        id: z.number(),
+        serviceName: z.string().optional(),
+        description: z.string().optional(),
+        basePrice: z.number().optional(),
+        maxPrice: z.number().optional(),
+        unit: z.enum(["one_time", "monthly", "per_cohort", "per_session", "custom"]).optional(),
+        commissionPercent: z.number().min(0).max(100).optional(),
+        isActive: z.boolean().optional(),
+        category: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return updateServicePricing(id, data as any);
+      }),
+
+    seed: founderCEOProcedure
+      .mutation(async () => {
+        await seedDefaultPricing();
+        return { success: true };
+      }),
+  }),
+
+  // ─── Invoices ───────────────────────────────────────────────────────────────
+  invoices: router({
+    list: financeProcedure
+      .input(z.object({ status: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return getInvoices(input?.status);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const invoice = await getInvoiceById(input.id);
+        if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        return invoice;
+      }),
+
+    getByNumber: publicProcedure
+      .input(z.object({ invoiceNumber: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const invoice = await getInvoiceByNumber(input.invoiceNumber.trim().toUpperCase());
+        if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        return invoice;
+      }),
+
+    create: csoProcedure
+      .input(z.object({
+        clientName: z.string().min(1),
+        clientEmail: z.string().optional(),
+        clientPhone: z.string().optional(),
+        items: z.any(), // json array
+        subtotal: z.number().min(0),
+        total: z.number().min(0),
+        discount: z.number().optional(),
+        tax: z.number().optional(),
+        dueDate: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
+        leadId: z.number().optional(),
+        taskId: z.number().optional(),
+        subscriptionId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const invoice = await createInvoice({
+          ...input,
+          dueDate: input.dueDate ? new Date(input.dueDate) : undefined,
+          createdBy: ctx.user.email || ctx.user.name || ctx.user.openId,
+        } as any);
+        return invoice;
+      }),
+
+    update: financeProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["draft", "sent", "paid", "partial", "overdue", "cancelled"]).optional(),
+        amountPaid: z.number().optional(),
+        notes: z.string().optional(),
+        paidAt: z.string().optional(), // ISO date string
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        const updateData: Record<string, unknown> = { ...data };
+        if (data.paidAt) updateData.paidAt = new Date(data.paidAt);
+        const invoice = await updateInvoice(id, updateData as any);
+        if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        return invoice;
+      }),
+
+    markPaid: financeProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const existing = await getInvoiceById(input.id);
+        if (!existing) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        const invoice = await updateInvoice(input.id, {
+          status: "paid" as any,
+          amountPaid: existing.total,
+          paidAt: new Date(),
+        });
+        // Create notification for CSO about the payment
+        await createNotification({
+          userId: "cso", // CSO team channel
+          type: "payment",
+          title: "Invoice Paid",
+          message: `Invoice ${existing.invoiceNumber} for ${existing.clientName} has been marked as paid (₦${existing.total.toLocaleString()}).`,
+          link: `/finance/dashboard`,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Finance",
+          action: "invoice_paid",
+          resource: "invoices",
+          resourceId: input.id,
+          details: `Invoice ${existing.invoiceNumber} marked as paid — ₦${existing.total}`,
+        });
+        return invoice;
+      }),
+  }),
+
+  // ─── Notifications ──────────────────────────────────────────────────────────
+  notifications: router({
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        const userId = ctx.user.email || ctx.user.openId;
+        return getNotifications(userId);
+      }),
+
+    unreadCount: protectedProcedure
+      .query(async ({ ctx }) => {
+        const userId = ctx.user.email || ctx.user.openId;
+        return getUnreadNotifications(userId);
+      }),
+
+    markRead: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await markNotificationRead(input.id);
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure
+      .mutation(async ({ ctx }) => {
+        const userId = ctx.user.email || ctx.user.openId;
+        await markAllNotificationsRead(userId);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Proposals ──────────────────────────────────────────────────────────────
+  proposals: router({
+    list: protectedProcedure
+      .input(z.object({ status: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        return getProposals(input?.status);
+      }),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const proposal = await getProposalById(input.id);
+        if (!proposal) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+        return proposal;
+      }),
+
+    getByNumber: publicProcedure
+      .input(z.object({ proposalNumber: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const proposal = await getProposalByNumber(input.proposalNumber.trim().toUpperCase());
+        if (!proposal) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+        return proposal;
+      }),
+
+    create: csoProcedure
+      .input(z.object({
+        clientName: z.string().min(1),
+        clientEmail: z.string().optional(),
+        clientPhone: z.string().optional(),
+        businessName: z.string().optional(),
+        services: z.any(), // json array of service line items
+        totalAmount: z.number().min(0),
+        validUntil: z.string().optional(), // ISO date string
+        notes: z.string().optional(),
+        leadId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const proposal = await createProposal({
+          ...input,
+          validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+          createdBy: ctx.user.email || ctx.user.name || ctx.user.openId,
+        } as any);
+        return proposal;
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["draft", "sent", "accepted", "rejected", "expired"]).optional(),
+        clientName: z.string().optional(),
+        clientEmail: z.string().optional(),
+        clientPhone: z.string().optional(),
+        businessName: z.string().optional(),
+        services: z.any().optional(),
+        totalAmount: z.number().optional(),
+        validUntil: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        const updateData: Record<string, unknown> = { ...data };
+        if (data.validUntil) updateData.validUntil = new Date(data.validUntil);
+        const proposal = await updateProposal(id, updateData as any);
+        if (!proposal) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+        return proposal;
+      }),
+
+    accept: publicProcedure
+      .input(z.object({ proposalNumber: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const proposal = await getProposalByNumber(input.proposalNumber.trim().toUpperCase());
+        if (!proposal) throw new TRPCError({ code: "NOT_FOUND", message: "Proposal not found" });
+        if (proposal.status === "accepted") {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Proposal is already accepted" });
+        }
+        const updated = await updateProposal(proposal.id, { status: "accepted" as any });
+        // Notify CSO that a client accepted a proposal
+        await createNotification({
+          userId: "cso",
+          type: "status_change",
+          title: "Proposal Accepted",
+          message: `${proposal.clientName} accepted proposal ${proposal.proposalNumber} (₦${proposal.totalAmount.toLocaleString()}).`,
+          link: `/cso/dashboard`,
+        });
+        return updated;
+      }),
+  }),
+
+  // ─── Certificates ──────────────────────────────────────────────────────────
+  certificates: router({
+    list: protectedProcedure
+      .input(z.object({ cohortId: z.number().optional() }).optional())
+      .query(async ({ input }) => {
+        return getCertificates(input?.cohortId);
+      }),
+
+    create: seniorProcedure
+      .input(z.object({
+        studentName: z.string().min(1),
+        studentEmail: z.string().optional(),
+        cohortId: z.number().optional(),
+        program: z.string().min(1),
+        completionDate: z.string().min(1), // ISO date string
+        grade: z.string().optional(),
+        issuedBy: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const certificate = await createCertificate({
+          ...input,
+          completionDate: new Date(input.completionDate),
+        } as any);
+        return certificate;
+      }),
+
+    verify: publicProcedure
+      .input(z.object({ certificateNumber: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const cert = await getCertificateByNumber(input.certificateNumber.trim().toUpperCase());
+        if (!cert) throw new TRPCError({ code: "NOT_FOUND", message: "Certificate not found" });
+        return cert;
+      }),
+
+    myList: protectedProcedure
+      .query(async ({ ctx }) => {
+        const email = ctx.user.email;
+        if (!email) return [];
+        return getCertificatesByStudent(email);
+      }),
+  }),
+
+  // ─── Content Calendar ─────────────────────────────────────────────────────
+  content: router({
+    list: protectedProcedure
+      .input(z.object({
+        department: z.string().optional(),
+        status: z.string().optional(),
+        limit: z.number().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getContentPosts(input?.department, input?.status, input?.limit ?? 50);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        department: z.enum(["general", "bizdoc", "systemise", "skills"]),
+        platform: z.enum(["instagram", "tiktok", "twitter", "linkedin"]),
+        contentType: z.enum(["educational", "success_story", "service_spotlight", "behind_scenes", "quote", "carousel"]),
+        caption: z.string().min(1),
+        hashtags: z.string().optional(),
+        mediaUrl: z.string().optional(),
+        scheduledFor: z.string().optional(),
+        status: z.enum(["draft", "scheduled", "posted", "failed"]).optional(),
+        createdBy: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return createContentPost({
+          ...input,
+          scheduledFor: input.scheduledFor ? new Date(input.scheduledFor) : undefined,
+          status: input.status ?? "draft",
+          createdBy: input.createdBy ?? ctx.user.email ?? "staff",
+        } as any);
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        department: z.enum(["general", "bizdoc", "systemise", "skills"]).optional(),
+        platform: z.enum(["instagram", "tiktok", "twitter", "linkedin"]).optional(),
+        contentType: z.enum(["educational", "success_story", "service_spotlight", "behind_scenes", "quote", "carousel"]).optional(),
+        caption: z.string().optional(),
+        hashtags: z.string().optional(),
+        mediaUrl: z.string().optional(),
+        scheduledFor: z.string().optional(),
+        status: z.enum(["draft", "scheduled", "posted", "failed"]).optional(),
+        postedAt: z.string().optional(),
+        engagement: z.any().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        const updates: any = { ...data };
+        if (data.scheduledFor) updates.scheduledFor = new Date(data.scheduledFor);
+        if (data.postedAt) updates.postedAt = new Date(data.postedAt);
+        return updateContentPost(id, updates);
+      }),
+
+    calendar: protectedProcedure
+      .input(z.object({
+        startDate: z.string(),
+        endDate: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return getContentCalendar(new Date(input.startDate), new Date(input.endDate));
+      }),
+
+    generate: protectedProcedure
+      .input(z.object({
+        department: z.enum(["general", "bizdoc", "systemise", "skills"]),
+        platform: z.enum(["instagram", "tiktok", "twitter", "linkedin"]),
+        topic: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const departmentDescriptions: Record<string, string> = {
+          general: "HAMZURY — a Nigerian business consulting firm offering registration, compliance, digital systems, and skills training",
+          bizdoc: "BizDoc by HAMZURY — business registration, CAC filing, tax compliance, annual returns, foreign business registration in Nigeria",
+          systemise: "Systemise by HAMZURY — digital transformation, websites, CRMs, brand identity, social media management for Nigerian businesses",
+          skills: "HAMZURY Skills — faceless content creation, executive programmes, IT internships, AI courses, and the RIDI rural digital inclusion programme",
+        };
+
+        const platformGuidelines: Record<string, string> = {
+          instagram: "Instagram post caption (under 2200 chars). Engaging, visual-first, include a CTA. Use line breaks for readability.",
+          tiktok: "TikTok caption (under 300 chars). Hook in first line, conversational tone, trending-style language.",
+          twitter: "Twitter post (under 280 chars). Punchy, informative, thread-starter style.",
+          linkedin: "LinkedIn post (300-1300 chars). Professional but warm tone, thought-leadership style, include actionable insight.",
+        };
+
+        const systemPrompt = `You are the HAMZURY AI Content Muse. You generate on-brand social media content for ${departmentDescriptions[input.department]}.
+
+Brand voice: Professional yet warm, confident, educational, Nigerian context. Never use excessive emojis. Use Naira (₦) for prices. Reference Nigerian regulatory bodies (CAC, FIRS, SCUML) accurately.
+
+Generate a single ${platformGuidelines[input.platform]}
+
+Also generate 5-8 relevant hashtags.
+
+Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
+
+        try {
+          const result = await invokeLLM({
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: input.topic ? `Create content about: ${input.topic}` : `Create engaging content for the ${input.department} department` },
+            ],
+            maxTokens: 500,
+          });
+
+          const content = result.choices?.[0]?.message?.content;
+          const text = typeof content === "string" ? content : Array.isArray(content) ? content.filter((c): c is { type: "text"; text: string } => c.type === "text").map(c => c.text).join("") : "";
+
+          let parsed: { caption: string; hashtags: string };
+          try {
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : { caption: text, hashtags: "" };
+          } catch {
+            parsed = { caption: text, hashtags: "" };
+          }
+
+          // Save as draft
+          const post = await createContentPost({
+            department: input.department,
+            platform: input.platform,
+            contentType: "educational",
+            caption: parsed.caption,
+            hashtags: parsed.hashtags,
+            status: "draft",
+            createdBy: "ai_muse",
+          } as any);
+
+          return post;
+        } catch (err: any) {
+          // If LLM unavailable, create a placeholder draft
+          const post = await createContentPost({
+            department: input.department,
+            platform: input.platform,
+            contentType: "educational",
+            caption: `[AI Draft] ${input.topic || input.department} content for ${input.platform} — edit and refine before scheduling.`,
+            hashtags: "#HAMZURY #Content",
+            status: "draft",
+            createdBy: "ai_muse",
+          } as any);
+          return post;
+        }
+      }),
+
+    seed: protectedProcedure
+      .mutation(async () => {
+        return seedContentPosts();
+      }),
+  }),
+
+  // ─── AI Agents ──────────────────────────────────────────────────────────
+  agents: router({
+    /** Get all agent statuses — founder/CEO only */
+    status: founderCEOProcedure.query(async () => {
+      return getAgentStatus();
+    }),
+
+    /** Manually trigger an agent run — founder/CEO only */
+    run: founderCEOProcedure
+      .input(z.object({ agentId: z.string().min(1) }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await executeAgent(input.agentId);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Unknown",
+          action: "agent_manual_run",
+          resource: "agents",
+          resourceId: 0,
+          details: `Manual run of agent '${input.agentId}' by ${ctx.user.name || ctx.user.email}: ${result.tasksProcessed} tasks, ${result.errors.length} errors`,
+        });
+        return result;
+      }),
+
+    /** Enable/disable an agent — founder/CEO only */
+    toggle: founderCEOProcedure
+      .input(z.object({ agentId: z.string().min(1), enabled: z.boolean() }))
+      .mutation(async ({ input, ctx }) => {
+        const success = toggleAgent(input.agentId, input.enabled);
+        if (!success) throw new TRPCError({ code: "NOT_FOUND", message: `Agent '${input.agentId}' not found` });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Unknown",
+          action: input.enabled ? "agent_enabled" : "agent_disabled",
+          resource: "agents",
+          resourceId: 0,
+          details: `Agent '${input.agentId}' ${input.enabled ? "enabled" : "disabled"} by ${ctx.user.name || ctx.user.email}`,
+        });
+        return { success: true, agentId: input.agentId, enabled: input.enabled };
+      }),
+
+    /** Get recent agent activity logs — founder/CEO only */
+    logs: founderCEOProcedure
+      .query(async () => {
+        const allLogs = await getRecentActivityLogs(200);
+        // Filter to only agent-related actions
+        return allLogs.filter(
+          (log) =>
+            log.action.startsWith("agent_") ||
+            log.details?.startsWith("[Evelyn]") ||
+            log.details?.startsWith("[Amara]") ||
+            log.details?.startsWith("[Nova]") ||
+            log.details?.startsWith("[Zara]") ||
+            log.details?.startsWith("[Kash]") ||
+            log.details?.startsWith("[Muse]")
+        ).slice(0, 100);
       }),
   }),
 

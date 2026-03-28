@@ -3,10 +3,10 @@ import { Link } from "wouter";
 import { Home, X } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 
-const TEAL  = "#0A1F1C";
+const TEAL  = "#86868B";   // Apple grey — general
 const GOLD  = "#C9A97E";
-const CREAM = "#F8F5F0";
-const DARK  = "#2C2C2C";
+const CREAM = "#FAFAF8";   // Milk white
+const DARK  = "#1D1D1F";
 
 interface StaffMember {
   name: string;

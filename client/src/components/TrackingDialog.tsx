@@ -62,13 +62,13 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
 
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) handleReset(); }}>
-      <DialogContent className="sm:max-w-md" style={{ backgroundColor: "#F8F5F0" }}>
+      <DialogContent className="sm:max-w-md" style={{ backgroundColor: "#FAFAF8" }}>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg" style={{ color: "#0A1F1C" }}>
+          <DialogTitle className="flex items-center gap-2 text-lg" style={{ color: "#86868B" }}>
             <FileSearch size={20} style={{ color: "#C9A97E" }} />
             Track Your File
           </DialogTitle>
-          <DialogDescription style={{ color: "#2C2C2C", opacity: 0.7 }}>
+          <DialogDescription style={{ color: "#1D1D1F", opacity: 0.7 }}>
             Enter your reference number to check the status of your compliance file.
           </DialogDescription>
         </DialogHeader>
@@ -78,14 +78,14 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
             value={ref}
             onChange={(e) => { setRef(e.target.value); setSearched(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="BZ-2026-XXXX"
-            className="flex-1 bg-white border-[#0A1F1C]/10 focus:border-[#C9A97E]"
-            style={{ color: "#0A1F1C" }}
+            placeholder="HAM-XXXX-1234"
+            className="flex-1 bg-white border-[#86868B]/10 focus:border-[#C9A97E]"
+            style={{ color: "#86868B" }}
           />
           <Button
             onClick={handleSearch}
             disabled={!ref.trim() || trackingQuery.isLoading}
-            style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+            style={{ backgroundColor: "#86868B", color: "#C9A97E" }}
           >
             {trackingQuery.isLoading ? <Loader2 size={16} className="animate-spin" /> : "Search"}
           </Button>
@@ -95,9 +95,9 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
         {searched && trackingQuery.data && (
           <div className="mt-6">
             {trackingQuery.data.found ? (
-              <div className="bg-white rounded-xl border border-[#0A1F1C]/10 p-6 space-y-4">
+              <div className="bg-white rounded-xl border border-[#86868B]/10 p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-[12px] font-bold tracking-wider px-3 py-1 rounded-full bg-[#0A1F1C]/5" style={{ color: "#0A1F1C" }}>
+                  <span className="text-[12px] font-bold tracking-wider px-3 py-1 rounded-full bg-[#86868B]/5" style={{ color: "#86868B" }}>
                     {trackingQuery.data.ref}
                   </span>
                   <span className={`text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${statusColor(trackingQuery.data.status!)}`}>
@@ -105,12 +105,12 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
                   </span>
                 </div>
                 <div>
-                  <p className="text-[13px] font-semibold mb-1" style={{ color: "#0A1F1C" }}>Service</p>
-                  <p className="text-[14px]" style={{ color: "#2C2C2C" }}>{trackingQuery.data.service}</p>
+                  <p className="text-[13px] font-semibold mb-1" style={{ color: "#86868B" }}>Service</p>
+                  <p className="text-[14px]" style={{ color: "#1D1D1F" }}>{trackingQuery.data.service}</p>
                 </div>
-                <div className="flex items-start gap-3 p-4 rounded-lg" style={{ backgroundColor: "#F8F5F0" }}>
+                <div className="flex items-start gap-3 p-4 rounded-lg" style={{ backgroundColor: "#FAFAF8" }}>
                   {statusIcon(trackingQuery.data.status!)}
-                  <p className="text-[14px] leading-relaxed" style={{ color: "#2C2C2C" }}>
+                  <p className="text-[14px] leading-relaxed" style={{ color: "#1D1D1F" }}>
                     {trackingQuery.data.statusMessage}
                   </p>
                 </div>
@@ -121,8 +121,8 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
             ) : (
               <div className="bg-white rounded-xl border border-red-200 p-6 text-center">
                 <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
-                <p className="text-[15px] font-semibold mb-2" style={{ color: "#0A1F1C" }}>Reference Not Found</p>
-                <p className="text-[13px] opacity-70" style={{ color: "#2C2C2C" }}>
+                <p className="text-[15px] font-semibold mb-2" style={{ color: "#86868B" }}>Reference Not Found</p>
+                <p className="text-[13px] opacity-70" style={{ color: "#1D1D1F" }}>
                   No file was found with this reference number. Please check the number and try again, or contact us directly.
                 </p>
               </div>
@@ -133,8 +133,8 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
         {searched && trackingQuery.isError && (
           <div className="mt-6 bg-white rounded-xl border border-red-200 p-6 text-center">
             <AlertCircle size={32} className="text-red-400 mx-auto mb-3" />
-            <p className="text-[15px] font-semibold mb-2" style={{ color: "#0A1F1C" }}>Error</p>
-            <p className="text-[13px] opacity-70" style={{ color: "#2C2C2C" }}>
+            <p className="text-[15px] font-semibold mb-2" style={{ color: "#86868B" }}>Error</p>
+            <p className="text-[13px] opacity-70" style={{ color: "#1D1D1F" }}>
               An error occurred while looking up your reference. Please try again.
             </p>
           </div>

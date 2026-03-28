@@ -21,10 +21,10 @@ import {
   GraduationCap, Shield, Lock, Calculator, Loader2,
 } from "lucide-react";
 
-// ─── Brand ──────────────────────────────────────────────────────────────────
-const GREEN = "#0A1F1C";
+// ─── Brand (CEO = general → Apple grey) ──────────────────────────────────────
+const GREEN = "#86868B";   // Apple grey
 const GOLD = "#C9A97E";
-const MILK = "#FBF8EE";
+const MILK = "#FAFAF8";    // Milk white
 
 type Section = "overview" | "command" | "analytics" | "calendar" | "assign" | "files";
 

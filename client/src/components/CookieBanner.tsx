@@ -28,7 +28,7 @@ export default function CookieBanner() {
     <div className="fixed bottom-0 left-0 right-0 z-[9999] px-4 pb-4 md:px-8 md:pb-6">
       <div
         className="max-w-3xl mx-auto rounded-2xl shadow-2xl border border-[#C9A97E]/20 px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-        style={{ backgroundColor: "#0A1F1C" }}
+        style={{ backgroundColor: "#1D1D1F" }}
       >
         <p className="text-[13px] flex-1 leading-relaxed" style={{ color: "rgba(248,245,240,0.75)" }}>
           We use cookies and similar technologies to improve your experience. By continuing, you agree to our{" "}
@@ -48,7 +48,7 @@ export default function CookieBanner() {
           <button
             onClick={accept}
             className="text-[12px] font-semibold px-5 py-2 rounded-full transition-opacity hover:opacity-80"
-            style={{ backgroundColor: "#C9A97E", color: "#0A1F1C" }}
+            style={{ backgroundColor: "#C9A97E", color: "#1D1D1F" }}
           >
             Accept
           </button>

@@ -223,7 +223,7 @@ describe("Commission Routes", () => {
     });
 
     expect(commission).toHaveProperty("id");
-    expect(commission.taskRef).toMatch(/^BZ-[A-Z0-9]{6}$/);
+    expect(commission.taskRef).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
     expect(Number(commission.quotedPrice)).toBe(250000);
     expect(Number(commission.commissionPool)).toBe(100000);       // Staff Pool = 40% of 250k
     expect(Number(commission.institutionalAmount)).toBe(150000);  // Institutional = 60% of 250k

@@ -40,17 +40,10 @@ function createAuthContext(): TrpcContext {
 // ─── Reference Number Format ─────────────────────────────────────────────────
 
 describe("Reference Number Generation", () => {
-  it("generates reference numbers in BZ-YYYY-XXXX format", async () => {
+  it("generates reference numbers in HAM-XXXX-YYYY format", async () => {
     const { generateRefNumber } = await import("./db");
     const ref = generateRefNumber();
-    expect(ref).toMatch(/^BZ-\d{4}-\d{4}$/);
-  });
-
-  it("uses the current year in reference numbers", async () => {
-    const { generateRefNumber } = await import("./db");
-    const ref = generateRefNumber();
-    const currentYear = new Date().getFullYear().toString();
-    expect(ref).toContain(currentYear);
+    expect(ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
   });
 
   it("generates unique reference numbers", async () => {
@@ -70,7 +63,7 @@ describe("Public Tracking Lookup", () => {
   it("returns found: false for non-existent reference", async () => {
     const ctx = createPublicContext();
     const caller = appRouter.createCaller(ctx);
-    const result = await caller.tracking.lookup({ ref: "BZ-2026-0000" });
+    const result = await caller.tracking.lookup({ ref: "HAM-ZZ00-0000" });
     expect(result.found).toBe(false);
   });
 
@@ -167,7 +160,7 @@ describe("Lead Submission", () => {
       context: "New registration",
     });
     expect(result).toHaveProperty("ref");
-    expect(result.ref).toMatch(/^BZ-\d{4}-\d{4}$/);
+    expect(result.ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
     expect(result).toHaveProperty("leadId");
     expect(result).toHaveProperty("taskId");
     expect(typeof result.leadId).toBe("number");
@@ -181,7 +174,7 @@ describe("Lead Submission", () => {
       name: "Minimal Client",
       service: "Tax",
     });
-    expect(result.ref).toMatch(/^BZ-\d{4}-\d{4}$/);
+    expect(result.ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
     expect(result.leadId).toBeGreaterThan(0);
     expect(result.taskId).toBeGreaterThan(0);
   });

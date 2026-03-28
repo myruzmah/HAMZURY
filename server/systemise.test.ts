@@ -40,14 +40,14 @@ function createAuthContext(): TrpcContext {
 describe("Systemise Department", () => {
   // ─── Reference Number Generation ──────────────────────────────────────────
   describe("HZ Reference Number Generation", () => {
-    it("generates ref in HZ-XXXX format", () => {
+    it("generates ref in HAM-XXXX-YYYY format", () => {
       const ref = generateHZRefNumber();
-      expect(ref).toMatch(/^HZ-\d{4}$/);
+      expect(ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
     });
 
     it("generates unique refs", () => {
       const refs = new Set(Array.from({ length: 50 }, () => generateHZRefNumber()));
-      // With 4-digit random numbers, 50 should be mostly unique
+      // With alphanumeric random chars, 50 should be mostly unique
       expect(refs.size).toBeGreaterThan(40);
     });
   });
@@ -155,7 +155,7 @@ describe("Systemise Department", () => {
     it("returns null for non-existent ref", async () => {
       const caller = appRouter.createCaller(createPublicContext());
       try {
-        const result = await caller.systemise.trackLookup({ ref: "HZ-9999" });
+        const result = await caller.systemise.trackLookup({ ref: "HAM-ZZ00-9999" });
         expect(result).toBeNull();
       } catch (e: any) {
         // DB not available is acceptable in test

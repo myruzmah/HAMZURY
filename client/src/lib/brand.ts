@@ -6,27 +6,31 @@
 
 export const BRAND = {
   // Shared across all departments
-  bg: "#F8F5F0",        // Milk
-  text: "#2C2C2C",       // Charcoal
-  gold: "#C9A97E",       // HAMZURY Gold
+  bg: "#FAFAF8",         // Milk white
+  text: "#1D1D1F",       // Dark text
+  gold: "#C9A97E",       // HAMZURY Gold (5% accent max)
   white: "#FFFFFF",
 
   // Department-specific primary colors
-  federal: "#0A1F1C",    // Luxury Dark Green — Main site, CSO, CEO, Finance, HR, Founder
-  bizdoc: "#1B4D3E",     // Deep Green — BizDoc Consult
-  systemise: "#1E3A5F",  // Navy Blue — Systemise
-  skills: "#1B2A4A",     // Deep Navy — HAMZURY Skills
+  federal: "#86868B",    // Apple grey — Home, CSO, Finance, HR, Media, general
+  bizdoc: "#1B4D3E",     // Leaf green — BizDoc
+  systemise: "#0A1F1C",  // Dark teal — Systemise
+  skills: "#1B2A4A",     // Dark navy blue — Skills
+  founder: "#2C1A0E",    // Chocolate — Founder
   ridi: "#C9A97E",       // Gold — RIDI
+  metfix: "#1D1D1F",     // Dark — MetFix
 } as const;
 
-export type DepartmentKey = "federal" | "bizdoc" | "systemise" | "skills" | "ridi";
+export type DepartmentKey = "federal" | "bizdoc" | "systemise" | "skills" | "founder" | "ridi" | "metfix";
 
 export const DEPT_COLORS: Record<DepartmentKey, string> = {
   federal: BRAND.federal,
   bizdoc: BRAND.bizdoc,
   systemise: BRAND.systemise,
   skills: BRAND.skills,
+  founder: BRAND.founder,
   ridi: BRAND.ridi,
+  metfix: BRAND.metfix,
 };
 
 export const DEPT_LABELS: Record<DepartmentKey, string> = {

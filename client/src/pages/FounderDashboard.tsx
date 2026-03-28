@@ -3,6 +3,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
+import NotificationBell from "@/components/NotificationBell";
 import { FINANCE_SUMMARY, SHARED_TASKS, formatNaira } from "@/lib/dashboardStore";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -29,15 +30,16 @@ import {
   DollarSign, Users, CalendarDays, ClipboardCheck, FolderOpen,
   AlertTriangle, TrendingUp, CheckCircle2, Clock, FileText,
   BookOpen, GraduationCap, Shield, Lock, Calculator, Loader2, Target,
-  Eye, EyeOff, Plus, Trash2,
+  Eye, EyeOff, Plus, Trash2, Bot, Play, Pause, RotateCcw,
+  Copy, Phone, Building2, Pencil, ChevronDown, ChevronRight,
 } from "lucide-react";
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
 const CHOCO = "#2C1A0E";
 const GOLD  = "#C9A97E";
-const MILK  = "#FBF8EE";
+const MILK  = "#FAFAF8";   // Milk white
 
-type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files" | "vault";
+type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files" | "vault" | "aiops";
 
 // ─── Mock Seed Data ──────────────────────────────────────────────────────────
 const MOCK_REVENUE = [
@@ -152,6 +154,7 @@ export default function FounderDashboard() {
     { key: "assign",       icon: ClipboardCheck,   label: "Assign Tasks" },
     { key: "files",        icon: FolderOpen,       label: "Files & Resources" },
     { key: "vault",        icon: Lock,             label: "My Vault" },
+    { key: "aiops",        icon: Bot,              label: "AI Operations" },
   ];
 
   return (
@@ -215,6 +218,7 @@ export default function FounderDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <NotificationBell />
             <Link href="/hub/ceo" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>CEO Hub</Link>
             <Link href="/hub/cso" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>CSO</Link>
             <Link href="/hub/finance" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>Finance</Link>
@@ -245,6 +249,7 @@ export default function FounderDashboard() {
             {activeSection === "assign" && <AssignSection />}
             {activeSection === "files" && <FilesSection />}
             {activeSection === "vault" && <VaultSection />}
+            {activeSection === "aiops" && <AIOperationsSection />}
           </div>
         </ScrollArea>
       </div>
@@ -896,30 +901,99 @@ function AssignSection() {
 }
 
 // ─── Vault Section ───────────────────────────────────────────────────────────
-const VAULT_KEY = "hamzury-founder-vault";
+const VAULT_KEY_V2 = "hamzury-founder-vault-v2";
 
-type VaultAccount = { id: string; site: string; username: string; password: string };
-type VaultDoc = { id: string; label: string; status: "have" | "missing"; notes: string };
+// types
+type PasswordCategory = "bank" | "social" | "domain" | "tools" | "client";
+type PasswordEntry = { id: string; category: PasswordCategory; label: string; fields: Record<string, string> };
+type DocStatus = "have" | "missing" | "expired";
+type DocCategory = "registration" | "tax" | "legal" | "finance" | "staff";
+type VaultDocumentV2 = { id: string; category: DocCategory; label: string; status: DocStatus; expiryDate: string; notes: string };
+type AccessRow = { id: string; staffName: string; dashboard: boolean; bank: boolean; social: boolean; clientData: boolean };
+type EmergencyContact = { id: string; role: string; name: string; phone: string; email: string };
 type VaultGoal = { id: string; text: string; done: boolean };
 
-const DEFAULT_ACCOUNTS: VaultAccount[] = [
-  { id: "a1", site: "CAC Portal",         username: "hamzury@admin",      password: "cac@secure2026" },
-  { id: "a2", site: "FIRS TaxPro",        username: "tax@hamzury.com",    password: "firs@taxpr0" },
-  { id: "a3", site: "Google Workspace",   username: "admin@hamzury.com",  password: "gws@hamzury2026" },
+const CATEGORY_LABELS: Record<PasswordCategory, string> = {
+  bank: "Bank Accounts", social: "Social Media", domain: "Domain & Hosting", tools: "Tools & Services", client: "Client Portals",
+};
+
+const CATEGORY_FIELDS: Record<PasswordCategory, { key: string; label: string; secret?: boolean }[]> = {
+  bank: [
+    { key: "bankName", label: "Bank Name" }, { key: "accountName", label: "Account Name" },
+    { key: "accountNumber", label: "Account Number" }, { key: "loginUrl", label: "Login URL" },
+    { key: "username", label: "Username" }, { key: "password", label: "Password", secret: true },
+  ],
+  social: [
+    { key: "platform", label: "Platform" }, { key: "department", label: "Department" },
+    { key: "handle", label: "Handle" }, { key: "email", label: "Email" },
+    { key: "password", label: "Password", secret: true },
+  ],
+  domain: [
+    { key: "provider", label: "Provider" }, { key: "domain", label: "Domain" },
+    { key: "loginUrl", label: "Login URL" }, { key: "username", label: "Username" },
+    { key: "password", label: "Password", secret: true },
+  ],
+  tools: [
+    { key: "service", label: "Service Name" }, { key: "loginUrl", label: "Login URL" },
+    { key: "username", label: "Username" }, { key: "password", label: "Password", secret: true },
+  ],
+  client: [
+    { key: "clientName", label: "Client Name" }, { key: "portal", label: "Portal URL" },
+    { key: "username", label: "Username" }, { key: "password", label: "Password", secret: true },
+  ],
+};
+
+const DEFAULT_PASSWORDS: PasswordEntry[] = [
+  { id: "p1", category: "bank", label: "HAMZURY Business Account", fields: { bankName: "First Bank", accountName: "HAMZURY Innovation Hub", accountNumber: "3087XXXXXX", loginUrl: "https://firstbanknigeria.com", username: "hamzury_biz", password: "change_me_2026" } },
+  { id: "p2", category: "social", label: "Instagram — BizDoc", fields: { platform: "Instagram", department: "BizDoc", handle: "@bizdoc", email: "social@hamzury.com", password: "change_me_2026" } },
+  { id: "p3", category: "social", label: "Instagram — Systemise", fields: { platform: "Instagram", department: "Systemise", handle: "@systemise", email: "social@hamzury.com", password: "change_me_2026" } },
+  { id: "p4", category: "social", label: "Instagram — Skills", fields: { platform: "Instagram", department: "Skills", handle: "@hamzuryskills", email: "social@hamzury.com", password: "change_me_2026" } },
+  { id: "p5", category: "domain", label: "hamzury.com", fields: { provider: "Namecheap", domain: "hamzury.com", loginUrl: "https://namecheap.com", username: "hamzury", password: "change_me_2026" } },
+  { id: "p6", category: "tools", label: "Google Workspace", fields: { service: "Google Workspace", loginUrl: "https://admin.google.com", username: "admin@hamzury.com", password: "change_me_2026" } },
+  { id: "p7", category: "tools", label: "CAC Portal", fields: { service: "CAC Portal", loginUrl: "https://pre.cac.gov.ng", username: "hamzury@admin", password: "change_me_2026" } },
 ];
 
-const DEFAULT_DOCS: VaultDoc[] = [
-  { id: "d1", label: "CAC Certificate (BN/RC)",        status: "have",    notes: "" },
-  { id: "d2", label: "TIN Certificate",                status: "have",    notes: "" },
-  { id: "d3", label: "SCUML Registration",             status: "missing", notes: "" },
-  { id: "d4", label: "Company Seal",                   status: "have",    notes: "" },
-  { id: "d5", label: "Board Resolution (current year)",status: "missing", notes: "" },
-  { id: "d6", label: "Trademark Certificate",          status: "missing", notes: "" },
-  { id: "d7", label: "CERPAC (foreign partner)",       status: "missing", notes: "" },
-  { id: "d8", label: "Business Insurance",             status: "missing", notes: "" },
+const DOC_CATEGORY_LABELS: Record<DocCategory, string> = {
+  registration: "Company Registration", tax: "Tax", legal: "Legal", finance: "Finance", staff: "Staff",
+};
+
+const DEFAULT_DOCUMENTS: VaultDocumentV2[] = [
+  { id: "d1", category: "registration", label: "CAC Certificate", status: "have", expiryDate: "", notes: "" },
+  { id: "d2", category: "registration", label: "Memorandum of Association", status: "have", expiryDate: "", notes: "" },
+  { id: "d3", category: "registration", label: "Articles of Association", status: "missing", expiryDate: "", notes: "" },
+  { id: "d4", category: "registration", label: "BPP Certificate", status: "missing", expiryDate: "", notes: "" },
+  { id: "d5", category: "tax", label: "TIN Certificate", status: "have", expiryDate: "", notes: "" },
+  { id: "d6", category: "tax", label: "VAT Registration", status: "missing", expiryDate: "", notes: "" },
+  { id: "d7", category: "tax", label: "Tax Clearance Certificate", status: "missing", expiryDate: "2026-12-31", notes: "Renew annually" },
+  { id: "d8", category: "legal", label: "Office Lease Agreement", status: "have", expiryDate: "2027-03-01", notes: "" },
+  { id: "d9", category: "legal", label: "Business Insurance", status: "missing", expiryDate: "", notes: "" },
+  { id: "d10", category: "legal", label: "NDA Template", status: "have", expiryDate: "", notes: "" },
+  { id: "d11", category: "finance", label: "Company Bank Statement", status: "have", expiryDate: "", notes: "Request monthly" },
+  { id: "d12", category: "finance", label: "Audit Report", status: "missing", expiryDate: "", notes: "Due end of fiscal year" },
+  { id: "d13", category: "staff", label: "Employment Contracts", status: "have", expiryDate: "", notes: "" },
+  { id: "d14", category: "staff", label: "Volunteer Agreements", status: "missing", expiryDate: "", notes: "" },
 ];
 
-const DEFAULT_GOALS: VaultGoal[] = [
+const DEFAULT_ACCESS: AccessRow[] = [
+  { id: "ac1", staffName: "Idris Ibrahim (CEO)", dashboard: true, bank: false, social: false, clientData: true },
+  { id: "ac2", staffName: "Abdullahi Musa (BizDoc)", dashboard: true, bank: false, social: false, clientData: true },
+  { id: "ac3", staffName: "Tabitha (CSO)", dashboard: true, bank: false, social: false, clientData: true },
+  { id: "ac4", staffName: "Abubakar (Finance)", dashboard: true, bank: true, social: false, clientData: false },
+  { id: "ac5", staffName: "Khadija (BizDev/HR)", dashboard: true, bank: false, social: true, clientData: false },
+  { id: "ac6", staffName: "Hikma (Media)", dashboard: true, bank: false, social: true, clientData: false },
+  { id: "ac7", staffName: "Abdulmalik (Skills)", dashboard: true, bank: false, social: false, clientData: false },
+  { id: "ac8", staffName: "Rabilu (Security)", dashboard: false, bank: false, social: false, clientData: false },
+];
+
+const DEFAULT_EMERGENCY: EmergencyContact[] = [
+  { id: "em1", role: "Lawyer", name: "", phone: "", email: "" },
+  { id: "em2", role: "Accountant", name: "", phone: "", email: "" },
+  { id: "em3", role: "Bank Manager", name: "", phone: "", email: "" },
+  { id: "em4", role: "Landlord", name: "", phone: "", email: "" },
+  { id: "em5", role: "ICE (Personal Emergency)", name: "", phone: "", email: "" },
+];
+
+const DEFAULT_GOALS_V2: VaultGoal[] = [
   { id: "g1", text: "Review weekly metrics from all departments", done: false },
   { id: "g2", text: "Complete one deep-work session on brand strategy", done: false },
   { id: "g3", text: "Check in with CEO on operational blockers", done: false },
@@ -933,87 +1007,55 @@ const SCHEDULE_DAYS = [
   { day: "Fri", blocks: [{ time: "8–10:30", label: "Learning Hall" }, { time: "11–1:30", label: "Content Creation" }, { time: "2–4", label: "Strategy Work" }] },
 ];
 
-function loadVault() {
+type VaultData = { passwords: PasswordEntry[]; documents: VaultDocumentV2[]; access: AccessRow[]; emergency: EmergencyContact[]; goals: VaultGoal[] };
+
+function loadVault(): VaultData {
   try {
-    const raw = localStorage.getItem(VAULT_KEY);
-    if (!raw) return { accounts: DEFAULT_ACCOUNTS, docs: DEFAULT_DOCS, goals: DEFAULT_GOALS };
-    return JSON.parse(raw);
+    const raw = localStorage.getItem(VAULT_KEY_V2);
+    if (!raw) return { passwords: DEFAULT_PASSWORDS, documents: DEFAULT_DOCUMENTS, access: DEFAULT_ACCESS, emergency: DEFAULT_EMERGENCY, goals: DEFAULT_GOALS_V2 };
+    const p = JSON.parse(raw);
+    return {
+      passwords: p.passwords ?? DEFAULT_PASSWORDS,
+      documents: p.documents ?? DEFAULT_DOCUMENTS,
+      access: p.access ?? DEFAULT_ACCESS,
+      emergency: p.emergency ?? DEFAULT_EMERGENCY,
+      goals: p.goals ?? DEFAULT_GOALS_V2,
+    };
   } catch {
-    return { accounts: DEFAULT_ACCOUNTS, docs: DEFAULT_DOCS, goals: DEFAULT_GOALS };
+    return { passwords: DEFAULT_PASSWORDS, documents: DEFAULT_DOCUMENTS, access: DEFAULT_ACCESS, emergency: DEFAULT_EMERGENCY, goals: DEFAULT_GOALS_V2 };
   }
 }
 
-function saveVault(data: { accounts: VaultAccount[]; docs: VaultDoc[]; goals: VaultGoal[] }) {
-  localStorage.setItem(VAULT_KEY, JSON.stringify(data));
+function saveVault(data: VaultData) {
+  localStorage.setItem(VAULT_KEY_V2, JSON.stringify(data));
 }
 
 function VaultSection() {
-  const [vaultTab, setVaultTab] = useState<"accounts" | "documents" | "growth">("accounts");
+  type VaultTab = "passwords" | "documents" | "access" | "emergency" | "growth";
+  const [vaultTab, setVaultTab] = useState<VaultTab>("passwords");
 
   const initial = loadVault();
-  const [accounts, setAccounts] = useState<VaultAccount[]>(initial.accounts ?? DEFAULT_ACCOUNTS);
-  const [docs,     setDocs]     = useState<VaultDoc[]>(initial.docs ?? DEFAULT_DOCS);
-  const [goals,    setGoals]    = useState<VaultGoal[]>(initial.goals ?? DEFAULT_GOALS);
+  const [passwords, setPasswords] = useState<PasswordEntry[]>(initial.passwords);
+  const [documents, setDocuments] = useState<VaultDocumentV2[]>(initial.documents);
+  const [accessRows, setAccessRows] = useState<AccessRow[]>(initial.access);
+  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>(initial.emergency);
+  const [goals, setGoals] = useState<VaultGoal[]>(initial.goals);
 
-  const [revealedIds, setRevealedIds] = useState<string[]>([]);
-  const [showAddAccount, setShowAddAccount] = useState(false);
-  const [newSite, setNewSite]     = useState("");
-  const [newUser, setNewUser]     = useState("");
-  const [newPass, setNewPass]     = useState("");
-  const [newGoal, setNewGoal]     = useState("");
-
-  const persist = (a: VaultAccount[], d: VaultDoc[], g: VaultGoal[]) => {
-    setAccounts(a); setDocs(d); setGoals(g);
-    saveVault({ accounts: a, docs: d, goals: g });
+  const persist = (p: PasswordEntry[], d: VaultDocumentV2[], a: AccessRow[], e: EmergencyContact[], g: VaultGoal[]) => {
+    setPasswords(p); setDocuments(d); setAccessRows(a); setEmergencyContacts(e); setGoals(g);
+    saveVault({ passwords: p, documents: d, access: a, emergency: e, goals: g });
   };
 
-  const addAccount = () => {
-    if (!newSite || !newUser || !newPass) { toast.error("Fill all fields"); return; }
-    const updated = [...accounts, { id: `a${Date.now()}`, site: newSite, username: newUser, password: newPass }];
-    persist(updated, docs, goals);
-    setNewSite(""); setNewUser(""); setNewPass(""); setShowAddAccount(false);
-    toast.success("Account saved to vault");
-  };
-
-  const deleteAccount = (id: string) => {
-    persist(accounts.filter(a => a.id !== id), docs, goals);
-    toast("Account removed");
-  };
-
-  const toggleDoc = (id: string) => {
-    const updated = docs.map(d => d.id === id ? { ...d, status: d.status === "have" ? "missing" as const : "have" as const } : d);
-    persist(accounts, updated, goals);
-  };
-
-  const updateDocNote = (id: string, notes: string) => {
-    const updated = docs.map(d => d.id === id ? { ...d, notes } : d);
-    persist(accounts, updated, goals);
-  };
-
-  const toggleGoal = (id: string) => {
-    const updated = goals.map(g => g.id === id ? { ...g, done: !g.done } : g);
-    persist(accounts, docs, updated);
-  };
-
-  const addGoal = () => {
-    if (!newGoal.trim()) return;
-    const updated = [...goals, { id: `g${Date.now()}`, text: newGoal.trim(), done: false }];
-    persist(accounts, docs, updated);
-    setNewGoal("");
-  };
-
-  const deleteGoal = (id: string) => {
-    persist(accounts, docs, goals.filter(g => g.id !== id));
-  };
-
-  const VAULT_TABS = [
-    { key: "accounts"  as const, label: "Accounts" },
-    { key: "documents" as const, label: "Documents" },
-    { key: "growth"    as const, label: "Growth" },
+  const VAULT_TABS: { key: VaultTab; label: string }[] = [
+    { key: "passwords",  label: "Passwords" },
+    { key: "documents",  label: "Documents" },
+    { key: "access",     label: "Access Control" },
+    { key: "emergency",  label: "Emergency" },
+    { key: "growth",     label: "Growth" },
   ];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex items-start gap-3">
         <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
@@ -1021,12 +1063,12 @@ function VaultSection() {
         </div>
         <div>
           <h2 className="text-base font-medium" style={{ color: CHOCO }}>Personal Vault</h2>
-          <p className="text-[11px] mt-0.5" style={{ color: "#9CA3AF" }}>Data stored locally on this device only</p>
+          <p className="text-[11px] mt-0.5" style={{ color: "#9CA3AF" }}>Data stored locally on this device only &mdash; 5 sections</p>
         </div>
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ backgroundColor: `${CHOCO}08` }}>
+      <div className="flex gap-1 p-1 rounded-xl w-fit flex-wrap" style={{ backgroundColor: `${CHOCO}08` }}>
         {VAULT_TABS.map(t => (
           <button
             key={t.key}
@@ -1042,172 +1084,432 @@ function VaultSection() {
         ))}
       </div>
 
-      {/* ── Accounts Tab ── */}
-      {vaultTab === "accounts" && (
-        <div className="space-y-3">
-          {accounts.map(acc => {
-            const revealed = revealedIds.includes(acc.id);
-            return (
-              <div key={acc.id} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${CHOCO}08` }}>
-                <div className="flex-1 min-w-0 grid grid-cols-3 gap-3 items-center">
-                  <p className="text-sm font-medium truncate" style={{ color: CHOCO }}>{acc.site}</p>
-                  <p className="text-sm opacity-60 truncate" style={{ color: CHOCO }}>{acc.username}</p>
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-mono opacity-50 truncate" style={{ color: CHOCO }}>
-                      {revealed ? acc.password : "••••••••"}
-                    </p>
-                    <button
-                      onClick={() => setRevealedIds(p => revealed ? p.filter(x => x !== acc.id) : [...p, acc.id])}
-                      className="shrink-0 opacity-30 hover:opacity-70 transition-opacity"
-                    >
-                      {revealed ? <EyeOff size={14} style={{ color: CHOCO }} /> : <Eye size={14} style={{ color: CHOCO }} />}
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={() => deleteAccount(acc.id)}
-                  className="shrink-0 opacity-20 hover:opacity-60 transition-opacity"
-                >
-                  <Trash2 size={14} style={{ color: "#EF4444" }} />
-                </button>
-              </div>
-            );
-          })}
-
-          {showAddAccount ? (
-            <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GOLD}25` }}>
-              <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: CHOCO }}>New Account</p>
-              <Input placeholder="Site / App name *" value={newSite} onChange={e => setNewSite(e.target.value)} className="border-gray-200 bg-gray-50" />
-              <Input placeholder="Username / Email *" value={newUser} onChange={e => setNewUser(e.target.value)} className="border-gray-200 bg-gray-50" />
-              <Input placeholder="Password *" type="password" value={newPass} onChange={e => setNewPass(e.target.value)} className="border-gray-200 bg-gray-50" />
-              <div className="flex gap-2">
-                <Button size="sm" onClick={addAccount} style={{ backgroundColor: CHOCO, color: GOLD }}>Save</Button>
-                <Button size="sm" variant="ghost" onClick={() => { setShowAddAccount(false); setNewSite(""); setNewUser(""); setNewPass(""); }}>Cancel</Button>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowAddAccount(true)}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed text-sm transition-all hover:opacity-70"
-              style={{ borderColor: `${CHOCO}15`, color: `${CHOCO}40` }}
-            >
-              <Plus size={14} />
-              Add Account
-            </button>
-          )}
-        </div>
+      {vaultTab === "passwords" && (
+        <PasswordsTab passwords={passwords} onChange={p => persist(p, documents, accessRows, emergencyContacts, goals)} />
       )}
-
-      {/* ── Documents Tab ── */}
       {vaultTab === "documents" && (
-        <div className="space-y-3">
-          {docs.map(doc => (
-            <div key={doc.id} className="bg-white rounded-2xl border p-4 space-y-2" style={{ borderColor: `${CHOCO}08` }}>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => toggleDoc(doc.id)}
-                  className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
-                  style={{
-                    borderColor: doc.status === "have" ? "#22C55E" : `${CHOCO}25`,
-                    backgroundColor: doc.status === "have" ? "#22C55E" : "transparent",
-                  }}
-                >
-                  {doc.status === "have" && <CheckCircle2 size={10} color="white" />}
-                </button>
-                <p className="flex-1 text-sm font-normal" style={{ color: CHOCO }}>{doc.label}</p>
-                <span
-                  className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0"
-                  style={{
-                    backgroundColor: doc.status === "have" ? "#DCFCE7" : "#FEF3C7",
-                    color:           doc.status === "have" ? "#166534" : "#92400E",
-                  }}
-                >
-                  {doc.status === "have" ? "Have it" : "Missing"}
-                </span>
+        <DocumentsTab documents={documents} onChange={d => persist(passwords, d, accessRows, emergencyContacts, goals)} />
+      )}
+      {vaultTab === "access" && (
+        <AccessTab access={accessRows} onChange={a => persist(passwords, documents, a, emergencyContacts, goals)} />
+      )}
+      {vaultTab === "emergency" && (
+        <EmergencyTab contacts={emergencyContacts} onChange={e => persist(passwords, documents, accessRows, e, goals)} />
+      )}
+      {vaultTab === "growth" && (
+        <GrowthTab goals={goals} onChange={g => persist(passwords, documents, accessRows, emergencyContacts, g)} />
+      )}
+    </div>
+  );
+}
+
+// ─── Passwords & Logins Tab ──────────────────────────────────────────────────
+function PasswordsTab({ passwords, onChange }: { passwords: PasswordEntry[]; onChange: (p: PasswordEntry[]) => void }) {
+  const [revealedIds, setRevealedIds] = useState<string[]>([]);
+  const [expandedCats, setExpandedCats] = useState<PasswordCategory[]>(["bank"]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
+  const [addingCat, setAddingCat] = useState<PasswordCategory | null>(null);
+  const [newFields, setNewFields] = useState<Record<string, string>>({});
+  const [newLabel, setNewLabel] = useState("");
+
+  const toggleCat = (cat: PasswordCategory) =>
+    setExpandedCats(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(() => toast.success(`${label} copied`)).catch(() => toast.error("Copy failed"));
+  };
+
+  const startEdit = (entry: PasswordEntry) => {
+    setEditingId(entry.id);
+    setEditFields({ ...entry.fields, __label: entry.label });
+  };
+
+  const saveEdit = (id: string) => {
+    const { __label, ...fields } = editFields;
+    onChange(passwords.map(p => p.id === id ? { ...p, label: __label || p.label, fields } : p));
+    setEditingId(null);
+    toast.success("Entry updated");
+  };
+
+  const deleteEntry = (id: string) => {
+    onChange(passwords.filter(p => p.id !== id));
+    toast("Entry removed");
+  };
+
+  const startAdd = (cat: PasswordCategory) => {
+    setAddingCat(cat);
+    setNewLabel("");
+    const init: Record<string, string> = {};
+    CATEGORY_FIELDS[cat].forEach(f => { init[f.key] = ""; });
+    setNewFields(init);
+  };
+
+  const saveNew = () => {
+    if (!addingCat || !newLabel.trim()) { toast.error("Label is required"); return; }
+    onChange([...passwords, { id: `p${Date.now()}`, category: addingCat, label: newLabel.trim(), fields: { ...newFields } }]);
+    setAddingCat(null);
+    toast.success("Entry added to vault");
+  };
+
+  const categories: PasswordCategory[] = ["bank", "social", "domain", "tools", "client"];
+
+  return (
+    <div className="space-y-4">
+      {categories.map(cat => {
+        const entries = passwords.filter(p => p.category === cat);
+        const expanded = expandedCats.includes(cat);
+        return (
+          <div key={cat} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+            <button onClick={() => toggleCat(cat)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors">
+              {expanded ? <ChevronDown size={14} style={{ color: CHOCO, opacity: 0.4 }} /> : <ChevronRight size={14} style={{ color: CHOCO, opacity: 0.4 }} />}
+              <p className="text-sm font-medium flex-1" style={{ color: CHOCO }}>{CATEGORY_LABELS[cat]}</p>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{entries.length}</span>
+            </button>
+
+            {expanded && (
+              <div className="border-t px-4 pb-4 space-y-3" style={{ borderColor: `${CHOCO}06` }}>
+                {entries.map(entry => {
+                  const isEditing = editingId === entry.id;
+                  const revealed = revealedIds.includes(entry.id);
+                  const fieldDefs = CATEGORY_FIELDS[cat];
+
+                  if (isEditing) {
+                    return (
+                      <div key={entry.id} className="rounded-xl border p-4 space-y-2 mt-3" style={{ borderColor: `${GOLD}30` }}>
+                        <Input placeholder="Label *" value={editFields.__label || ""} onChange={e => setEditFields(p => ({ ...p, __label: e.target.value }))} className="border-gray-200 bg-gray-50 text-sm" />
+                        {fieldDefs.map(f => (
+                          <Input key={f.key} placeholder={f.label} value={editFields[f.key] || ""} onChange={e => setEditFields(p => ({ ...p, [f.key]: e.target.value }))} className="border-gray-200 bg-gray-50 text-sm" />
+                        ))}
+                        <div className="flex gap-2 pt-1">
+                          <Button size="sm" onClick={() => saveEdit(entry.id)} style={{ backgroundColor: CHOCO, color: GOLD }}>Save</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={entry.id} className="rounded-xl border p-4 mt-3 space-y-2" style={{ borderColor: `${CHOCO}06` }}>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium" style={{ color: CHOCO }}>{entry.label}</p>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => startEdit(entry)} className="p-1.5 rounded-lg opacity-30 hover:opacity-70 transition-opacity">
+                            <Pencil size={13} style={{ color: CHOCO }} />
+                          </button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <button className="p-1.5 rounded-lg opacity-20 hover:opacity-60 transition-opacity">
+                                <Trash2 size={13} style={{ color: "#EF4444" }} />
+                              </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Entry</AlertDialogTitle>
+                                <AlertDialogDescription>Remove &ldquo;{entry.label}&rdquo; from the vault? This cannot be undone.</AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteEntry(entry.id)}>Delete</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
+                        {fieldDefs.map(f => {
+                          const val = entry.fields[f.key] || "";
+                          if (!val) return null;
+                          const isSecret = f.secret;
+                          return (
+                            <div key={f.key} className="flex items-center gap-2 py-1">
+                              <span className="text-[10px] uppercase tracking-wider opacity-40 w-20 shrink-0" style={{ color: CHOCO }}>{f.label}</span>
+                              <span className="text-sm font-mono opacity-60 truncate flex-1" style={{ color: CHOCO }}>
+                                {isSecret && !revealed ? "\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" : val}
+                              </span>
+                              {isSecret && (
+                                <button onClick={() => setRevealedIds(p => revealed ? p.filter(x => x !== entry.id) : [...p, entry.id])} className="shrink-0 opacity-30 hover:opacity-70 transition-opacity">
+                                  {revealed ? <EyeOff size={13} style={{ color: CHOCO }} /> : <Eye size={13} style={{ color: CHOCO }} />}
+                                </button>
+                              )}
+                              <button onClick={() => copyToClipboard(val, f.label)} className="shrink-0 opacity-20 hover:opacity-60 transition-opacity">
+                                <Copy size={13} style={{ color: CHOCO }} />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {addingCat === cat ? (
+                  <div className="rounded-xl border p-4 space-y-2 mt-3" style={{ borderColor: `${GOLD}30` }}>
+                    <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: CHOCO }}>New {CATEGORY_LABELS[cat]} Entry</p>
+                    <Input placeholder="Label (e.g. account name) *" value={newLabel} onChange={e => setNewLabel(e.target.value)} className="border-gray-200 bg-gray-50 text-sm" />
+                    {CATEGORY_FIELDS[cat].map(f => (
+                      <Input key={f.key} placeholder={f.label} type={f.secret ? "password" : "text"} value={newFields[f.key] || ""} onChange={e => setNewFields(p => ({ ...p, [f.key]: e.target.value }))} className="border-gray-200 bg-gray-50 text-sm" />
+                    ))}
+                    <div className="flex gap-2 pt-1">
+                      <Button size="sm" onClick={saveNew} style={{ backgroundColor: CHOCO, color: GOLD }}>Save</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setAddingCat(null)}>Cancel</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => startAdd(cat)} className="w-full flex items-center justify-center gap-2 py-2.5 mt-3 rounded-xl border-2 border-dashed text-xs transition-all hover:opacity-70" style={{ borderColor: `${CHOCO}12`, color: `${CHOCO}40` }}>
+                    <Plus size={13} /> Add {CATEGORY_LABELS[cat]} Entry
+                  </button>
+                )}
               </div>
-              <Input
-                placeholder="Notes (optional)"
-                value={doc.notes}
-                onChange={e => updateDocNote(doc.id, e.target.value)}
-                className="border-gray-100 bg-gray-50 text-xs h-8"
-              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Critical Documents Tab ──────────────────────────────────────────────────
+function DocumentsTab({ documents, onChange }: { documents: VaultDocumentV2[]; onChange: (d: VaultDocumentV2[]) => void }) {
+  const [expandedCats, setExpandedCats] = useState<DocCategory[]>(["registration"]);
+
+  const toggleCat = (cat: DocCategory) =>
+    setExpandedCats(p => p.includes(cat) ? p.filter(c => c !== cat) : [...p, cat]);
+
+  const updateDoc = (id: string, patch: Partial<VaultDocumentV2>) => {
+    onChange(documents.map(d => d.id === id ? { ...d, ...patch } : d));
+  };
+
+  const statusBadge = (status: DocStatus) => {
+    if (status === "have")    return { bg: "#DCFCE7", color: "#166534", label: "Have it" };
+    if (status === "expired") return { bg: "#FEE2E2", color: "#991B1B", label: "Expired" };
+    return { bg: "#FEF3C7", color: "#92400E", label: "Missing" };
+  };
+
+  const categories: DocCategory[] = ["registration", "tax", "legal", "finance", "staff"];
+  const totalHave = documents.filter(d => d.status === "have").length;
+  const totalMissing = documents.filter(d => d.status === "missing").length;
+  const totalExpired = documents.filter(d => d.status === "expired").length;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#22C55E" }} />
+          <span className="text-xs" style={{ color: CHOCO, opacity: 0.6 }}>{totalHave} have</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#EAB308" }} />
+          <span className="text-xs" style={{ color: CHOCO, opacity: 0.6 }}>{totalMissing} missing</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: "#EF4444" }} />
+          <span className="text-xs" style={{ color: CHOCO, opacity: 0.6 }}>{totalExpired} expired</span>
+        </div>
+      </div>
+
+      {categories.map(cat => {
+        const items = documents.filter(d => d.category === cat);
+        const expanded = expandedCats.includes(cat);
+        return (
+          <div key={cat} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+            <button onClick={() => toggleCat(cat)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors">
+              {expanded ? <ChevronDown size={14} style={{ color: CHOCO, opacity: 0.4 }} /> : <ChevronRight size={14} style={{ color: CHOCO, opacity: 0.4 }} />}
+              <p className="text-sm font-medium flex-1" style={{ color: CHOCO }}>{DOC_CATEGORY_LABELS[cat]}</p>
+              <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
+                {items.filter(i => i.status === "have").length}/{items.length}
+              </span>
+            </button>
+
+            {expanded && (
+              <div className="border-t px-4 pb-4 space-y-2" style={{ borderColor: `${CHOCO}06` }}>
+                {items.map(doc => {
+                  const badge = statusBadge(doc.status);
+                  return (
+                    <div key={doc.id} className="rounded-xl border p-3 mt-2 space-y-2" style={{ borderColor: `${CHOCO}06` }}>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => {
+                            const next: DocStatus = doc.status === "have" ? "missing" : doc.status === "missing" ? "expired" : "have";
+                            updateDoc(doc.id, { status: next });
+                          }}
+                          className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
+                          style={{
+                            borderColor: doc.status === "have" ? "#22C55E" : doc.status === "expired" ? "#EF4444" : `${CHOCO}25`,
+                            backgroundColor: doc.status === "have" ? "#22C55E" : doc.status === "expired" ? "#EF4444" : "transparent",
+                          }}
+                        >
+                          {doc.status === "have" && <CheckCircle2 size={10} color="white" />}
+                          {doc.status === "expired" && <AlertTriangle size={10} color="white" />}
+                        </button>
+                        <p className="flex-1 text-sm font-normal" style={{ color: CHOCO }}>{doc.label}</p>
+                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0" style={{ backgroundColor: badge.bg, color: badge.color }}>
+                          {badge.label}
+                        </span>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        <Input type="date" value={doc.expiryDate} onChange={e => updateDoc(doc.id, { expiryDate: e.target.value })} className="border-gray-100 bg-gray-50 text-xs h-8 w-40" />
+                        <Input placeholder="Notes" value={doc.notes} onChange={e => updateDoc(doc.id, { notes: e.target.value })} className="border-gray-100 bg-gray-50 text-xs h-8 flex-1" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Access Control Tab ──────────────────────────────────────────────────────
+function AccessTab({ access, onChange }: { access: AccessRow[]; onChange: (a: AccessRow[]) => void }) {
+  const toggleField = (id: string, field: "dashboard" | "bank" | "social" | "clientData") => {
+    onChange(access.map(a => a.id === id ? { ...a, [field]: !a[field] } : a));
+  };
+
+  const ToggleSwitch = ({ on, onToggle }: { on: boolean; onToggle: () => void }) => (
+    <button onClick={onToggle} className="w-9 h-5 rounded-full flex items-center transition-all px-0.5" style={{ backgroundColor: on ? "#22C55E" : `${CHOCO}15` }}>
+      <div className="w-4 h-4 rounded-full bg-white shadow-sm transition-all" style={{ transform: on ? "translateX(16px)" : "translateX(0)" }} />
+    </button>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl p-4" style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20` }}>
+        <p className="text-xs leading-relaxed" style={{ color: CHOCO, opacity: 0.6 }}>
+          This is a visual reference for the Founder only. It tracks who should have access to what. Toggles are not enforced by the system.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+        <div className="grid grid-cols-5 gap-2 px-5 py-3 border-b text-[10px] uppercase tracking-wider opacity-40 font-normal" style={{ borderColor: `${CHOCO}08`, color: CHOCO }}>
+          <span>Staff Name</span>
+          <span className="text-center">Dashboard</span>
+          <span className="text-center">Bank Access</span>
+          <span className="text-center">Social Media</span>
+          <span className="text-center">Client Data</span>
+        </div>
+
+        {access.map(row => (
+          <div key={row.id} className="grid grid-cols-5 gap-2 px-5 py-3 border-b last:border-0 items-center" style={{ borderColor: `${CHOCO}06` }}>
+            <p className="text-sm font-normal truncate" style={{ color: CHOCO }}>{row.staffName}</p>
+            <div className="flex justify-center"><ToggleSwitch on={row.dashboard} onToggle={() => toggleField(row.id, "dashboard")} /></div>
+            <div className="flex justify-center"><ToggleSwitch on={row.bank} onToggle={() => toggleField(row.id, "bank")} /></div>
+            <div className="flex justify-center"><ToggleSwitch on={row.social} onToggle={() => toggleField(row.id, "social")} /></div>
+            <div className="flex justify-center"><ToggleSwitch on={row.clientData} onToggle={() => toggleField(row.id, "clientData")} /></div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Emergency Contacts Tab ──────────────────────────────────────────────────
+function EmergencyTab({ contacts, onChange }: { contacts: EmergencyContact[]; onChange: (c: EmergencyContact[]) => void }) {
+  const updateContact = (id: string, patch: Partial<EmergencyContact>) => {
+    onChange(contacts.map(c => c.id === id ? { ...c, ...patch } : c));
+  };
+
+  const roleIcon = (role: string) => {
+    if (role.includes("Lawyer"))     return Shield;
+    if (role.includes("Accountant")) return Calculator;
+    if (role.includes("Bank"))       return Building2;
+    if (role.includes("Landlord"))   return Building2;
+    return Phone;
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl p-4" style={{ backgroundColor: "#FEF2F2", border: "1px solid #FECACA" }}>
+        <p className="text-xs leading-relaxed" style={{ color: "#991B1B" }}>
+          Keep these contacts up to date. In an emergency, you need immediate access to your lawyer, accountant, bank manager, and personal contacts.
+        </p>
+      </div>
+
+      {contacts.map(c => {
+        const Icon = roleIcon(c.role);
+        return (
+          <div key={c.id} className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${CHOCO}08` }}>
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
+                <Icon size={14} style={{ color: GOLD }} />
+              </div>
+              <p className="text-sm font-medium" style={{ color: CHOCO }}>{c.role}</p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Input placeholder="Full name" value={c.name} onChange={e => updateContact(c.id, { name: e.target.value })} className="border-gray-100 bg-gray-50 text-sm" />
+              <Input placeholder="Phone number" value={c.phone} onChange={e => updateContact(c.id, { phone: e.target.value })} className="border-gray-100 bg-gray-50 text-sm" />
+              <Input placeholder="Email" value={c.email} onChange={e => updateContact(c.id, { email: e.target.value })} className="border-gray-100 bg-gray-50 text-sm" />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Growth Tab ──────────────────────────────────────────────────────────────
+function GrowthTab({ goals, onChange }: { goals: VaultGoal[]; onChange: (g: VaultGoal[]) => void }) {
+  const [newGoal, setNewGoal] = useState("");
+
+  const toggleGoal = (id: string) => onChange(goals.map(g => g.id === id ? { ...g, done: !g.done } : g));
+  const addGoal = () => {
+    if (!newGoal.trim()) return;
+    onChange([...goals, { id: `g${Date.now()}`, text: newGoal.trim(), done: false }]);
+    setNewGoal("");
+  };
+  const deleteGoal = (id: string) => onChange(goals.filter(g => g.id !== id));
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-2xl p-5" style={{ backgroundColor: `${GOLD}10`, border: `1px solid ${GOLD}25` }}>
+        <p className="text-sm italic leading-relaxed mb-3" style={{ color: CHOCO }}>
+          &ldquo;The system is the business. Build it so it runs without you.&rdquo;
+        </p>
+        <p className="text-xs font-medium opacity-50" style={{ color: CHOCO }}>-- Muhammad Hamzury</p>
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>Weekly Goals</p>
+        <div className="space-y-2">
+          {goals.map(g => (
+            <div key={g.id} className="bg-white rounded-2xl border p-3 flex items-center gap-3" style={{ borderColor: `${CHOCO}08` }}>
+              <button onClick={() => toggleGoal(g.id)} className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all" style={{ borderColor: g.done ? GOLD : `${CHOCO}25`, backgroundColor: g.done ? GOLD : "transparent" }}>
+                {g.done && <CheckCircle2 size={10} color="white" />}
+              </button>
+              <p className="flex-1 text-sm" style={{ color: CHOCO, opacity: g.done ? 0.35 : 0.8, textDecoration: g.done ? "line-through" : "none" }}>{g.text}</p>
+              <button onClick={() => deleteGoal(g.id)} className="opacity-20 hover:opacity-50 transition-opacity shrink-0">
+                <Trash2 size={13} style={{ color: "#EF4444" }} />
+              </button>
             </div>
           ))}
         </div>
-      )}
-
-      {/* ── Growth Tab ── */}
-      {vaultTab === "growth" && (
-        <div className="space-y-6">
-          {/* Quote */}
-          <div className="rounded-2xl p-5" style={{ backgroundColor: `${GOLD}10`, border: `1px solid ${GOLD}25` }}>
-            <p className="text-sm italic leading-relaxed mb-3" style={{ color: CHOCO }}>
-              "The system is the business. Build it so it runs without you."
-            </p>
-            <p className="text-xs font-medium opacity-50" style={{ color: CHOCO }}>— Muhammad Hamzury</p>
-          </div>
-
-          {/* Weekly Goals */}
-          <div>
-            <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>Weekly Goals</p>
-            <div className="space-y-2">
-              {goals.map(g => (
-                <div key={g.id} className="bg-white rounded-2xl border p-3 flex items-center gap-3" style={{ borderColor: `${CHOCO}08` }}>
-                  <button
-                    onClick={() => toggleGoal(g.id)}
-                    className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all"
-                    style={{
-                      borderColor: g.done ? GOLD : `${CHOCO}25`,
-                      backgroundColor: g.done ? GOLD : "transparent",
-                    }}
-                  >
-                    {g.done && <CheckCircle2 size={10} color="white" />}
-                  </button>
-                  <p
-                    className="flex-1 text-sm"
-                    style={{ color: CHOCO, opacity: g.done ? 0.35 : 0.8, textDecoration: g.done ? "line-through" : "none" }}
-                  >
-                    {g.text}
-                  </p>
-                  <button onClick={() => deleteGoal(g.id)} className="opacity-20 hover:opacity-50 transition-opacity shrink-0">
-                    <Trash2 size={13} style={{ color: "#EF4444" }} />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2 mt-3">
-              <Input
-                placeholder="Add a goal for this week..."
-                value={newGoal}
-                onChange={e => setNewGoal(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && addGoal()}
-                className="border-gray-200 bg-gray-50 text-sm"
-              />
-              <Button size="sm" onClick={addGoal} style={{ backgroundColor: CHOCO, color: GOLD }}>
-                <Plus size={14} />
-              </Button>
-            </div>
-          </div>
-
-          {/* Weekly Schedule */}
-          <div>
-            <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>5-Day Schedule</p>
-            <div className="grid grid-cols-5 gap-2">
-              {SCHEDULE_DAYS.map(({ day, blocks }) => (
-                <div key={day} className="bg-white rounded-2xl border p-3 space-y-2" style={{ borderColor: `${CHOCO}08` }}>
-                  <p className="text-xs font-medium text-center uppercase tracking-wider" style={{ color: GOLD }}>{day}</p>
-                  {blocks.map(b => (
-                    <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: `${CHOCO}06` }}>
-                      <p className="text-[10px] font-medium leading-snug" style={{ color: CHOCO }}>{b.label}</p>
-                      <p className="text-[9px] opacity-40 mt-0.5" style={{ color: CHOCO }}>{b.time}</p>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex gap-2 mt-3">
+          <Input placeholder="Add a goal for this week..." value={newGoal} onChange={e => setNewGoal(e.target.value)} onKeyDown={e => e.key === "Enter" && addGoal()} className="border-gray-200 bg-gray-50 text-sm" />
+          <Button size="sm" onClick={addGoal} style={{ backgroundColor: CHOCO, color: GOLD }}>
+            <Plus size={14} />
+          </Button>
         </div>
-      )}
+      </div>
+
+      <div>
+        <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>5-Day Schedule</p>
+        <div className="grid grid-cols-5 gap-2">
+          {SCHEDULE_DAYS.map(({ day, blocks }) => (
+            <div key={day} className="bg-white rounded-2xl border p-3 space-y-2" style={{ borderColor: `${CHOCO}08` }}>
+              <p className="text-xs font-medium text-center uppercase tracking-wider" style={{ color: GOLD }}>{day}</p>
+              {blocks.map(b => (
+                <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: `${CHOCO}06` }}>
+                  <p className="text-[10px] font-medium leading-snug" style={{ color: CHOCO }}>{b.label}</p>
+                  <p className="text-[9px] opacity-40 mt-0.5" style={{ color: CHOCO }}>{b.time}</p>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -1238,6 +1540,264 @@ function FilesSection() {
             </Button>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── AI Operations Section ──────────────────────────────────────────────────
+const AI_AGENTS_DEF = [
+  { id: "evelyn", name: "Evelyn", emoji: "\uD83D\uDC69\u200D\uD83D\uDCBC", dept: "CSO / Client Relations" },
+  { id: "amara",  name: "Amara",  emoji: "\uD83D\uDCCB", dept: "BizDoc / Compliance" },
+  { id: "nova",   name: "Nova",   emoji: "\uD83D\uDDA5\uFE0F", dept: "Systemise / Tech Ops" },
+  { id: "zara",   name: "Zara",   emoji: "\uD83C\uDF93", dept: "Skills / Education" },
+  { id: "kash",   name: "Kash",   emoji: "\uD83D\uDCB0", dept: "Finance / Revenue" },
+  { id: "muse",   name: "Muse",   emoji: "\uD83D\uDCF1", dept: "Media / Content" },
+];
+
+type AgentStatus = "online" | "paused" | "error";
+
+interface AgentData {
+  id: string;
+  name: string;
+  emoji: string;
+  dept: string;
+  status: AgentStatus;
+  tasksToday: number;
+  successRate: number;
+  lastAction: string;
+  lastActionTime: string;
+  enabled: boolean;
+}
+
+function AIOperationsSection() {
+  const DARK = "#1D1D1F";
+
+  const agentStatusQuery = trpc.agents.status.useQuery(undefined, {
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const agentLogsQuery = trpc.agents.logs.useQuery(undefined, {
+    refetchInterval: 30000,
+    retry: false,
+  });
+
+  const toggleMutation = trpc.agents.toggle.useMutation({
+    onSuccess: () => { agentStatusQuery.refetch(); },
+    onError: () => toast.error("Failed to toggle agent"),
+  });
+  const runMutation = trpc.agents.run.useMutation({
+    onSuccess: () => {
+      toast.success("Agent run triggered");
+      agentStatusQuery.refetch();
+    },
+    onError: () => toast.error("Failed to run agent"),
+  });
+
+  // Build agent data — merge API response with static definitions
+  const rawAgents: any[] = agentStatusQuery.data || [];
+  const agents: AgentData[] = AI_AGENTS_DEF.map(def => {
+    const remote = rawAgents.find((a: any) => a.id === def.id);
+    return {
+      ...def,
+      status: (remote?.status as AgentStatus) || "paused",
+      tasksToday: remote?.tasksToday ?? 0,
+      successRate: remote?.successRate ?? 0,
+      lastAction: remote?.lastAction || "Awaiting first run",
+      lastActionTime: remote?.lastActionTime || "",
+      enabled: remote?.enabled ?? false,
+    };
+  });
+
+  const rawLogs: any[] = agentLogsQuery.data || [];
+
+  const statusDot = (s: AgentStatus) =>
+    s === "online" ? "#22C55E" : s === "paused" ? "#EAB308" : "#EF4444";
+
+  const statusLabel = (s: AgentStatus) =>
+    s === "online" ? "Online" : s === "paused" ? "Paused" : "Error";
+
+  const resultColor = (r: string) => {
+    const l = r?.toLowerCase() || "";
+    if (l.includes("success") || l === "ok") return "#22C55E";
+    if (l.includes("error") || l.includes("fail")) return "#EF4444";
+    if (l.includes("warn")) return "#EAB308";
+    return `${DARK}70`;
+  };
+
+  const handleRunAll = async () => {
+    for (const agent of agents) {
+      try { await runMutation.mutateAsync({ agentId: agent.id }); } catch {}
+    }
+    toast.success("All agents triggered");
+  };
+  const handlePauseAll = async () => {
+    for (const agent of agents) {
+      if (agent.enabled) {
+        try { await toggleMutation.mutateAsync({ agentId: agent.id, enabled: false }); } catch {}
+      }
+    }
+    toast.success("All agents paused");
+  };
+  const handleResumeAll = async () => {
+    for (const agent of agents) {
+      if (!agent.enabled) {
+        try { await toggleMutation.mutateAsync({ agentId: agent.id, enabled: true }); } catch {}
+      }
+    }
+    toast.success("All agents resumed");
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* Header + Quick Controls */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: DARK }}>AI Operations</h2>
+          <p className="text-xs opacity-30 mt-0.5" style={{ color: DARK }}>Command center for all HAMZURY AI agents</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            size="sm"
+            style={{ backgroundColor: DARK, color: GOLD }}
+            onClick={handleRunAll}
+            disabled={runMutation.isPending}
+          >
+            <Play size={12} className="mr-1.5" /> Run All Agents
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            style={{ borderColor: `${DARK}20`, color: DARK }}
+            onClick={handlePauseAll}
+            disabled={toggleMutation.isPending}
+          >
+            <Pause size={12} className="mr-1.5" /> Pause All
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            style={{ borderColor: `${DARK}20`, color: DARK }}
+            onClick={handleResumeAll}
+            disabled={toggleMutation.isPending}
+          >
+            <RotateCcw size={12} className="mr-1.5" /> Resume All
+          </Button>
+        </div>
+      </div>
+
+      {/* Agent Status Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {agents.map(agent => (
+          <div
+            key={agent.id}
+            className="bg-white rounded-2xl border p-5 flex flex-col gap-4"
+            style={{ borderColor: `${DARK}08` }}
+          >
+            {/* Agent header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{agent.emoji}</span>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: DARK }}>{agent.name}</p>
+                  <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: DARK }}>{agent.dept}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusDot(agent.status) }} />
+                <span className="text-[10px] font-medium" style={{ color: statusDot(agent.status) }}>{statusLabel(agent.status)}</span>
+              </div>
+            </div>
+
+            {/* Stats row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-xl p-2.5 text-center" style={{ backgroundColor: `${DARK}04` }}>
+                <p className="text-lg font-medium leading-none" style={{ color: DARK }}>{agent.tasksToday}</p>
+                <p className="text-[9px] uppercase tracking-wider opacity-40 mt-1" style={{ color: DARK }}>Tasks Today</p>
+              </div>
+              <div className="rounded-xl p-2.5 text-center" style={{ backgroundColor: `${DARK}04` }}>
+                <p className="text-lg font-medium leading-none" style={{ color: agent.successRate >= 90 ? "#22C55E" : agent.successRate >= 70 ? "#EAB308" : "#EF4444" }}>
+                  {agent.successRate}%
+                </p>
+                <p className="text-[9px] uppercase tracking-wider opacity-40 mt-1" style={{ color: DARK }}>Success Rate</p>
+              </div>
+            </div>
+
+            {/* Last action */}
+            <div className="rounded-xl p-2.5" style={{ backgroundColor: `${DARK}04` }}>
+              <p className="text-xs opacity-60 leading-snug" style={{ color: DARK }}>{agent.lastAction}</p>
+              {agent.lastActionTime && (
+                <p className="text-[9px] opacity-30 mt-1" style={{ color: DARK }}>{agent.lastActionTime}</p>
+              )}
+            </div>
+
+            {/* Controls */}
+            <div className="flex items-center justify-between pt-1 border-t" style={{ borderColor: `${DARK}06` }}>
+              {/* Toggle switch */}
+              <button
+                onClick={() => toggleMutation.mutate({ agentId: agent.id, enabled: !agent.enabled })}
+                disabled={toggleMutation.isPending}
+                className="flex items-center gap-2 text-xs"
+                style={{ color: agent.enabled ? "#22C55E" : `${DARK}40` }}
+              >
+                <div
+                  className="w-8 h-[18px] rounded-full relative transition-all cursor-pointer"
+                  style={{ backgroundColor: agent.enabled ? "#22C55E" : `${DARK}18` }}
+                >
+                  <div
+                    className="w-3.5 h-3.5 rounded-full bg-white absolute top-[2px] transition-all"
+                    style={{ left: agent.enabled ? "16px" : "2px" }}
+                  />
+                </div>
+                <span>{agent.enabled ? "Enabled" : "Disabled"}</span>
+              </button>
+
+              <Button
+                size="sm"
+                className="text-[10px] h-7 px-3"
+                style={{ backgroundColor: GOLD, color: DARK }}
+                onClick={() => runMutation.mutate({ agentId: agent.id })}
+                disabled={runMutation.isPending}
+              >
+                <Play size={10} className="mr-1" /> Run Now
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Agent Activity */}
+      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${DARK}08` }}>
+        <h3 className="text-sm uppercase tracking-wider opacity-40 font-normal mb-4" style={{ color: DARK }}>Recent Agent Activity</h3>
+
+        {rawLogs.length === 0 ? (
+          <p className="text-xs opacity-30 text-center py-8" style={{ color: DARK }}>
+            No agent activity recorded yet. Trigger an agent run to start logging.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr style={{ borderBottom: `1px solid ${DARK}08` }}>
+                  {["Time", "Agent", "Action", "Result", "Duration"].map(h => (
+                    <th key={h} className="text-[10px] uppercase tracking-wider font-normal opacity-40 pb-3 pr-4" style={{ color: DARK }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rawLogs.slice(0, 50).map((log: any, i: number) => (
+                  <tr key={log.id || i} style={{ borderBottom: `1px solid ${DARK}04` }}>
+                    <td className="py-2.5 pr-4 text-xs opacity-50" style={{ color: DARK }}>{log.time || "\u2014"}</td>
+                    <td className="py-2.5 pr-4 text-xs font-medium" style={{ color: DARK }}>{log.agent || "\u2014"}</td>
+                    <td className="py-2.5 pr-4 text-xs opacity-70" style={{ color: DARK }}>{log.action || "\u2014"}</td>
+                    <td className="py-2.5 pr-4 text-xs font-medium" style={{ color: resultColor(log.result) }}>{log.result || "\u2014"}</td>
+                    <td className="py-2.5 text-xs opacity-50" style={{ color: DARK }}>{log.duration || "\u2014"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

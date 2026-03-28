@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import NotificationBell from "@/components/NotificationBell";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -88,7 +89,7 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#F8F5F0" }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FAFAF8" }}>
         <Loader2 className="animate-spin" size={32} style={{ color: "#C9A97E" }} />
       </div>
     );
@@ -105,27 +106,28 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FAFAFA" }}>
       <PageMeta title="BizDoc Staff Dashboard — HAMZURY" description="Task management dashboard for HAMZURY BizDoc compliance staff." />
       {/* Dashboard Nav */}
-      <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#0A1F1C] z-50 flex justify-between items-center shadow-lg">
+      <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#1B4D3E] z-50 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-4">
           <div
             className="text-lg font-extrabold tracking-tight cursor-pointer flex items-center gap-1"
             onClick={() => setLocation("/")}
           >
-            <span style={{ color: "#F8F5F0" }}>BizDoc</span>
+            <span style={{ color: "#FAFAF8" }}>BizDoc</span>
             <span style={{ color: "#C9A97E", fontWeight: 400 }}>Consult</span>
           </div>
-          <span className="hidden md:inline text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{ backgroundColor: "#C9A97E", color: "#0A1F1C" }}>
+          <span className="hidden md:inline text-[11px] font-bold uppercase tracking-wider px-3 py-1 rounded-full" style={{ backgroundColor: "#C9A97E", color: "#1B4D3E" }}>
             Staff Dashboard
           </span>
         </div>
         <div className="flex items-center gap-4">
+          <NotificationBell />
           <span className="text-[13px] hidden md:block" style={{ color: "#C9A97E" }}>
             {user.name || user.email}
           </span>
           <button
             onClick={logout}
             className="flex items-center gap-1 text-[13px] font-semibold transition-colors"
-            style={{ color: "#F8F5F0" }}
+            style={{ color: "#FAFAF8" }}
           >
             <LogOut size={16} />
             <span className="hidden md:inline">Exit</span>
@@ -135,18 +137,18 @@ export default function Dashboard() {
 
       <div className="pt-[56px] flex-1 flex h-[calc(100vh-56px)] overflow-hidden">
         {/* SIDEBAR - Task Queue */}
-        <div className={`${mobileShowDetail ? "hidden md:flex" : "flex"} w-full md:w-[380px] bg-white border-r border-[#0A1F1C]/10 flex-col h-full shrink-0`}>
+        <div className={`${mobileShowDetail ? "hidden md:flex" : "flex"} w-full md:w-[380px] bg-white border-r border-[#1B4D3E]/10 flex-col h-full shrink-0`}>
           {/* Stats Bar */}
           {stats && (
-            <div className="p-4 border-b border-[#0A1F1C]/5 grid grid-cols-3 gap-2">
+            <div className="p-4 border-b border-[#1B4D3E]/5 grid grid-cols-3 gap-2">
               <StatCard label="Active" value={stats.totalTasks - stats.completed} color="#C9A97E" />
               <StatCard label="Waiting" value={stats.waitingOnClient} color="#EAB308" />
               <StatCard label="Done" value={stats.completed} color="#22C55E" />
             </div>
           )}
 
-          <div className="p-4 border-b border-[#0A1F1C]/5">
-            <h2 className="text-base font-bold flex items-center gap-2 mb-3" style={{ color: "#0A1F1C" }}>
+          <div className="p-4 border-b border-[#1B4D3E]/5">
+            <h2 className="text-base font-bold flex items-center gap-2 mb-3" style={{ color: "#1B4D3E" }}>
               <LayoutDashboard size={18} style={{ color: "#C9A97E" }} />
               Task Queue
             </h2>
@@ -156,8 +158,8 @@ export default function Dashboard() {
               value={taskSearch}
               onChange={e => setTaskSearch(e.target.value)}
               placeholder="Search by name, ref, service..."
-              className="w-full text-[13px] px-3 py-2 rounded-lg border border-[#0A1F1C]/10 bg-[#F8F5F0] outline-none focus:border-[#C9A97E] transition-colors mb-2"
-              style={{ color: "#2C2C2C" }}
+              className="w-full text-[13px] px-3 py-2 rounded-lg border border-[#1B4D3E]/10 bg-[#FAFAF8] outline-none focus:border-[#C9A97E] transition-colors mb-2"
+              style={{ color: "#1D1D1F" }}
             />
             {/* Status filter */}
             <div className="flex flex-wrap gap-1">
@@ -197,19 +199,19 @@ export default function Dashboard() {
                     onClick={() => handleSelectTask(task.id)}
                     className={`p-4 rounded-xl border cursor-pointer transition-all ${
                       selectedTaskId === task.id
-                        ? "border-[#C9A97E] bg-[#F8F5F0]/50 shadow-sm"
+                        ? "border-[#C9A97E] bg-[#FAFAF8]/50 shadow-sm"
                         : isOverdue(task)
                           ? "border-red-300 bg-red-50/50 hover:border-red-400"
-                          : "border-[#0A1F1C]/5 hover:border-[#0A1F1C]/20 bg-white"
+                          : "border-[#1B4D3E]/5 hover:border-[#1B4D3E]/20 bg-white"
                     }`}
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className="text-[11px] font-bold tracking-wider px-2 py-1 rounded bg-[#0A1F1C]/5" style={{ color: "#0A1F1C" }}>
+                      <span className="text-[11px] font-bold tracking-wider px-2 py-1 rounded bg-[#1B4D3E]/5" style={{ color: "#1B4D3E" }}>
                         {task.ref}
                       </span>
                       <StatusBadge status={task.status} />
                     </div>
-                    <h4 className="font-semibold text-[15px] mb-1" style={{ color: "#2C2C2C" }}>{task.clientName}</h4>
+                    <h4 className="font-semibold text-[15px] mb-1" style={{ color: "#1D1D1F" }}>{task.clientName}</h4>
                     <p className="text-[13px] opacity-70 mb-2 flex items-center gap-1">
                       <FileSearch size={14} /> {task.service}
                     </p>
@@ -279,7 +281,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
       <button
         onClick={onBack}
         className="md:hidden flex items-center gap-2 text-[13px] font-semibold mb-4"
-        style={{ color: "#0A1F1C" }}
+        style={{ color: "#1B4D3E" }}
       >
         <ArrowLeft size={16} /> Back to Queue
       </button>
@@ -288,10 +290,10 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
       <div className="mb-6 flex flex-col md:flex-row justify-between items-start gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2 flex-wrap">
-            <h1 className="text-2xl md:text-3xl font-bold" style={{ color: "#0A1F1C" }}>{task.clientName}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold" style={{ color: "#1B4D3E" }}>{task.clientName}</h1>
             <StatusBadge status={task.status} />
           </div>
-          <div className="text-[14px] opacity-70 flex flex-wrap gap-4" style={{ color: "#2C2C2C" }}>
+          <div className="text-[14px] opacity-70 flex flex-wrap gap-4" style={{ color: "#1D1D1F" }}>
             <span>Ref: <strong>{task.ref}</strong></span>
             <span>Service: <strong>{task.service}</strong></span>
             {task.phone && <span className="flex items-center gap-1"><Phone size={12} /> {task.phone}</span>}
@@ -306,9 +308,9 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
                   disabled={task.status === s || updateStatusMutation.isPending}
                   className="text-[11px] px-3 py-1.5 rounded-full border transition-all disabled:opacity-40"
                   style={{
-                    backgroundColor: task.status === s ? "#0A1F1C" : "transparent",
-                    color: task.status === s ? "#C9A97E" : "#0A1F1C",
-                    borderColor: "#0A1F1C30",
+                    backgroundColor: task.status === s ? "#1B4D3E" : "transparent",
+                    color: task.status === s ? "#C9A97E" : "#1B4D3E",
+                    borderColor: "#1B4D3E30",
                   }}
                 >
                   {s}
@@ -318,7 +320,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
                 onClick={() => submitMutation.mutate({ id: task.id })}
                 disabled={submitMutation.isPending}
                 className="text-[11px] px-3 py-1.5 rounded-full transition-all"
-                style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+                style={{ backgroundColor: "#1B4D3E", color: "#C9A97E" }}
               >
                 {submitMutation.isPending ? "Submitting…" : "Submit for Review →"}
               </button>
@@ -330,7 +332,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
 
       {/* Tabs */}
       <Tabs defaultValue="checklist" className="w-full">
-        <TabsList className="mb-6 bg-white border border-[#0A1F1C]/10">
+        <TabsList className="mb-6 bg-white border border-[#1B4D3E]/10">
           <TabsTrigger value="checklist" className="gap-1.5"><CheckSquare size={14} /> SOP Checklist</TabsTrigger>
           <TabsTrigger value="notes" className="gap-1.5"><FileText size={14} /> Notes</TabsTrigger>
           <TabsTrigger value="documents" className="gap-1.5"><FileUp size={14} /> Documents</TabsTrigger>
@@ -355,42 +357,42 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
           <AIAssistantPanel task={task} />
         </TabsContent>
         <TabsContent value="credentials">
-          <div className="bg-white p-6 rounded-2xl border border-[#0A1F1C]/10 shadow-sm">
+          <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#0A1F1C" }}>
+              <p className="text-[11px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#1B4D3E" }}>
                 Client Credentials
               </p>
               <button
                 onClick={() => setShowAddCred(!showAddCred)}
                 className="text-[11px] px-2.5 py-1 rounded-lg"
-                style={{ backgroundColor: "#0A1F1C10", color: "#0A1F1C" }}
+                style={{ backgroundColor: "#1B4D3E10", color: "#1B4D3E" }}
               >
                 + Add
               </button>
             </div>
 
             {showAddCred && (
-              <div className="rounded-xl p-4 space-y-2 mb-3 border" style={{ borderColor: "#0A1F1C12", backgroundColor: "#0A1F1C04" }}>
+              <div className="rounded-xl p-4 space-y-2 mb-3 border" style={{ borderColor: "#1B4D3E12", backgroundColor: "#1B4D3E04" }}>
                 <input
                   placeholder="Platform (e.g. Tax Pro Max)"
                   value={newCred.platform}
                   onChange={e => setNewCred(p => ({ ...p, platform: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
-                  style={{ borderColor: "#0A1F1C20" }}
+                  style={{ borderColor: "#1B4D3E20" }}
                 />
                 <input
                   placeholder="Login URL (optional)"
                   value={newCred.loginUrl}
                   onChange={e => setNewCred(p => ({ ...p, loginUrl: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
-                  style={{ borderColor: "#0A1F1C20" }}
+                  style={{ borderColor: "#1B4D3E20" }}
                 />
                 <input
                   placeholder="Username / Email"
                   value={newCred.username}
                   onChange={e => setNewCred(p => ({ ...p, username: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
-                  style={{ borderColor: "#0A1F1C20" }}
+                  style={{ borderColor: "#1B4D3E20" }}
                 />
                 <input
                   type="password"
@@ -398,25 +400,25 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
                   value={newCred.password}
                   onChange={e => setNewCred(p => ({ ...p, password: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
-                  style={{ borderColor: "#0A1F1C20" }}
+                  style={{ borderColor: "#1B4D3E20" }}
                 />
                 <input
                   placeholder="Notes (optional)"
                   value={newCred.notes}
                   onChange={e => setNewCred(p => ({ ...p, notes: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border text-[12px] outline-none"
-                  style={{ borderColor: "#0A1F1C20" }}
+                  style={{ borderColor: "#1B4D3E20" }}
                 />
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => addCredMutation.mutate({ ...newCred, taskId: task.id })}
                     disabled={!newCred.username || !newCred.password || addCredMutation.isPending}
                     className="text-[12px] px-4 py-2 rounded-lg font-medium disabled:opacity-40"
-                    style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+                    style={{ backgroundColor: "#1B4D3E", color: "#C9A97E" }}
                   >
                     {addCredMutation.isPending ? "Saving…" : "Save Encrypted"}
                   </button>
-                  <button onClick={() => setShowAddCred(false)} className="text-[12px] px-3 py-2 rounded-lg opacity-40" style={{ color: "#0A1F1C" }}>
+                  <button onClick={() => setShowAddCred(false)} className="text-[12px] px-3 py-2 rounded-lg opacity-40" style={{ color: "#1B4D3E" }}>
                     Cancel
                   </button>
                 </div>
@@ -424,16 +426,16 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
             )}
 
             {(credsQuery.data || []).map(cred => (
-              <div key={cred.id} className="rounded-xl p-3 mb-2 border" style={{ borderColor: "#0A1F1C10" }}>
+              <div key={cred.id} className="rounded-xl p-3 mb-2 border" style={{ borderColor: "#1B4D3E10" }}>
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-[12px] font-semibold" style={{ color: "#0A1F1C" }}>{cred.platform}</span>
+                  <span className="text-[12px] font-semibold" style={{ color: "#1B4D3E" }}>{cred.platform}</span>
                   {cred.loginUrl && (
                     <a href={cred.loginUrl} target="_blank" rel="noopener noreferrer"
                       className="text-[10px] opacity-50 hover:opacity-80"
-                      style={{ color: "#0A1F1C" }}>Open →</a>
+                      style={{ color: "#1B4D3E" }}>Open →</a>
                   )}
                 </div>
-                <p className="text-[12px] font-mono" style={{ color: "#0A1F1C" }}>{cred.username}</p>
+                <p className="text-[12px] font-mono" style={{ color: "#1B4D3E" }}>{cred.username}</p>
                 {revealedCred && revealMutation.isSuccess ? (
                   <div className="mt-1 p-2 rounded-lg" style={{ backgroundColor: "#FEF3C7" }}>
                     <p className="text-[11px] font-mono font-bold" style={{ color: "#92400E" }}>{revealedCred.password}</p>
@@ -442,12 +444,12 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
                   </div>
                 ) : (
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[12px] font-mono opacity-30" style={{ color: "#0A1F1C" }}>{cred.passwordMasked}</span>
+                    <span className="text-[12px] font-mono opacity-30" style={{ color: "#1B4D3E" }}>{cred.passwordMasked}</span>
                     <button
                       onClick={() => revealMutation.mutate({ credentialId: cred.id })}
                       disabled={revealMutation.isPending}
                       className="text-[10px] px-2 py-0.5 rounded-md opacity-50 hover:opacity-80"
-                      style={{ backgroundColor: "#0A1F1C10", color: "#0A1F1C" }}
+                      style={{ backgroundColor: "#1B4D3E10", color: "#1B4D3E" }}
                     >
                       {revealMutation.isPending ? "…" : "Reveal"}
                     </button>
@@ -456,7 +458,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
               </div>
             ))}
             {credsQuery.data?.length === 0 && !showAddCred && (
-              <p className="text-[12px] opacity-30" style={{ color: "#0A1F1C" }}>No credentials stored for this task</p>
+              <p className="text-[12px] opacity-30" style={{ color: "#1B4D3E" }}>No credentials stored for this task</p>
             )}
           </div>
         </TabsContent>
@@ -478,7 +480,7 @@ function StatusUpdater({ taskId, currentStatus, onRefresh }: { taskId: number; c
 
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-wider font-bold opacity-60 md:text-right" style={{ color: "#0A1F1C" }}>
+      <span className="text-[11px] uppercase tracking-wider font-bold opacity-60 md:text-right" style={{ color: "#1B4D3E" }}>
         Update Status
       </span>
       <Select
@@ -486,7 +488,7 @@ function StatusUpdater({ taskId, currentStatus, onRefresh }: { taskId: number; c
         onValueChange={(val) => updateStatus.mutate({ id: taskId, status: val as TaskStatus })}
         disabled={updateStatus.isPending}
       >
-        <SelectTrigger className="w-[200px] bg-white border-[#C9A97E] font-semibold shadow-sm" style={{ color: "#0A1F1C" }}>
+        <SelectTrigger className="w-[200px] bg-white border-[#C9A97E] font-semibold shadow-sm" style={{ color: "#1B4D3E" }}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -524,9 +526,9 @@ function ChecklistPanel({ taskId }: { taskId: number }) {
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#0A1F1C]/10 shadow-sm">
+    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#0A1F1C" }}>
+        <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#1B4D3E" }}>
           <CheckSquare size={16} style={{ color: "#C9A97E" }} /> SOP Execution Checklist
         </h3>
         <span className="text-[12px] font-semibold px-3 py-1 rounded-full" style={{ backgroundColor: progress === 100 ? "#22C55E20" : "#C9A97E20", color: progress === 100 ? "#22C55E" : "#C9A97E" }}>
@@ -535,7 +537,7 @@ function ChecklistPanel({ taskId }: { taskId: number }) {
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-2 bg-[#0A1F1C]/5 rounded-full mb-8 overflow-hidden">
+      <div className="w-full h-2 bg-[#1B4D3E]/5 rounded-full mb-8 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-500" style={{ width: `${progress}%`, backgroundColor: progress === 100 ? "#22C55E" : "#C9A97E" }} />
       </div>
 
@@ -551,19 +553,19 @@ function ChecklistPanel({ taskId }: { taskId: number }) {
 function ChecklistPhase({ title, items, onToggle }: { title: string; items: any[]; onToggle: (id: number) => void }) {
   return (
     <div>
-      <h4 className="text-[13px] font-bold mb-4 border-b border-[#0A1F1C]/10 pb-2" style={{ color: "#0A1F1C" }}>{title}</h4>
+      <h4 className="text-[13px] font-bold mb-4 border-b border-[#1B4D3E]/10 pb-2" style={{ color: "#1B4D3E" }}>{title}</h4>
       <div className="flex flex-col gap-3">
         {items.map(item => (
           <label key={item.id} className="flex items-start gap-3 cursor-pointer group">
             <div
               onClick={() => onToggle(item.id)}
               className={`mt-0.5 w-5 h-5 rounded border flex items-center justify-center transition-colors shrink-0 ${
-                item.checked ? "bg-[#0A1F1C] border-[#0A1F1C]" : "border-[#0A1F1C]/30 bg-white group-hover:border-[#C9A97E]"
+                item.checked ? "bg-[#1B4D3E] border-[#1B4D3E]" : "border-[#1B4D3E]/30 bg-white group-hover:border-[#C9A97E]"
               }`}
             >
               {item.checked && <CheckCircle2 size={14} color="#C9A97E" />}
             </div>
-            <span className={`text-[13px] leading-snug transition-all ${item.checked ? "opacity-50 line-through" : ""}`} style={{ color: "#2C2C2C" }}>
+            <span className={`text-[13px] leading-snug transition-all ${item.checked ? "opacity-50 line-through" : ""}`} style={{ color: "#1D1D1F" }}>
               {item.label}
             </span>
           </label>
@@ -584,21 +586,21 @@ function NotesPanel({ taskId, currentNotes, onRefresh }: { taskId: number; curre
   });
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#0A1F1C]/10 shadow-sm">
-      <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#0A1F1C" }}>
+    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+      <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#1B4D3E" }}>
         <User size={16} style={{ color: "#C9A97E" }} /> Client Brief & Notes
       </h3>
       <Textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         placeholder="Add notes about this task..."
-        className="min-h-[200px] bg-[#F8F5F0] border-[#0A1F1C]/10 mb-4"
-        style={{ color: "#2C2C2C" }}
+        className="min-h-[200px] bg-[#FAFAF8] border-[#1B4D3E]/10 mb-4"
+        style={{ color: "#1D1D1F" }}
       />
       <Button
         onClick={() => updateNotes.mutate({ id: taskId, notes })}
         disabled={updateNotes.isPending || notes === currentNotes}
-        style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+        style={{ backgroundColor: "#1B4D3E", color: "#C9A97E" }}
       >
         {updateNotes.isPending ? <Loader2 size={16} className="animate-spin mr-2" /> : null}
         Save Notes
@@ -646,9 +648,9 @@ function DocumentsPanel({ taskId }: { taskId: number }) {
   const docs = docsQuery.data || [];
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#0A1F1C]/10 shadow-sm">
+    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#0A1F1C" }}>
+        <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#1B4D3E" }}>
           <FileUp size={16} style={{ color: "#C9A97E" }} /> Documents
         </h3>
         <div>
@@ -658,7 +660,7 @@ function DocumentsPanel({ taskId }: { taskId: number }) {
             disabled={uploadDoc.isPending}
             variant="outline"
             className="border-[#C9A97E] hover:bg-[#C9A97E]/10"
-            style={{ color: "#0A1F1C" }}
+            style={{ color: "#1B4D3E" }}
           >
             {uploadDoc.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <Upload size={14} className="mr-2" />}
             Upload
@@ -676,11 +678,11 @@ function DocumentsPanel({ taskId }: { taskId: number }) {
       ) : (
         <div className="flex flex-col gap-3">
           {docs.map(doc => (
-            <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-[#0A1F1C]/5 bg-[#F8F5F0]/50">
+            <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg border border-[#1B4D3E]/5 bg-[#FAFAF8]/50">
               <div className="flex items-center gap-3 min-w-0">
                 <FileText size={18} style={{ color: "#C9A97E" }} className="shrink-0" />
                 <div className="min-w-0">
-                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium hover:underline truncate block" style={{ color: "#0A1F1C" }}>
+                  <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="text-[14px] font-medium hover:underline truncate block" style={{ color: "#1B4D3E" }}>
                     {doc.fileName}
                   </a>
                   <p className="text-[11px] opacity-50">
@@ -745,8 +747,8 @@ function WhatsAppPanel({ taskId, phone }: { taskId: number; phone: string }) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#0A1F1C]/10 shadow-sm">
-      <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#0A1F1C" }}>
+    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+      <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#1B4D3E" }}>
         <MessageSquare size={16} style={{ color: "#22C55E" }} /> WhatsApp Messaging
       </h3>
 
@@ -756,7 +758,7 @@ function WhatsAppPanel({ taskId, phone }: { taskId: number; phone: string }) {
           value={phoneInput}
           onChange={(e) => setPhoneInput(e.target.value)}
           placeholder="+234 xxx xxx xxxx"
-          className="bg-[#F8F5F0] border-[#0A1F1C]/10"
+          className="bg-[#FAFAF8] border-[#1B4D3E]/10"
         />
       </div>
 
@@ -796,7 +798,7 @@ function WhatsAppPanel({ taskId, phone }: { taskId: number; phone: string }) {
           value={customMsg}
           onChange={(e) => setCustomMsg(e.target.value)}
           placeholder="Type a custom message..."
-          className="min-h-[100px] bg-[#F8F5F0] border-[#0A1F1C]/10 mb-3"
+          className="min-h-[100px] bg-[#FAFAF8] border-[#1B4D3E]/10 mb-3"
         />
         <Button
           onClick={sendCustom}
@@ -855,10 +857,10 @@ function AIAssistantPanel({ task }: { task: any }) {
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-[#0A1F1C]/10 shadow-sm flex flex-col" style={{ height: "500px" }}>
-      <div className="p-4 border-b border-[#0A1F1C]/5 flex items-center gap-2">
+    <div className="bg-white rounded-2xl border border-[#1B4D3E]/10 shadow-sm flex flex-col" style={{ height: "500px" }}>
+      <div className="p-4 border-b border-[#1B4D3E]/5 flex items-center gap-2">
         <Sparkles size={16} style={{ color: "#C9A97E" }} />
-        <h3 className="text-sm font-bold" style={{ color: "#0A1F1C" }}>BizDoc AI — Compliance Assistant</h3>
+        <h3 className="text-sm font-bold" style={{ color: "#1B4D3E" }}>BizDoc AI — Compliance Assistant</h3>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
@@ -871,8 +873,8 @@ function AIAssistantPanel({ task }: { task: any }) {
                 <button
                   key={i}
                   onClick={() => { setInput(prompt); }}
-                  className="text-[12px] px-3 py-1.5 rounded-full border border-[#0A1F1C]/10 hover:border-[#C9A97E] hover:bg-[#F8F5F0] transition-colors"
-                  style={{ color: "#0A1F1C" }}
+                  className="text-[12px] px-3 py-1.5 rounded-full border border-[#1B4D3E]/10 hover:border-[#C9A97E] hover:bg-[#FAFAF8] transition-colors"
+                  style={{ color: "#1B4D3E" }}
                 >
                   {prompt}
                 </button>
@@ -886,11 +888,11 @@ function AIAssistantPanel({ task }: { task: any }) {
                 className={`max-w-[85%] rounded-2xl px-4 py-3 text-[14px] ${
                   msg.role === "user"
                     ? "rounded-tr-sm"
-                    : "rounded-tl-sm border border-[#0A1F1C]/5"
+                    : "rounded-tl-sm border border-[#1B4D3E]/5"
                 }`}
                 style={{
-                  backgroundColor: msg.role === "user" ? "#0A1F1C" : "#F8F5F0",
-                  color: msg.role === "user" ? "#F8F5F0" : "#2C2C2C",
+                  backgroundColor: msg.role === "user" ? "#1B4D3E" : "#FAFAF8",
+                  color: msg.role === "user" ? "#FAFAF8" : "#1D1D1F",
                 }}
               >
                 {msg.role === "assistant" ? (
@@ -906,26 +908,26 @@ function AIAssistantPanel({ task }: { task: any }) {
         )}
         {chatMutation.isPending && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-tl-sm border border-[#0A1F1C]/5 px-4 py-3" style={{ backgroundColor: "#F8F5F0" }}>
+            <div className="rounded-2xl rounded-tl-sm border border-[#1B4D3E]/5 px-4 py-3" style={{ backgroundColor: "#FAFAF8" }}>
               <Loader2 size={16} className="animate-spin" style={{ color: "#C9A97E" }} />
             </div>
           </div>
         )}
       </div>
 
-      <div className="p-4 border-t border-[#0A1F1C]/5 flex gap-2">
+      <div className="p-4 border-t border-[#1B4D3E]/5 flex gap-2">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
           placeholder="Ask about compliance, regulations, next steps..."
-          className="flex-1 bg-[#F8F5F0] border-[#0A1F1C]/10"
+          className="flex-1 bg-[#FAFAF8] border-[#1B4D3E]/10"
           disabled={chatMutation.isPending}
         />
         <Button
           onClick={handleSend}
           disabled={!input.trim() || chatMutation.isPending}
-          style={{ backgroundColor: "#0A1F1C", color: "#C9A97E" }}
+          style={{ backgroundColor: "#1B4D3E", color: "#C9A97E" }}
         >
           <Send size={16} />
         </Button>

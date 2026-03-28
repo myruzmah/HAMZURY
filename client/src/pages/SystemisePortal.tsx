@@ -14,9 +14,9 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
    SYSTEMIZE PORTAL. /systemise
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const G  = "#1E3A5F";   // Dark navy blue primary
+const G  = "#0A1F1C";   // Dark teal — Systemise primary
 const Au = "#C9A97E";   // Gold accent (5% usage)
-const Cr = "#F8F5F0";   // Cream background
+const Cr = "#FAFAF8";   // Milk white background
 const W  = "#FFFFFF";
 
 // ── WHAT YOU GET accordion ────────────────────────────────────────────────────

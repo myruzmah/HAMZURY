@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
+import NotificationBell from "@/components/NotificationBell";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,11 +13,11 @@ import {
   Loader2,
 } from "lucide-react";
 
-// ─── Brand ───────────────────────────────────────────────────────────────────
+// ─── Brand (RIDI = gold primary) ─────────────────────────────────────────────
 const ORANGE = "#E86A2E";
-const TEAL   = "#0A1F1C";
+const GOLD   = "#C9A97E";   // RIDI primary
+const TEAL   = "#C9A97E";   // Alias — RIDI uses gold as primary
 const MILK   = "#FAFAF8";
-const GOLD   = "#C9A97E";
 
 type Section = "overview" | "applications" | "funding" | "communities" | "cohort";
 
@@ -252,6 +253,7 @@ export default function RIDIDashboard() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <NotificationBell />
             <Link href="/ridi" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${TEAL}20`, color: TEAL }}>RIDI Portal</Link>
             <Link href="/skills/admin" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${TEAL}20`, color: TEAL }}>Skills Admin</Link>
           </div>

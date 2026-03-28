@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 const GOLD = "#C9A97E";
-const TEAL = "#0A1F1C";
+const NAVY = "#1B2A4A";  // Skills primary — dark navy blue
 
 export default function SkillsStudent() {
   const { user, loading } = useAuth();
@@ -36,7 +36,7 @@ export default function SkillsStudent() {
 
   if (loading || portalQuery.isLoading) {
     return (
-      <div className="min-h-screen bg-[#F8F5F0] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-xl mx-auto mb-4 animate-pulse" style={{ backgroundColor: GOLD }}>H</div>
           <p className="text-gray-500">Loading your portal...</p>
@@ -50,7 +50,7 @@ export default function SkillsStudent() {
   // No accepted enrollment found — show a clear state
   if (!portal) {
     return (
-      <div className="min-h-screen bg-[#F8F5F0] flex flex-col">
+      <div className="min-h-screen bg-[#FAFAF8] flex flex-col">
         <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
             <Link href="/skills" className="text-gray-400 hover:text-[#C9A97E] transition-colors">
@@ -62,12 +62,12 @@ export default function SkillsStudent() {
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center max-w-md">
             <AlertCircle className="mx-auto mb-4 text-gray-400" size={40} />
-            <h2 className="text-xl font-bold mb-2" style={{ color: TEAL }}>No active enrollment found</h2>
+            <h2 className="text-xl font-bold mb-2" style={{ color: NAVY }}>No active enrollment found</h2>
             <p className="text-sm text-gray-500 mb-6">
               Your application may still be under review, or you may not have an accepted enrollment linked to this account.
             </p>
             <Link href="/skills">
-              <Button style={{ backgroundColor: TEAL, color: "#F8F5F0" }}>Browse Programs</Button>
+              <Button style={{ backgroundColor: NAVY, color: "#FAFAF8" }}>Browse Programs</Button>
             </Link>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function SkillsStudent() {
   const currentModule = modules[0] ?? null;
 
   return (
-    <div className="min-h-screen bg-[#F8F5F0] flex flex-col">
+    <div className="min-h-screen bg-[#FAFAF8] flex flex-col">
       <PageMeta title="Student Portal — HAMZURY Skills" description="Access your HAMZURY Skills training modules and progress." />
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
@@ -135,7 +135,7 @@ export default function SkillsStudent() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center"><PlayCircle className="mr-2 text-yellow-500" size={20} /> Current Module</CardTitle>
-                    <Badge className="text-xs" style={{ backgroundColor: GOLD + "20", color: TEAL }}>Week {currentModule.weekNumber}</Badge>
+                    <Badge className="text-xs" style={{ backgroundColor: GOLD + "20", color: NAVY }}>Week {currentModule.weekNumber}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -178,7 +178,7 @@ export default function SkillsStudent() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-gray-900 truncate">{m.title}</p>
                       </div>
-                      {i === 0 && <Badge className="text-[10px]" style={{ backgroundColor: GOLD + "20", color: TEAL }}>Current</Badge>}
+                      {i === 0 && <Badge className="text-[10px]" style={{ backgroundColor: GOLD + "20", color: NAVY }}>Current</Badge>}
                     </div>
                   ))}
                 </CardContent>

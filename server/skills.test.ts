@@ -81,7 +81,7 @@ describe("Skills Department Routes", () => {
         agreedToEffort: true,
       });
       expect(result).toHaveProperty("ref");
-      expect(result.ref).toMatch(/^SKL-\d{4}-\d{4}$/);
+      expect(result.ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
       expect(result).toHaveProperty("applicationId");
       expect(typeof result.applicationId).toBe("number");
     });
@@ -94,7 +94,7 @@ describe("Skills Department Routes", () => {
         fullName: "Chidi Okafor",
       });
       expect(result).toHaveProperty("ref");
-      expect(result.ref).toMatch(/^SKL-\d{4}-\d{4}$/);
+      expect(result.ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
     });
 
     it("rejects empty program", async () => {
@@ -125,7 +125,7 @@ describe("Skills Department Routes", () => {
     it("returns found=false for non-existent reference", async () => {
       const ctx = createPublicContext();
       const caller = appRouter.createCaller(ctx);
-      const result = await caller.skills.trackApplication({ ref: "SKL-0000-0000" });
+      const result = await caller.skills.trackApplication({ ref: "HAM-ZZ00-0000" });
       expect(result.found).toBe(false);
     });
 
@@ -190,7 +190,7 @@ describe("Skills Department Routes", () => {
 
   // ─── Reference Number Format ───────────────────────────────────────────────
   describe("SKL reference number format", () => {
-    it("generates unique references in SKL-YYYY-XXXX format", async () => {
+    it("generates unique references in HAM-XXXX-YYYY format", async () => {
       const ctx = createPublicContext();
       const caller = appRouter.createCaller(ctx);
       const refs = new Set<string>();
@@ -199,7 +199,7 @@ describe("Skills Department Routes", () => {
           program: "skills_intensive",
           fullName: `Test User ${i}`,
         });
-        expect(result.ref).toMatch(/^SKL-\d{4}-\d{4}$/);
+        expect(result.ref).toMatch(/^HAM-[A-Z0-9]{4}-\d{4}$/);
         refs.add(result.ref);
       }
       // All references should be unique (with very high probability)

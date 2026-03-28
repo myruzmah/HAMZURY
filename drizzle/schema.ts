@@ -123,6 +123,7 @@ export type InsertTask = typeof tasks.$inferInsert;
  */
 export const checklistTemplates = mysqlTable("checklist_templates", {
   id: int("id").autoincrement().primaryKey(),
+  department: varchar("department", { length: 50 }).default("bizdoc"),
   phase: mysqlEnum("phase", ["pre", "during", "post"]).notNull(),
   label: varchar("label", { length: 500 }).notNull(),
   sortOrder: int("sortOrder").default(0).notNull(),
@@ -617,3 +618,145 @@ export const clientCredentials = mysqlTable("client_credentials", {
 });
 export type ClientCredential = typeof clientCredentials.$inferSelect;
 export type InsertClientCredential = typeof clientCredentials.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SERVICE PRICING, INVOICING, NOTIFICATIONS, PROPOSALS & CERTIFICATES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Standardized pricing for all HAMZURY services across departments.
+ */
+export const servicePricing = mysqlTable("service_pricing", {
+  id: int("id").autoincrement().primaryKey(),
+  department: mysqlEnum("pricingDepartment", ["bizdoc", "systemise", "skills", "metfix"]).notNull(),
+  category: varchar("category", { length: 100 }).notNull(),
+  serviceName: varchar("serviceName", { length: 200 }).notNull(),
+  description: text("description"),
+  basePrice: int("basePrice").notNull(),
+  maxPrice: int("maxPrice"),
+  unit: mysqlEnum("pricingUnit", ["one_time", "monthly", "per_cohort", "per_session", "custom"]).default("one_time").notNull(),
+  commissionPercent: int("commissionPercent").default(10),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ServicePricing = typeof servicePricing.$inferSelect;
+export type InsertServicePricing = typeof servicePricing.$inferInsert;
+
+/**
+ * Invoices issued to clients for services rendered.
+ */
+export const invoices = mysqlTable("invoices", {
+  id: int("id").autoincrement().primaryKey(),
+  invoiceNumber: varchar("invoiceNumber", { length: 20 }).notNull().unique(),
+  leadId: int("leadId"),
+  taskId: int("taskId"),
+  subscriptionId: int("subscriptionId"),
+  clientName: varchar("clientName", { length: 200 }).notNull(),
+  clientEmail: varchar("clientEmail", { length: 200 }),
+  clientPhone: varchar("clientPhone", { length: 20 }),
+  items: json("items").notNull(),
+  subtotal: int("subtotal").notNull(),
+  discount: int("discount").default(0),
+  tax: int("tax").default(0),
+  total: int("total").notNull(),
+  amountPaid: int("amountPaid").default(0),
+  status: mysqlEnum("invoiceStatus", ["draft", "sent", "paid", "partial", "overdue", "cancelled"]).default("draft").notNull(),
+  dueDate: timestamp("dueDate"),
+  paidAt: timestamp("paidAt"),
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Invoice = typeof invoices.$inferSelect;
+export type InsertInvoice = typeof invoices.$inferInsert;
+
+/**
+ * In-app notifications for staff users.
+ */
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 100 }).notNull(),
+  type: mysqlEnum("notificationType", ["assignment", "status_change", "payment", "reminder", "system"]).notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  message: text("message").notNull(),
+  link: varchar("link", { length: 500 }),
+  isRead: boolean("isRead").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Client proposals generated from service pricing.
+ */
+export const proposals = mysqlTable("proposals", {
+  id: int("id").autoincrement().primaryKey(),
+  proposalNumber: varchar("proposalNumber", { length: 20 }).notNull().unique(),
+  leadId: int("leadId"),
+  clientName: varchar("clientName", { length: 200 }).notNull(),
+  clientEmail: varchar("clientEmail", { length: 200 }),
+  clientPhone: varchar("clientPhone", { length: 20 }),
+  businessName: varchar("businessName", { length: 200 }),
+  services: json("services").notNull(),
+  totalAmount: int("totalAmount").notNull(),
+  validUntil: timestamp("validUntil"),
+  status: mysqlEnum("proposalStatus", ["draft", "sent", "accepted", "rejected", "expired"]).default("draft").notNull(),
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Proposal = typeof proposals.$inferSelect;
+export type InsertProposal = typeof proposals.$inferInsert;
+
+/**
+ * Certificates issued to students who complete Skills programs.
+ */
+export const certificates = mysqlTable("certificates", {
+  id: int("id").autoincrement().primaryKey(),
+  certificateNumber: varchar("certificateNumber", { length: 20 }).notNull().unique(),
+  studentName: varchar("studentName", { length: 200 }).notNull(),
+  studentEmail: varchar("studentEmail", { length: 200 }),
+  cohortId: int("cohortId"),
+  program: varchar("program", { length: 200 }).notNull(),
+  completionDate: timestamp("completionDate").notNull(),
+  grade: varchar("grade", { length: 50 }),
+  issuedBy: varchar("issuedBy", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Certificate = typeof certificates.$inferSelect;
+export type InsertCertificate = typeof certificates.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONTENT CALENDAR / MEDIA TABLES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Content posts for the media content calendar and auto-scheduling system.
+ * Tracks social media posts across all departments and platforms.
+ */
+export const contentPosts = mysqlTable("content_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  department: mysqlEnum("contentDepartment", ["general", "bizdoc", "systemise", "skills"]).default("general").notNull(),
+  platform: mysqlEnum("contentPlatform", ["instagram", "tiktok", "twitter", "linkedin"]).notNull(),
+  contentType: mysqlEnum("contentType", ["educational", "success_story", "service_spotlight", "behind_scenes", "quote", "carousel"]).notNull(),
+  caption: text("caption").notNull(),
+  hashtags: text("hashtags"),
+  mediaUrl: varchar("mediaUrl", { length: 500 }),
+  scheduledFor: timestamp("scheduledFor"),
+  postedAt: timestamp("postedAt"),
+  status: mysqlEnum("contentStatus", ["draft", "scheduled", "posted", "failed"]).default("draft").notNull(),
+  createdBy: varchar("createdBy", { length: 100 }),
+  engagement: json("engagement"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ContentPost = typeof contentPosts.$inferSelect;
+export type InsertContentPost = typeof contentPosts.$inferInsert;

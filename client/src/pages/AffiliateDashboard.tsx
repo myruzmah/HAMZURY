@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Fragment } from "react";
 import { Link, useLocation } from "wouter";
-import { Trophy } from "lucide-react";
+import { Trophy, Copy, Check, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "../components/PageMeta";
 import { BRAND } from "../lib/brand";
@@ -100,6 +100,30 @@ function Badge({ status }: { status: string }) {
   );
 }
 
+function CopyBtn({ text, label, variant }: { text: string; label: string; variant?: "gold" }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  const isGold = variant === "gold";
+  return (
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition shrink-0"
+      style={{
+        background: copied ? "#16A34A" : isGold ? BRAND.gold : BRAND.federal,
+        color: copied ? "#fff" : isGold ? "#0A1F1C" : BRAND.white,
+      }}
+    >
+      {copied ? <Check size={12} /> : <Copy size={12} />}
+      {copied ? "Copied!" : `Copy ${label}`}
+    </button>
+  );
+}
+
 // ─── Withdrawal Form ──────────────────────────────────────────────────────────
 
 function WithdrawalForm({ affiliateId, affiliateCode }: { affiliateId: number; affiliateCode: string }) {
@@ -129,8 +153,8 @@ function WithdrawalForm({ affiliateId, affiliateCode }: { affiliateId: number; a
       return;
     }
     const num = parseFloat(amount);
-    if (isNaN(num) || num < 5000) {
-      setFieldErr("Minimum withdrawal is ₦5,000.");
+    if (isNaN(num) || num < 10000) {
+      setFieldErr("Minimum withdrawal is ₦10,000.");
       return;
     }
     if (accountNumber.replace(/\D/g, "").length < 10) {
@@ -176,15 +200,15 @@ function WithdrawalForm({ affiliateId, affiliateCode }: { affiliateId: number; a
         </label>
         <input
           type="number"
-          min="5000"
-          placeholder="e.g. 15000"
+          min="10000"
+          placeholder="e.g. 10000"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           className={inputClass}
           style={inputStyle}
         />
         <p className="text-xs mt-1" style={{ color: "#999" }}>
-          Minimum: ₦5,000
+          Minimum: ₦10,000
         </p>
       </div>
       <div>
@@ -341,6 +365,30 @@ function MarketingAssets({ affiliate }: { affiliate: AffiliateSession }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Social Media Templates */}
+      <div
+        className="rounded-xl p-5 flex items-center justify-between"
+        style={{ background: BRAND.gold + "12", border: `1px solid ${BRAND.gold}30` }}
+      >
+        <div>
+          <p className="text-sm font-semibold mb-1" style={{ color: BRAND.text }}>
+            Social Media Templates
+          </p>
+          <p className="text-xs" style={{ color: "#777" }}>
+            Ready-made graphics and captions for WhatsApp, Instagram, and Twitter.
+          </p>
+        </div>
+        <Link href="/templates">
+          <span
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-lg cursor-pointer shrink-0"
+            style={{ background: BRAND.gold, color: "#0A1F1C" }}
+          >
+            <ExternalLink size={12} />
+            View Templates
+          </span>
+        </Link>
       </div>
 
       {/* Tips */}
@@ -521,7 +569,7 @@ function LeagueTable({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#F8F5F0", borderBottom: "1px solid #E8E3DC" }}>
+              <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
                 <th className="text-left px-4 py-3 text-xs font-semibold w-16" style={{ color: "#888" }}>Rank</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Affiliate</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold hidden sm:table-cell" style={{ color: "#888" }}>Tier</th>
@@ -539,9 +587,9 @@ function LeagueTable({
                   idx === 0 || getTierForRank(table[idx - 1].rank).name !== tier.name;
 
                 return (
-                  <>
+                  <Fragment key={row.rank}>
                     {isFirstInTier && (
-                      <tr key={`divider-${tier.name}`}>
+                      <tr>
                         <td
                           colSpan={6}
                           className="px-4 py-2 text-xs font-bold uppercase tracking-widest"
@@ -552,7 +600,6 @@ function LeagueTable({
                       </tr>
                     )}
                     <tr
-                      key={row.rank}
                       style={{
                         borderBottom: "1px solid #F0EDE8",
                         background: row.isUser ? tier.color + "10" : undefined,
@@ -605,7 +652,7 @@ function LeagueTable({
                         </span>
                       </td>
                     </tr>
-                  </>
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -806,15 +853,43 @@ export default function AffiliateDashboard() {
               <h2 className="text-lg font-semibold" style={{ color: BRAND.text }}>
                 Welcome back, {affiliate.name.split(" ")[0]}
               </h2>
-              <p className="text-sm mt-0.5" style={{ color: "#888" }}>
-                Affiliate code:{" "}
-                <code className="font-mono font-semibold" style={{ color: BRAND.federal }}>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-sm" style={{ color: "#888" }}>Affiliate code:</span>
+                <code className="font-mono font-semibold text-sm" style={{ color: BRAND.gold }}>
                   {affiliate.code}
                 </code>
+                <CopyBtn text={affiliate.code} label="Code" />
+              </div>
+            </div>
+
+            {/* Referral link banner */}
+            <div
+              className="rounded-2xl p-5"
+              style={{ background: `linear-gradient(135deg, #0A1F1C 0%, #1B4D3E 100%)`, border: `1px solid ${BRAND.gold}30` }}
+            >
+              <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: BRAND.gold }}>
+                Your Referral Link
+              </p>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <code
+                  className="flex-1 text-sm font-medium px-4 py-2.5 rounded-lg truncate w-full"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "#fff" }}
+                >
+                  hamzury.com?ref={affiliate.code}
+                </code>
+                <CopyBtn text={`https://hamzury.com?ref=${affiliate.code}`} label="Link" variant="gold" />
+              </div>
+              <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.55)" }}>
+                Share this link with potential clients. Commissions are tracked automatically.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+              <StatCard
+                label="Total Earnings"
+                value={fmt(pendingEarnings + totalPaid)}
+                accent={BRAND.gold}
+              />
               <StatCard label="Total Referrals" value={String(totalReferrals)} />
               <StatCard label="Converted" value={String(converted)} />
               <StatCard
@@ -853,7 +928,7 @@ export default function AffiliateDashboard() {
                 >
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#F8F5F0", borderBottom: "1px solid #E8E3DC" }}>
+                      <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>
                           Client
                         </th>
@@ -959,7 +1034,7 @@ export default function AffiliateDashboard() {
               >
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ background: "#F8F5F0", borderBottom: "1px solid #E8E3DC" }}>
+                    <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
                       <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>
                         Ref
                       </th>
@@ -1037,6 +1112,55 @@ export default function AffiliateDashboard() {
               />
             </div>
 
+            {/* Monthly Breakdown */}
+            {(() => {
+              const months: Record<string, { earned: number; paid: number; count: number }> = {};
+              records.forEach((r) => {
+                if (!r.commissionAmount) return;
+                const d = new Date(r.createdAt);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+                if (!months[key]) months[key] = { earned: 0, paid: 0, count: 0 };
+                const amt = parseFloat(String(r.commissionAmount));
+                months[key].count++;
+                if (r.status === "paid") months[key].paid += amt;
+                else months[key].earned += amt;
+              });
+              const sorted = Object.entries(months).sort((a, b) => b[0].localeCompare(a[0]));
+              if (sorted.length === 0) return null;
+              return (
+                <div>
+                  <p className="text-sm font-semibold mb-3" style={{ color: BRAND.text }}>
+                    Monthly Breakdown
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {sorted.map(([key, m]) => {
+                      const [y, mo] = key.split("-");
+                      const label = new Date(parseInt(y), parseInt(mo) - 1).toLocaleDateString("en-NG", { month: "long", year: "numeric" });
+                      return (
+                        <div
+                          key={key}
+                          className="rounded-xl p-4"
+                          style={{ background: BRAND.white, border: "1px solid #E8E3DC" }}
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: "#888" }}>
+                            {label}
+                          </p>
+                          <p className="text-lg font-bold" style={{ color: BRAND.text }}>
+                            {fmt(m.earned + m.paid)}
+                          </p>
+                          <div className="flex gap-4 mt-1">
+                            <span className="text-xs" style={{ color: "#CA8A04" }}>{fmt(m.earned)} pending</span>
+                            <span className="text-xs" style={{ color: "#16A34A" }}>{fmt(m.paid)} paid</span>
+                          </div>
+                          <p className="text-xs mt-1" style={{ color: "#aaa" }}>{m.count} commission{m.count !== 1 ? "s" : ""}</p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div>
               <p className="text-sm font-semibold mb-3" style={{ color: BRAND.text }}>
                 Earnings Breakdown
@@ -1057,7 +1181,7 @@ export default function AffiliateDashboard() {
                 >
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#F8F5F0", borderBottom: "1px solid #E8E3DC" }}>
+                      <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Client</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold hidden sm:table-cell" style={{ color: "#888" }}>Service</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Rate</th>
@@ -1093,7 +1217,7 @@ export default function AffiliateDashboard() {
               </p>
               <ul className="text-xs space-y-1" style={{ color: "#666" }}>
                 <li>• Commissions are processed every <strong>Friday</strong> between 12pm – 5pm WAT.</li>
-                <li>• Minimum payout threshold: <strong>₦5,000</strong>.</li>
+                <li>• Minimum payout threshold: <strong>₦10,000</strong>.</li>
                 <li>• Withdrawals must be requested before Wednesday to be included in that week's batch.</li>
                 <li>• Bank transfers typically settle within 1 business day after processing.</li>
               </ul>
@@ -1128,7 +1252,7 @@ export default function AffiliateDashboard() {
                 >
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#F8F5F0", borderBottom: "1px solid #E8E3DC" }}>
+                      <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Date</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Amount</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold hidden sm:table-cell" style={{ color: "#888" }}>Bank</th>

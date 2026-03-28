@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import NotificationBell from "@/components/NotificationBell";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { Link } from "wouter";
@@ -12,14 +13,15 @@ import {
   Eye, Share2, Star, Target, Users, Zap, BookOpen,
   ArrowRight, ChevronDown, ChevronUp, Download,
   Briefcase, Send, AlertTriangle, ChevronRight, Loader2,
+  ChevronLeft, X, Sparkles,
 } from "lucide-react";
 
-// ─── Colors ──────────────────────────────────────────────────────────────────
-const TEAL  = "#0A1F1C";
+// ─── Colors (Media = general → Apple grey) ───────────────────────────────────
+const TEAL  = "#86868B";   // Apple grey — general departments
 const GOLD  = "#C9A97E";
 const MILK  = "#FAFAF8";
 const WHITE = "#FFFFFF";
-const DARK  = "#1A1A1A";
+const DARK  = "#1D1D1F";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section = "inbox" | "overview" | "calendar" | "aitwin" | "podcast" | "vault" | "social";
@@ -149,6 +151,69 @@ export default function MediaDashboard() {
   }
   const [calendarFilter, setCalendarFilter] = useState("All");
 
+  // ── Content Calendar state ──
+  const [calWeekOffset, setCalWeekOffset] = useState(0);
+  const [calDeptFilter, setCalDeptFilter] = useState("all");
+  const [calStatusFilter, setCalStatusFilter] = useState("all");
+  const [calSelectedDay, setCalSelectedDay] = useState<string | null>(null);
+  const [calShowCreate, setCalShowCreate] = useState(false);
+  const [calNewCaption, setCalNewCaption] = useState("");
+  const [calNewPlatform, setCalNewPlatform] = useState<"instagram" | "tiktok" | "twitter" | "linkedin">("instagram");
+  const [calNewDept, setCalNewDept] = useState<"general" | "bizdoc" | "systemise" | "skills">("general");
+  const [calNewType, setCalNewType] = useState<"educational" | "success_story" | "service_spotlight" | "behind_scenes" | "quote" | "carousel">("educational");
+  const [calNewHashtags, setCalNewHashtags] = useState("");
+  const [calNewTime, setCalNewTime] = useState("09:00");
+  const [calGenerateTopic, setCalGenerateTopic] = useState("");
+  const [calGenerateDept, setCalGenerateDept] = useState<"general" | "bizdoc" | "systemise" | "skills">("general");
+  const [calGeneratePlatform, setCalGeneratePlatform] = useState<"instagram" | "tiktok" | "twitter" | "linkedin">("instagram");
+
+  // Week date range helpers
+  const getWeekRange = (offset: number) => {
+    const now = new Date();
+    const day = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    return { start: monday, end: sunday };
+  };
+  const { start: weekStart, end: weekEnd } = getWeekRange(calWeekOffset);
+
+  const calendarQuery = trpc.content.calendar.useQuery(
+    { startDate: weekStart.toISOString(), endDate: weekEnd.toISOString() },
+    { refetchInterval: 15000 }
+  );
+
+  const contentCreateMut = trpc.content.create.useMutation({
+    onSuccess: () => {
+      toast.success("Content post created");
+      calendarQuery.refetch();
+      setCalShowCreate(false);
+      setCalNewCaption("");
+      setCalNewHashtags("");
+    },
+    onError: () => toast.error("Failed to create post"),
+  });
+
+  const contentGenerateMut = trpc.content.generate.useMutation({
+    onSuccess: () => {
+      toast.success("AI content generated as draft");
+      calendarQuery.refetch();
+      setCalGenerateTopic("");
+    },
+    onError: () => toast.error("Failed to generate AI content"),
+  });
+
+  const contentSeedMut = trpc.content.seed.useMutation({
+    onSuccess: (data) => {
+      if (data.skipped) toast.info("Content already seeded");
+      else toast.success(`Seeded ${data.inserted} content posts`);
+      calendarQuery.refetch();
+    },
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
@@ -238,63 +303,359 @@ export default function MediaDashboard() {
 
   // ─── Content Calendar Section ─────────────────────────────────────────
   function renderCalendar() {
-    const platforms = ["All", "YouTube", "TikTok", "Instagram", "LinkedIn", "Podcast"];
-    const filter = calendarFilter;
-    const setFilter = setCalendarFilter;
-    const filtered = filter === "All" ? MOCK_CONTENT : MOCK_CONTENT.filter(c => c.platform === filter);
+    const DEPT_COLORS: Record<string, string> = { general: "#0A1F1C", bizdoc: "#1B4D3E", systemise: "#1E3A5F", skills: "#C9A97E" };
+    const PLATFORM_ICONS: Record<string, string> = { instagram: "IG", tiktok: "TT", twitter: "X", linkedin: "LI" };
+    const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
+      draft: { bg: "#6B728014", text: "#6B7280" },
+      scheduled: { bg: "#7C3AED14", text: "#7C3AED" },
+      posted: { bg: "#22C55E14", text: "#16A34A" },
+      failed: { bg: "#EF444414", text: "#EF4444" },
+    };
+
+    const calPosts: any[] = calendarQuery.data || [];
+
+    // Build days of the week
+    const days: { date: Date; label: string; dayNum: number; key: string; isToday: boolean }[] = [];
+    const dayNames = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
+      const today = new Date();
+      const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+      days.push({
+        date: d,
+        label: dayNames[i],
+        dayNum: d.getDate(),
+        key: d.toISOString().slice(0, 10),
+        isToday,
+      });
+    }
+
+    // Filter posts
+    let filtered = calPosts;
+    if (calDeptFilter !== "all") filtered = filtered.filter((p: any) => p.department === calDeptFilter);
+    if (calStatusFilter !== "all") filtered = filtered.filter((p: any) => p.status === calStatusFilter);
+
+    // Group by day key
+    const grouped: Record<string, any[]> = {};
+    for (const day of days) grouped[day.key] = [];
+    for (const post of filtered) {
+      if (!post.scheduledFor) continue;
+      const key = new Date(post.scheduledFor).toISOString().slice(0, 10);
+      if (grouped[key]) grouped[key].push(post);
+    }
+
+    const monthLabel = weekStart.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const weekLabel = `${weekStart.toLocaleDateString("en-GB", { day: "numeric", month: "short" })} — ${weekEnd.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}`;
+
+    // Day detail view
+    const selectedPosts = calSelectedDay ? (grouped[calSelectedDay] || []) : [];
+    const selectedLabel = calSelectedDay
+      ? new Date(calSelectedDay + "T12:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+      : "";
 
     return (
-      <div className="space-y-6">
-        <div className="flex flex-wrap gap-2">
-          {platforms.map(p => (
-            <button key={p} onClick={() => setFilter(p)}
-              className="px-3 py-1.5 rounded-full text-xs font-semibold transition-all"
+      <div className="space-y-5">
+        {/* Week nav + filters */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setCalWeekOffset(o => o - 1)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ border: "1px solid #E8E3DC", color: DARK }}>
+              <ChevronLeft size={16} />
+            </button>
+            <div className="text-center min-w-40">
+              <p className="text-sm font-bold" style={{ color: DARK }}>{monthLabel}</p>
+              <p className="text-[11px]" style={{ color: "#9CA3AF" }}>{weekLabel}</p>
+            </div>
+            <button onClick={() => setCalWeekOffset(o => o + 1)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ border: "1px solid #E8E3DC", color: DARK }}>
+              <ChevronRight size={16} />
+            </button>
+            {calWeekOffset !== 0 && (
+              <button onClick={() => setCalWeekOffset(0)}
+                className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                style={{ background: `${TEAL}10`, color: TEAL }}>
+                Today
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            {/* Department filter */}
+            {["all", "general", "bizdoc", "systemise", "skills"].map(d => (
+              <button key={d} onClick={() => setCalDeptFilter(d)}
+                className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all"
+                style={{
+                  background: calDeptFilter === d ? TEAL : WHITE,
+                  color: calDeptFilter === d ? WHITE : "#6B7280",
+                  border: "1px solid #E8E3DC",
+                }}>
+                {d === "all" ? "All Depts" : d.charAt(0).toUpperCase() + d.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Status filter row */}
+        <div className="flex flex-wrap items-center gap-2">
+          {["all", "draft", "scheduled", "posted", "failed"].map(s => (
+            <button key={s} onClick={() => setCalStatusFilter(s)}
+              className="text-[11px] font-semibold px-2.5 py-1.5 rounded-full transition-all"
               style={{
-                background: filter === p ? TEAL : WHITE,
-                color: filter === p ? WHITE : "#6B7280",
+                background: calStatusFilter === s ? TEAL : WHITE,
+                color: calStatusFilter === s ? WHITE : "#6B7280",
                 border: "1px solid #E8E3DC",
               }}>
-              {p}
+              {s === "all" ? "All Status" : s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
           ))}
+          <div className="ml-auto flex gap-2">
+            <button onClick={() => setCalShowCreate(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold"
+              style={{ background: TEAL, color: WHITE }}>
+              <Plus size={12} /> New Post
+            </button>
+            <button onClick={() => contentSeedMut.mutate()}
+              disabled={contentSeedMut.isPending}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold"
+              style={{ background: `${GOLD}20`, color: "#7B4F00", border: `1px solid ${GOLD}40` }}>
+              {contentSeedMut.isPending ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />} Seed Sample Data
+            </button>
+          </div>
         </div>
-        <div className="space-y-2">
-          {filtered.map(item => (
-            <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl"
-              style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
-              <div className="text-center shrink-0 w-12">
-                <p className="text-[10px] uppercase tracking-wide" style={{ color: "#9CA3AF" }}>
-                  {item.date.split(" ")[0]}
-                </p>
-                <p className="text-lg font-bold" style={{ color: DARK }}>{item.date.split(" ")[1]}</p>
-              </div>
-              <div className="w-px h-10 shrink-0" style={{ background: "#E8E3DC" }} />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: DARK }}>{item.title}</p>
-                <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-                  {item.platform} · {item.type} · {item.assignee}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {item.views && (
-                  <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                    <Eye size={11} className="inline mr-1" />{item.views.toLocaleString()}
-                  </span>
-                )}
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                  style={{ background: `${statusColor(item.status)}18`, color: statusColor(item.status) }}>
-                  {item.status}
+
+        {/* Loading state */}
+        {calendarQuery.isLoading && (
+          <div className="flex justify-center py-10">
+            <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
+          </div>
+        )}
+
+        {/* Weekly grid */}
+        {!calendarQuery.isLoading && (
+          <div className="grid grid-cols-7 gap-1.5">
+            {days.map(day => {
+              const posts = grouped[day.key] || [];
+              const isSelected = calSelectedDay === day.key;
+              return (
+                <button key={day.key}
+                  onClick={() => setCalSelectedDay(isSelected ? null : day.key)}
+                  className="rounded-xl p-2 text-left transition-all min-h-[120px] flex flex-col"
+                  style={{
+                    background: isSelected ? `${TEAL}08` : WHITE,
+                    border: isSelected ? `2px solid ${TEAL}` : day.isToday ? `2px solid ${GOLD}` : "1px solid #E8E3DC",
+                  }}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#9CA3AF" }}>{day.label}</span>
+                    <span className={`text-sm font-bold ${day.isToday ? "w-6 h-6 rounded-full flex items-center justify-center" : ""}`}
+                      style={{
+                        color: day.isToday ? WHITE : DARK,
+                        background: day.isToday ? GOLD : "transparent",
+                      }}>
+                      {day.dayNum}
+                    </span>
+                  </div>
+                  <div className="flex-1 space-y-1 overflow-hidden">
+                    {posts.slice(0, 3).map((post: any) => {
+                      const time = post.scheduledFor ? new Date(post.scheduledFor).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) : "";
+                      return (
+                        <div key={post.id} className="rounded-md px-1.5 py-1 flex items-center gap-1"
+                          style={{ background: `${DEPT_COLORS[post.department] || TEAL}12` }}>
+                          <span className="text-[9px] font-bold px-1 rounded" style={{ background: `${DEPT_COLORS[post.department] || TEAL}25`, color: DEPT_COLORS[post.department] || TEAL }}>
+                            {PLATFORM_ICONS[post.platform] || "?"}
+                          </span>
+                          <span className="text-[9px] truncate flex-1" style={{ color: DARK }}>{time}</span>
+                        </div>
+                      );
+                    })}
+                    {posts.length > 3 && (
+                      <p className="text-[9px] font-semibold text-center" style={{ color: "#9CA3AF" }}>+{posts.length - 3} more</p>
+                    )}
+                    {posts.length === 0 && (
+                      <p className="text-[9px] text-center mt-4 opacity-30" style={{ color: DARK }}>—</p>
+                    )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Day detail panel */}
+        {calSelectedDay && (
+          <div className="rounded-2xl p-5 space-y-4" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold" style={{ color: DARK }}>{selectedLabel}</p>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold px-2 py-1 rounded-full" style={{ background: `${TEAL}10`, color: TEAL }}>
+                  {selectedPosts.length} post{selectedPosts.length !== 1 ? "s" : ""}
                 </span>
+                <button onClick={() => setCalSelectedDay(null)} className="p-1 rounded-lg" style={{ color: "#9CA3AF" }}>
+                  <X size={14} />
+                </button>
               </div>
             </div>
-          ))}
+            {selectedPosts.length === 0 ? (
+              <p className="text-xs text-center py-6 opacity-40" style={{ color: DARK }}>No posts scheduled for this day.</p>
+            ) : (
+              <div className="space-y-3">
+                {selectedPosts.map((post: any) => {
+                  const sc = STATUS_COLORS[post.status] || STATUS_COLORS.draft;
+                  const time = post.scheduledFor ? new Date(post.scheduledFor).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) : "No time";
+                  return (
+                    <div key={post.id} className="rounded-xl p-4" style={{ border: "1px solid #E8E3DC" }}>
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold"
+                          style={{ background: `${DEPT_COLORS[post.department] || TEAL}15`, color: DEPT_COLORS[post.department] || TEAL }}>
+                          {PLATFORM_ICONS[post.platform]}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-medium leading-snug" style={{ color: DARK }}>
+                            {post.caption?.slice(0, 120)}{post.caption?.length > 120 ? "..." : ""}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                              style={{ background: `${DEPT_COLORS[post.department] || TEAL}12`, color: DEPT_COLORS[post.department] || TEAL }}>
+                              {post.department}
+                            </span>
+                            <span className="text-[10px]" style={{ color: "#9CA3AF" }}>{post.platform}</span>
+                            <span className="text-[10px]" style={{ color: "#9CA3AF" }}>{post.contentType?.replace("_", " ")}</span>
+                            <span className="text-[10px]" style={{ color: "#9CA3AF" }}>{time}</span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: sc.bg, color: sc.text }}>
+                              {post.status}
+                            </span>
+                          </div>
+                          {post.hashtags && (
+                            <p className="text-[10px] mt-1.5 leading-relaxed" style={{ color: GOLD }}>{post.hashtags}</p>
+                          )}
+                          {post.createdBy && (
+                            <p className="text-[10px] mt-1" style={{ color: "#9CA3AF" }}>
+                              By: {post.createdBy === "ai_muse" ? "AI Muse" : post.createdBy}
+                            </p>
+                          )}
+                          {post.engagement && (
+                            <div className="flex gap-3 mt-2">
+                              {post.engagement.likes != null && <span className="text-[10px]" style={{ color: "#9CA3AF" }}>Likes: {post.engagement.likes}</span>}
+                              {post.engagement.comments != null && <span className="text-[10px]" style={{ color: "#9CA3AF" }}>Comments: {post.engagement.comments}</span>}
+                              {post.engagement.shares != null && <span className="text-[10px]" style={{ color: "#9CA3AF" }}>Shares: {post.engagement.shares}</span>}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* AI Generate section */}
+        <div className="rounded-2xl p-5" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles size={16} style={{ color: GOLD }} />
+            <p className="text-sm font-bold" style={{ color: DARK }}>Generate AI Content</p>
+          </div>
+          <div className="flex gap-3 flex-wrap">
+            <input placeholder="Topic (optional)..." value={calGenerateTopic} onChange={e => setCalGenerateTopic(e.target.value)}
+              className="flex-1 min-w-40 px-3 py-2 rounded-xl text-sm outline-none"
+              style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }} />
+            <select value={calGenerateDept} onChange={e => setCalGenerateDept(e.target.value as any)}
+              className="px-3 py-2 rounded-xl text-sm outline-none"
+              style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }}>
+              <option value="general">General</option>
+              <option value="bizdoc">BizDoc</option>
+              <option value="systemise">Systemise</option>
+              <option value="skills">Skills</option>
+            </select>
+            <select value={calGeneratePlatform} onChange={e => setCalGeneratePlatform(e.target.value as any)}
+              className="px-3 py-2 rounded-xl text-sm outline-none"
+              style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }}>
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="twitter">Twitter</option>
+              <option value="linkedin">LinkedIn</option>
+            </select>
+            <button
+              onClick={() => contentGenerateMut.mutate({
+                department: calGenerateDept,
+                platform: calGeneratePlatform,
+                topic: calGenerateTopic || undefined,
+              })}
+              disabled={contentGenerateMut.isPending}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: TEAL, color: WHITE }}>
+              {contentGenerateMut.isPending ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              Generate
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => toast.success("Coming soon: Add to calendar")}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition"
-          style={{ background: TEAL, color: WHITE }}>
-          <Plus size={15} /> Schedule Content
-        </button>
+
+        {/* Create post modal / inline */}
+        {calShowCreate && (
+          <div className="rounded-2xl p-5 space-y-4" style={{ background: WHITE, border: `2px solid ${TEAL}` }}>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-bold" style={{ color: DARK }}>Create Content Post</p>
+              <button onClick={() => setCalShowCreate(false)} className="p-1 rounded-lg" style={{ color: "#9CA3AF" }}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <select value={calNewDept} onChange={e => setCalNewDept(e.target.value as any)}
+                className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }}>
+                <option value="general">General</option>
+                <option value="bizdoc">BizDoc</option>
+                <option value="systemise">Systemise</option>
+                <option value="skills">Skills</option>
+              </select>
+              <select value={calNewPlatform} onChange={e => setCalNewPlatform(e.target.value as any)}
+                className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }}>
+                <option value="instagram">Instagram</option>
+                <option value="tiktok">TikTok</option>
+                <option value="twitter">Twitter</option>
+                <option value="linkedin">LinkedIn</option>
+              </select>
+              <select value={calNewType} onChange={e => setCalNewType(e.target.value as any)}
+                className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }}>
+                <option value="educational">Educational</option>
+                <option value="success_story">Success Story</option>
+                <option value="service_spotlight">Service Spotlight</option>
+                <option value="behind_scenes">Behind Scenes</option>
+                <option value="quote">Quote</option>
+                <option value="carousel">Carousel</option>
+              </select>
+              <input type="time" value={calNewTime} onChange={e => setCalNewTime(e.target.value)}
+                className="px-3 py-2 rounded-xl text-sm outline-none" style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }} />
+            </div>
+            <textarea rows={3} placeholder="Caption..." value={calNewCaption} onChange={e => setCalNewCaption(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
+              style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }} />
+            <input placeholder="Hashtags (e.g. #HAMZURY #Business)" value={calNewHashtags} onChange={e => setCalNewHashtags(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+              style={{ border: "1.5px solid #E8E3DC", background: MILK, color: DARK }} />
+            <button
+              onClick={() => {
+                if (!calNewCaption.trim()) { toast.error("Caption is required"); return; }
+                const schedDate = calSelectedDay || new Date().toISOString().slice(0, 10);
+                contentCreateMut.mutate({
+                  department: calNewDept,
+                  platform: calNewPlatform,
+                  contentType: calNewType,
+                  caption: calNewCaption,
+                  hashtags: calNewHashtags || undefined,
+                  scheduledFor: `${schedDate}T${calNewTime}:00`,
+                  status: "scheduled",
+                });
+              }}
+              disabled={contentCreateMut.isPending}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2"
+              style={{ background: TEAL, color: WHITE }}>
+              {contentCreateMut.isPending ? <Loader2 size={14} className="animate-spin" /> : <Calendar size={14} />}
+              Schedule Post
+            </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -820,6 +1181,7 @@ export default function MediaDashboard() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <div className="text-right hidden md:block">
               <p className="text-sm font-semibold" style={{ color: DARK }}>{user.name}</p>
               <p className="text-xs" style={{ color: "#9CA3AF" }}>Media / Creative</p>

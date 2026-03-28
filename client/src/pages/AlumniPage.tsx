@@ -1,11 +1,11 @@
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 
-const CHOCO = "#2C1A0E";
+const NAVY  = "#1B2A4A";   // Skills primary — dark navy blue
 const GOLD  = "#C9A97E";
-const CREAM = "#F8F5F0";
+const CREAM = "#FAFAF8";   // Milk white
 const W     = "#FFFFFF";
-const DARK  = "#2C2C2C";
+const DARK  = "#1D1D1F";
 
 export default function AlumniPage() {
   return (
@@ -15,13 +15,13 @@ export default function AlumniPage() {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 py-4 px-6" style={{ backgroundColor: `${CREAM}F5`, borderBottom: `1px solid ${GOLD}18`, backdropFilter: "blur(12px)" }}>
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/"><span className="text-[15px] font-semibold tracking-tight cursor-pointer" style={{ color: CHOCO }}>HAMZURY</span></Link>
-          <Link href="/skills"><span className="text-[12px] font-medium uppercase tracking-wider cursor-pointer" style={{ color: `${CHOCO}60` }}>Back to Skills</span></Link>
+          <Link href="/"><span className="text-[15px] font-semibold tracking-tight cursor-pointer" style={{ color: NAVY }}>HAMZURY</span></Link>
+          <Link href="/skills"><span className="text-[12px] font-medium uppercase tracking-wider cursor-pointer" style={{ color: `${NAVY}60` }}>Back to Skills</span></Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 px-6 text-center" style={{ backgroundColor: CHOCO }}>
+      <section className="pt-32 pb-20 px-6 text-center" style={{ backgroundColor: NAVY }}>
         <p className="text-[11px] font-bold tracking-[0.3em] uppercase mb-4" style={{ color: GOLD }}>HAMZURY ALUMNI</p>
         <h1 className="text-[clamp(36px,6vw,64px)] font-light tracking-tight mb-4 text-white" style={{ letterSpacing: "-0.03em" }}>
           Once HAMZURY,<br />always HAMZURY.
@@ -40,7 +40,7 @@ export default function AlumniPage() {
             { stat: "6",      label: "Cohorts Completed" },
           ].map(s => (
             <div key={s.label}>
-              <p className="text-[32px] font-light mb-1" style={{ color: CHOCO }}>{s.stat}</p>
+              <p className="text-[32px] font-light mb-1" style={{ color: NAVY }}>{s.stat}</p>
               <p className="text-[11px] uppercase tracking-wider opacity-40" style={{ color: DARK }}>{s.label}</p>
             </div>
           ))}
@@ -57,8 +57,8 @@ export default function AlumniPage() {
               { title: "Preferred Contractor Access", body: "HAMZURY clients regularly source trusted contractors from the alumni pool. Being alumni puts you at the front of every referral list." },
               { title: "Continued Learning", body: "Alumni get priority access and discounts for all new programs, workshops, and advanced cohorts as we expand our curriculum." },
             ].map(b => (
-              <div key={b.title} className="rounded-2xl p-6 border" style={{ borderColor: `${CHOCO}12`, backgroundColor: W }}>
-                <p className="text-[15px] font-semibold mb-2" style={{ color: CHOCO }}>{b.title}</p>
+              <div key={b.title} className="rounded-2xl p-6 border" style={{ borderColor: `${NAVY}12`, backgroundColor: W }}>
+                <p className="text-[15px] font-semibold mb-2" style={{ color: NAVY }}>{b.title}</p>
                 <p className="text-[13px] leading-relaxed opacity-60" style={{ color: DARK }}>{b.body}</p>
               </div>
             ))}
@@ -72,12 +72,12 @@ export default function AlumniPage() {
           <p className="text-[11px] font-bold tracking-[0.25em] uppercase mb-8" style={{ color: GOLD }}>ALUMNI DIRECTORY</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="rounded-2xl border p-5 text-center" style={{ borderColor: `${CHOCO}10`, backgroundColor: CREAM }}>
+              <div key={i} className="rounded-2xl border p-5 text-center" style={{ borderColor: `${NAVY}10`, backgroundColor: CREAM }}>
                 <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center text-sm font-bold"
-                  style={{ backgroundColor: `${CHOCO}15`, color: CHOCO }}>
+                  style={{ backgroundColor: `${NAVY}15`, color: NAVY }}>
                   {String.fromCharCode(65 + i)}
                 </div>
-                <p className="text-[13px] font-medium mb-0.5" style={{ color: CHOCO }}>Alumni Profile</p>
+                <p className="text-[13px] font-medium mb-0.5" style={{ color: NAVY }}>Alumni Profile</p>
                 <p className="text-[11px] opacity-40" style={{ color: DARK }}>Coming soon</p>
               </div>
             ))}
@@ -89,8 +89,8 @@ export default function AlumniPage() {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 px-6 border-t text-center" style={{ borderColor: `${CHOCO}10`, backgroundColor: CREAM }}>
-        <div className="flex flex-wrap items-center justify-center gap-6 text-[12px]" style={{ color: `${CHOCO}50` }}>
+      <footer className="py-8 px-6 border-t text-center" style={{ borderColor: `${NAVY}10`, backgroundColor: CREAM }}>
+        <div className="flex flex-wrap items-center justify-center gap-6 text-[12px]" style={{ color: `${NAVY}50` }}>
           <Link href="/"><span className="hover:opacity-100 cursor-pointer transition-opacity">Home</span></Link>
           <Link href="/skills"><span className="hover:opacity-100 cursor-pointer transition-opacity">Skills</span></Link>
           <Link href="/ridi"><span className="hover:opacity-100 cursor-pointer transition-opacity">RIDI</span></Link>

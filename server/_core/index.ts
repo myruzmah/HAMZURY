@@ -447,7 +447,7 @@ async function startServer() {
       { loc: "/bizdoc", changefreq: "weekly", priority: "0.9" },
       { loc: "/systemise", changefreq: "weekly", priority: "0.9" },
       { loc: "/skills", changefreq: "weekly", priority: "0.9" },
-      { loc: "/track", changefreq: "monthly", priority: "0.7" },
+      { loc: "/client", changefreq: "monthly", priority: "0.7" },
       { loc: "/founder", changefreq: "monthly", priority: "0.6" },
       { loc: "/consultant", changefreq: "monthly", priority: "0.6" },
       { loc: "/skills/ceo", changefreq: "monthly", priority: "0.6" },
@@ -482,6 +482,7 @@ Disallow: /hub/
 Disallow: /skills/student
 Disallow: /skills/admin
 Disallow: /affiliate/dashboard
+Disallow: /client/dashboard
 
 Sitemap: ${base}/sitemap.xml
 `);

@@ -7,7 +7,7 @@ import { trpc } from "@/lib/trpc";
 
 const G  = "#1B4D3E";
 const Au = "#C9A97E";
-const Cr = "#F8F5F0";
+const Cr = "#FAFAF8";
 const W  = "#FFFFFF";
 const Milk = "#FAFAF8";
 

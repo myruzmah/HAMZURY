@@ -2,8 +2,9 @@ import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 import { ArrowLeft, ArrowRight, GraduationCap, Target, Users, Lightbulb } from "lucide-react";
 
+const NAVY = "#1B2A4A";  // Skills primary — dark navy blue
 const GOLD = "#C9A97E";
-const CREAM = "#FFF9E6";
+const BG   = "#FAFAF8";  // Milk white
 
 export default function SkillsCEOPage() {
   return (

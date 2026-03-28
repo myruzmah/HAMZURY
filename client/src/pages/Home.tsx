@@ -21,7 +21,7 @@ const DARK_GREY = "#1D1D1F";
 const TEAL  = "#86868B";  // Alias for backward compat — Home uses grey now
 const GREEN = "#34A853";
 const GOLD  = "#C9A97E";
-const CREAM = "#F5F5F7";
+const CREAM = "#FAFAF8";   // Milk white
 const WHITE = "#FFFFFF";
 const DARK  = "#1D1D1F";
 
@@ -50,7 +50,7 @@ const DEPARTMENTS = [
     label: "Systemize",
     sub: "Strategy & Automation",
     icon: <Cpu size={28} />,
-    color: "#0A1F1C",
+    color: "#1D1D1F",
     href: "/systemise",
     intro: "Systems that run without you. Strategy, automation, and digital infrastructure.",
     pricing: "Starting from ₦150,000",
@@ -565,7 +565,7 @@ export default function Home() {
               {
                 dept: "Systemize",
                 why: "A business without systems is just a job. We build the structure to scale.",
-                color: "#0A1F1C",
+                color: "#1D1D1F",
               },
               {
                 dept: "Hamzury Skills",
