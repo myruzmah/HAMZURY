@@ -238,7 +238,7 @@ export default function Home() {
                   { label: "Systemise",        href: "/systemise" },
                   { label: "Hamzury Skills",   href: "/skills" },
                   { label: "RIDI Initiative",  href: "/ridi" },
-                  { label: "MetFix Hardware",  href: "/metfix" },
+                  { label: "MetFix Hardware \u00B7 Coming Soon",  href: "/metfix" },
                 ].map(d => (
                   <Link key={d.href} href={d.href}
                     onClick={() => setMobileMenuOpen(false)}

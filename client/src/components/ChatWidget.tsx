@@ -58,6 +58,15 @@ const TEAL = "#0A1F1C";
 const GOLD = "#C9A97E";
 const CREAM = "#F8F5F0";
 
+const SLOGANS = [
+  "Without clarity, we cannot serve you better.",
+  "Give answers to the best of your ability.",
+  "Some days we do not work rush. Some days we do.",
+  "Many businesses are left behind. Not yours.",
+  "We understand first. Then we deliver.",
+  "Structure saves more money than hustle.",
+];
+
 const PERSONA: Record<Department, { name: string; title: string; greeting: string; color: string }> = {
   general: {
     name: "Evelyn Adam",
@@ -143,6 +152,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   const isControlled = externalOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [sloganIdx, setSloganIdx] = useState(0);
   const isOpen = isControlled ? externalOpen : internalOpen;
   const close = () => {
     if (isControlled) {
@@ -191,6 +201,12 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       return () => clearTimeout(t);
     }
   }, [isOpen]);
+
+  // Rotate slogans every 6s
+  useEffect(() => {
+    const t = setInterval(() => setSloganIdx(i => (i + 1) % SLOGANS.length), 6000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -554,24 +570,38 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       className={
         isControlled
           ? "w-full h-full flex flex-col overflow-hidden"
-          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl border border-[#0A1F1C]/10 bottom-0 left-0 right-0 rounded-t-2xl max-h-[80vh] md:bottom-4 md:right-4 md:left-auto md:w-[420px] md:rounded-2xl md:max-h-[600px]"
+          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl border-t border-[#0A1F1C]/10 bottom-0 left-0 right-0 max-h-[85vh] md:bottom-4 md:right-4 md:left-auto md:w-[420px] md:rounded-2xl md:max-h-[600px] md:border"
       }
       style={isControlled ? {} : { backgroundColor: "white", transform: mounted ? "translateY(0)" : "translateY(100%)", transition: "transform 0.3s ease-out" }}
     >
       {/* Header */}
-      <div className="p-4 flex justify-between items-center shrink-0 border-b border-[#0A1F1C]/5 relative" style={{ backgroundColor: persona.color }}>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setMenuOpen(v => !v)} className="text-white/60 hover:text-white transition-opacity p-0.5">
-            <MoreVertical size={18} />
-          </button>
-          <div>
-            <h3 className="font-semibold text-[14px] text-white">{persona.name}</h3>
-            <p className="text-[11px] text-white/60">{persona.title}</p>
+      <div className="shrink-0 relative" style={{ backgroundColor: persona.color }}>
+        <div className="px-4 pt-3 pb-2 flex justify-between items-start">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setMenuOpen(v => !v)} className="text-white/60 hover:text-white transition-opacity p-0.5 mt-0.5">
+              <MoreVertical size={18} />
+            </button>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold text-[14px] text-white">{persona.name}</h3>
+                <span className="w-4 h-4 rounded-full bg-white/20 flex items-center justify-center" title="Verified">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-[11px] text-white/70">Online now</span>
+              </div>
+            </div>
           </div>
+          <button onClick={close} className="text-white/50 hover:text-white transition-opacity p-1">
+            <X size={18} />
+          </button>
         </div>
-        <button onClick={close} className="text-white/50 hover:text-white transition-opacity p-1">
-          <X size={18} />
-        </button>
+        {/* Rotating slogan */}
+        <p className="px-4 pb-2.5 text-[11px] text-white/50 font-light italic transition-opacity duration-500">
+          {SLOGANS[sloganIdx]}
+        </p>
 
         {/* Three-dot menu dropdown */}
         {menuOpen && (
