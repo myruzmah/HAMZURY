@@ -115,11 +115,9 @@ async function startServer() {
 
       const normalised = String(staffId).trim().toUpperCase();
       const email = STAFF_ID_MAP[normalised];
-      console.log(`[login] staffId="${normalised}" email="${email ?? "NOT FOUND"}"`);
       if (!email) return res.status(401).json({ error: "Invalid Staff ID or password." });
 
       const user = await db.getStaffUserByEmail(email);
-      console.log(`[login] DB lookup email="${email}" found=${!!user} isActive=${user?.isActive}`);
       if (!user) {
         return res.status(401).json({ error: "Invalid Staff ID or password." });
       }
@@ -133,7 +131,6 @@ async function startServer() {
       }
 
       const valid = await db.verifyPassword(password, user.passwordHash, user.passwordSalt);
-      console.log(`[login] password verify result=${valid}`);
       if (!valid) {
         await db.incrementStaffFailedAttempts(user.id);
         return res.status(401).json({ error: "Invalid Staff ID or password." });
