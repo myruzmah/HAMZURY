@@ -10,6 +10,7 @@ import { sdk } from "./sdk";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
 import * as db from "../db";
+import { seedStaffUsers } from "../seed-staff";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -508,6 +509,10 @@ Sitemap: ${base}/sitemap.xml
 
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Auto-seed staff logins if DB is empty (safe — skips if already seeded)
+    if (db.getDb) {
+      seedStaffUsers().catch(err => console.error("[seed] Staff seed error:", err));
+    }
   });
 }
 

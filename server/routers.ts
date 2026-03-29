@@ -50,6 +50,8 @@ import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
 import { clientCredentials, tasks } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
+import { ENV } from "./_core/env";
+import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
 import { invokeLLM } from "./_core/llm";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
@@ -82,6 +84,15 @@ export const appRouter = router({
         const ref = generateRefNumber(input.phone);
         const lead = await createLead({ ...input, ref });
         const task = await createTaskFromLead(lead);
+        // Email alert — non-blocking
+        sendNewLeadAlert({
+          ref: lead.ref,
+          clientName: input.name,
+          service: input.service,
+          phone: input.phone ?? null,
+          email: input.email ?? null,
+          source: "bizdoc",
+        }).catch(err => console.error("[email] New lead alert failed:", err));
         return { ref: lead.ref, leadId: lead.id, taskId: task.id };
       }),
 
@@ -2182,6 +2193,52 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         const invoice = await updateInvoice(id, updateData as any);
         if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
         return invoice;
+      }),
+
+    /** Public — returns the HAMZURY bank account details for transfer payment */
+    bankDetails: publicProcedure.query(() => {
+      return {
+        bankName: ENV.bankName,
+        accountNumber: ENV.bankAccountNumber,
+        accountName: ENV.bankAccountName,
+        configured: !!(ENV.bankName && ENV.bankAccountNumber && ENV.bankAccountName),
+      };
+    }),
+
+    /** Public — client claims they've transferred payment; sends email alert to finance */
+    claimPayment: publicProcedure
+      .input(z.object({
+        invoiceNumber: z.string().min(1),
+        clientName: z.string().optional(),
+        phone: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const invoice = await getInvoiceByNumber(input.invoiceNumber.trim().toUpperCase());
+        if (!invoice) throw new TRPCError({ code: "NOT_FOUND", message: "Invoice not found" });
+        if (invoice.status === "paid") {
+          return { ok: true, alreadyPaid: true };
+        }
+
+        // Fire email alert (non-blocking)
+        sendPaymentClaimedAlert({
+          invoiceNumber: invoice.invoiceNumber,
+          clientName: invoice.clientName,
+          amount: invoice.total - (invoice.amountPaid ?? 0),
+          phone: invoice.clientPhone,
+          email: invoice.clientEmail,
+        }).catch(err => console.error("[email] Payment claim alert failed:", err));
+
+        // Create audit log
+        await createAuditLog({
+          userId: "client",
+          userName: input.clientName || invoice.clientName,
+          action: "payment_claimed",
+          resource: "invoices",
+          resourceId: invoice.id,
+          details: `Client claimed payment for invoice ${invoice.invoiceNumber} (balance ₦${invoice.total - (invoice.amountPaid ?? 0)})`,
+        });
+
+        return { ok: true, alreadyPaid: false };
       }),
 
     markPaid: financeProcedure

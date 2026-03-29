@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   CheckCircle, Circle, ChevronRight, Loader2, AlertCircle, LogOut,
   Clock, Send, MessageSquare, Receipt, Activity, Calendar,
-  Building2, Phone, User, FileText,
+  Building2, Phone, User, FileText, CreditCard, Copy,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
 import { trpc } from "@/lib/trpc";
@@ -104,6 +104,8 @@ export default function ClientDashboard() {
   const [activeTab, setActiveTab] = useState<TabId>("overview");
   const [message, setMessage] = useState("");
   const [messageSent, setMessageSent] = useState(false);
+  const [claimedInvoices, setClaimedInvoices] = useState<Set<string>>(new Set());
+  const [copiedAcct, setCopiedAcct] = useState(false);
   const msgRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -115,7 +117,7 @@ export default function ClientDashboard() {
     }
   }, []);
 
-  const theme = session?.ref ? getDeptTheme(session.ref) : DEPT_COLORS.HZ;
+  const theme = getDeptTheme(session?.ref ?? "");
   const PRIMARY = theme.primary;
   const ACCENT = theme.accent;
 
@@ -134,6 +136,16 @@ export default function ClientDashboard() {
     { ref: session?.ref ?? "" },
     { enabled: !!session?.ref, retry: false }
   );
+
+  // Bank details (public)
+  const { data: bankDetails } = trpc.invoices.bankDetails.useQuery(undefined, { staleTime: Infinity });
+
+  // Claim payment mutation
+  const claimMutation = trpc.invoices.claimPayment.useMutation({
+    onSuccess: (_, vars) => {
+      setClaimedInvoices(prev => new Set(prev).add(vars.invoiceNumber));
+    },
+  });
 
   // Client note mutation
   const noteMutation = trpc.tracking.submitClientNote.useMutation({
@@ -600,34 +612,103 @@ export default function ClientDashboard() {
                   </div>
 
                   {/* Individual invoices */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {invoiceSummary.invoices.map((inv) => {
                       const balance = inv.total - inv.paid;
-                      const statusBg = inv.status === "paid" ? "bg-green-100 text-green-700" :
+                      const isPaid = inv.status === "paid";
+                      const hasClaimed = claimedInvoices.has(inv.number);
+                      const statusBg = isPaid ? "bg-green-100 text-green-700" :
                         inv.status === "partial" ? "bg-amber-100 text-amber-700" :
                         inv.status === "overdue" ? "bg-red-100 text-red-700" :
                         inv.status === "sent" ? "bg-blue-100 text-blue-700" :
                         "bg-gray-100 text-gray-500";
                       return (
-                        <div key={inv.number} className="rounded-xl px-4 py-3" style={{ backgroundColor: WHITE, border: `1px solid ${PRIMARY}08` }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-[11px] font-mono font-medium" style={{ color: PRIMARY }}>{inv.number}</span>
-                            <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${statusBg}`}>
-                              {inv.status}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-[14px] font-semibold" style={{ color: PRIMARY }}>{formatNaira(inv.total)}</span>
-                            {balance > 0 && (
-                              <span className="text-[11px] font-light" style={{ color: "#DC2626" }}>
-                                Balance: {formatNaira(balance)}
+                        <div key={inv.number} className="rounded-xl overflow-hidden" style={{ backgroundColor: WHITE, border: `1px solid ${PRIMARY}08` }}>
+                          <div className="px-4 py-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[11px] font-mono font-medium" style={{ color: PRIMARY }}>{inv.number}</span>
+                              <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${statusBg}`}>
+                                {inv.status}
                               </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-[14px] font-semibold" style={{ color: PRIMARY }}>{formatNaira(inv.total)}</span>
+                              {balance > 0 && (
+                                <span className="text-[11px] font-light" style={{ color: "#DC2626" }}>
+                                  Balance: {formatNaira(balance)}
+                                </span>
+                              )}
+                            </div>
+                            {inv.dueDate && (
+                              <p className="text-[10px] mt-1 opacity-30" style={{ color: DARK }}>
+                                Due: {new Date(inv.dueDate).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+                              </p>
                             )}
                           </div>
-                          {inv.dueDate && (
-                            <p className="text-[10px] mt-1 opacity-30" style={{ color: DARK }}>
-                              Due: {new Date(inv.dueDate).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
-                            </p>
+
+                          {/* Bank transfer section — only for unpaid/partial invoices */}
+                          {!isPaid && balance > 0 && bankDetails?.configured && (
+                            <div className="px-4 pb-4">
+                              <div className="rounded-xl p-3 mb-3" style={{ backgroundColor: `${PRIMARY}06`, border: `1px solid ${PRIMARY}12` }}>
+                                <p className="text-[9px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: PRIMARY }}>
+                                  <CreditCard size={10} /> Bank Transfer Details
+                                </p>
+                                <div className="space-y-1">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[11px] opacity-50" style={{ color: DARK }}>Bank</span>
+                                    <span className="text-[11px] font-medium" style={{ color: DARK }}>{bankDetails.bankName}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[11px] opacity-50" style={{ color: DARK }}>Account Name</span>
+                                    <span className="text-[11px] font-medium" style={{ color: DARK }}>{bankDetails.accountName}</span>
+                                  </div>
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-[11px] opacity-50" style={{ color: DARK }}>Account No.</span>
+                                    <button
+                                      className="flex items-center gap-1 text-[11px] font-mono font-bold transition-opacity hover:opacity-70"
+                                      style={{ color: PRIMARY }}
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(bankDetails.accountNumber);
+                                        setCopiedAcct(true);
+                                        setTimeout(() => setCopiedAcct(false), 2000);
+                                      }}
+                                    >
+                                      {bankDetails.accountNumber}
+                                      <Copy size={10} />
+                                    </button>
+                                  </div>
+                                  {copiedAcct && (
+                                    <p className="text-[10px] text-center" style={{ color: "#16A34A" }}>Copied!</p>
+                                  )}
+                                </div>
+                                <p className="text-[10px] mt-2 opacity-40 text-center" style={{ color: DARK }}>
+                                  Transfer {formatNaira(balance)} then click below
+                                </p>
+                              </div>
+
+                              {hasClaimed ? (
+                                <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl" style={{ backgroundColor: "#DCFCE7" }}>
+                                  <CheckCircle size={12} style={{ color: "#16A34A" }} />
+                                  <span className="text-[11px] font-medium" style={{ color: "#166534" }}>
+                                    Payment claim received — we'll confirm shortly
+                                  </span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => claimMutation.mutate({ invoiceNumber: inv.number, clientName: inv.clientName })}
+                                  disabled={claimMutation.isPending}
+                                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12px] font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40"
+                                  style={{ backgroundColor: PRIMARY, color: ACCENT }}
+                                >
+                                  {claimMutation.isPending ? (
+                                    <Loader2 size={12} className="animate-spin" />
+                                  ) : (
+                                    <CheckCircle size={12} />
+                                  )}
+                                  I've Paid
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       );

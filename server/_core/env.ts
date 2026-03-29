@@ -14,4 +14,8 @@ export const ENV = {
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
   qwenApiKey: process.env.QWEN_API_KEY ?? "",
+  // Bank transfer details (displayed to clients on invoices)
+  bankName: process.env.BANK_NAME ?? "",
+  bankAccountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "",
+  bankAccountName: process.env.BANK_ACCOUNT_NAME ?? "",
 };
