@@ -167,8 +167,15 @@ function Router() {
         </RoleGuard>
       </Route>
 
-      {/* Client Portal — /client redirects to home (tracking is on department pages) */}
-      <Route path={"/client"}>{() => { window.location.href = "/"; return null; }}</Route>
+      {/* Client Portal — /client checks session: dashboard if logged in, home if not */}
+      <Route path={"/client"}>{() => {
+        try {
+          const s = localStorage.getItem("hamzury-client-session");
+          if (s) { const d = JSON.parse(s); if (d.expiresAt > Date.now()) { window.location.href = "/client/dashboard"; return null; } }
+        } catch {}
+        window.location.href = "/#track";
+        return null;
+      }}</Route>
       <Route path={"/client/dashboard"} component={ClientDashboard} />
 
       {/* Affiliate Portal */}

@@ -422,6 +422,7 @@ export default function Home() {
               const isOpen = activeTab === "track";
               return (
                 <div
+                  id="track"
                   className="rounded-2xl border overflow-hidden transition-all duration-300"
                   style={{ borderColor: isOpen ? TEAL : TEAL + "20", backgroundColor: isOpen ? CREAM : WHITE }}
                 >
