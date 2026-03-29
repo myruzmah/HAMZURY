@@ -747,10 +747,30 @@ const PAGE_SIZE = 15;
 
 function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefresh: () => void }) {
   const [page, setPage] = useState(1);
+  const [generatingInv, setGeneratingInv] = useState<number | null>(null);
   const updateMutation = trpc.commissions.updateStatus.useMutation({
     onSuccess: () => { toast.success("Commission status updated"); onRefresh(); },
     onError: () => toast.error("Failed to update commission"),
   });
+  const invoicesQuery = trpc.invoices.list.useQuery({});
+  const invoicesMutation = trpc.invoices.create.useMutation({
+    onSuccess: () => { toast.success("Invoice generated"); setGeneratingInv(null); invoicesQuery.refetch(); },
+    onError: (e) => { toast.error(e.message || "Failed to generate invoice"); setGeneratingInv(null); },
+  });
+
+  function quickGenerateInvoice(c: any) {
+    // Check if an invoice for this task already exists
+    const existing = (invoicesQuery.data || []).find((inv: any) => inv.taskId === c.taskId);
+    if (existing) { toast(`Invoice ${existing.invoiceNumber} already exists for this task`); return; }
+    setGeneratingInv(c.id);
+    invoicesMutation.mutate({
+      clientName: c.clientName || "Client",
+      taskId: c.taskId,
+      items: [{ serviceName: c.service || "Professional Service", quantity: 1, unitPrice: Number(c.quotedPrice), lineTotal: Number(c.quotedPrice) }],
+      subtotal: Number(c.quotedPrice),
+      total: Number(c.quotedPrice),
+    });
+  }
 
   const totalPages = Math.max(1, Math.ceil(commissions.length / PAGE_SIZE));
   const paged = commissions.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -801,6 +821,15 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
                     </span>
                   </td>
                   <td className="p-3 text-center">
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                    <Button size="sm" variant="ghost"
+                      disabled={invoicesMutation.isPending && generatingInv === c.id}
+                      className="text-[11px] text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => quickGenerateInvoice(c)}
+                      title="Generate Invoice">
+                      {invoicesMutation.isPending && generatingInv === c.id ? <Loader2 size={11} className="animate-spin mr-1" /> : <FileText size={11} className="mr-1" />}
+                      Invoice
+                    </Button>
                     {c.status === "pending" && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -848,6 +877,7 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
                       </AlertDialog>
                     )}
                     {c.status === "paid" && <span className="text-[11px] opacity-40">Done</span>}
+                    </div>
                   </td>
                 </tr>
               ))}

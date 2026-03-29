@@ -46,6 +46,18 @@ import {
   createCertificate, getCertificates, getCertificateByNumber, getCertificatesByStudent,
   // Content Calendar
   createContentPost, getContentPosts, updateContentPost, getContentCalendar, seedContentPosts,
+  // Leave requests
+  createLeaveRequest, getLeaveRequests, updateLeaveRequestStatus,
+  // Discipline records
+  createDisciplineRecord, getDisciplineRecords, resolveDisciplineRecord,
+  // Portal visit logs
+  createPortalVisitLog, getPortalVisitLogs,
+  // Content engagement
+  upsertContentEngagement, getContentEngagementForWeek,
+  // Hub meeting records
+  upsertHubMeetingRecord, getHubMeetingRecord, getHubMeetingHistory,
+  // Student milestones
+  createStudentMilestone, getStudentMilestones, markMilestoneCelebrated,
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
@@ -2191,7 +2203,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         return invoice;
       }),
 
-    create: csoProcedure
+    create: seniorProcedure
       .input(z.object({
         clientName: z.string().min(1),
         clientEmail: z.string().optional(),
@@ -2679,6 +2691,174 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
             log.details?.startsWith("[Kash]") ||
             log.details?.startsWith("[Muse]")
         ).slice(0, 100);
+      }),
+  }),
+
+  // ─── Leave Requests ────────────────────────────────────────────────────────
+  leave: router({
+    submit: protectedProcedure
+      .input(z.object({
+        staffEmail: z.string().email(),
+        staffName: z.string().min(1),
+        startDate: z.string(),
+        endDate: z.string(),
+        reason: z.string().optional(),
+        replacementName: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createLeaveRequest(input);
+        return { success: true };
+      }),
+
+    list: protectedProcedure
+      .input(z.object({ staffEmail: z.string().optional() }))
+      .query(async ({ input }) => getLeaveRequests(input.staffEmail)),
+
+    review: seniorProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["approved", "rejected"]),
+        reviewNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await updateLeaveRequestStatus(input.id, input.status, ctx.user.name || ctx.user.email || "HR", input.reviewNotes);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Discipline Records ────────────────────────────────────────────────────
+  discipline: router({
+    issue: seniorProcedure
+      .input(z.object({
+        staffEmail: z.string().email(),
+        staffName: z.string().min(1),
+        type: z.enum(["query", "suspension"]),
+        reason: z.string().min(1),
+        description: z.string().optional(),
+        suspensionDays: z.number().optional(),
+        issuedBy: z.string().min(1),
+      }))
+      .mutation(async ({ input }) => {
+        await createDisciplineRecord(input);
+        return { success: true };
+      }),
+
+    list: seniorProcedure
+      .input(z.object({ staffEmail: z.string().optional() }))
+      .query(async ({ input }) => getDisciplineRecords(input.staffEmail)),
+
+    resolve: seniorProcedure
+      .input(z.object({ id: z.number(), resolvedNotes: z.string() }))
+      .mutation(async ({ input }) => {
+        await resolveDisciplineRecord(input.id, input.resolvedNotes);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Portal Visit Logs ─────────────────────────────────────────────────────
+  portalLogs: router({
+    log: protectedProcedure
+      .input(z.object({
+        subscriptionId: z.number(),
+        clientName: z.string(),
+        portalName: z.string(),
+        visitedBy: z.string().optional(),
+        actionTaken: z.string().optional(),
+        status: z.enum(["logged_in", "submitted", "pending", "approved", "rejected", "error"]),
+        nextActionDate: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createPortalVisitLog(input);
+        return { success: true };
+      }),
+
+    list: protectedProcedure
+      .input(z.object({ subscriptionId: z.number().optional() }))
+      .query(async ({ input }) => getPortalVisitLogs(input.subscriptionId)),
+  }),
+
+  // ─── Content Engagement ───────────────────────────────────────────────────
+  engagement: router({
+    record: seniorProcedure
+      .input(z.object({
+        weekOf: z.string(),
+        staffEmail: z.string().email(),
+        staffName: z.string(),
+        engaged: z.boolean(),
+        platforms: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await upsertContentEngagement(input.weekOf, input.staffEmail, input.staffName, input.engaged, input.platforms, input.notes, ctx.user.name || ctx.user.email || "HR");
+        return { success: true };
+      }),
+
+    weekReport: seniorProcedure
+      .input(z.object({ weekOf: z.string() }))
+      .query(async ({ input }) => getContentEngagementForWeek(input.weekOf)),
+  }),
+
+  // ─── Hub Meeting Records ──────────────────────────────────────────────────
+  hubMeeting: router({
+    save: founderCEOProcedure
+      .input(z.object({
+        weekOf: z.string(),
+        researchTopic: z.string().optional(),
+        researchAssignedTo: z.string().optional(),
+        researchFormat: z.string().optional(),
+        researchAdopted: z.boolean().optional(),
+        projectLead: z.string().optional(),
+        staffOfWeek: z.string().optional(),
+        staffOfWeekAchievement: z.string().optional(),
+        trainingTopic: z.string().optional(),
+        trainingCategory: z.string().optional(),
+        trainer: z.string().optional(),
+        todoList: z.string().optional(),
+        nextWeekTodos: z.string().optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { weekOf, ...rest } = input;
+        await upsertHubMeetingRecord(weekOf, { ...rest, createdBy: ctx.user.name || ctx.user.email || "CEO" });
+        return { success: true };
+      }),
+
+    get: founderCEOProcedure
+      .input(z.object({ weekOf: z.string() }))
+      .query(async ({ input }) => getHubMeetingRecord(input.weekOf)),
+
+    history: founderCEOProcedure
+      .input(z.object({ limit: z.number().default(10) }))
+      .query(async ({ input }) => getHubMeetingHistory(input.limit)),
+  }),
+
+  // ─── Student Milestones ───────────────────────────────────────────────────
+  milestones: router({
+    create: protectedProcedure
+      .input(z.object({
+        cohortId: z.number().optional(),
+        cohortName: z.string().optional(),
+        studentType: z.enum(["physical", "online", "nitda"]),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        milestoneDate: z.string(),
+        type: z.enum(["assignment", "quiz", "presentation", "celebration", "graduation", "event"]),
+      }))
+      .mutation(async ({ input }) => {
+        await createStudentMilestone(input);
+        return { success: true };
+      }),
+
+    list: protectedProcedure
+      .input(z.object({ studentType: z.enum(["physical", "online", "nitda"]).optional() }))
+      .query(async ({ input }) => getStudentMilestones(input.studentType)),
+
+    celebrate: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await markMilestoneCelebrated(input.id);
+        return { success: true };
       }),
   }),
 

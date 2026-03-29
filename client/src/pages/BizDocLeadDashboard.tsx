@@ -25,13 +25,14 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   "Completed":         { bg: "rgba(34,197,94,0.10)",   text: "#16A34A" },
 };
 
-type Tab = "queue" | "review" | "stats" | "clients";
+type Tab = "queue" | "review" | "stats" | "clients" | "projects";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "queue",   label: "Task Queue",   icon: <ClipboardList size={16} /> },
-  { id: "review",  label: "QA Review",    icon: <CheckCircle2 size={16} /> },
-  { id: "stats",   label: "Stats",        icon: <BarChart3 size={16} /> },
-  { id: "clients", label: "Tax Clients",  icon: <Users size={16} /> },
+  { id: "queue",    label: "Task Queue",   icon: <ClipboardList size={16} /> },
+  { id: "review",   label: "QA Review",    icon: <CheckCircle2 size={16} /> },
+  { id: "stats",    label: "Stats",        icon: <BarChart3 size={16} /> },
+  { id: "clients",  label: "Tax Clients",  icon: <Users size={16} /> },
+  { id: "projects", label: "Projects",     icon: <Flag size={16} /> },
 ];
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -226,6 +227,9 @@ export default function BizDocLeadDashboard() {
         )}
         {activeTab === "clients" && (
           <TaxClientsTab subs={subsQuery.data ?? []} />
+        )}
+        {activeTab === "projects" && (
+          <TilzSpaProjectBoard />
         )}
       </main>
     </div>
@@ -640,6 +644,10 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
     { subscriptionId: sub.id },
     { enabled: expanded },
   );
+  const portalLogsQuery = trpc.portalLogs.list.useQuery(
+    { subscriptionId: sub.id },
+    { enabled: expanded },
+  );
 
   const [showSavingsForm, setShowSavingsForm] = useState(false);
   const [grossTax, setGrossTax] = useState("");
@@ -652,6 +660,17 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
   const [credUser, setCredUser] = useState("");
   const [credPass, setCredPass] = useState("");
   const [showPass, setShowPass] = useState(false);
+  const [showLogForm, setShowLogForm] = useState(false);
+  const [logPortal, setLogPortal] = useState("FIRS");
+  const [logAction, setLogAction] = useState("");
+  const [logStatus, setLogStatus] = useState<"logged_in" | "submitted" | "pending" | "approved" | "rejected" | "error">("logged_in");
+  const [logNextDate, setLogNextDate] = useState("");
+  const [logNotes, setLogNotes] = useState("");
+
+  const addLog = trpc.portalLogs.log.useMutation({
+    onSuccess: () => { toast.success("Visit logged"); setShowLogForm(false); setLogAction(""); setLogNotes(""); portalLogsQuery.refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const recordSavings = trpc.taxSavings.record.useMutation({
     onSuccess: () => {
@@ -826,6 +845,76 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
                 ))}
               </section>
 
+              {/* Portal Visit Log */}
+              <section>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "#9CA3AF", margin: 0, fontWeight: 600 }}>Portal Visit Log</p>
+                  <button
+                    onClick={() => setShowLogForm(v => !v)}
+                    style={{ fontSize: 12, color: GREEN, background: GREEN_LIGHT, border: "none", borderRadius: 8, padding: "4px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                  >
+                    <Plus size={12} /> Log Visit
+                  </button>
+                </div>
+                {showLogForm && (
+                  <div style={{ background: GREEN_LIGHT, borderRadius: 12, padding: "14px", marginBottom: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+                    <select value={logPortal} onChange={e => setLogPortal(e.target.value)}
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13, background: WHITE }}>
+                      {["FIRS", "JTBS", "KIRS", "CAC", "SCUML", "Tax Pro Max", "Other"].map(p => <option key={p}>{p}</option>)}
+                    </select>
+                    <input placeholder="Action taken (e.g. Filed quarterly return, Updated TIN…)"
+                      value={logAction} onChange={e => setLogAction(e.target.value)}
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13 }} />
+                    <select value={logStatus} onChange={e => setLogStatus(e.target.value as any)}
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13, background: WHITE }}>
+                      <option value="logged_in">Logged In</option>
+                      <option value="submitted">Submitted</option>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="rejected">Rejected</option>
+                      <option value="error">Error</option>
+                    </select>
+                    <input type="date" placeholder="Next action date" value={logNextDate} onChange={e => setLogNextDate(e.target.value)}
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13 }} />
+                    <input placeholder="Notes (optional)" value={logNotes} onChange={e => setLogNotes(e.target.value)}
+                      style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13 }} />
+                    <button
+                      onClick={() => addLog.mutate({ subscriptionId: sub.id, clientName: sub.businessName || sub.clientName, portalName: logPortal, actionTaken: logAction || undefined, status: logStatus, nextActionDate: logNextDate || undefined, notes: logNotes || undefined })}
+                      style={{ background: GREEN, color: WHITE, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                    >
+                      {addLog.isPending ? "Logging…" : "Log Visit"}
+                    </button>
+                  </div>
+                )}
+                {(portalLogsQuery.data ?? []).length === 0 ? (
+                  <p style={{ fontSize: 13, color: "#9CA3AF", margin: 0 }}>No portal visits logged yet.</p>
+                ) : (portalLogsQuery.data ?? []).slice(0, 6).map((log: any) => (
+                  <div key={log.id} style={{
+                    display: "flex", alignItems: "flex-start", gap: 12,
+                    background: "rgba(27,77,62,0.04)", borderRadius: 10, padding: "10px 14px", marginBottom: 6,
+                  }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: GREEN }}>{log.portalName}</p>
+                        <span style={{
+                          fontSize: 10, fontWeight: 600, padding: "2px 7px", borderRadius: 999,
+                          background: log.status === "approved" ? "rgba(34,197,94,0.10)" : log.status === "error" || log.status === "rejected" ? "rgba(239,68,68,0.10)" : "rgba(234,179,8,0.10)",
+                          color: log.status === "approved" ? "#16A34A" : log.status === "error" || log.status === "rejected" ? "#EF4444" : "#B45309",
+                          textTransform: "capitalize",
+                        }}>
+                          {log.status.replace("_", " ")}
+                        </span>
+                      </div>
+                      {log.actionTaken && <p style={{ margin: "2px 0 0", fontSize: 12, color: "#6B7280" }}>{log.actionTaken}</p>}
+                      {log.nextActionDate && <p style={{ margin: "2px 0 0", fontSize: 11, color: "#9CA3AF" }}>Next action: {log.nextActionDate}</p>}
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF", whiteSpace: "nowrap" }}>
+                      {new Date(log.visitedAt || log.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                ))}
+              </section>
+
               {/* Tax Savings & TCC */}
               <section>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -934,6 +1023,140 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── Tilz Spa 8-Week Project Board ────────────────────────────────────────────
+const TILZ_WEEKS = [
+  { week: 1, label: "Brand Foundation", tasks: ["Brand brief finalized", "Logo + color palette delivered", "Brand guide document created", "Social media handles secured"], startDate: "2026-03-18" },
+  { week: 2, label: "Website Architecture", tasks: ["Sitemap approved", "Wireframes reviewed", "Domain + hosting configured", "CMS setup started"], startDate: "2026-03-25" },
+  { week: 3, label: "Website Build", tasks: ["Homepage built", "Services page built", "About + Contact pages built", "Mobile responsive"], startDate: "2026-04-01" },
+  { week: 4, label: "CRM + Ops Systems", tasks: ["CRM platform set up (client tracking)", "Booking/appointment system configured", "Staff workflow documented", "Intake forms built"], startDate: "2026-04-08" },
+  { week: 5, label: "Social Media Setup", tasks: ["IG + TikTok + FB profiles completed", "Content calendar created (first 30 days)", "Bio + links + highlights set up", "First 3 posts designed"], startDate: "2026-04-15" },
+  { week: 6, label: "Content + SEO", tasks: ["Website copy finalized", "SEO titles + descriptions written", "Google Business profile set up", "Photo guidelines given to client"], startDate: "2026-04-22" },
+  { week: 7, label: "Pre-Launch Review", tasks: ["Full website QA + testing", "CRM test with dummy data", "All links and forms tested", "Client walkthrough / training"], startDate: "2026-04-29" },
+  { week: 8, label: "Launch", tasks: ["Website goes live", "Social media launch posts go out", "Announcement sent to client's network", "Balance ₦700k due + invoice sent"], startDate: "2026-05-06" },
+];
+
+function TilzSpaProjectBoard() {
+  const today = new Date();
+  const projectStart = new Date("2026-03-18");
+  const daysSinceStart = Math.floor((today.getTime() - projectStart.getTime()) / (1000 * 60 * 60 * 24));
+  const currentWeek = Math.min(Math.max(Math.ceil(daysSinceStart / 7), 1), 8);
+
+  const [completedTasks, setCompletedTasks] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem("tilz-spa-tasks") || "{}"); } catch { return {}; }
+  });
+
+  function toggleTask(key: string) {
+    setCompletedTasks(prev => {
+      const next = { ...prev, [key]: !prev[key] };
+      localStorage.setItem("tilz-spa-tasks", JSON.stringify(next));
+      return next;
+    });
+  }
+
+  const totalTasks = TILZ_WEEKS.reduce((s, w) => s + w.tasks.length, 0);
+  const doneTasks = Object.values(completedTasks).filter(Boolean).length;
+  const progressPct = Math.round((doneTasks / totalTasks) * 100);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* Header */}
+      <div style={{ background: WHITE, borderRadius: 16, border: `1px solid rgba(27,77,62,0.10)`, padding: "20px 24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <p style={{ margin: 0, fontSize: 16, fontWeight: 700, color: GREEN }}>Tilz Spa by Tilda — 8-Week Project Board</p>
+            <p style={{ margin: "4px 0 0", fontSize: 13, color: "#9CA3AF" }}>Full Business Architecture · ₦1,200,000 · Started March 18, 2026</p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ margin: 0, fontSize: 20, fontWeight: 700, color: GREEN }}>{progressPct}%</p>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>Complete</p>
+          </div>
+        </div>
+        {/* Progress bar */}
+        <div style={{ marginTop: 16, height: 6, borderRadius: 99, background: "rgba(27,77,62,0.1)" }}>
+          <div style={{ height: "100%", borderRadius: 99, background: GREEN, width: `${progressPct}%`, transition: "width 0.4s" }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: "#9CA3AF" }}>
+          <span>Week 1 · Mar 18</span>
+          <span style={{ fontWeight: 600, color: doneTasks === totalTasks ? "#16A34A" : GREEN }}>Week {currentWeek} now</span>
+          <span>Week 8 · May 6 · Balance ₦700k due</span>
+        </div>
+      </div>
+
+      {/* Week cards */}
+      {TILZ_WEEKS.map(w => {
+        const weekDone = w.tasks.filter((_, i) => completedTasks[`${w.week}-${i}`]).length;
+        const isCurrentWeek = w.week === currentWeek;
+        const isPast = w.week < currentWeek;
+        return (
+          <div key={w.week} style={{
+            background: WHITE, borderRadius: 14,
+            border: `1.5px solid ${isCurrentWeek ? GREEN : isPast ? "rgba(34,197,94,0.20)" : "rgba(27,77,62,0.08)"}`,
+            padding: "18px 20px",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{
+                  width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 12, fontWeight: 700,
+                  background: isCurrentWeek ? GREEN : isPast ? "rgba(34,197,94,0.12)" : GREEN_LIGHT,
+                  color: isCurrentWeek ? WHITE : isPast ? "#16A34A" : GREEN,
+                }}>W{w.week}</span>
+                <div>
+                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: GREEN }}>{w.label}</p>
+                  <p style={{ margin: 0, fontSize: 11, color: "#9CA3AF" }}>Starts {w.startDate}</p>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 12, color: weekDone === w.tasks.length ? "#16A34A" : "#9CA3AF" }}>
+                  {weekDone}/{w.tasks.length}
+                </span>
+                {isCurrentWeek && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: `${GREEN}20`, color: GREEN }}>ACTIVE</span>}
+                {isPast && weekDone === w.tasks.length && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: "rgba(34,197,94,0.12)", color: "#16A34A" }}>DONE</span>}
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {w.tasks.map((task, i) => {
+                const key = `${w.week}-${i}`;
+                const done = !!completedTasks[key];
+                return (
+                  <label key={i} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                    <input type="checkbox" checked={done} onChange={() => toggleTask(key)}
+                      style={{ width: 15, height: 15, accentColor: GREEN, cursor: "pointer" }} />
+                    <span style={{ fontSize: 13, color: done ? "#9CA3AF" : GREEN, textDecoration: done ? "line-through" : "none" }}>{task}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Payment tracker */}
+      <div style={{ background: WHITE, borderRadius: 14, border: "1px solid rgba(27,77,62,0.08)", padding: "18px 20px" }}>
+        <p style={{ margin: "0 0 12px", fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "#9CA3AF", fontWeight: 600 }}>Payment Status</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { label: "Deposit", amount: "₦500,000", status: "Paid", date: "March 18, 2026" },
+            { label: "Balance", amount: "₦700,000", status: "Due at Week 6", date: "~May 2026" },
+          ].map(p => (
+            <div key={p.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 10, background: GREEN_LIGHT }}>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: GREEN }}>{p.label}: {p.amount}</p>
+                <p style={{ margin: "2px 0 0", fontSize: 12, color: "#9CA3AF" }}>{p.date}</p>
+              </div>
+              <span style={{
+                fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+                background: p.status === "Paid" ? "rgba(34,197,94,0.12)" : "rgba(234,179,8,0.12)",
+                color: p.status === "Paid" ? "#16A34A" : "#B45309",
+              }}>{p.status}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

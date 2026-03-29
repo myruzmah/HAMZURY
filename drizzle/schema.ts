@@ -781,3 +781,123 @@ export const contentPosts = mysqlTable("content_posts", {
 
 export type ContentPost = typeof contentPosts.$inferSelect;
 export type InsertContentPost = typeof contentPosts.$inferInsert;
+
+/**
+ * Leave requests submitted by staff.
+ */
+export const leaveRequests = mysqlTable("leave_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  staffEmail: varchar("staffEmail", { length: 255 }).notNull(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  startDate: varchar("startDate", { length: 20 }).notNull(),
+  endDate: varchar("endDate", { length: 20 }).notNull(),
+  reason: text("reason"),
+  replacementName: varchar("replacementName", { length: 255 }),
+  status: mysqlEnum("leaveStatus", ["pending", "approved", "rejected"]).default("pending").notNull(),
+  reviewedBy: varchar("reviewedBy", { length: 255 }),
+  reviewNotes: text("reviewNotes"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type LeaveRequest = typeof leaveRequests.$inferSelect;
+export type InsertLeaveRequest = typeof leaveRequests.$inferInsert;
+
+/**
+ * Formal discipline records (queries and suspensions).
+ */
+export const disciplineRecords = mysqlTable("discipline_records", {
+  id: int("id").autoincrement().primaryKey(),
+  staffEmail: varchar("staffEmail", { length: 255 }).notNull(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  type: mysqlEnum("disciplineType", ["query", "suspension"]).notNull(),
+  reason: varchar("reason", { length: 500 }).notNull(),
+  description: text("description"),
+  suspensionDays: int("suspensionDays"),
+  status: mysqlEnum("disciplineStatus", ["issued", "resolved"]).default("issued").notNull(),
+  issuedBy: varchar("issuedBy", { length: 255 }).notNull(),
+  resolvedAt: timestamp("resolvedAt"),
+  resolvedNotes: text("resolvedNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type DisciplineRecord = typeof disciplineRecords.$inferSelect;
+export type InsertDisciplineRecord = typeof disciplineRecords.$inferInsert;
+
+/**
+ * BizDoc government portal visit logs per client.
+ */
+export const portalVisitLogs = mysqlTable("portal_visit_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  subscriptionId: int("subscriptionId").notNull(),
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  portalName: varchar("portalName", { length: 255 }).notNull(),  // e.g. "FIRS", "CAC", "SCUML"
+  visitedAt: timestamp("visitedAt").defaultNow().notNull(),
+  visitedBy: varchar("visitedBy", { length: 255 }),
+  actionTaken: text("actionTaken"),
+  status: mysqlEnum("portalStatus", ["logged_in", "submitted", "pending", "approved", "rejected", "error"]).default("logged_in").notNull(),
+  nextActionDate: varchar("nextActionDate", { length: 20 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PortalVisitLog = typeof portalVisitLogs.$inferSelect;
+export type InsertPortalVisitLog = typeof portalVisitLogs.$inferInsert;
+
+/**
+ * Weekly content engagement records per staff member.
+ */
+export const contentEngagementLogs = mysqlTable("content_engagement_logs", {
+  id: int("id").autoincrement().primaryKey(),
+  weekOf: varchar("weekOf", { length: 10 }).notNull(),  // YYYY-MM-DD (Monday)
+  staffEmail: varchar("staffEmail", { length: 255 }).notNull(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  engaged: boolean("engaged").default(false).notNull(),
+  platforms: varchar("platforms", { length: 500 }),
+  notes: text("notes"),
+  recordedBy: varchar("recordedBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ContentEngagementLog = typeof contentEngagementLogs.$inferSelect;
+export type InsertContentEngagementLog = typeof contentEngagementLogs.$inferInsert;
+
+/**
+ * Weekly Hub Meeting records: research topics and staff of the week.
+ */
+export const hubMeetingRecords = mysqlTable("hub_meeting_records", {
+  id: int("id").autoincrement().primaryKey(),
+  weekOf: varchar("weekOf", { length: 10 }).notNull(),  // YYYY-MM-DD (Monday)
+  researchTopic: varchar("researchTopic", { length: 500 }),
+  researchAssignedTo: varchar("researchAssignedTo", { length: 255 }),
+  researchFormat: varchar("researchFormat", { length: 100 }),
+  researchAdopted: boolean("researchAdopted").default(false).notNull(),
+  projectLead: varchar("projectLead", { length: 255 }),
+  staffOfWeek: varchar("staffOfWeek", { length: 255 }),
+  staffOfWeekAchievement: text("staffOfWeekAchievement"),
+  trainingTopic: varchar("trainingTopic", { length: 500 }),
+  trainingCategory: varchar("trainingCategory", { length: 100 }),
+  trainer: varchar("trainer", { length: 255 }),
+  todoList: text("todoList"),  // JSON stringified array
+  nextWeekTodos: text("nextWeekTodos"),  // JSON stringified array
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubMeetingRecord = typeof hubMeetingRecords.$inferSelect;
+export type InsertHubMeetingRecord = typeof hubMeetingRecords.$inferInsert;
+
+/**
+ * Student milestone calendar entries (Skills — physical and online).
+ */
+export const studentMilestones = mysqlTable("student_milestones", {
+  id: int("id").autoincrement().primaryKey(),
+  cohortId: int("cohortId"),
+  cohortName: varchar("cohortName", { length: 255 }),
+  studentType: mysqlEnum("studentType", ["physical", "online", "nitda"]).default("physical").notNull(),
+  title: varchar("title", { length: 500 }).notNull(),
+  description: text("description"),
+  milestoneDate: varchar("milestoneDate", { length: 20 }).notNull(),
+  type: mysqlEnum("milestoneType", ["assignment", "quiz", "presentation", "celebration", "graduation", "event"]).default("assignment").notNull(),
+  celebrated: boolean("celebrated").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type StudentMilestone = typeof studentMilestones.$inferSelect;
+export type InsertStudentMilestone = typeof studentMilestones.$inferInsert;

@@ -40,6 +40,12 @@ import {
   proposals, InsertProposal, Proposal,
   certificates, InsertCertificate, Certificate,
   contentPosts, InsertContentPost, ContentPost,
+  leaveRequests, InsertLeaveRequest, LeaveRequest,
+  disciplineRecords, InsertDisciplineRecord, DisciplineRecord,
+  portalVisitLogs, InsertPortalVisitLog, PortalVisitLog,
+  contentEngagementLogs, InsertContentEngagementLog, ContentEngagementLog,
+  hubMeetingRecords, InsertHubMeetingRecord, HubMeetingRecord,
+  studentMilestones, InsertStudentMilestone, StudentMilestone,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1678,4 +1684,111 @@ export async function seedQAChecklists(): Promise<{ inserted: number; skipped: b
   }
 
   return { inserted: templates.length, skipped: false };
+}
+
+// ─── Leave Requests ────────────────────────────────────────────────────────────
+
+export async function createLeaveRequest(data: Omit<InsertLeaveRequest, "id" | "createdAt">): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.insert(leaveRequests).values(data);
+}
+
+export async function getLeaveRequests(staffEmail?: string): Promise<LeaveRequest[]> {
+  const db = await getDb(); if (!db) return [];
+  if (staffEmail) return db.select().from(leaveRequests).where(eq(leaveRequests.staffEmail, staffEmail)).orderBy(desc(leaveRequests.createdAt));
+  return db.select().from(leaveRequests).orderBy(desc(leaveRequests.createdAt));
+}
+
+export async function updateLeaveRequestStatus(id: number, status: "approved" | "rejected", reviewedBy: string, reviewNotes?: string): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.update(leaveRequests).set({ status, reviewedBy, reviewNotes: reviewNotes ?? null, reviewedAt: new Date() }).where(eq(leaveRequests.id, id));
+}
+
+// ─── Discipline Records ─────────────────────────────────────────────────────────
+
+export async function createDisciplineRecord(data: Omit<InsertDisciplineRecord, "id" | "createdAt">): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.insert(disciplineRecords).values(data);
+}
+
+export async function getDisciplineRecords(staffEmail?: string): Promise<DisciplineRecord[]> {
+  const db = await getDb(); if (!db) return [];
+  if (staffEmail) return db.select().from(disciplineRecords).where(eq(disciplineRecords.staffEmail, staffEmail)).orderBy(desc(disciplineRecords.createdAt));
+  return db.select().from(disciplineRecords).orderBy(desc(disciplineRecords.createdAt));
+}
+
+export async function resolveDisciplineRecord(id: number, resolvedNotes: string): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.update(disciplineRecords).set({ status: "resolved", resolvedNotes, resolvedAt: new Date() }).where(eq(disciplineRecords.id, id));
+}
+
+// ─── Portal Visit Logs ─────────────────────────────────────────────────────────
+
+export async function createPortalVisitLog(data: Omit<InsertPortalVisitLog, "id" | "createdAt">): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.insert(portalVisitLogs).values(data);
+}
+
+export async function getPortalVisitLogs(subscriptionId?: number): Promise<PortalVisitLog[]> {
+  const db = await getDb(); if (!db) return [];
+  if (subscriptionId) return db.select().from(portalVisitLogs).where(eq(portalVisitLogs.subscriptionId, subscriptionId)).orderBy(desc(portalVisitLogs.createdAt));
+  return db.select().from(portalVisitLogs).orderBy(desc(portalVisitLogs.createdAt));
+}
+
+// ─── Content Engagement Logs ────────────────────────────────────────────────────
+
+export async function upsertContentEngagement(weekOf: string, staffEmail: string, staffName: string, engaged: boolean, platforms?: string, notes?: string, recordedBy?: string): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  const existing = await db.select().from(contentEngagementLogs).where(and(eq(contentEngagementLogs.weekOf, weekOf), eq(contentEngagementLogs.staffEmail, staffEmail)));
+  if (existing.length > 0) {
+    await db.update(contentEngagementLogs).set({ engaged, platforms: platforms ?? null, notes: notes ?? null, recordedBy: recordedBy ?? null }).where(and(eq(contentEngagementLogs.weekOf, weekOf), eq(contentEngagementLogs.staffEmail, staffEmail)));
+  } else {
+    await db.insert(contentEngagementLogs).values({ weekOf, staffEmail, staffName, engaged, platforms: platforms ?? null, notes: notes ?? null, recordedBy: recordedBy ?? null });
+  }
+}
+
+export async function getContentEngagementForWeek(weekOf: string): Promise<ContentEngagementLog[]> {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(contentEngagementLogs).where(eq(contentEngagementLogs.weekOf, weekOf));
+}
+
+// ─── Hub Meeting Records ────────────────────────────────────────────────────────
+
+export async function upsertHubMeetingRecord(weekOf: string, data: Partial<Omit<InsertHubMeetingRecord, "id" | "createdAt" | "updatedAt">>): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  const existing = await db.select().from(hubMeetingRecords).where(eq(hubMeetingRecords.weekOf, weekOf));
+  if (existing.length > 0) {
+    await db.update(hubMeetingRecords).set(data).where(eq(hubMeetingRecords.weekOf, weekOf));
+  } else {
+    await db.insert(hubMeetingRecords).values({ ...data, weekOf });
+  }
+}
+
+export async function getHubMeetingRecord(weekOf: string): Promise<HubMeetingRecord | null> {
+  const db = await getDb(); if (!db) return null;
+  const rows = await db.select().from(hubMeetingRecords).where(eq(hubMeetingRecords.weekOf, weekOf));
+  return rows[0] ?? null;
+}
+
+export async function getHubMeetingHistory(limit = 10): Promise<HubMeetingRecord[]> {
+  const db = await getDb(); if (!db) return [];
+  return db.select().from(hubMeetingRecords).orderBy(desc(hubMeetingRecords.weekOf)).limit(limit);
+}
+
+// ─── Student Milestones ─────────────────────────────────────────────────────────
+
+export async function createStudentMilestone(data: Omit<InsertStudentMilestone, "id" | "createdAt">): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.insert(studentMilestones).values(data);
+}
+
+export async function getStudentMilestones(studentType?: "physical" | "online" | "nitda"): Promise<StudentMilestone[]> {
+  const db = await getDb(); if (!db) return [];
+  if (studentType) return db.select().from(studentMilestones).where(eq(studentMilestones.studentType, studentType)).orderBy(desc(studentMilestones.milestoneDate));
+  return db.select().from(studentMilestones).orderBy(desc(studentMilestones.milestoneDate));
+}
+
+export async function markMilestoneCelebrated(id: number): Promise<void> {
+  const db = await getDb(); if (!db) return;
+  await db.update(studentMilestones).set({ celebrated: true }).where(eq(studentMilestones.id, id));
 }

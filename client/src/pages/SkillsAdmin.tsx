@@ -14,7 +14,7 @@ import {
   BarChart, BookOpen, Users, UserCheck, ShieldCheck,
   Search, LogOut, ChevronDown, Mail, Phone, Calendar,
   TrendingUp, Award, Globe, Target, Plus, CheckCircle, Clock, XCircle, AlertCircle,
-  Download, Filter
+  Download, Filter, Trophy, Loader2,
 } from "lucide-react";
 import {
   Select,
@@ -88,6 +88,7 @@ export default function SkillsAdmin() {
     { key: "cohorts" as const, icon: BookOpen, label: "Cohorts" },
     { key: "students" as const, icon: Users, label: "Students" },
     { key: "facilitators" as const, icon: UserCheck, label: "Facilitators" },
+    { key: "milestones" as const, icon: Trophy, label: "Milestones" },
     { key: "ridi" as const, icon: ShieldCheck, label: "RIDI Impact", accent: true },
   ];
 
@@ -96,6 +97,7 @@ export default function SkillsAdmin() {
     cohorts: "Cohorts",
     students: "Student Management",
     facilitators: "Facilitator Directory",
+    milestones: "Milestone Calendar",
     ridi: "RIDI Impact Dashboard",
   };
 
@@ -151,6 +153,7 @@ export default function SkillsAdmin() {
           {activeSection === "cohorts" && <CohortsPanel cohorts={cohorts} />}
           {activeSection === "students" && <StudentsPanel />}
           {activeSection === "facilitators" && <FacilitatorsPanel cohorts={cohorts} />}
+          {activeSection === "milestones" && <MilestonesPanel />}
           {activeSection === "ridi" && <RidiPanel stats={stats} />}
         </div>
       </div>
@@ -331,6 +334,7 @@ function StudentsPanel() {
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | AppStatus>("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "physical" | "online" | "nitda">("all");
   const [page, setPage] = useState(1);
 
   const apps = (applications ?? []) as any[];
@@ -341,7 +345,11 @@ function StudentsPanel() {
       a.ref?.toLowerCase().includes(search.toLowerCase()) ||
       a.program?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || a.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchType = typeFilter === "all" ||
+      (typeFilter === "physical" && a.pathway === "physical") ||
+      (typeFilter === "online" && a.pathway === "online") ||
+      (typeFilter === "nitda" && (a.program?.toLowerCase().includes("nitda") || a.program?.toLowerCase().includes("hals")));
+    return matchSearch && matchStatus && matchType;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -400,6 +408,17 @@ function StudentsPanel() {
                 <SelectItem value="accepted">Accepted ({counts.accepted})</SelectItem>
                 <SelectItem value="waitlisted">Waitlisted ({counts.waitlisted})</SelectItem>
                 <SelectItem value="rejected">Rejected ({counts.rejected})</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v as any); setPage(1); }}>
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue placeholder="Student type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Types</SelectItem>
+                <SelectItem value="physical">Physical</SelectItem>
+                <SelectItem value="online">Online</SelectItem>
+                <SelectItem value="nitda">NITDA / HALs</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -896,6 +915,136 @@ function RidiPanel({ stats }: { stats: any }) {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Milestones Panel ─────────────────────────────────────────────────────────
+function MilestonesPanel() {
+  const [typeFilter, setTypeFilter] = useState<"physical" | "online" | "nitda">("physical");
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ cohortName: "", title: "", description: "", milestoneDate: "", type: "assignment" as const, studentType: "physical" as "physical" | "online" | "nitda" });
+
+  const milestonesQuery = trpc.milestones.list.useQuery({ studentType: typeFilter });
+  const createMilestone = trpc.milestones.create.useMutation({
+    onSuccess: () => { milestonesQuery.refetch(); setShowForm(false); toast.success("Milestone added"); setForm({ cohortName: "", title: "", description: "", milestoneDate: "", type: "assignment", studentType: "physical" }); },
+    onError: () => toast.error("Failed to add milestone"),
+  });
+  const celebrateMutation = trpc.milestones.celebrate.useMutation({
+    onSuccess: () => { milestonesQuery.refetch(); toast.success("Milestone marked as celebrated 🎉"); },
+  });
+
+  const milestones = milestonesQuery.data ?? [];
+  const milestoneTypeColors: Record<string, string> = {
+    assignment: "#3B82F6", quiz: "#8B5CF6", presentation: "#F59E0B",
+    celebration: "#EC4899", graduation: GOLD, event: "#10B981",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Type tabs */}
+      <div className="flex gap-2">
+        {(["physical", "online", "nitda"] as const).map(t => (
+          <button key={t} onClick={() => setTypeFilter(t)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${typeFilter === t ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+            style={{ backgroundColor: typeFilter === t ? NAVY: undefined }}>
+            {t === "nitda" ? "NITDA / HALs" : t.charAt(0).toUpperCase() + t.slice(1)} Students
+          </button>
+        ))}
+      </div>
+
+      {/* Add Milestone */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h3 className="text-sm font-bold" style={{ color: NAVY}}>{milestones.length} milestones</h3>
+          <p className="text-xs text-gray-500">Quarterly celebrations · Training checkpoints · Graduation</p>
+        </div>
+        <Button size="sm" onClick={() => setShowForm(!showForm)} style={{ backgroundColor: NAVY, color: GOLD }}>
+          <Plus size={13} className="mr-1" /> Add Milestone
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <CardContent className="p-5 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="Cohort Name (optional)" value={form.cohortName} onChange={e => setForm(p => ({ ...p, cohortName: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" />
+              <input placeholder="Milestone Title *" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" />
+              <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as any }))}
+                className="px-3 py-2 rounded-lg border text-[13px] bg-white outline-none">
+                {["assignment", "quiz", "presentation", "celebration", "graduation", "event"].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
+              </select>
+              <select value={form.studentType} onChange={e => setForm(p => ({ ...p, studentType: e.target.value as any }))}
+                className="px-3 py-2 rounded-lg border text-[13px] bg-white outline-none">
+                <option value="physical">Physical</option>
+                <option value="online">Online</option>
+                <option value="nitda">NITDA / HALs</option>
+              </select>
+              <div className="space-y-1">
+                <label className="text-[10px] text-gray-400 block">Milestone Date</label>
+                <input type="date" value={form.milestoneDate} onChange={e => setForm(p => ({ ...p, milestoneDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none" />
+              </div>
+              <input placeholder="Description (optional)" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" style={{ backgroundColor: NAVY, color: GOLD }} disabled={createMilestone.isPending}
+                onClick={() => {
+                  if (!form.title || !form.milestoneDate) { toast.error("Title and date required"); return; }
+                  createMilestone.mutate({ cohortName: form.cohortName || undefined, title: form.title, description: form.description || undefined, milestoneDate: form.milestoneDate, type: form.type, studentType: form.studentType });
+                }}>
+                {createMilestone.isPending ? <Loader2 size={13} className="animate-spin mr-1" /> : null}Add
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Milestone list */}
+      {milestonesQuery.isLoading ? (
+        <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-gray-400" /></div>
+      ) : milestones.length === 0 ? (
+        <div className="text-center py-12 text-gray-400">
+          <Trophy size={36} className="mx-auto mb-3 opacity-30" />
+          <p className="font-medium">No milestones for {typeFilter} students yet.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {milestones.map((m: any) => (
+            <Card key={m.id} className={m.celebrated ? "opacity-60" : ""}>
+              <CardContent className="p-4 flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: `${milestoneTypeColors[m.type] || GOLD}20` }}>
+                    <span className="text-[10px] font-bold" style={{ color: milestoneTypeColors[m.type] || GOLD }}>
+                      {m.type?.slice(0, 3).toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm" style={{ color: NAVY}}>{m.title}</p>
+                    {m.cohortName && <p className="text-xs text-gray-500">{m.cohortName}</p>}
+                    {m.description && <p className="text-xs text-gray-400 mt-0.5">{m.description}</p>}
+                    <p className="text-xs text-gray-400 mt-1">{m.milestoneDate}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {m.celebrated ? (
+                    <span className="text-xs text-green-600 font-medium">🎉 Celebrated</span>
+                  ) : (
+                    <Button size="sm" variant="outline" className="text-xs" onClick={() => celebrateMutation.mutate({ id: m.id })}>
+                      🎉 Mark Celebrated
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>

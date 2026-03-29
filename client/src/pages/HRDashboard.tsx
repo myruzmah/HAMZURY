@@ -14,7 +14,7 @@ import {
   UserCog, LogOut, ArrowLeft, Loader2, TrendingUp,
   CheckCircle2, Clock, Briefcase, AlertTriangle,
   ChevronRight, Search, Download, FileText, Monitor, Send, Plus,
-  ShieldCheck, BookOpen,
+  ShieldCheck, BookOpen, Plane, Gavel, X, ChevronDown, ChevronUp,
 } from "lucide-react";
 
 // ─── Brand (HR = general → Apple grey) ───────────────────────────────────────
@@ -22,7 +22,7 @@ const GREEN = "#86868B";   // Apple grey — general departments
 const GOLD  = "#C9A97E";
 const MILK  = "#FAFAF8";   // Milk white
 
-type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "itstudents" | "training" | "commissions" | "policy" | "reports";
+type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "itstudents" | "training" | "leaves" | "discipline" | "commissions" | "policy" | "reports";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK_STAFF = [
@@ -120,12 +120,14 @@ export default function HRDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [activeSection, setActiveSection] = useState<Section>("overview");
 
-  const statsQuery      = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
-  const activityQuery   = trpc.activity.recent.useQuery({ limit: 10 });
-  const staffQuery      = trpc.staff.listInternal.useQuery(undefined, { refetchInterval: 60000 });
-  const joinAppsQuery   = trpc.systemise.joinApplications.useQuery(undefined, { refetchInterval: 30000 });
-  const today           = new Date().toISOString().split("T")[0];
-  const attendanceQuery = trpc.attendance.byDate.useQuery({ date: today }, { refetchInterval: 30000 });
+  const statsQuery       = trpc.institutional.stats.useQuery(undefined, { refetchInterval: 30000 });
+  const activityQuery    = trpc.activity.recent.useQuery({ limit: 10 });
+  const staffQuery       = trpc.staff.listInternal.useQuery(undefined, { refetchInterval: 60000 });
+  const joinAppsQuery    = trpc.systemise.joinApplications.useQuery(undefined, { refetchInterval: 30000 });
+  const today            = new Date().toISOString().split("T")[0];
+  const attendanceQuery  = trpc.attendance.byDate.useQuery({ date: today }, { refetchInterval: 30000 });
+  const leaveQuery       = trpc.leave.list.useQuery({});
+  const disciplineQuery  = trpc.discipline.list.useQuery({});
 
   if (loading) {
     return (
@@ -136,11 +138,13 @@ export default function HRDashboard() {
   }
   if (!user) return null;
 
-  const stats         = statsQuery.data;
-  const activity      = activityQuery.data || [];
-  const realStaff     = staffQuery.data || [];
-  const joinApps      = joinAppsQuery.data || [];
+  const stats           = statsQuery.data;
+  const activity        = activityQuery.data || [];
+  const realStaff       = staffQuery.data || [];
+  const joinApps        = joinAppsQuery.data || [];
   const todayAttendance = attendanceQuery.data || [];
+  const leaveRequests   = leaveQuery.data || [];
+  const disciplineLogs  = disciplineQuery.data || [];
 
   // Use real staff from DB — no mock fallback
   const staffList = realStaff;
@@ -162,6 +166,8 @@ export default function HRDashboard() {
     { key: "hiring",       icon: UserPlus,        label: "Hiring Pipeline" },
     { key: "itstudents",   icon: Monitor,         label: "IT Students"     },
     { key: "training",     icon: GraduationCap,   label: "Training Log"    },
+    { key: "leaves",       icon: Plane,           label: "Leave Requests"  },
+    { key: "discipline",   icon: Gavel,           label: "Discipline Log"  },
     { key: "policy",       icon: BookOpen,        label: "HR Policy"       },
     { key: "commissions",  icon: DollarSign,      label: "Commissions"     },
     { key: "reports",      icon: BarChart2,       label: "Reports"         },
@@ -236,8 +242,10 @@ export default function HRDashboard() {
             {activeSection === "hiring"      && <HiringSection joinApps={joinApps} />}
             {activeSection === "itstudents"  && <ITStudentsSection />}
             {activeSection === "training"    && <TrainingSection />}
+            {activeSection === "leaves"      && <LeaveSection leaveRequests={leaveRequests} refetch={leaveQuery.refetch} />}
+            {activeSection === "discipline"  && <DisciplineSection disciplineLogs={disciplineLogs} staffList={staffList} refetch={disciplineQuery.refetch} />}
             {activeSection === "policy"      && <HRPolicySection />}
-            {activeSection === "commissions" && <CommissionsSection />}
+            {activeSection === "commissions" && <CommissionsSection staffList={staffList} />}
             {activeSection === "reports"     && <ReportsSection />}
           </div>
         </ScrollArea>
@@ -750,6 +758,201 @@ function TrainingSection() {
   );
 }
 
+// ─── Leave Section ────────────────────────────────────────────────────────────
+function LeaveSection({ leaveRequests, refetch }: { leaveRequests: any[]; refetch: () => void }) {
+  const reviewMutation = trpc.leave.review.useMutation({ onSuccess: () => { refetch(); toast.success("Leave request updated"); } });
+  const [form, setForm] = useState({ staffEmail: "", staffName: "", startDate: "", endDate: "", reason: "", replacementName: "" });
+  const [showForm, setShowForm] = useState(false);
+  const submitMutation = trpc.leave.submit.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setForm({ staffEmail: "", staffName: "", startDate: "", endDate: "", reason: "", replacementName: "" }); toast.success("Leave request submitted"); } });
+
+  const statusStyle = (s: string) => {
+    if (s === "approved") return { bg: "#22C55E15", text: "#22C55E" };
+    if (s === "rejected") return { bg: "#EF444415", text: "#EF4444" };
+    return { bg: `${GOLD}20`, text: GOLD };
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[18px] font-semibold" style={{ color: GREEN }}>Leave Requests</h2>
+          <p className="text-xs opacity-40 mt-0.5" style={{ color: GREEN }}>3 days per quarter · Replacement required before approval</p>
+        </div>
+        <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} onClick={() => setShowForm(!showForm)}>
+          <Plus size={13} className="mr-1" /> New Request
+        </Button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+          <div className="grid grid-cols-2 gap-3">
+            <input placeholder="Staff Email *" value={form.staffEmail} onChange={e => setForm(p => ({ ...p, staffEmail: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            <input placeholder="Staff Name *" value={form.staffName} onChange={e => setForm(p => ({ ...p, staffName: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            <div className="space-y-1">
+              <label className="text-[10px] opacity-40" style={{ color: GREEN }}>Start Date</label>
+              <input type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] opacity-40" style={{ color: GREEN }}>End Date</label>
+              <input type="date" value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            </div>
+            <input placeholder="Replacement Name *" value={form.replacementName} onChange={e => setForm(p => ({ ...p, replacementName: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            <input placeholder="Reason" value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} disabled={submitMutation.isPending}
+              onClick={() => {
+                if (!form.staffEmail || !form.staffName || !form.startDate || !form.endDate) { toast.error("Fill all required fields"); return; }
+                submitMutation.mutate(form);
+              }}>
+              {submitMutation.isPending ? <Loader2 size={13} className="animate-spin mr-1" /> : null} Submit
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+        <div className="hidden md:grid grid-cols-[1fr_1fr_120px_120px_100px_80px] gap-3 px-5 py-3 border-b" style={{ borderColor: `${GREEN}06`, backgroundColor: `${GREEN}04` }}>
+          {["Staff", "Dates", "Replacement", "Reason", "Status", ""].map(h => (
+            <p key={h} className="text-[10px] uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>{h}</p>
+          ))}
+        </div>
+        {leaveRequests.length === 0 && (
+          <div className="py-12 text-center"><p className="text-sm opacity-40" style={{ color: GREEN }}>No leave requests yet.</p></div>
+        )}
+        {leaveRequests.map((lr: any, i: number) => {
+          const sc = statusStyle(lr.status);
+          return (
+            <div key={lr.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_120px_120px_100px_80px] gap-3 px-5 py-4 border-b last:border-0 items-center"
+              style={{ borderColor: `${GREEN}06`, backgroundColor: i % 2 === 0 ? "white" : `${GREEN}02` }}>
+              <div>
+                <p className="text-sm font-medium" style={{ color: GREEN }}>{lr.staffName}</p>
+                <p className="text-xs opacity-40" style={{ color: GREEN }}>{lr.staffEmail}</p>
+              </div>
+              <p className="text-xs opacity-60" style={{ color: GREEN }}>{lr.startDate} → {lr.endDate}</p>
+              <p className="text-xs opacity-60" style={{ color: GREEN }}>{lr.replacementName || "—"}</p>
+              <p className="text-xs opacity-60" style={{ color: GREEN }}>{lr.reason || "—"}</p>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal w-fit" style={{ backgroundColor: sc.bg, color: sc.text }}>{lr.status}</span>
+              {lr.status === "pending" && (
+                <div className="flex gap-1">
+                  <button className="text-[11px] px-2 py-1 rounded-lg font-medium" style={{ backgroundColor: "#22C55E15", color: "#22C55E" }}
+                    onClick={() => reviewMutation.mutate({ id: lr.id, status: "approved" })}>✓</button>
+                  <button className="text-[11px] px-2 py-1 rounded-lg font-medium" style={{ backgroundColor: "#EF444415", color: "#EF4444" }}
+                    onClick={() => reviewMutation.mutate({ id: lr.id, status: "rejected" })}>✕</button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Discipline Section ────────────────────────────────────────────────────────
+function DisciplineSection({ disciplineLogs, staffList, refetch }: { disciplineLogs: any[]; staffList: any[]; refetch: () => void }) {
+  const issueMutation = trpc.discipline.issue.useMutation({ onSuccess: () => { refetch(); setShowForm(false); setForm({ staffEmail: "", staffName: "", type: "query" as const, reason: "", description: "", suspensionDays: "", issuedBy: "" }); toast.success("Discipline record issued"); } });
+  const resolveMutation = trpc.discipline.resolve.useMutation({ onSuccess: () => { refetch(); toast.success("Record resolved"); } });
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ staffEmail: "", staffName: "", type: "query" as "query" | "suspension", reason: "", description: "", suspensionDays: "", issuedBy: "" });
+
+  const typeStyle = (t: string) => t === "query" ? { bg: `${GOLD}20`, text: GOLD } : { bg: "#EF444415", text: "#EF4444" };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-[18px] font-semibold" style={{ color: GREEN }}>Discipline Log</h2>
+          <p className="text-xs opacity-40 mt-0.5" style={{ color: GREEN }}>All issues are formally documented — Level 1: Query · Level 2: Suspension</p>
+        </div>
+        <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} onClick={() => setShowForm(!showForm)}>
+          <Gavel size={13} className="mr-1" /> Issue Record
+        </Button>
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+          <div className="grid grid-cols-2 gap-3">
+            <select value={form.staffEmail} onChange={e => {
+              const staff = staffList.find(s => s.email === e.target.value);
+              setForm(p => ({ ...p, staffEmail: e.target.value, staffName: staff?.name || "" }));
+            }} className="px-3 py-2 rounded-lg border text-[13px] outline-none bg-white" style={{ borderColor: `${GREEN}20` }}>
+              <option value="">Select Staff *</option>
+              {staffList.map((s: any) => <option key={s.email} value={s.email}>{s.name}</option>)}
+            </select>
+            <select value={form.type} onChange={e => setForm(p => ({ ...p, type: e.target.value as "query" | "suspension" }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none bg-white" style={{ borderColor: `${GREEN}20` }}>
+              <option value="query">Query (Level 1)</option>
+              <option value="suspension">Suspension (Level 2)</option>
+            </select>
+            <input placeholder="Reason / Offence *" value={form.reason} onChange={e => setForm(p => ({ ...p, reason: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none col-span-2" style={{ borderColor: `${GREEN}20` }} />
+            <textarea placeholder="Full description" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none resize-none col-span-2" style={{ borderColor: `${GREEN}20` }} />
+            {form.type === "suspension" && (
+              <input type="number" placeholder="Suspension days" value={form.suspensionDays} onChange={e => setForm(p => ({ ...p, suspensionDays: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            )}
+            <input placeholder="Issued By *" value={form.issuedBy} onChange={e => setForm(p => ({ ...p, issuedBy: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} disabled={issueMutation.isPending}
+              onClick={() => {
+                if (!form.staffEmail || !form.reason || !form.issuedBy) { toast.error("Fill all required fields"); return; }
+                issueMutation.mutate({ ...form, suspensionDays: form.suspensionDays ? parseInt(form.suspensionDays) : undefined });
+              }}>
+              {issueMutation.isPending ? <Loader2 size={13} className="animate-spin mr-1" /> : null} Issue
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+        {disciplineLogs.length === 0 && (
+          <div className="py-12 text-center"><p className="text-sm opacity-40" style={{ color: GREEN }}>No discipline records. Keep it that way.</p></div>
+        )}
+        {disciplineLogs.map((d: any, i: number) => {
+          const tc = typeStyle(d.type);
+          return (
+            <div key={d.id} className="flex items-start gap-4 px-5 py-4 border-b last:border-0"
+              style={{ borderColor: `${GREEN}06`, backgroundColor: i % 2 === 0 ? "white" : `${GREEN}02` }}>
+              <span className="text-[11px] px-2.5 py-0.5 rounded-full font-medium shrink-0 mt-0.5" style={{ backgroundColor: tc.bg, color: tc.text }}>
+                {d.type === "query" ? "Query" : "Suspension"}
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: GREEN }}>{d.staffName}</p>
+                <p className="text-xs opacity-60 mt-0.5" style={{ color: GREEN }}>{d.reason}</p>
+                {d.description && <p className="text-xs opacity-40 mt-0.5" style={{ color: GREEN }}>{d.description}</p>}
+                <p className="text-[10px] opacity-30 mt-1" style={{ color: GREEN }}>Issued by {d.issuedBy} · {new Date(d.createdAt).toLocaleDateString("en-NG")}</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ backgroundColor: d.status === "resolved" ? "#22C55E15" : "#EF444415", color: d.status === "resolved" ? "#22C55E" : "#EF4444" }}>
+                  {d.status}
+                </span>
+                {d.status === "issued" && (
+                  <button className="text-[10px] opacity-50 hover:opacity-80 px-2 py-0.5 rounded" style={{ color: GREEN }}
+                    onClick={() => resolveMutation.mutate({ id: d.id, resolvedNotes: "Resolved by HR" })}>
+                    Mark Resolved
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Commissions Section ──────────────────────────────────────────────────────
 const HR_COMM_HISTORY = [
   { id: "COM-HR-001", period: "Jan 2026", amount: "₦20,000", status: "Paid"    },
@@ -757,9 +960,18 @@ const HR_COMM_HISTORY = [
   { id: "COM-HR-003", period: "Mar 2026", amount: "₦20,000", status: "Pending" },
 ];
 
-function CommissionsSection() {
+function CommissionsSection({ staffList }: { staffList: any[] }) {
   const [amount, setAmount] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  // Flag staff who are past their 2-month commission window (hire date > 2 months ago) — exclude founder/ceo
+  const now = new Date();
+  const THRESHOLD_DATE = new Date(now.getFullYear(), now.getMonth() - 2, now.getDate());
+  const nonLeadership = staffList.filter((s: any) => !["founder", "ceo"].includes(s.role));
+  // Staff hired before the threshold date are past their 2-month window — HR must verify manually
+  const atRiskStaff = nonLeadership.filter((s: any) => {
+    if (!s.hireDate || s.hireDate === "—") return false;
+    return new Date(s.hireDate) < THRESHOLD_DATE;
+  });
 
   // HR commission = 2% of company net profit (sourced from shared store)
   const hrCommission = Math.round(FINANCE_SUMMARY.profit * 0.02);
@@ -783,6 +995,29 @@ function CommissionsSection() {
 
   return (
     <div className="space-y-8 max-w-3xl">
+
+      {/* 2-month commission alert */}
+      {atRiskStaff.length > 0 && (
+        <div className="rounded-2xl border p-5 space-y-3" style={{ borderColor: "#EF444420", backgroundColor: "#EF444408" }}>
+          <div className="flex items-center gap-2">
+            <AlertTriangle size={15} color="#EF4444" />
+            <p className="text-sm font-medium" style={{ color: "#EF4444" }}>Commission Alert — {atRiskStaff.length} staff below ₦30,000 in 2-month window</p>
+          </div>
+          <p className="text-xs opacity-60" style={{ color: "#EF4444" }}>Policy: Staff must reach ₦30k/month commission within 2 months or face substitution.</p>
+          <div className="space-y-1.5">
+            {atRiskStaff.map((s: any) => (
+              <div key={s.email} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white">
+                <div>
+                  <p className="text-sm" style={{ color: GREEN }}>{s.name}</p>
+                  <p className="text-xs opacity-40" style={{ color: GREEN }}>{s.dept} · hired {s.hireDate}</p>
+                </div>
+                <span className="text-xs font-medium" style={{ color: "#EF4444" }}>Verify ₦30k/mo target</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {SUMMARY.map(s => (

@@ -707,15 +707,41 @@ function HubMeetingSection() {
   // Get this week's Monday
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const weekOf = monday.toISOString().split("T")[0];
   const weekLabel = monday.toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" });
 
   const [thisWeekTodos, setThisWeekTodos] = useState<string[]>([""]);
   const [nextWeekTodos, setNextWeekTodos] = useState<string[]>([""]);
   const [researchTopic, setResearchTopic] = useState("");
   const [researchStaff, setResearchStaff] = useState(RESEARCH_STAFF[0]);
+  const [researchFormat, setResearchFormat] = useState("Video + Presentation");
   const [staffOfWeek, setStaffOfWeek] = useState("");
+  const [staffOfWeekAchievement, setStaffOfWeekAchievement] = useState("");
   const [biWeeklyTopic, setBiWeeklyTopic] = useState("");
+  const [biWeeklyCategory, setBiWeeklyCategory] = useState("Sales Techniques");
+  const [trainer, setTrainer] = useState("CEO (Idris Ibrahim)");
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [savedThisWeek, setSavedThisWeek] = useState(false);
+
+  const weekQuery = trpc.hubMeeting.get.useQuery({ weekOf }, { onSuccess: (data) => {
+    if (!data) return;
+    if (data.todoList) { try { setThisWeekTodos(JSON.parse(data.todoList)); } catch {} }
+    if (data.nextWeekTodos) { try { setNextWeekTodos(JSON.parse(data.nextWeekTodos)); } catch {} }
+    if (data.researchTopic) setResearchTopic(data.researchTopic);
+    if (data.researchAssignedTo) setResearchStaff(data.researchAssignedTo);
+    if (data.researchFormat) setResearchFormat(data.researchFormat);
+    if (data.staffOfWeek) setStaffOfWeek(data.staffOfWeek);
+    if (data.staffOfWeekAchievement) setStaffOfWeekAchievement(data.staffOfWeekAchievement);
+    if (data.trainingTopic) setBiWeeklyTopic(data.trainingTopic);
+    if (data.trainingCategory) setBiWeeklyCategory(data.trainingCategory);
+    if (data.trainer) setTrainer(data.trainer);
+  }});
+  const historyQuery = trpc.hubMeeting.history.useQuery({ limit: 8 });
+  const saveMutation = trpc.hubMeeting.save.useMutation({
+    onSuccess: () => { setSavedThisWeek(true); toast.success("Meeting plan saved to database"); },
+    onError: () => toast.error("Failed to save — check connection"),
+  });
 
   function addTodo(which: "this" | "next") {
     if (which === "this") setThisWeekTodos(p => [...p, ""]);
@@ -728,6 +754,21 @@ function HubMeetingSection() {
   function removeTodo(which: "this" | "next", i: number) {
     if (which === "this") setThisWeekTodos(p => p.filter((_, idx) => idx !== i));
     else setNextWeekTodos(p => p.filter((_, idx) => idx !== i));
+  }
+  function handleSave() {
+    saveMutation.mutate({
+      weekOf,
+      researchTopic,
+      researchAssignedTo: researchStaff,
+      researchFormat,
+      staffOfWeek,
+      staffOfWeekAchievement,
+      trainingTopic: biWeeklyTopic,
+      trainingCategory: biWeeklyCategory,
+      trainer,
+      todoList: JSON.stringify(thisWeekTodos.filter(t => t.trim())),
+      nextWeekTodos: JSON.stringify(nextWeekTodos.filter(t => t.trim())),
+    });
   }
 
   return (
@@ -786,7 +827,8 @@ function HubMeetingSection() {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider opacity-40 block mb-1" style={{ color: GREEN }}>Format</label>
-            <select className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none bg-white"
+            <select value={researchFormat} onChange={e => setResearchFormat(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none bg-white"
               style={{ borderColor: `${GREEN}20` }}>
               <option>Video + Presentation</option>
               <option>Live Demo</option>
@@ -816,7 +858,8 @@ function HubMeetingSection() {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider opacity-40 block mb-1" style={{ color: GREEN }}>Category</label>
-            <select className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none bg-white"
+            <select value={biWeeklyCategory} onChange={e => setBiWeeklyCategory(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none bg-white"
               style={{ borderColor: `${GREEN}20` }}>
               <option>Sales Techniques</option>
               <option>Software / Tool Training</option>
@@ -826,7 +869,8 @@ function HubMeetingSection() {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider opacity-40 block mb-1" style={{ color: GREEN }}>Trainer</label>
-            <select className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none bg-white"
+            <select value={trainer} onChange={e => setTrainer(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none bg-white"
               style={{ borderColor: `${GREEN}20` }}>
               {["CEO (Idris Ibrahim)", "Muhammad Hamzury (Founder)", ...RESEARCH_STAFF.slice(0, 5)].map(s => (
                 <option key={s}>{s}</option>
@@ -854,7 +898,8 @@ function HubMeetingSection() {
           </div>
           <div>
             <label className="text-[10px] uppercase tracking-wider opacity-40 block mb-1" style={{ color: GREEN }}>Sale / Achievement</label>
-            <input placeholder="e.g. Closed Tilz Spa ₦500k, 3 new leads converted…"
+            <input value={staffOfWeekAchievement} onChange={e => setStaffOfWeekAchievement(e.target.value)}
+              placeholder="e.g. Closed Tilz Spa ₦500k, 3 new leads converted…"
               className="w-full px-3 py-2 rounded-xl border text-[13px] outline-none"
               style={{ borderColor: `${GREEN}20` }} />
           </div>
@@ -919,11 +964,15 @@ function HubMeetingSection() {
             </div>
           ))}
         </div>
-        <button onClick={() => toast.success("Meeting plan saved locally")}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium"
-          style={{ backgroundColor: GREEN, color: GOLD }}>
-          <Send size={13} />Save This Week's Plan
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={handleSave} disabled={saveMutation.isPending}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-medium"
+            style={{ backgroundColor: GREEN, color: GOLD }}>
+            {saveMutation.isPending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+            Save This Week's Plan
+          </button>
+          {savedThisWeek && <span className="text-xs text-green-600">✓ Saved to database</span>}
+        </div>
       </div>
 
       {/* Policy Reminders */}
@@ -944,6 +993,37 @@ function HubMeetingSection() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Meeting History */}
+      <div>
+        <button className="flex items-center gap-2 text-[12px] mb-3 opacity-60" style={{ color: GREEN }}
+          onClick={() => setShowHistory(!showHistory)}>
+          {showHistory ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+          Meeting History (last 8 weeks)
+        </button>
+        {showHistory && (
+          <div className="space-y-2">
+            {(historyQuery.data || []).map((rec: any) => (
+              <div key={rec.id} className="bg-white rounded-2xl border px-5 py-4 space-y-1" style={{ borderColor: `${GREEN}08` }}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[12px] font-semibold" style={{ color: GREEN }}>Week of {rec.weekOf}</p>
+                  {rec.staffOfWeek && (
+                    <span className="text-[11px] px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>
+                      🏆 {rec.staffOfWeek.split(" (")[0]}
+                    </span>
+                  )}
+                </div>
+                {rec.researchTopic && <p className="text-[11px] opacity-50" style={{ color: GREEN }}>Research: {rec.researchTopic} ({rec.researchAssignedTo})</p>}
+                {rec.trainingTopic && <p className="text-[11px] opacity-50" style={{ color: GREEN }}>Training: {rec.trainingTopic}</p>}
+                {rec.todoList && (() => { try { const todos = JSON.parse(rec.todoList); return <p className="text-[10px] opacity-30" style={{ color: GREEN }}>{todos.filter(Boolean).length} to-dos recorded</p>; } catch { return null; } })()}
+              </div>
+            ))}
+            {(historyQuery.data || []).length === 0 && (
+              <p className="text-[12px] opacity-30 text-center py-4" style={{ color: GREEN }}>No history yet — save your first meeting plan above.</p>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
