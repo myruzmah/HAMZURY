@@ -90,21 +90,21 @@ async function startServer() {
 
   // ─── Staff ID → email mapping (HZ-XXX → email) ──────────────────────────
   const STAFF_ID_MAP: Record<string, string> = {
-    "HMZ000-26/3": "muhammad@hamzuryos.biz",
-    "HMZ001-26/3": "idris@hamzuryos.biz",
-    "HMZ002-26/3": "abdullahi@hamzuryos.biz",
-    "HMZ003-26/3": "yusuf@hamzuryos.biz",
-    "HMZ004-26/3": "khadija@hamzuryos.biz",
-    "HMZ005-26/3": "faree@hamzuryos.biz",
-    "HMZ006-26/3": "tabitha@hamzuryos.biz",
-    "HMZ007-26/3": "maryam@hamzuryos.biz",
-    "HMZ008-26/3": "abubakar@hamzuryos.biz",
-    "HMZ009-26/3": "hikma@hamzuryos.biz",
-    "HMZ010-26/3": "salis@hamzuryos.biz",
-    "HMZ011-26/3": "abdulmalik@hamzuryos.biz",
-    "HMZ012-26/3": "dajot@hamzuryos.biz",
-    "HMZ013-26/3": "lalo@hamzuryos.biz",
-    "HMZ014-26/3": "rabilu@hamzuryos.biz",
+    "HMZ000-26/3": "founder@hamzury.com",
+    "HMZ001-26/3": "idris@hamzury.com",
+    "HMZ002-26/3": "abdullahi@hamzury.com",
+    "HMZ003-26/3": "yusuf@hamzury.com",
+    "HMZ004-26/3": "khadija@hamzury.com",
+    "HMZ005-26/3": "faree@hamzury.com",
+    "HMZ006-26/3": "tabitha@hamzury.com",
+    "HMZ007-26/3": "maryam@hamzury.com",
+    "HMZ008-26/3": "abubakar@hamzury.com",
+    "HMZ009-26/3": "hikma@hamzury.com",
+    "HMZ010-26/3": "salis@hamzury.com",
+    "HMZ011-26/3": "abdulmalik@hamzury.com",
+    "HMZ012-26/3": "dajot@hamzury.com",
+    "HMZ013-26/3": "lalo@hamzury.com",
+    "HMZ014-26/3": "rabilu@hamzury.com",
   };
 
   // ─── Unified Staff ID+Password Login ─────────────────────────────────────
