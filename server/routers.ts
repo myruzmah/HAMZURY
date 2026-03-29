@@ -293,7 +293,7 @@ export const appRouter = router({
       }),
 
     /** Client portal lookup — phone-based, rate limited, no auth needed */
-    clientPortal: rateLimitedProcedure
+    clientPortal: publicProcedure
       .input(z.object({ phone: z.string().min(10) }))
       .query(async ({ input }) => {
         const task = await getTaskByPhone(input.phone);
@@ -305,7 +305,7 @@ export const appRouter = router({
       }),
 
     /** Client portal lookup — ref-based, rate limited, no auth needed */
-    clientPortalByRef: rateLimitedProcedure
+    clientPortalByRef: publicProcedure
       .input(z.object({ ref: z.string().min(4) }))
       .query(async ({ input }) => {
         const task = await getTaskByRef(input.ref.trim().toUpperCase());
@@ -720,7 +720,7 @@ export const appRouter = router({
         };
       }),
 
-    lookupByPhone: rateLimitedProcedure
+    lookupByPhone: publicProcedure
       .input(z.object({ phone: z.string().min(7) }))
       .query(async ({ input }) => {
         const task = await getTaskByPhone(input.phone);
@@ -741,7 +741,7 @@ export const appRouter = router({
       }),
 
     /** Full client portal lookup — returns task + checklist + activity + invoices */
-    fullLookup: rateLimitedProcedure
+    fullLookup: publicProcedure
       .input(z.object({
         ref: z.string().min(1),
         phone: z.string().optional(),
