@@ -724,7 +724,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
             const p = PRICING[s.value];
             return { label: p ? `${s.label} (${p.price})` : s.label, value: s.value };
           });
-          addBotOptions([...allServices, { label: "Done selecting", value: "DONE_SELECTING" }]);
+          addBotOptions([...allServices, { label: "Something else (type it)", value: "TYPE_SERVICE" }, { label: "Done selecting", value: "DONE_SELECTING" }]);
         }, 400);
         setLeadData(prev => ({ ...prev, selectedServices: [] }));
         setChatState("SELF_SERVICE");
@@ -788,6 +788,11 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
     // Self-service flow: tick services from list, then show payment, then lead capture
     if (chatState === "SELF_SERVICE") {
+      if (val === "TYPE_SERVICE") {
+        setTimeout(() => addBotMsg("Type the service you need and I will add it."), 300);
+        setChatState("DIRECT_TELL");
+        return;
+      }
       if (val === "DONE_SELECTING") {
         const selected = leadData.selectedServices || [];
         if (selected.length === 0) {
@@ -827,7 +832,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
             const pr = PRICING[s.value];
             return { label: pr ? `${s.label} (${pr.price})` : s.label, value: s.value };
           });
-        addBotOptions([...remaining, { label: "Done selecting", value: "DONE_SELECTING" }]);
+        addBotOptions([...remaining, { label: "Something else (type it)", value: "TYPE_SERVICE" }, { label: "Done selecting", value: "DONE_SELECTING" }]);
       }, 300);
       return;
     }
@@ -911,8 +916,14 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         ? "Skills Training"
         : "General Consultation";
       setLeadData(prev => ({ ...prev, service: inferredService, context: aiMessages.map(m => `${m.role}: ${m.content}`).slice(-4).join("\n") }));
-      setTimeout(() => addBotMsg("Let me get your details. What is your full name?"), 400);
-      setChatState("LEAD_NAME");
+      // Skip name if already given
+      if (leadData.name) {
+        setTimeout(() => addBotMsg(`Got it, ${leadData.name.split(" ")[0]}. What is your business name?`), 400);
+        setChatState("LEAD_BIZ");
+      } else {
+        setTimeout(() => addBotMsg("Let me get your details. What is your full name?"), 400);
+        setChatState("LEAD_NAME");
+      }
       return;
     }
 
@@ -929,7 +940,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           const p = PRICING[s.value];
           return { label: p ? `${s.label} (${p.price})` : s.label, value: s.value };
         });
-        addBotOptions([...allServices, { label: "Done selecting", value: "DONE_SELECTING" }]);
+        addBotOptions([...allServices, { label: "Something else (type it)", value: "TYPE_SERVICE" }, { label: "Done selecting", value: "DONE_SELECTING" }]);
       }, 400);
       setLeadData(prev => ({ ...prev, selectedServices: [] }));
       setChatState("SELF_SERVICE");
@@ -1059,12 +1070,16 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         },
         {
           onSuccess: (result) => {
-            addBotMsg(`Your file is created. Reference: **${result.ref}**\n\nWe have sent your reference and a guide on how to track your file on our website to your WhatsApp.\n\nTo track anytime, visit our site and click Track.`);
-            // Save client for returning recognition
-            saveClientForReturn(finalData.name, result.ref, allServices);
+            const hasPaid = (finalData.context || "").includes("[PAYMENT CLAIMED]");
+            if (hasPaid) {
+              addBotMsg(`Your file is created. Reference: **${result.ref}**\n\nSave this reference to track your progress anytime on our website.`);
+            } else {
+              addBotMsg(`Your request has been received. Our team will review it and reach out to you shortly.\n\nOnce payment is confirmed, you will receive your tracking reference.`);
+            }
+            saveClientForReturn(finalData.name, hasPaid ? result.ref : undefined, allServices);
             addBotOptions([
               { label: "Ask another question", value: "RESTART" },
-              { label: "Schedule a call", value: "SCHEDULE" },
+              { label: "Make payment now", value: "SHOW_PAYMENT_DETAILS" },
             ]);
             setChatState("SUCCESS");
           },
@@ -1147,6 +1162,29 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           onError: () => addBotMsg("There was an issue scheduling. Please try again."),
         }
       );
+      return;
+    }
+
+    if (val === "SHOW_PAYMENT_DETAILS") {
+      (async () => {
+        const acct = await fetchBankDetails();
+        if (acct) {
+          addBotMsg(`Transfer to:\n\nBank: ${acct.bankName}\nAccount: ${acct.accountNumber}\nName: ${acct.accountName}\n\nOnce paid, your tracking reference will be sent to you.`);
+          addBotOptions([
+            { label: "I have paid", value: "LATE_PAYMENT_CLAIM" },
+            { label: "Back to menu", value: "RESTART" },
+          ]);
+        } else {
+          addBotMsg("Contact our finance team on WhatsApp: +234 806 714 9356 to complete payment.");
+          addBotOptions([{ label: "Back to menu", value: "RESTART" }]);
+        }
+      })();
+      return;
+    }
+
+    if (val === "LATE_PAYMENT_CLAIM") {
+      addBotMsg("Payment noted. Our team will verify and send your tracking reference shortly. You can also send your receipt via WhatsApp to +234 806 714 9356.");
+      addBotOptions([{ label: "Back to menu", value: "RESTART" }]);
       return;
     }
 
