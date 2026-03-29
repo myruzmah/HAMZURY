@@ -35,8 +35,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const NAVY = "#1B2A4A";  // Skills primary — dark navy blue
-const GOLD = "#C9A97E";
+const NAVY = "#1E3A5F";  // Skills primary — dark navy blue
+const GOLD = "#B48C4C";
 const PAGE_SIZE = 20;
 
 type AppStatus = "submitted" | "under_review" | "accepted" | "waitlisted" | "rejected";
@@ -70,7 +70,7 @@ export default function SkillsAdmin() {
   const { user, loading } = useAuth();
   const { data: cohorts } = trpc.skills.listCohorts.useQuery();
   const { data: stats } = trpc.skills.adminStats.useQuery();
-  const [activeSection, setActiveSection] = useState<"overview" | "cohorts" | "students" | "facilitators" | "ridi">("overview");
+  const [activeSection, setActiveSection] = useState<"overview" | "cohorts" | "students" | "facilitators" | "milestones" | "competition" | "ridi">("overview");
 
   if (loading) {
     return (
@@ -89,6 +89,7 @@ export default function SkillsAdmin() {
     { key: "students" as const, icon: Users, label: "Students" },
     { key: "facilitators" as const, icon: UserCheck, label: "Facilitators" },
     { key: "milestones" as const, icon: Trophy, label: "Milestones" },
+    { key: "competition" as const, icon: Target, label: "Competition" },
     { key: "ridi" as const, icon: ShieldCheck, label: "RIDI Impact", accent: true },
   ];
 
@@ -98,6 +99,7 @@ export default function SkillsAdmin() {
     students: "Student Management",
     facilitators: "Facilitator Directory",
     milestones: "Milestone Calendar",
+    competition: "Competition Management",
     ridi: "RIDI Impact Dashboard",
   };
 
@@ -154,6 +156,7 @@ export default function SkillsAdmin() {
           {activeSection === "students" && <StudentsPanel />}
           {activeSection === "facilitators" && <FacilitatorsPanel cohorts={cohorts} />}
           {activeSection === "milestones" && <MilestonesPanel />}
+          {activeSection === "competition" && <CompetitionPanel />}
           {activeSection === "ridi" && <RidiPanel stats={stats} />}
         </div>
       </div>
@@ -913,6 +916,385 @@ function RidiPanel({ stats }: { stats: any }) {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Competition Panel ────────────────────────────────────────────────────────
+function CompetitionPanel() {
+  const currentQuarter = `Q${Math.ceil((new Date().getMonth() + 1) / 3)}-${new Date().getFullYear()}`;
+  const [quarter, setQuarter] = useState(currentQuarter);
+  const [subTab, setSubTab] = useState<"teams" | "sessions" | "awards">("teams");
+
+  // Data queries
+  const teamsQuery = trpc.skillsCompetition.teams.useQuery({ quarter });
+  const sessionsQuery = trpc.skillsCompetition.sessions.useQuery({ quarter });
+  const awardsQuery = trpc.skillsCompetition.awards.useQuery({ quarter });
+
+  // Mutations
+  const createTeam = trpc.skillsCompetition.createTeam.useMutation({
+    onSuccess: () => { teamsQuery.refetch(); setShowTeamForm(false); toast.success("Team created"); },
+    onError: () => toast.error("Failed to create team"),
+  });
+  const createSession = trpc.skillsCompetition.createSession.useMutation({
+    onSuccess: () => { sessionsQuery.refetch(); setShowSessionForm(false); toast.success("Session added"); },
+    onError: () => toast.error("Failed to add session"),
+  });
+  const createAward = trpc.skillsCompetition.createAward.useMutation({
+    onSuccess: () => { awardsQuery.refetch(); setShowAwardForm(false); toast.success("Award given"); },
+    onError: () => toast.error("Failed to give award"),
+  });
+
+  // Form states
+  const [showTeamForm, setShowTeamForm] = useState(false);
+  const [teamForm, setTeamForm] = useState({ name: "", color: "#1E3A5F" });
+  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [sessionForm, setSessionForm] = useState({ weekNumber: 1, dayOfWeek: "monday" as "monday" | "tuesday" | "wednesday", title: "", type: "game" as any, sessionDate: "" });
+  const [showAwardForm, setShowAwardForm] = useState(false);
+  const [awardForm, setAwardForm] = useState({ teamName: "", awardType: "champion" as any, title: "", recipientName: "", awardDate: "" });
+
+  const teams = (teamsQuery.data ?? []) as any[];
+  const sessions = (sessionsQuery.data ?? []) as any[];
+  const awards = (awardsQuery.data ?? []) as any[];
+
+  const SESSION_TYPE_LABELS: Record<string, string> = {
+    game: "Games", tech_talk: "Tech Talk", entrepreneurship: "Entrepreneurship",
+    prompt_challenge: "Prompt Challenge", tool_exploration: "Tool Exploration",
+    social_media: "Social Media", content_creation: "Content Creation", branding: "Branding",
+  };
+
+  const AWARD_TYPE_LABELS: Record<string, string> = {
+    champion: "Champion", runner_up: "Runner Up", best_project: "Best Project",
+    best_content: "Best Content", most_improved: "Most Improved", special: "Special Award",
+  };
+
+  const teamStatusColors: Record<string, string> = {
+    active: "bg-green-100 text-green-700",
+    eliminated: "bg-red-100 text-red-700",
+    champion: "bg-yellow-100 text-yellow-800",
+  };
+
+  const sessionStatusColors: Record<string, string> = {
+    scheduled: "bg-blue-100 text-blue-700",
+    completed: "bg-green-100 text-green-700",
+    cancelled: "bg-gray-100 text-gray-500",
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Quarter selector + sub-tabs */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="flex gap-2">
+          {(["teams", "sessions", "awards"] as const).map(t => (
+            <button key={t} onClick={() => setSubTab(t)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${subTab === t ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+              style={{ backgroundColor: subTab === t ? NAVY : undefined }}>
+              {t === "teams" ? "Leaderboard" : t === "sessions" ? "Sessions" : "Awards"}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 font-medium">Quarter:</span>
+          <Input value={quarter} onChange={e => setQuarter(e.target.value)} className="w-28 h-8 text-sm" placeholder="Q1-2026" />
+        </div>
+      </div>
+
+      {/* ── TEAMS LEADERBOARD ── */}
+      {subTab === "teams" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-800">Teams Leaderboard</h2>
+            <Button className="text-white" style={{ backgroundColor: GOLD }} onClick={() => setShowTeamForm(true)}>
+              <Plus size={16} className="mr-2" /> Create Team
+            </Button>
+          </div>
+
+          {showTeamForm && (
+            <Card>
+              <CardContent className="p-5 space-y-4">
+                <h3 className="font-bold text-gray-800">Create New Team</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <Input placeholder="Team name" value={teamForm.name} onChange={e => setTeamForm(p => ({ ...p, name: e.target.value }))} />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Color:</span>
+                    <input type="color" value={teamForm.color} onChange={e => setTeamForm(p => ({ ...p, color: e.target.value }))} className="w-8 h-8 rounded cursor-pointer border" />
+                    <span className="text-xs text-gray-400 font-mono">{teamForm.color}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button className="text-white flex-1" style={{ backgroundColor: NAVY }}
+                      disabled={!teamForm.name.trim() || createTeam.isPending}
+                      onClick={() => createTeam.mutate({ name: teamForm.name, quarter, color: teamForm.color })}>
+                      {createTeam.isPending ? <Loader2 size={14} className="animate-spin" /> : "Create"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowTeamForm(false)}>Cancel</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-12 gap-3 p-4 border-b bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <div className="col-span-1">#</div>
+                <div className="col-span-4">Team</div>
+                <div className="col-span-2 text-center">Points</div>
+                <div className="col-span-1 text-center">W</div>
+                <div className="col-span-1 text-center">L</div>
+                <div className="col-span-1 text-center">Members</div>
+                <div className="col-span-2 text-right">Status</div>
+              </div>
+              {teams.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">
+                  <Target size={36} className="mx-auto mb-3 opacity-40" />
+                  <p className="font-medium">No teams for {quarter}</p>
+                  <p className="text-xs mt-1">Create teams to start the competition.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {teams.map((t: any, idx: number) => (
+                    <div key={t.id} className="grid grid-cols-12 gap-3 p-4 items-center hover:bg-gray-50 transition-colors text-sm">
+                      <div className="col-span-1">
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${idx < 3 ? "text-white" : "bg-gray-100 text-gray-600"}`}
+                          style={{ backgroundColor: idx === 0 ? "#D4A017" : idx === 1 ? "#A0A0A0" : idx === 2 ? "#CD7F32" : undefined }}>
+                          {idx + 1}
+                        </div>
+                      </div>
+                      <div className="col-span-4 flex items-center gap-3">
+                        <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: t.color || NAVY }} />
+                        <div>
+                          <p className="font-bold text-gray-900">{t.name}</p>
+                          {t.captainName && <p className="text-xs text-gray-500">Captain: {t.captainName}</p>}
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        <span className="text-lg font-extrabold" style={{ color: NAVY }}>{t.points ?? 0}</span>
+                      </div>
+                      <div className="col-span-1 text-center text-green-600 font-bold">{t.wins ?? 0}</div>
+                      <div className="col-span-1 text-center text-red-500 font-bold">{t.losses ?? 0}</div>
+                      <div className="col-span-1 text-center text-gray-600">{t.memberCount ?? 0}</div>
+                      <div className="col-span-2 text-right">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${teamStatusColors[t.status ?? t.teamStatus] ?? "bg-gray-100 text-gray-600"}`}>
+                          {(t.status ?? t.teamStatus ?? "active").replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── INTERACTIVE SESSIONS ── */}
+      {subTab === "sessions" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">Interactive Sessions</h2>
+              <p className="text-xs text-gray-500 mt-1">Mon: Games, Tech Talk, Entrepreneurship | Tue: Prompt Challenges, Tool Exploration | Wed: Social Media, Content, Branding</p>
+            </div>
+            <Button className="text-white" style={{ backgroundColor: GOLD }} onClick={() => setShowSessionForm(true)}>
+              <Plus size={16} className="mr-2" /> Add Session
+            </Button>
+          </div>
+
+          {showSessionForm && (
+            <Card>
+              <CardContent className="p-5 space-y-4">
+                <h3 className="font-bold text-gray-800">Add New Session</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <Input placeholder="Session title" value={sessionForm.title} onChange={e => setSessionForm(p => ({ ...p, title: e.target.value }))} />
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Week #</label>
+                      <Input type="number" min={1} max={12} value={sessionForm.weekNumber} onChange={e => setSessionForm(p => ({ ...p, weekNumber: parseInt(e.target.value) || 1 }))} />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Day</label>
+                      <Select value={sessionForm.dayOfWeek} onValueChange={v => setSessionForm(p => ({ ...p, dayOfWeek: v as any }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monday">Monday</SelectItem>
+                          <SelectItem value="tuesday">Tuesday</SelectItem>
+                          <SelectItem value="wednesday">Wednesday</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Type</label>
+                    <Select value={sessionForm.type} onValueChange={v => setSessionForm(p => ({ ...p, type: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(SESSION_TYPE_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Input type="date" value={sessionForm.sessionDate} onChange={e => setSessionForm(p => ({ ...p, sessionDate: e.target.value }))} />
+                  <div className="flex gap-2 items-end">
+                    <Button className="text-white flex-1" style={{ backgroundColor: NAVY }}
+                      disabled={!sessionForm.title.trim() || createSession.isPending}
+                      onClick={() => createSession.mutate({ quarter, ...sessionForm })}>
+                      {createSession.isPending ? <Loader2 size={14} className="animate-spin" /> : "Add"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowSessionForm(false)}>Cancel</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-12 gap-3 p-4 border-b bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <div className="col-span-1">Week</div>
+                <div className="col-span-2">Day</div>
+                <div className="col-span-3">Title</div>
+                <div className="col-span-2">Type</div>
+                <div className="col-span-2">Date</div>
+                <div className="col-span-2 text-right">Status</div>
+              </div>
+              {sessions.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">
+                  <Calendar size={36} className="mx-auto mb-3 opacity-40" />
+                  <p className="font-medium">No sessions for {quarter}</p>
+                  <p className="text-xs mt-1">Add interactive sessions to schedule the competition week.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {sessions.map((s: any) => (
+                    <div key={s.id} className="grid grid-cols-12 gap-3 p-4 items-center hover:bg-gray-50 transition-colors text-sm">
+                      <div className="col-span-1">
+                        <span className="text-xs font-bold px-2 py-1 rounded" style={{ backgroundColor: `${NAVY}10`, color: NAVY }}>W{s.weekNumber}</span>
+                      </div>
+                      <div className="col-span-2 capitalize text-gray-700 font-medium">{s.dayOfWeek}</div>
+                      <div className="col-span-3 font-semibold text-gray-900">{s.title}</div>
+                      <div className="col-span-2">
+                        <span className="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-700 font-medium">
+                          {SESSION_TYPE_LABELS[s.type ?? s.sessionType] ?? s.type ?? s.sessionType}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-xs text-gray-500">
+                        {s.sessionDate ? new Date(s.sessionDate + "T00:00:00").toLocaleDateString("en-NG", { day: "numeric", month: "short" }) : "TBD"}
+                        <br /><span className="text-gray-400">{s.timeSlot || "11:00 AM - 1:00 PM"}</span>
+                      </div>
+                      <div className="col-span-2 text-right">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold ${sessionStatusColors[s.status ?? s.sessionStatus] ?? "bg-gray-100 text-gray-600"}`}>
+                          {(s.status ?? s.sessionStatus ?? "scheduled").replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── AWARDS ── */}
+      {subTab === "awards" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-800">Awards</h2>
+            <Button className="text-white" style={{ backgroundColor: GOLD }} onClick={() => setShowAwardForm(true)}>
+              <Plus size={16} className="mr-2" /> Give Award
+            </Button>
+          </div>
+
+          {showAwardForm && (
+            <Card>
+              <CardContent className="p-5 space-y-4">
+                <h3 className="font-bold text-gray-800">Give Award</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <Input placeholder="Award title" value={awardForm.title} onChange={e => setAwardForm(p => ({ ...p, title: e.target.value }))} />
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">Award Type</label>
+                    <Select value={awardForm.awardType} onValueChange={v => setAwardForm(p => ({ ...p, awardType: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(AWARD_TYPE_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Input placeholder="Team name" value={awardForm.teamName} onChange={e => setAwardForm(p => ({ ...p, teamName: e.target.value }))} />
+                  <Input placeholder="Recipient name (optional)" value={awardForm.recipientName} onChange={e => setAwardForm(p => ({ ...p, recipientName: e.target.value }))} />
+                  <Input type="date" value={awardForm.awardDate} onChange={e => setAwardForm(p => ({ ...p, awardDate: e.target.value }))} />
+                  <div className="flex gap-2 items-end">
+                    <Button className="text-white flex-1" style={{ backgroundColor: NAVY }}
+                      disabled={!awardForm.title.trim() || createAward.isPending}
+                      onClick={() => createAward.mutate({ quarter, ...awardForm })}>
+                      {createAward.isPending ? <Loader2 size={14} className="animate-spin" /> : "Give Award"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowAwardForm(false)}>Cancel</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardContent className="p-0">
+              <div className="grid grid-cols-12 gap-3 p-4 border-b bg-gray-50 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                <div className="col-span-2">Type</div>
+                <div className="col-span-3">Title</div>
+                <div className="col-span-2">Team</div>
+                <div className="col-span-2">Recipient</div>
+                <div className="col-span-1 text-center">Cert</div>
+                <div className="col-span-2 text-right">Date</div>
+              </div>
+              {awards.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">
+                  <Award size={36} className="mx-auto mb-3 opacity-40" />
+                  <p className="font-medium">No awards for {quarter}</p>
+                  <p className="text-xs mt-1">Give awards to teams and individuals at the end of the quarter.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {awards.map((a: any) => {
+                    const typeIcon: Record<string, string> = {
+                      champion: "bg-yellow-100 text-yellow-800",
+                      runner_up: "bg-gray-100 text-gray-700",
+                      best_project: "bg-blue-100 text-blue-700",
+                      best_content: "bg-purple-100 text-purple-700",
+                      most_improved: "bg-green-100 text-green-700",
+                      special: "bg-pink-100 text-pink-700",
+                    };
+                    return (
+                      <div key={a.id} className="grid grid-cols-12 gap-3 p-4 items-center hover:bg-gray-50 transition-colors text-sm">
+                        <div className="col-span-2">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold ${typeIcon[a.awardType] ?? "bg-gray-100 text-gray-600"}`}>
+                            <Trophy size={11} /> {AWARD_TYPE_LABELS[a.awardType] ?? a.awardType}
+                          </span>
+                        </div>
+                        <div className="col-span-3 font-semibold text-gray-900">{a.title}</div>
+                        <div className="col-span-2 text-gray-700">{a.teamName || "—"}</div>
+                        <div className="col-span-2 text-gray-700">{a.recipientName || "—"}</div>
+                        <div className="col-span-1 text-center">
+                          {a.certificationIssued ? (
+                            <CheckCircle size={16} className="text-green-600 mx-auto" />
+                          ) : (
+                            <XCircle size={16} className="text-gray-300 mx-auto" />
+                          )}
+                        </div>
+                        <div className="col-span-2 text-right text-xs text-gray-500">
+                          {a.awardDate ? new Date(a.awardDate + "T00:00:00").toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

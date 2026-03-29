@@ -17,11 +17,11 @@ import {
   Gem,
 } from "lucide-react";
 
-const TEAL = "#C9A97E";   // Affiliate uses gold as primary
-const GOLD = "#C9A97E";
-const MILK = "#FAFAF8";   // Milk white
+const TEAL = "#B48C4C";   // Affiliate uses gold as primary
+const GOLD = "#B48C4C";
+const MILK = "#FFFAF6";   // Milk white
 const WHITE = "#FFFFFF";
-const TEXT = "#1D1D1F";
+const TEXT = "#1A1A1A";
 
 // ─── Tier data ──────────────────────────────────────────────────────────────
 const TIERS = [
@@ -159,7 +159,7 @@ export default function AffiliatePage() {
           className="absolute inset-0 opacity-5"
           style={{
             backgroundImage:
-              "linear-gradient(rgba(201,169,126,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(201,169,126,0.4) 1px, transparent 1px)",
+              "linear-gradient(rgba(180,140,76,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(180,140,76,0.4) 1px, transparent 1px)",
             backgroundSize: "40px 40px",
           }}
         />
@@ -209,7 +209,7 @@ export default function AffiliatePage() {
               className="px-8 py-4 rounded-lg font-semibold text-sm transition"
               style={{
                 background: "transparent",
-                border: `1.5px solid rgba(201,169,126,0.5)`,
+                border: `1.5px solid rgba(180,140,76,0.5)`,
                 color: GOLD,
               }}
             >
@@ -475,7 +475,7 @@ export default function AffiliatePage() {
                       className="w-full px-4 py-3 rounded-lg text-sm outline-none transition"
                       style={{
                         border: `1.5px solid ${error ? "#DC2626" : "#D5CFC6"}`,
-                        background: "#FAFAF8",
+                        background: "#FFFAF6",
                         color: TEXT,
                       }}
                       onFocus={(e) => (e.target.style.borderColor = TEAL)}
@@ -503,7 +503,7 @@ export default function AffiliatePage() {
                       className="w-full px-4 py-3 rounded-lg text-sm outline-none transition"
                       style={{
                         border: `1.5px solid ${error ? "#DC2626" : "#D5CFC6"}`,
-                        background: "#FAFAF8",
+                        background: "#FFFAF6",
                         color: TEXT,
                       }}
                       onFocus={(e) => (e.target.style.borderColor = TEAL)}
@@ -597,7 +597,7 @@ export default function AffiliatePage() {
                           className="w-full px-4 py-3 rounded-lg text-sm outline-none"
                           style={{
                             border: "1.5px solid #D5CFC6",
-                            background: "#FAFAF8",
+                            background: "#FFFAF6",
                             color: TEXT,
                           }}
                           onFocus={(e) => (e.target.style.borderColor = TEAL)}
@@ -620,7 +620,7 @@ export default function AffiliatePage() {
                           className="w-full px-4 py-3 rounded-lg text-sm outline-none"
                           style={{
                             border: "1.5px solid #D5CFC6",
-                            background: "#FAFAF8",
+                            background: "#FFFAF6",
                             color: TEXT,
                           }}
                           onFocus={(e) => (e.target.style.borderColor = TEAL)}
@@ -643,7 +643,7 @@ export default function AffiliatePage() {
                           className="w-full px-4 py-3 rounded-lg text-sm outline-none"
                           style={{
                             border: "1.5px solid #D5CFC6",
-                            background: "#FAFAF8",
+                            background: "#FFFAF6",
                             color: TEXT,
                           }}
                           onFocus={(e) => (e.target.style.borderColor = TEAL)}
@@ -680,7 +680,7 @@ export default function AffiliatePage() {
 
       {/* ─── Footer ─── */}
       <footer
-        style={{ background: TEAL, borderTop: `1px solid rgba(201,169,126,0.15)` }}
+        style={{ background: TEAL, borderTop: `1px solid rgba(180,140,76,0.15)` }}
         className="py-8 text-center"
       >
         <Link href="/">

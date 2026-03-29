@@ -7,10 +7,10 @@ import {
   Send, AlertTriangle, Star, Shield, Mic, Code, Layers,
 } from "lucide-react";
 
-const TEAL  = "#86868B";   // Apple grey — general
-const GOLD  = "#C9A97E";
-const CREAM = "#FAFAF8";   // Milk white
-const DARK  = "#1D1D1F";
+const TEAL  = "#2D2D2D";   // Apple grey — general
+const GOLD  = "#B48C4C";
+const CREAM = "#FFFAF6";   // Milk white
+const DARK  = "#1A1A1A";
 const WHITE = "#FFFFFF";
 
 const ROLE_LABELS: Record<string, { label: string; dept: string; color: string }> = {

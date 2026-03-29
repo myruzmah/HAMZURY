@@ -23,9 +23,9 @@ import {
 } from "lucide-react";
 
 // ─── Brand (CEO = general → Apple grey) ──────────────────────────────────────
-const GREEN = "#86868B";   // Apple grey
-const GOLD = "#C9A97E";
-const MILK = "#FAFAF8";    // Milk white
+const GREEN = "#2D2D2D";   // Apple grey
+const GOLD = "#B48C4C";
+const MILK = "#FFFAF6";    // Milk white
 
 type Section = "overview" | "hubmeeting" | "command" | "analytics" | "calendar" | "assign" | "files";
 
@@ -237,7 +237,7 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
           {[
             { dept: "bizdoc", label: "BizDoc", color: "#1B4D3E" },
             { dept: "systemise", label: "Systemise", color: "#4285F4" },
-            { dept: "skills", label: "Skills", color: "#C9A97E" },
+            { dept: "skills", label: "Skills", color: "#B48C4C" },
           ].map(({ dept, label, color }) => {
             const d = (stats as any)?.deptStats?.find((x: any) => x.dept === dept) ||
               { completedTasks: 0, totalTasks: 0, completionRate: 0, totalLeads: 0 };
@@ -462,7 +462,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
               { dept: "systemise", completedTasks: 0, totalTasks: 0, completionRate: 0 },
               { dept: "skills", completedTasks: 0, totalTasks: 0, completionRate: 0 },
             ]).map((d: any) => {
-              const colors: Record<string, string> = { bizdoc: "#1B4D3E", systemise: "#4285F4", skills: "#C9A97E" };
+              const colors: Record<string, string> = { bizdoc: "#1B4D3E", systemise: "#4285F4", skills: "#B48C4C" };
               const color = colors[d.dept] || GOLD;
               const label = d.dept.charAt(0).toUpperCase() + d.dept.slice(1);
               return (

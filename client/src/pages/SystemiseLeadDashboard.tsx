@@ -10,9 +10,9 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
-const TEAL = "#0A1F1C";
-const GOLD = "#C9A97E";
-const MILK = "#FAFAF8";
+const TEAL = "#2563EB";
+const GOLD = "#B48C4C";
+const MILK = "#FFFAF6";
 const WHITE = "#FFFFFF";
 
 // ─── Types ────────────────────────────────────────────────────────────────────

@@ -43,6 +43,7 @@ import TeamPage from "./pages/TeamPage";
 import MetFixPage from "./pages/MetFixPage";
 import FederalHub from "./pages/FederalHub";
 import SocialTemplates from "./pages/SocialTemplates";
+import TrainingPage from "./pages/TrainingPage";
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
@@ -75,8 +76,8 @@ function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; childre
 
   if (me.isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#1D1D1F]">
-        <div className="w-6 h-6 rounded-full border-2 border-[#C9A97E] border-t-transparent animate-spin" />
+      <div className="fixed inset-0 flex items-center justify-center bg-[#1A1A1A]">
+        <div className="w-6 h-6 rounded-full border-2 border-[#B48C4C] border-t-transparent animate-spin" />
       </div>
     );
   }
@@ -175,16 +176,8 @@ function Router() {
       <Route path={"/affiliate/dashboard"} component={AffiliateDashboard} />
 
       {/* Leadership Pages */}
-      <Route path={"/skills/ceo"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/skills/ceo"]}>
-          <SkillsCEOPage />
-        </RoleGuard>
-      </Route>
-      <Route path={"/systemise/cto"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/systemise/cto"]}>
-          <CTOPage />
-        </RoleGuard>
-      </Route>
+      <Route path={"/skills/ceo"} component={SkillsCEOPage} />
+      <Route path={"/systemise/cto"} component={CTOPage} />
 
       {/* Community / Public Pages */}
       <Route path={"/alumni"} component={AlumniPage} />
@@ -214,6 +207,8 @@ function Router() {
       <Route path={"/pricing"} component={PricingPage} />
       <Route path={"/metfix"} component={MetFixPage} />
       <Route path={"/templates"} component={SocialTemplates} />
+      <Route path={"/training/:dept"} component={TrainingPage} />
+      <Route path={"/training"} component={TrainingPage} />
       <Route path={"/login"} component={LoginPage} />
 
       {/* Fallback */}
@@ -238,7 +233,7 @@ function FloatingChat() {
   const [location] = useLocation();
 
   // Don't show on dashboards, login, admin, or affiliate pages
-  const hiddenPaths = ["/hub/", "/bizdoc/dashboard", "/skills/admin", "/founder/dashboard", "/ridi/dashboard", "/media/dashboard", "/affiliate/dashboard", "/login", "/client"];
+  const hiddenPaths = ["/hub/", "/bizdoc/dashboard", "/skills/admin", "/founder/dashboard", "/ridi/dashboard", "/ridi", "/media/dashboard", "/affiliate/dashboard", "/login", "/client"];
   if (hiddenPaths.some(p => location.startsWith(p))) return null;
 
   // Detect department from route

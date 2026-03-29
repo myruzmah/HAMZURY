@@ -14,8 +14,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-const GOLD = "#C9A97E";
-const NAVY = "#1B2A4A";  // Skills primary — dark navy blue
+const GOLD = "#B48C4C";
+const NAVY = "#1E3A5F";  // Skills primary — dark navy blue
 
 export default function SkillsStudent() {
   const { user, loading } = useAuth();
@@ -36,7 +36,7 @@ export default function SkillsStudent() {
 
   if (loading || portalQuery.isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex items-center justify-center">
+      <div className="min-h-screen bg-[#FFFAF6] flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white text-xl mx-auto mb-4 animate-pulse" style={{ backgroundColor: GOLD }}>H</div>
           <p className="text-gray-500">Loading your portal...</p>
@@ -50,10 +50,10 @@ export default function SkillsStudent() {
   // No accepted enrollment found — show a clear state
   if (!portal) {
     return (
-      <div className="min-h-screen bg-[#FAFAF8] flex flex-col">
+      <div className="min-h-screen bg-[#FFFAF6] flex flex-col">
         <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
-            <Link href="/skills" className="text-gray-400 hover:text-[#C9A97E] transition-colors">
+            <Link href="/skills" className="text-gray-400 hover:text-[#B48C4C] transition-colors">
               <ArrowLeft size={20} />
             </Link>
             <span className="font-bold text-sm">STUDENT PORTAL</span>
@@ -67,7 +67,7 @@ export default function SkillsStudent() {
               Your application may still be under review, or you may not have an accepted enrollment linked to this account.
             </p>
             <Link href="/skills">
-              <Button style={{ backgroundColor: NAVY, color: "#FAFAF8" }}>Browse Programs</Button>
+              <Button style={{ backgroundColor: NAVY, color: "#FFFAF6" }}>Browse Programs</Button>
             </Link>
           </div>
         </div>
@@ -87,13 +87,13 @@ export default function SkillsStudent() {
   const currentModule = modules[0] ?? null;
 
   return (
-    <div className="min-h-screen bg-[#FAFAF8] flex flex-col">
+    <div className="min-h-screen bg-[#FFFAF6] flex flex-col">
       <PageMeta title="Student Portal — HAMZURY Skills" description="Access your HAMZURY Skills training modules and progress." />
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/skills" className="text-gray-400 hover:text-[#C9A97E] transition-colors">
+            <Link href="/skills" className="text-gray-400 hover:text-[#B48C4C] transition-colors">
               <ArrowLeft size={20} />
             </Link>
             <div className="flex items-center">
@@ -253,7 +253,7 @@ export default function SkillsStudent() {
                 ) : upcomingSessions.slice(0, 4).map(s => {
                   const isToday = s.sessionDate === today;
                   return (
-                    <div key={s.id} className={`border-l-4 pl-3 py-1 ${isToday ? "border-[#C9A97E]" : "border-gray-200"}`}>
+                    <div key={s.id} className={`border-l-4 pl-3 py-1 ${isToday ? "border-[#B48C4C]" : "border-gray-200"}`}>
                       <p className="text-xs text-gray-500 font-bold uppercase mb-1">
                         {isToday ? "Today" : s.sessionDate} • {s.sessionTime}
                       </p>
@@ -337,19 +337,19 @@ export default function SkillsStudent() {
 
       {/* Mobile Bottom Nav */}
       <div className="md:hidden bg-white border-t border-gray-200 flex items-center justify-around h-16 sticky bottom-0">
-        <button onClick={() => setActiveTab("modules")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "modules" ? "text-[#C9A97E]" : "text-gray-500"}`}>
+        <button onClick={() => setActiveTab("modules")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "modules" ? "text-[#B48C4C]" : "text-gray-500"}`}>
           <BookOpen size={20} className="mb-1" />
           <span className="text-[10px] font-bold">Modules</span>
         </button>
-        <button onClick={() => setActiveTab("calendar")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "calendar" ? "text-[#C9A97E]" : "text-gray-500"}`}>
+        <button onClick={() => setActiveTab("calendar")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "calendar" ? "text-[#B48C4C]" : "text-gray-500"}`}>
           <Calendar size={20} className="mb-1" />
           <span className="text-[10px] font-medium">Sessions</span>
         </button>
-        <button onClick={() => setActiveTab("peers")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "peers" ? "text-[#C9A97E]" : "text-gray-500"}`}>
+        <button onClick={() => setActiveTab("peers")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "peers" ? "text-[#B48C4C]" : "text-gray-500"}`}>
           <Users size={20} className="mb-1" />
           <span className="text-[10px] font-medium">Cohort</span>
         </button>
-        <button onClick={() => setActiveTab("profile")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "profile" ? "text-[#C9A97E]" : "text-gray-500"}`}>
+        <button onClick={() => setActiveTab("profile")} className={`flex flex-col items-center justify-center w-full h-full ${activeTab === "profile" ? "text-[#B48C4C]" : "text-gray-500"}`}>
           <Settings size={20} className="mb-1" />
           <span className="text-[10px] font-medium">Profile</span>
         </button>

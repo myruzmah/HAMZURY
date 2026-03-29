@@ -16,14 +16,14 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 const LOGIN_URL = "/login";
 
 // Home page brand: Apple-inspired grey
-const GREY  = "#86868B";
-const DARK_GREY = "#1D1D1F";
-const TEAL  = "#86868B";  // Alias for backward compat — Home uses grey now
+const GREY  = "#2D2D2D";
+const DARK_GREY = "#1A1A1A";
+const TEAL  = "#2D2D2D";  // Alias for backward compat — Home uses charcoal now
 const GREEN = "#34A853";
-const GOLD  = "#C9A97E";
-const CREAM = "#FAFAF8";   // Milk white
+const GOLD  = "#B48C4C";
+const CREAM = "#FFFAF6";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 
 const DEPARTMENTS = [
@@ -50,7 +50,7 @@ const DEPARTMENTS = [
     label: "Systemize",
     sub: "Strategy & Automation",
     icon: <Cpu size={28} />,
-    color: "#1D1D1F",
+    color: "#2563EB",
     href: "/systemise",
     intro: "Systems that run without you. Strategy, automation, and digital infrastructure.",
     pricing: "Starting from ₦150,000",
@@ -68,7 +68,7 @@ const DEPARTMENTS = [
     label: "Hamzury Skills",
     sub: "Talent & Development",
     icon: <GraduationCap size={28} />,
-    color: "#1B2A4A",
+    color: "#1E3A5F",
     href: "/skills",
     intro: "Practical skills from operators. Not theory. Real market ability.",
     pricing: "Starting from ₦35,000 per cohort",
@@ -406,9 +406,9 @@ export default function Home() {
                               </div>
                             ))}
                           </div>
-                          {dept.id === "bizdoc" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: "1px solid rgba(10,31,28,0.08)" }}>Services <strong style={{ color: TEAL }}>from ₦50,000</strong> · Free consultation included</p>}
-                          {dept.id === "skills" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: "1px solid rgba(10,31,28,0.08)" }}>Programs <strong style={{ color: TEAL }}>from ₦35,000</strong> · Flexible payment plans available</p>}
-                          {dept.id === "systemise" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: "1px solid rgba(10,31,28,0.08)" }}>Projects <strong style={{ color: TEAL }}>from ₦80,000</strong> · Scope review is free</p>}
+                          {dept.id === "bizdoc" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: `1px solid ${dept.color}12` }}>Services <strong style={{ color: dept.color }}>from ₦50,000</strong> · Free consultation included</p>}
+                          {dept.id === "skills" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: `1px solid ${dept.color}12` }}>Programs <strong style={{ color: dept.color }}>from ₦35,000</strong> · Flexible payment plans available</p>}
+                          {dept.id === "systemise" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: `1px solid ${dept.color}12` }}>Projects <strong style={{ color: dept.color }}>from ₦80,000</strong> · Scope review is free</p>}
                         </div>
                       </div>
                     </div>
@@ -448,7 +448,7 @@ export default function Home() {
 
                       {/* Input row */}
                       <div className="flex gap-2 mb-3">
-                        <input type="text" placeholder="HMZ-26/3-XXXX"
+                        <input type="text" placeholder="HMZ-17/3-9567"
                           className="flex-1 rounded-xl px-4 py-3 text-sm outline-none border font-mono"
                           style={{ borderColor: `${TEAL}18`, backgroundColor: WHITE, color: TEAL }}
                           value={trackRef}
@@ -565,12 +565,12 @@ export default function Home() {
               {
                 dept: "Systemize",
                 why: "A business without systems is just a job. We build the structure to scale.",
-                color: "#1D1D1F",
+                color: "#2563EB",
               },
               {
                 dept: "Hamzury Skills",
                 why: "The market can't take your skills. We invest in people who build lasting businesses.",
-                color: "#C9A97E",
+                color: "#B48C4C",
               },
             ].map(item => (
               <div key={item.dept} className="p-7 rounded-2xl" style={{ backgroundColor: "white", border: "1px solid rgba(10,31,28,0.07)" }}>
@@ -703,7 +703,7 @@ export default function Home() {
         </div>
       </footer>
 
-      <MotivationalQuoteBar color="#86868B" />
+      <MotivationalQuoteBar color="#2D2D2D" />
       <div className="md:hidden h-10" />
 
       {/* Partnership Modal */}

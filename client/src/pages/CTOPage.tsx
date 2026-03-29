@@ -16,12 +16,12 @@ import {
   Code, Database, Globe, Layers, Zap,
 } from "lucide-react";
 
-const TEAL  = "#0A1F1C";   // Systemise primary — dark teal
-const GOLD  = "#C9A97E";
-const SYS   = "#0A1F1C";   // Systemise primary (unified)
-const MILK  = "#FAFAF8";
+const TEAL  = "#2563EB";   // Systemise primary — authority blue
+const GOLD  = "#B48C4C";
+const SYS   = "#2563EB";   // Systemise primary (unified)
+const MILK  = "#FFFAF6";
 const WHITE = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 type Section = "overview" | "tasks" | "activity" | "tools";
 

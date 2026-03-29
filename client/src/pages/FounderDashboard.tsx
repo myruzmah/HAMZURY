@@ -36,8 +36,8 @@ import {
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
 const CHOCO = "#2C1A0E";
-const GOLD  = "#C9A97E";
-const MILK  = "#FAFAF8";   // Milk white
+const GOLD  = "#B48C4C";
+const MILK  = "#FFFAF6";   // Milk white
 
 type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files" | "vault" | "aiops";
 
@@ -61,7 +61,7 @@ const MOCK_LEAD_SOURCES = [
 const MOCK_DEPT_PERFORMANCE = [
   { dept: "BizDoc", completed: 24, active: 8, color: "#1B4D3E" },
   { dept: "Systemise", completed: 11, active: 5, color: "#4285F4" },
-  { dept: "Skills", completed: 18, active: 12, color: "#C9A97E" },
+  { dept: "Skills", completed: 18, active: 12, color: "#B48C4C" },
   { dept: "BizDev", completed: 7, active: 3, color: "#34A853" },
 ];
 
@@ -78,14 +78,14 @@ const MOCK_EVENTS = [
 ];
 
 const STAFF = [
-  { name: "Idris Ibrahim", title: "Chief Executive Officer", dept: "CEO", color: "#0A1F1C" },
-  { name: "CSO Lead", title: "Chief Strategy Officer", dept: "CSO", color: "#0A1F1C" },
+  { name: "Idris Ibrahim", title: "Chief Executive Officer", dept: "CEO", color: "#2563EB" },
+  { name: "CSO Lead", title: "Chief Strategy Officer", dept: "CSO", color: "#2563EB" },
   { name: "Finance Lead", title: "Finance Manager", dept: "Finance", color: "#7B4F00" },
   { name: "Ibrahim (HR)", title: "HR Manager", dept: "Federal", color: "#2D5A27" },
   { name: "Emeka Okafor", title: "BizDoc Lead", dept: "BizDoc", color: "#1B4D3E" },
   { name: "Ngozi Chukwu", title: "Skills Administrator", dept: "Skills", color: "#8B6914" },
   { name: "Kemi Adeyemi", title: "BizDev Lead", dept: "BizDev", color: "#34A853" },
-  { name: "Abiodun Salami", title: "Systemise Lead", dept: "Systemise", color: "#0A1F1C" },
+  { name: "Abiodun Salami", title: "Systemise Lead", dept: "Systemise", color: "#2563EB" },
 ];
 
 const FILES = [
@@ -484,7 +484,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: {
         dept: d.dept,
         completed: d.completedTasks,
         active: Math.max(0, d.totalTasks - d.completedTasks),
-        color: ["#1B4D3E", "#4285F4", "#C9A97E", "#34A853"][i % 4],
+        color: ["#1B4D3E", "#4285F4", "#B48C4C", "#34A853"][i % 4],
       }))
     : MOCK_DEPT_PERFORMANCE;
 
@@ -1571,7 +1571,7 @@ interface AgentData {
 }
 
 function AIOperationsSection() {
-  const DARK = "#1D1D1F";
+  const DARK = "#1A1A1A";
 
   const agentStatusQuery = trpc.agents.status.useQuery(undefined, {
     refetchInterval: 30000,

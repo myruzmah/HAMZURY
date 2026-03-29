@@ -16,10 +16,10 @@ export const ENV = {
   qwenApiKey: process.env.QWEN_API_KEY ?? "",
   // Bank transfer details — general (HAMZURY LTD)
   bankName: process.env.BANK_NAME ?? "MONIEPOINT",
-  bankAccountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "",
-  bankAccountName: process.env.BANK_ACCOUNT_NAME ?? "",
+  bankAccountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "8034620520",
+  bankAccountName: process.env.BANK_ACCOUNT_NAME ?? "Hamzury Ltd.",
   // BizDoc-specific account (BIZDOC LTD)
   bizdocBankName: process.env.BIZDOC_BANK_NAME ?? "MONIEPOINT",
-  bizdocBankAccountNumber: process.env.BIZDOC_BANK_ACCOUNT_NUMBER ?? "",
-  bizdocBankAccountName: process.env.BIZDOC_BANK_ACCOUNT_NAME ?? "",
+  bizdocBankAccountNumber: process.env.BIZDOC_BANK_ACCOUNT_NUMBER ?? "8067149356",
+  bizdocBankAccountName: process.env.BIZDOC_BANK_ACCOUNT_NAME ?? "BIZDOC LTD",
 };

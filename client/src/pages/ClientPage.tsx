@@ -4,10 +4,10 @@ import PageMeta from "../components/PageMeta";
 import { trpc } from "@/lib/trpc";
 
 /* ── Unified brand — all refs are HAM-XXXX-YYYY ── */
-const THEME = { primary: "#86868B", accent: "#C9A97E", label: "HAMZURY" };
+const THEME = { primary: "#2D2D2D", accent: "#B48C4C", label: "HAMZURY" };
 
-const CREAM = "#FAFAF8";
-const DARK = "#1D1D1F";
+const CREAM = "#FFFAF6";
+const DARK = "#1A1A1A";
 
 function loadClientSession() {
   try {

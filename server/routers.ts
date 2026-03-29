@@ -58,6 +58,18 @@ import {
   upsertHubMeetingRecord, getHubMeetingRecord, getHubMeetingHistory,
   // Student milestones
   createStudentMilestone, getStudentMilestones, markMilestoneCelebrated,
+  // Revenue Allocation
+  createAllocation, getAllocations, getAllocationsByQuarter,
+  createAIFundEntry, getAIFundBalance, getAIFundLog,
+  getLeagueTable,
+  // Skills Calendar
+  getSkillsCalendar, createSkillsCalendarEntry,
+  // Skills Competition
+  getSkillsTeams, createSkillsTeam, updateSkillsTeamPoints,
+  getInteractiveSessions, createInteractiveSession,
+  getSkillsAwards, createSkillsAward,
+  // Client AI Chat
+  createClientChat, getClientChatsByTask, getClientChatByRef, getClientChatById, updateClientChat,
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
@@ -66,6 +78,7 @@ import { eq } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
 import { invokeLLM } from "./_core/llm";
+import { buildSystemPrompt } from "./config/chat-config";
 import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { calculateCommission } from "@shared/commission";
@@ -92,6 +105,11 @@ export const appRouter = router({
         email: z.string().optional(),
         service: z.string().min(1),
         context: z.string().optional(),
+        referralCode: z.string().optional(),
+        referrerName: z.string().optional(),
+        referralSourceType: z.string().optional(),
+        leadOwner: z.string().optional(),
+        notifyCso: z.boolean().optional(),
       }))
       .mutation(async ({ input }) => {
         const ref = generateRefNumber(input.phone);
@@ -106,6 +124,116 @@ export const appRouter = router({
           email: input.email ?? null,
           source: "bizdoc",
         }).catch(err => console.error("[email] New lead alert failed:", err));
+        // CSO notification if referral came through CSO
+        if (input.notifyCso || input.referralSourceType === "CSO") {
+          createNotification({
+            userId: "cso",
+            type: "assignment",
+            title: "New CSO Referral Lead",
+            message: `New lead from CSO referral: ${input.name} — ${input.service}${input.referralCode ? ` (code: ${input.referralCode})` : ""}`,
+            link: "/hub/cso",
+          }).catch(err => console.error("[notification] CSO notify failed:", err));
+        }
+
+        // Auto-create invoice when client claimed payment via chat
+        if (input.context?.includes("[PAYMENT CLAIMED]")) {
+          try {
+            // Build invoice items from the service list
+            const serviceNames = input.service.split(",").map(s => s.trim()).filter(Boolean);
+            const items = serviceNames.map(name => ({ description: name, quantity: 1, unitPrice: 0, total: 0 }));
+            const invoice = await createInvoice({
+              invoiceNumber: "", // auto-generated
+              leadId: lead.id,
+              taskId: task.id,
+              clientName: input.name,
+              clientEmail: input.email ?? null,
+              clientPhone: input.phone ?? null,
+              items,
+              subtotal: 0,
+              total: 0,
+              status: "sent", // awaiting finance verification
+              notes: `Auto-created from chat payment claim. Ref: ${lead.ref}. Finance to verify payment and update amounts.`,
+              createdBy: "system",
+            });
+            // Notify finance team
+            createNotification({
+              userId: "finance",
+              type: "payment",
+              title: "Payment Claimed — Verify",
+              message: `Payment claimed for ${input.name} — ${input.service}. Invoice ${invoice.invoiceNumber}. Please verify.`,
+              link: "/hub/finance",
+            }).catch(err => console.error("[notification] Finance payment claim notify failed:", err));
+            // Audit log
+            createAuditLog({
+              userId: null,
+              userName: "System",
+              action: "invoice_auto_created",
+              resource: "invoices",
+              resourceId: invoice.id,
+              details: `Auto-created invoice ${invoice.invoiceNumber} from chat payment claim by ${input.name} (task ${lead.ref})`,
+            }).catch(err => console.error("[audit] Invoice auto-create log failed:", err));
+            // Email alert (non-blocking)
+            sendPaymentClaimedAlert({
+              invoiceNumber: invoice.invoiceNumber,
+              clientName: input.name,
+              amount: 0,
+              phone: input.phone ?? null,
+              email: input.email ?? null,
+            }).catch(err => console.error("[email] Payment claim alert failed:", err));
+          } catch (err) {
+            console.error("[leads.submit] Auto-invoice creation failed:", err);
+          }
+        }
+
+        return { ref: lead.ref, leadId: lead.id, taskId: task.id };
+      }),
+
+    /** CSO or senior staff can manually create a lead with department pre-assigned */
+    createManual: csoProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        service: z.string().min(1),
+        department: z.string().min(1),
+        notes: z.string().optional(),
+        referralCode: z.string().optional(),
+        referrerName: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const ref = generateRefNumber(input.phone);
+        const lead = await createLead({
+          ...input,
+          ref,
+          source: "cso",
+          assignedDepartment: input.department,
+          assignedBy: ctx.user.id,
+          assignedAt: new Date(),
+          context: input.notes,
+          referralCode: input.referralCode,
+          referrerName: input.referrerName,
+          referralSourceType: "CSO",
+          leadOwner: "CSO",
+          notifyCso: true,
+        });
+        const task = await createTaskFromLead(lead);
+        // Update task department to match
+        await updateTask(task.id, { department: input.department });
+        await createActivityLog({
+          leadId: lead.id,
+          taskId: task.id,
+          action: "lead_manual_created",
+          details: `CSO manually created lead for ${input.name} — ${input.service} → ${input.department} by ${ctx.user.name || ctx.user.email}`,
+        });
+        // Notify the assigned department
+        await createNotification({
+          userId: input.department,
+          type: "assignment",
+          title: "New Lead Assigned",
+          message: `New lead from CSO: ${input.name} — ${input.service}`,
+          link: `/${input.department === "bizdoc" ? "bizdoc" : input.department}/dashboard`,
+        }).catch(() => {});
         return { ref: lead.ref, leadId: lead.id, taskId: task.id };
       }),
 
@@ -253,16 +381,29 @@ export const appRouter = router({
       .input(z.object({
         id: z.number(),
         status: z.enum(["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"]),
+        expectedDelivery: z.string().max(20).optional(),
+        actualDelivery: z.string().max(20).optional(),
+        estimatedHours: z.number().int().positive().optional(),
+        actualHours: z.number().int().nonnegative().optional(),
+        priority: z.enum(["urgent", "high", "normal", "low"]).optional(),
+        category: z.string().max(50).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
-        const updateData: Record<string, unknown> = { status: input.status };
-        if (input.status === "Completed") updateData.completedAt = new Date();
-        const task = await updateTask(input.id, updateData as any);
+        const { id, status, expectedDelivery, actualDelivery, estimatedHours, actualHours, priority, category } = input;
+        const updateData: Record<string, unknown> = { status };
+        if (status === "Completed") updateData.completedAt = new Date();
+        if (expectedDelivery !== undefined) updateData.expectedDelivery = expectedDelivery;
+        if (actualDelivery !== undefined) updateData.actualDelivery = actualDelivery;
+        if (estimatedHours !== undefined) updateData.estimatedHours = estimatedHours;
+        if (actualHours !== undefined) updateData.actualHours = actualHours;
+        if (priority !== undefined) updateData.priority = priority;
+        if (category !== undefined) updateData.category = category;
+        const task = await updateTask(id, updateData as any);
         await createActivityLog({
-          taskId: input.id,
+          taskId: id,
           userId: ctx.user.id,
           action: "status_changed",
-          details: `Status changed to: ${input.status}`,
+          details: `Status changed to: ${status}`,
         });
         return task;
       }),
@@ -289,6 +430,42 @@ export const appRouter = router({
           userId: ctx.user.id,
           action: "price_set",
           details: `Quoted price set to: ${input.quotedPrice}`,
+        });
+        return task;
+      }),
+
+    /** Update delivery, time allocation, priority, and category fields */
+    updateDetails: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        expectedDelivery: z.string().max(20).optional(),
+        actualDelivery: z.string().max(20).optional(),
+        estimatedHours: z.number().int().positive().optional(),
+        actualHours: z.number().int().nonnegative().optional(),
+        priority: z.enum(["urgent", "high", "normal", "low"]).optional(),
+        category: z.string().max(50).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...fields } = input;
+        const updateData: Record<string, unknown> = {};
+        if (fields.expectedDelivery !== undefined) updateData.expectedDelivery = fields.expectedDelivery;
+        if (fields.actualDelivery !== undefined) updateData.actualDelivery = fields.actualDelivery;
+        if (fields.estimatedHours !== undefined) updateData.estimatedHours = fields.estimatedHours;
+        if (fields.actualHours !== undefined) updateData.actualHours = fields.actualHours;
+        if (fields.priority !== undefined) updateData.priority = fields.priority;
+        if (fields.category !== undefined) updateData.category = fields.category;
+        if (Object.keys(updateData).length === 0) {
+          const task = await getTaskById(id);
+          if (!task) throw new TRPCError({ code: "NOT_FOUND", message: "Task not found" });
+          return task;
+        }
+        const task = await updateTask(id, updateData as any);
+        const changed = Object.keys(updateData).join(", ");
+        await createActivityLog({
+          taskId: id,
+          userId: ctx.user.id,
+          action: "details_updated",
+          details: `Task details updated: ${changed}`,
         });
         return task;
       }),
@@ -917,20 +1094,7 @@ NEVER: hype words, urgency pressure, dumping all services at once, [READY] or [S
         history: z.array(z.object({ role: z.enum(["user", "assistant"]), text: z.string() })).optional(),
       }))
       .query(async ({ input }) => {
-        const systemPrompt = `You are a calm, wise HAMZURY guide. HAMZURY is a business infrastructure company with three departments:
-1. BizDoc Consult — CAC business registration, industry licenses (NAFDAC, SON, DPR), tax compliance (VAT, PAYE, TCC), corporate contracts, trademarks, business bank account setup.
-2. Systemise — premium brand identity, website design, business automation, CRM systems, social media systems, growth strategy.
-3. HAMZURY Skills — cohort-based business education: digital marketing, data analysis, AI-powered business, faceless content, business development programs, and RIDI scholarship.
-
-HOW TO RESPOND:
-- Answer in 2–3 short, calm, confident sentences. Never write essays.
-- Use curiosity or empathy to open if the question is vague: "That's an interesting situation — here's what typically helps…"
-- Never say "Certainly!", "Absolutely!", "Great question!" — sounds robotic.
-- At the end, naturally name which department is most relevant: "This falls under BizDoc. Want me to connect you with Amara?"
-- If the client seems confused or overwhelmed: calm them first, then answer.
-- Never mention Claude, Qwen, Anthropic, Alibaba, or any AI company. You are HAMZURY.
-- CORE LINE: "Everything your business owes the system — handled completely."`;
-
+        const systemPrompt = buildSystemPrompt();
         const historyMessages = (input.history ?? []).map(h => ({ role: h.role as "user" | "assistant", content: h.text }));
         try {
           const response = await invokeLLM({
@@ -2859,6 +3023,312 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
       .mutation(async ({ input }) => {
         await markMilestoneCelebrated(input.id);
         return { success: true };
+      }),
+  }),
+
+  // ─── Finance: Revenue Allocation ─────────────────────────────────────────
+  finance: router({
+    /** Allocate revenue from a confirmed payment — 50/30/20 split */
+    allocate: founderCEOProcedure
+      .input(z.object({
+        transactionRef: z.string().min(1),
+        clientRef: z.string().optional(),
+        clientName: z.string().optional(),
+        service: z.string().optional(),
+        department: z.string().optional(),
+        totalAmount: z.number().min(1),
+        affiliateId: z.number().optional(),
+        affiliateCode: z.string().optional(),
+        affiliateTier: z.enum(["elite", "premier", "standard", "entry", "waiting"]).optional(),
+        contentBonus: z.boolean().optional(),
+        aiContributionPct: z.number().min(0).max(100).optional(),
+        staffPayouts: z.array(z.object({ staffId: z.string(), name: z.string(), effortPct: z.number() })).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const total = input.totalAmount;
+        const institutional = total * 0.50;
+        const staffPool = total * 0.30;
+        const affiliatePool = total * 0.20;
+
+        // Institutional breakdown
+        const ops = institutional * 0.50;      // 25% of total
+        const growth = institutional * 0.20;   // 10% of total
+        const aiFund = institutional * 0.18;   // 9% of total
+        const reserve = institutional * 0.12;  // 6% of total
+
+        // AI staff share (if AI did >50% of work)
+        const aiPct = input.aiContributionPct || 0;
+        const aiStaffShare = aiPct > 50 ? staffPool * 0.30 : 0;
+        const humanStaff = staffPool - aiStaffShare;
+        const totalAiFund = aiFund + aiStaffShare;
+
+        // Affiliate commission
+        const tierRates: Record<string, number> = { elite: 0.15, premier: 0.12, standard: 0.10, entry: 0.08, waiting: 0 };
+        const commRate = tierRates[input.affiliateTier || "waiting"] || 0;
+        const affCommission = total * commRate;
+        const contentBonusAmt = input.contentBonus ? total * 0.03 : 0;
+        const affTotal = affCommission + contentBonusAmt;
+
+        // Quarter
+        const now = new Date();
+        const q = `Q${Math.ceil((now.getMonth() + 1) / 3)}-${now.getFullYear()}`;
+
+        // Staff payout breakdown
+        const staffPayoutsCalc = (input.staffPayouts || []).map(s => ({
+          ...s,
+          amount: String(humanStaff * (s.effortPct / 100)),
+        }));
+
+        const allocation = await createAllocation({
+          transactionRef: input.transactionRef,
+          clientRef: input.clientRef,
+          clientName: input.clientName,
+          service: input.service,
+          department: input.department,
+          totalAmount: String(total),
+          institutionalAmount: String(institutional),
+          opsAmount: String(ops),
+          growthAmount: String(growth),
+          aiFundAmount: String(totalAiFund),
+          reserveAmount: String(reserve),
+          staffPoolAmount: String(staffPool),
+          aiStaffShare: String(aiStaffShare),
+          humanStaffAmount: String(humanStaff),
+          staffPayouts: staffPayoutsCalc,
+          affiliatePoolAmount: String(affiliatePool),
+          affiliateId: input.affiliateId,
+          affiliateCode: input.affiliateCode,
+          affiliateTier: input.affiliateTier,
+          affiliateCommission: String(affCommission),
+          contentBonus: String(contentBonusAmt),
+          affiliateTotalPayout: String(affTotal),
+          aiContributionPct: aiPct,
+          quarter: q,
+          status: "pending",
+        });
+
+        // Log AI fund
+        if (totalAiFund > 0) {
+          const currentBalance = parseFloat(await getAIFundBalance());
+          await createAIFundEntry({
+            allocationId: allocation.id,
+            amount: String(totalAiFund),
+            source: aiStaffShare > 0 ? "institutional+staff" : "institutional",
+            description: `From ${input.transactionRef}: ₦${totalAiFund.toLocaleString()}`,
+            balance: String(currentBalance + totalAiFund),
+          });
+        }
+
+        return allocation;
+      }),
+
+    allocations: financeProcedure
+      .input(z.object({ quarter: z.string().optional() }).optional())
+      .query(async ({ input }) => {
+        if (input?.quarter) return getAllocationsByQuarter(input.quarter);
+        return getAllocations();
+      }),
+
+    aiFund: financeProcedure.query(async () => {
+      const balance = await getAIFundBalance();
+      const log = await getAIFundLog();
+      return { balance, log };
+    }),
+
+    leagueTable: protectedProcedure
+      .input(z.object({ quarter: z.string().optional() }))
+      .query(async ({ input }) => {
+        const now = new Date();
+        const q = input.quarter || `Q${Math.ceil((now.getMonth() + 1) / 3)}-${now.getFullYear()}`;
+        return getLeagueTable(q);
+      }),
+  }),
+
+  // ─── Skills Competition (Squid Game) ─────────────────────────────────────
+  skillsCompetition: router({
+    teams: protectedProcedure
+      .input(z.object({ quarter: z.string() }))
+      .query(async ({ input }) => getSkillsTeams(input.quarter)),
+
+    createTeam: seniorProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        quarter: z.string().min(1),
+        color: z.string().optional(),
+        cohortId: z.number().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createSkillsTeam(input);
+        return { success: true };
+      }),
+
+    updatePoints: seniorProcedure
+      .input(z.object({ teamId: z.number(), points: z.number() }))
+      .mutation(async ({ input }) => {
+        await updateSkillsTeamPoints(input.teamId, input.points);
+        return { success: true };
+      }),
+
+    sessions: protectedProcedure
+      .input(z.object({ quarter: z.string() }))
+      .query(async ({ input }) => getInteractiveSessions(input.quarter)),
+
+    createSession: seniorProcedure
+      .input(z.object({
+        quarter: z.string().min(1),
+        weekNumber: z.number(),
+        dayOfWeek: z.enum(["monday", "tuesday", "wednesday"]),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        type: z.enum(["game", "tech_talk", "entrepreneurship", "prompt_challenge", "tool_exploration", "social_media", "content_creation", "branding"]),
+        sessionDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createInteractiveSession(input);
+        return { success: true };
+      }),
+
+    awards: protectedProcedure
+      .input(z.object({ quarter: z.string() }))
+      .query(async ({ input }) => getSkillsAwards(input.quarter)),
+
+    createAward: founderCEOProcedure
+      .input(z.object({
+        quarter: z.string().min(1),
+        teamId: z.number().optional(),
+        teamName: z.string().optional(),
+        awardType: z.enum(["champion", "runner_up", "best_project", "best_content", "most_improved", "special"]),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        recipientName: z.string().optional(),
+        awardDate: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createSkillsAward(input);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Skills Calendar ─────────────────────────────────────────────────────
+  skillsCalendar: router({
+    list: publicProcedure.query(async () => getSkillsCalendar()),
+    create: founderCEOProcedure
+      .input(z.object({
+        quarter: z.string().min(1),
+        theme: z.string().optional(),
+        registrationStart: z.string().min(1),
+        registrationEnd: z.string().min(1),
+        orientationDate: z.string().min(1),
+        classesStart: z.string().min(1),
+        classesEnd: z.string().min(1),
+        graduationDate: z.string().min(1),
+        supportWindowStart: z.string().optional(),
+        supportWindowEnd: z.string().optional(),
+        executiveCircleStart: z.string().optional(),
+        executiveCircleEnd: z.string().optional(),
+        track1Name: z.string().optional(),
+        track2Name: z.string().optional(),
+        track3Name: z.string().optional(),
+        roboticsName: z.string().optional(),
+        status: z.enum(["upcoming", "registration", "active", "support", "completed"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        await createSkillsCalendarEntry(input);
+        return { success: true };
+      }),
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CLIENT AI CHAT — per-client / per-task dedicated AI chat threads
+  // ═══════════════════════════════════════════════════════════════════════════
+  clientChat: router({
+    create: protectedProcedure
+      .input(z.object({
+        taskId: z.number().optional(),
+        clientRef: z.string().min(1),
+        clientName: z.string().optional(),
+        department: z.string().optional(),
+        systemPrompt: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const defaultPrompt = `You are a dedicated HAMZURY advisor for client ${input.clientName || input.clientRef}. Department: ${input.department || "general"}. Your job is to help the team handle this client's needs efficiently. Track tasks, follow up on documents, suggest next steps, and keep the team aligned. Be concise and action-oriented. Never share internal pricing or commission details with external parties.`;
+        return createClientChat({
+          taskId: input.taskId,
+          clientRef: input.clientRef,
+          clientName: input.clientName,
+          department: input.department,
+          systemPrompt: input.systemPrompt || defaultPrompt,
+          chatHistory: [],
+          createdBy: ctx.user.name || ctx.user.email || ctx.user.openId,
+        });
+      }),
+
+    getByTask: protectedProcedure
+      .input(z.object({ taskId: z.number() }))
+      .query(async ({ input }) => getClientChatsByTask(input.taskId)),
+
+    getByRef: protectedProcedure
+      .input(z.object({ clientRef: z.string() }))
+      .query(async ({ input }) => getClientChatByRef(input.clientRef)),
+
+    getById: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => getClientChatById(input.id)),
+
+    sendMessage: protectedProcedure
+      .input(z.object({
+        chatId: z.number(),
+        message: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // 1. Load the chat
+        const chat = await getClientChatById(input.chatId);
+        if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
+        if (chat.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Chat is not active" });
+
+        // 2. Build message history
+        const history: Array<{ role: string; content: string }> = Array.isArray(chat.chatHistory) ? (chat.chatHistory as any[]) : [];
+        history.push({ role: "user", content: input.message });
+
+        // 3. Call the LLM with system prompt + history
+        const llmMessages = [
+          { role: "system" as const, content: chat.systemPrompt },
+          ...history.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
+        ];
+
+        let aiResponse = "";
+        try {
+          const result = await invokeLLM({ messages: llmMessages, maxTokens: 2048 });
+          const choice = result.choices?.[0];
+          if (choice?.message?.content) {
+            aiResponse = typeof choice.message.content === "string"
+              ? choice.message.content
+              : (choice.message.content as any[]).map((c: any) => c.text || "").join("");
+          }
+        } catch (err: any) {
+          aiResponse = `[AI unavailable: ${err.message || "Unknown error"}]`;
+        }
+
+        // 4. Append AI response to history and save
+        history.push({ role: "assistant", content: aiResponse });
+        await updateClientChat(chat.id, { chatHistory: history });
+
+        return {
+          response: aiResponse,
+          messageCount: history.length,
+          senderName: ctx.user.name || ctx.user.email || "Staff",
+        };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        systemPrompt: z.string().optional(),
+        status: z.enum(["active", "paused", "closed"]).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        return updateClientChat(id, data);
       }),
   }),
 

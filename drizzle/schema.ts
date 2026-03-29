@@ -65,6 +65,12 @@ export const leads = mysqlTable("leads", {
   status: mysqlEnum("leadStatus", ["new", "contacted", "converted", "archived"]).default("new").notNull(),
   /** CSO lead score 0-10 based on discovery checklist signals */
   leadScore: int("lead_score").default(0),
+  /** Referral tracking */
+  referralCode: varchar("referralCode", { length: 50 }),
+  referrerName: varchar("referrerName", { length: 255 }),
+  referralSourceType: varchar("referralSourceType", { length: 50 }),
+  leadOwner: varchar("leadOwner", { length: 100 }),
+  notifyCso: boolean("notifyCso").default(false),
   /** CSO assignment fields */
   assignedDepartment: varchar("assignedDepartment", { length: 50 }),
   assignedBy: int("assignedBy"),
@@ -111,6 +117,18 @@ export const tasks = mysqlTable("tasks", {
   subscriptionId: int("subscriptionId"),
   /** Month this task covers e.g. "2026-03" */
   taskMonth: varchar("taskMonth", { length: 7 }),
+  /** Expected delivery date (YYYY-MM-DD) */
+  expectedDelivery: varchar("expectedDelivery", { length: 20 }),
+  /** Actual completion date (YYYY-MM-DD) */
+  actualDelivery: varchar("actualDelivery", { length: 20 }),
+  /** Estimated hours to complete */
+  estimatedHours: int("estimatedHours"),
+  /** Actual hours spent */
+  actualHours: int("actualHours"),
+  /** Task priority level */
+  priority: mysqlEnum("priority", ["urgent", "high", "normal", "low"]).default("normal"),
+  /** Work category */
+  category: varchar("category", { length: 50 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -901,3 +919,194 @@ export const studentMilestones = mysqlTable("student_milestones", {
 });
 export type StudentMilestone = typeof studentMilestones.$inferSelect;
 export type InsertStudentMilestone = typeof studentMilestones.$inferInsert;
+
+// ─── FINANCE: Revenue Allocations ────────────────────────────────────────────
+export const allocations = mysqlTable("allocations", {
+  id: int("id").autoincrement().primaryKey(),
+  transactionRef: varchar("transactionRef", { length: 50 }).notNull(),
+  clientRef: varchar("clientRef", { length: 50 }),
+  clientName: varchar("clientName", { length: 255 }),
+  service: varchar("service", { length: 255 }),
+  department: varchar("department", { length: 50 }),
+  totalAmount: decimal("totalAmount", { precision: 12, scale: 2 }).notNull(),
+  /** 50% institutional */
+  institutionalAmount: decimal("institutionalAmount", { precision: 12, scale: 2 }).notNull(),
+  opsAmount: decimal("opsAmount", { precision: 12, scale: 2 }),
+  growthAmount: decimal("growthAmount", { precision: 12, scale: 2 }),
+  aiFundAmount: decimal("aiFundAmount", { precision: 12, scale: 2 }),
+  reserveAmount: decimal("reserveAmount", { precision: 12, scale: 2 }),
+  /** 30% staff pool */
+  staffPoolAmount: decimal("staffPoolAmount", { precision: 12, scale: 2 }).notNull(),
+  aiStaffShare: decimal("aiStaffShare", { precision: 12, scale: 2 }).default("0"),
+  humanStaffAmount: decimal("humanStaffAmount", { precision: 12, scale: 2 }),
+  staffPayouts: json("staffPayouts"),
+  /** 20% affiliate pool */
+  affiliatePoolAmount: decimal("affiliatePoolAmount", { precision: 12, scale: 2 }).notNull(),
+  affiliateId: int("affiliateId"),
+  affiliateCode: varchar("affiliateCode", { length: 50 }),
+  affiliateTier: varchar("affiliateTier", { length: 20 }),
+  affiliateCommission: decimal("affiliateCommission", { precision: 12, scale: 2 }).default("0"),
+  contentBonus: decimal("contentBonus", { precision: 12, scale: 2 }).default("0"),
+  affiliateTotalPayout: decimal("affiliateTotalPayout", { precision: 12, scale: 2 }).default("0"),
+  /** AI contribution percentage (0-100) */
+  aiContributionPct: int("aiContributionPct").default(0),
+  quarter: varchar("quarter", { length: 10 }),
+  status: mysqlEnum("allocationStatus", ["pending", "approved", "paid"]).default("pending").notNull(),
+  approvedBy: varchar("approvedBy", { length: 255 }),
+  allocatedAt: timestamp("allocatedAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Allocation = typeof allocations.$inferSelect;
+export type InsertAllocation = typeof allocations.$inferInsert;
+
+// ─── FINANCE: AI Fund Log ────────────────────────────────────────────────────
+export const aiFundLog = mysqlTable("ai_fund_log", {
+  id: int("id").autoincrement().primaryKey(),
+  allocationId: int("allocationId"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  source: varchar("source", { length: 50 }).notNull(),
+  description: text("description"),
+  balance: decimal("balance", { precision: 12, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AIFundLog = typeof aiFundLog.$inferSelect;
+
+// ─── FINANCE: Affiliate League Table ─────────────────────────────────────────
+export const affiliateLeagueTable = mysqlTable("affiliate_league_table", {
+  id: int("id").autoincrement().primaryKey(),
+  affiliateId: int("affiliateId").notNull(),
+  affiliateCode: varchar("affiliateCode", { length: 50 }).notNull(),
+  affiliateName: varchar("affiliateName", { length: 255 }).notNull(),
+  position: int("position").notNull(),
+  tier: mysqlEnum("leagueTier", ["elite", "premier", "standard", "entry", "waiting"]).default("waiting").notNull(),
+  totalConversions: int("totalConversions").default(0),
+  totalRevenue: decimal("totalRevenue", { precision: 12, scale: 2 }).default("0"),
+  totalEarnings: decimal("totalEarnings", { precision: 12, scale: 2 }).default("0"),
+  qualityScore: int("qualityScore").default(0),
+  contentBonusTotal: decimal("contentBonusTotal", { precision: 12, scale: 2 }).default("0"),
+  quarter: varchar("quarter", { length: 10 }).notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  lastActivityAt: timestamp("lastActivityAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type AffiliateLeagueEntry = typeof affiliateLeagueTable.$inferSelect;
+
+// ─── SKILLS: Calendar / Cohort Schedule ──────────────────────────────────────
+export const skillsCalendar = mysqlTable("skills_calendar", {
+  id: int("id").autoincrement().primaryKey(),
+  quarter: varchar("quarter", { length: 10 }).notNull(),
+  theme: varchar("theme", { length: 100 }),
+  registrationStart: varchar("registrationStart", { length: 20 }).notNull(),
+  registrationEnd: varchar("registrationEnd", { length: 20 }).notNull(),
+  orientationDate: varchar("orientationDate", { length: 20 }).notNull(),
+  classesStart: varchar("classesStart", { length: 20 }).notNull(),
+  classesEnd: varchar("classesEnd", { length: 20 }).notNull(),
+  graduationDate: varchar("graduationDate", { length: 20 }).notNull(),
+  supportWindowStart: varchar("supportWindowStart", { length: 20 }),
+  supportWindowEnd: varchar("supportWindowEnd", { length: 20 }),
+  executiveCircleStart: varchar("executiveCircleStart", { length: 20 }),
+  executiveCircleEnd: varchar("executiveCircleEnd", { length: 20 }),
+  track1Name: varchar("track1Name", { length: 255 }),
+  track1Time: varchar("track1Time", { length: 50 }).default("8:00 AM – 10:00 AM"),
+  track2Name: varchar("track2Name", { length: 255 }),
+  track2Time: varchar("track2Time", { length: 50 }).default("10:30 AM – 12:30 PM"),
+  track3Name: varchar("track3Name", { length: 255 }),
+  track3Time: varchar("track3Time", { length: 50 }).default("1:30 PM – 3:30 PM"),
+  roboticsName: varchar("roboticsName", { length: 255 }).default("Robotics & Creative Tech Lab"),
+  roboticsTime: varchar("roboticsTime", { length: 50 }).default("10:00 AM – 1:00 PM"),
+  roboticsDays: varchar("roboticsDays", { length: 50 }).default("Thursday–Friday"),
+  status: mysqlEnum("calendarStatus", ["upcoming", "registration", "active", "support", "completed"]).default("upcoming").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SkillsCalendarEntry = typeof skillsCalendar.$inferSelect;
+export type InsertSkillsCalendar = typeof skillsCalendar.$inferInsert;
+
+// ─── Skills: Competition Teams (Squid Game format) ──────────────────────────
+export const skillsTeams = mysqlTable("skills_teams", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  cohortId: int("cohortId"),
+  quarter: varchar("quarter", { length: 10 }).notNull(),
+  color: varchar("color", { length: 20 }),
+  points: int("points").default(0).notNull(),
+  wins: int("wins").default(0),
+  losses: int("losses").default(0),
+  memberCount: int("memberCount").default(0),
+  captainName: varchar("captainName", { length: 255 }),
+  status: mysqlEnum("teamStatus", ["active", "eliminated", "champion"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SkillsTeam = typeof skillsTeams.$inferSelect;
+export type InsertSkillsTeam = typeof skillsTeams.$inferInsert;
+
+// ─── Skills: Team Members ───────────────────────────────────────────────────
+export const skillsTeamMembers = mysqlTable("skills_team_members", {
+  id: int("id").autoincrement().primaryKey(),
+  teamId: int("teamId").notNull(),
+  studentName: varchar("studentName", { length: 255 }).notNull(),
+  studentEmail: varchar("studentEmail", { length: 320 }),
+  studentType: mysqlEnum("memberType", ["cohort", "planaid", "online"]).default("cohort").notNull(),
+  role: varchar("role", { length: 50 }).default("member"),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+export type SkillsTeamMember = typeof skillsTeamMembers.$inferSelect;
+
+// ─── Skills: Weekly Interactive Schedule ────────────────────────────────────
+export const skillsInteractiveSessions = mysqlTable("skills_interactive_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  quarter: varchar("quarter", { length: 10 }).notNull(),
+  weekNumber: int("weekNumber").notNull(),
+  dayOfWeek: mysqlEnum("dayOfWeek", ["monday", "tuesday", "wednesday"]).notNull(),
+  timeSlot: varchar("timeSlot", { length: 50 }).default("11:00 AM – 1:00 PM"),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  type: mysqlEnum("sessionType", ["game", "tech_talk", "entrepreneurship", "prompt_challenge", "tool_exploration", "social_media", "content_creation", "branding"]).notNull(),
+  teamScores: json("teamScores"),
+  winnerTeamId: int("winnerTeamId"),
+  status: mysqlEnum("sessionStatus", ["scheduled", "completed", "cancelled"]).default("scheduled").notNull(),
+  sessionDate: varchar("sessionDate", { length: 20 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SkillsInteractiveSession = typeof skillsInteractiveSessions.$inferSelect;
+
+// ─── Skills: Quarterly Awards ───────────────────────────────────────────────
+export const skillsAwards = mysqlTable("skills_awards", {
+  id: int("id").autoincrement().primaryKey(),
+  quarter: varchar("quarter", { length: 10 }).notNull(),
+  teamId: int("teamId"),
+  teamName: varchar("teamName", { length: 100 }),
+  awardType: mysqlEnum("awardType", ["champion", "runner_up", "best_project", "best_content", "most_improved", "special"]).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  recipientName: varchar("recipientName", { length: 255 }),
+  certificationIssued: boolean("certificationIssued").default(false),
+  awardDate: varchar("awardDate", { length: 20 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SkillsAward = typeof skillsAwards.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLIENT AI CHAT SYSTEM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Per-client / per-task AI chat threads.
+ * Each row holds its own system prompt + full message history so the AI
+ * always has context about that specific client engagement.
+ */
+export const clientChats = mysqlTable("client_chats", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId"),
+  clientRef: varchar("clientRef", { length: 50 }).notNull(),
+  clientName: varchar("clientName", { length: 255 }),
+  department: varchar("department", { length: 50 }),
+  systemPrompt: text("systemPrompt").notNull(),
+  chatHistory: json("chatHistory"),
+  status: mysqlEnum("chatStatus", ["active", "paused", "closed"]).default("active").notNull(),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ClientChat = typeof clientChats.$inferSelect;
+export type InsertClientChat = typeof clientChats.$inferInsert;

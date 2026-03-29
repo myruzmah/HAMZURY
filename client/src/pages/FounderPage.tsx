@@ -4,10 +4,10 @@ import PageMeta from "@/components/PageMeta";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const WHITE = "#FFFFFF";
-const MILK  = "#FAFAF8";   // Milk white
+const MILK  = "#FFFAF6";   // Milk white
 const CHOCO = "#2C1A0E";
-const GOLD  = "#C9A97E";
-const DARK  = "#1D1D1F";
+const GOLD  = "#B48C4C";
+const DARK  = "#1A1A1A";
 
 // ─── Social links ─────────────────────────────────────────────────────────────
 const SOCIALS = [
@@ -309,8 +309,9 @@ export default function FounderPage() {
             className="text-xl md:text-2xl font-light leading-[1.6] mb-8"
             style={{ color: MILK }}
           >
-            Every business that struggles with compliance is leaving money on the table.
-            I make sure you are never the business that gets shut down for paperwork.
+            Businesses deserve more than consultants who disappear after the invoice.
+            We stay until the compliance is done, the systems are running, and the team is capable.
+            Structure is what separates businesses that last from businesses that don't.
           </blockquote>
           <p
             className="text-[10px] font-normal tracking-widest uppercase"

@@ -2,13 +2,13 @@ import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 import { ArrowLeft, ArrowRight, GraduationCap, Target, Users, Lightbulb } from "lucide-react";
 
-const NAVY = "#1B2A4A";  // Skills primary — dark navy blue
-const GOLD = "#C9A97E";
-const BG   = "#FAFAF8";  // Milk white
+const NAVY = "#1E3A5F";  // Skills primary — dark navy blue
+const GOLD = "#B48C4C";
+const BG   = "#FFFAF6";  // Milk white
 
 export default function SkillsCEOPage() {
   return (
-    <div style={{ background: "#FAFAF8", minHeight: "100vh" }}>
+    <div style={{ background: "#FFFAF6", minHeight: "100vh" }}>
       <PageMeta
         title="CEO — HAMZURY Skills"
         description="Meet the CEO of HAMZURY Skills — driving practical business education for entrepreneurs and professionals."

@@ -6,10 +6,10 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import { trpc } from "@/lib/trpc";
 
 const G  = "#1B4D3E";
-const Au = "#C9A97E";
-const Cr = "#FAFAF8";
+const Au = "#B48C4C";
+const Cr = "#FFFAF6";
 const W  = "#FFFFFF";
-const Milk = "#FAFAF8";
+const Milk = "#FFFAF6";
 
 // ── PILLARS (pain-point first) ────────────────────────────────────────────────
 type PillarDef = {

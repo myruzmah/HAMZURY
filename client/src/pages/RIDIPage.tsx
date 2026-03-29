@@ -5,10 +5,10 @@ import PageMeta from "@/components/PageMeta";
 import { trpc } from "@/lib/trpc";
 
 const ORANGE = "#E86A2E";
-const GOLD   = "#C9A97E";   // RIDI primary
-const CREAM  = "#FAFAF8";   // Milk white
+const GOLD   = "#B48C4C";   // RIDI primary
+const CREAM  = "#FFFAF6";   // Milk white
 const WHITE  = "#FFFFFF";
-const DARK   = "#1D1D1F";
+const DARK   = "#1A1A1A";
 
 const SDG_BADGES = [
   { n: "SDG 4",  label: "Quality Education" },

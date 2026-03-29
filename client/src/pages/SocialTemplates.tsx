@@ -1,17 +1,18 @@
 import { useState } from "react";
+import PageMeta from "@/components/PageMeta";
 
 const DEPARTMENTS = ["General", "BizDoc", "Systemise", "Skills"] as const;
 type Department = (typeof DEPARTMENTS)[number];
 
 const COLORS: Record<Department, { primary: string; accent: string; bg: string; text: string }> = {
-  General: { primary: "#1D1D1F", accent: "#86868B", bg: "#FAFAF8", text: "#1D1D1F" },
-  BizDoc: { primary: "#1B4D3E", accent: "#1B4D3E", bg: "#FAFAF8", text: "#1B4D3E" },
-  Systemise: { primary: "#0A1F1C", accent: "#0A1F1C", bg: "#FAFAF8", text: "#0A1F1C" },
-  Skills: { primary: "#1B2A4A", accent: "#1B2A4A", bg: "#FAFAF8", text: "#1B2A4A" },
+  General: { primary: "#1A1A1A", accent: "#2D2D2D", bg: "#FFFAF6", text: "#1A1A1A" },
+  BizDoc: { primary: "#1B4D3E", accent: "#1B4D3E", bg: "#FFFAF6", text: "#1B4D3E" },
+  Systemise: { primary: "#2563EB", accent: "#2563EB", bg: "#FFFAF6", text: "#2563EB" },
+  Skills: { primary: "#1E3A5F", accent: "#1E3A5F", bg: "#FFFAF6", text: "#1E3A5F" },
 };
 
-const GOLD = "#C9A97E";
-const MILK = "#FAFAF8";
+const GOLD = "#B48C4C";
+const MILK = "#FFFAF6";
 
 interface SlideData {
   render: (colors: typeof COLORS.General) => React.ReactNode;
@@ -39,7 +40,7 @@ function SlideFrame({ children, colors, index }: { children: React.ReactNode; co
           textAlign: "center",
           marginTop: 8,
           fontSize: 13,
-          color: "#86868B",
+          color: "#2D2D2D",
           fontFamily: "'Inter', sans-serif",
           letterSpacing: "0.02em",
         }}
@@ -59,7 +60,7 @@ const generalSlides: SlideData[] = [
         <div style={{ fontSize: 13, letterSpacing: "0.2em", textTransform: "uppercase", color: GOLD, marginBottom: 32, fontWeight: 500 }}>HAMZURY</div>
         <div style={{ fontSize: 36, fontWeight: 300, lineHeight: 1.2, marginBottom: 24, letterSpacing: "-0.01em" }}>Position first.<br />Then scale.</div>
         <div style={{ width: 40, height: 1, background: GOLD, marginBottom: 24 }} />
-        <div style={{ fontSize: 15, lineHeight: 1.7, color: "#86868B", fontWeight: 300, maxWidth: "90%" }}>
+        <div style={{ fontSize: 15, lineHeight: 1.7, color: "#2D2D2D", fontWeight: 300, maxWidth: "90%" }}>
           Documentation. Digital systems. Training. Everything your business needs to operate, compete, and grow.
         </div>
       </div>
@@ -81,7 +82,7 @@ const generalSlides: SlideData[] = [
               <div style={{ width: 4, height: 4, borderRadius: "50%", background: GOLD, marginTop: 8, flexShrink: 0 }} />
               <div>
                 <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 2 }}>{d.name}</div>
-                <div style={{ fontSize: 13, color: "#86868B", fontWeight: 300 }}>{d.desc}</div>
+                <div style={{ fontSize: 13, color: "#2D2D2D", fontWeight: 300 }}>{d.desc}</div>
               </div>
             </div>
           ))}
@@ -118,7 +119,7 @@ const generalSlides: SlideData[] = [
           ].map((s) => (
             <div key={s.label}>
               <div style={{ fontSize: 40, fontWeight: 300, color: GOLD, lineHeight: 1, marginBottom: 6 }}>{s.num}</div>
-              <div style={{ fontSize: 13, color: "#86868B", fontWeight: 400, letterSpacing: "0.02em" }}>{s.label}</div>
+              <div style={{ fontSize: 13, color: "#2D2D2D", fontWeight: 400, letterSpacing: "0.02em" }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -392,16 +393,17 @@ export default function SocialTemplates() {
 
   return (
     <div style={{ minHeight: "100vh", background: "#F5F5F7", fontFamily: "'Inter', -apple-system, sans-serif" }}>
+      <PageMeta title="Social Media Templates — HAMZURY" description="Internal social media content templates for HAMZURY departments." canonical="https://hamzury.com/templates" />
       {/* Header */}
       <div style={{ background: "#fff", borderBottom: "1px solid #E5E5E5" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "20px 24px" }}>
-          <div style={{ fontSize: 11, color: "#86868B", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
+          <div style={{ fontSize: 11, color: "#2D2D2D", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 4 }}>
             Internal: Social Media Templates
           </div>
-          <div style={{ fontSize: 24, fontWeight: 300, color: "#1D1D1F", letterSpacing: "-0.01em" }}>
+          <div style={{ fontSize: 24, fontWeight: 300, color: "#1A1A1A", letterSpacing: "-0.01em" }}>
             Carousel Templates
           </div>
-          <div style={{ fontSize: 13, color: "#86868B", marginTop: 4, fontWeight: 300 }}>
+          <div style={{ fontSize: 13, color: "#2D2D2D", marginTop: 4, fontWeight: 300 }}>
             1080 x 1080 — Instagram / LinkedIn format — screenshot each slide to export
           </div>
         </div>
@@ -418,7 +420,7 @@ export default function SocialTemplates() {
                 padding: "14px 24px",
                 fontSize: 14,
                 fontWeight: active === dept ? 500 : 400,
-                color: active === dept ? COLORS[dept].primary : "#86868B",
+                color: active === dept ? COLORS[dept].primary : "#2D2D2D",
                 background: "none",
                 border: "none",
                 borderBottom: active === dept ? `2px solid ${COLORS[dept].primary}` : "2px solid transparent",

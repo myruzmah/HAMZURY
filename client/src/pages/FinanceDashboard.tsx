@@ -14,6 +14,7 @@ import {
 import {
   Loader2, LogOut, ArrowLeft, DollarSign, Calculator,
   CheckCircle2, Clock, TrendingUp, PieChart, Wallet, FileText, Plus, Trash2, X,
+  BarChart3, Bot, Trophy,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useLocation, Link } from "wouter";
@@ -39,8 +40,8 @@ export default function FinanceDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FAFAF8" }}>
-        <Loader2 className="animate-spin" size={32} style={{ color: "#C9A97E" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFFAF6" }}>
+        <Loader2 className="animate-spin" size={32} style={{ color: "#B48C4C" }} />
       </div>
     );
   }
@@ -61,22 +62,22 @@ export default function FinanceDashboard() {
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FAFAFA" }}>
       <PageMeta title="Finance Dashboard — HAMZURY" description="Commissions and finance overview for HAMZURY staff." />
       {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#86868B] z-50 flex justify-between items-center shadow-lg">
+      <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#2D2D2D] z-50 flex justify-between items-center shadow-lg">
         <div className="flex items-center gap-4">
-          <Link href="/" className="text-[13px] font-semibold flex items-center gap-1 transition-colors" style={{ color: "#C9A97E" }}>
+          <Link href="/" className="text-[13px] font-semibold flex items-center gap-1 transition-colors" style={{ color: "#B48C4C" }}>
             <ArrowLeft size={14} /> HAMZURY
           </Link>
-          <span className="text-[#FAFAF8]/20">|</span>
+          <span className="text-[#FFFAF6]/20">|</span>
           <div className="flex items-center gap-2">
-            <Wallet size={18} style={{ color: "#C9A97E" }} />
-            <span className="text-lg font-bold" style={{ color: "#FAFAF8" }}>Finance Hub</span>
+            <Wallet size={18} style={{ color: "#B48C4C" }} />
+            <span className="text-lg font-bold" style={{ color: "#FFFAF6" }}>Finance Hub</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <NotificationBell />
-          <span className="hidden md:block text-[#FAFAF8]/20">|</span>
-          <span className="text-[13px] hidden md:block" style={{ color: "#C9A97E" }}>{user.name || user.email}</span>
-          <button onClick={logout} className="flex items-center gap-1 text-[13px]" style={{ color: "#FAFAF8" }}>
+          <span className="hidden md:block text-[#FFFAF6]/20">|</span>
+          <span className="text-[13px] hidden md:block" style={{ color: "#B48C4C" }}>{user.name || user.email}</span>
+          <button onClick={logout} className="flex items-center gap-1 text-[13px]" style={{ color: "#FFFAF6" }}>
             <LogOut size={16} />
           </button>
         </div>
@@ -85,21 +86,22 @@ export default function FinanceDashboard() {
       <div className="pt-[56px] p-4 md:p-8 max-w-7xl mx-auto w-full">
         {/* Revenue Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <FinStatCard label="Total Revenue" value={formatNaira(totalRevenue)} color="#C9A97E" icon={<TrendingUp size={16} />} />
+          <FinStatCard label="Total Revenue" value={formatNaira(totalRevenue)} color="#B48C4C" icon={<TrendingUp size={16} />} />
           <FinStatCard label="Staff Pool (40%)" value={formatNaira(totalPool)} color="#22C55E" icon={<DollarSign size={16} />} />
-          <FinStatCard label="Institutional (60%)" value={formatNaira(totalInstitutional)} color="#86868B" icon={<PieChart size={16} />} />
+          <FinStatCard label="Institutional (60%)" value={formatNaira(totalInstitutional)} color="#2D2D2D" icon={<PieChart size={16} />} />
           <FinStatCard label="Pending" value={String(pendingCount)} color="#EAB308" icon={<Clock size={16} />} />
           <FinStatCard label="Approved" value={String(approvedCount)} color="#3B82F6" icon={<CheckCircle2 size={16} />} />
           <FinStatCard label="Paid Out" value={String(paidCount)} color="#22C55E" icon={<CheckCircle2 size={16} />} />
         </div>
 
         <Tabs defaultValue="calculator" className="w-full">
-          <TabsList className="mb-6 bg-white border border-[#86868B]/10">
+          <TabsList className="mb-6 bg-white border border-[#2D2D2D]/10">
             <TabsTrigger value="calculator" className="gap-1.5"><Calculator size={14} /> Calculator</TabsTrigger>
             <TabsTrigger value="commissions" className="gap-1.5"><DollarSign size={14} /> Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts" className="gap-1.5"><Wallet size={14} /> Payout Queue</TabsTrigger>
             <TabsTrigger value="subscriptions" className="gap-1.5"><TrendingUp size={14} /> Subscriptions</TabsTrigger>
             <TabsTrigger value="invoices" className="gap-1.5"><FileText size={14} /> Invoices</TabsTrigger>
+            <TabsTrigger value="allocations" className="gap-1.5"><BarChart3 size={14} /> Allocations</TabsTrigger>
           </TabsList>
 
           <TabsContent value="calculator">
@@ -117,32 +119,32 @@ export default function FinanceDashboard() {
           <TabsContent value="subscriptions" className="space-y-4">
             {/* Status Filter */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] uppercase tracking-wider font-bold opacity-40" style={{ color: "#86868B" }}>Filter:</span>
+              <span className="text-[11px] uppercase tracking-wider font-bold opacity-40" style={{ color: "#2D2D2D" }}>Filter:</span>
               {(["all", "active", "paused", "cancelled", "overdue"] as const).map(f => (
                 <button
                   key={f}
                   onClick={() => setSubsFilter(f)}
                   className="text-[11px] px-3 py-1.5 rounded-full font-medium transition-colors"
                   style={{
-                    backgroundColor: subsFilter === f ? "#86868B" : "#86868B08",
-                    color: subsFilter === f ? "#C9A97E" : "#86868B",
+                    backgroundColor: subsFilter === f ? "#2D2D2D" : "#2D2D2D08",
+                    color: subsFilter === f ? "#B48C4C" : "#2D2D2D",
                   }}
                 >
                   {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
                 </button>
               ))}
             </div>
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "#86868B10" }}>
+            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "#2D2D2D10" }}>
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="border-b" style={{ backgroundColor: "#86868B06", borderColor: "#86868B08" }}>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Client</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Service</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Monthly Amount</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Status</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Next Payment Due</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Payment</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#86868B" }}>Action</th>
+                  <tr className="border-b" style={{ backgroundColor: "#2D2D2D06", borderColor: "#2D2D2D08" }}>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Client</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Service</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Monthly Amount</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Status</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Next Payment Due</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Payment</th>
+                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#2D2D2D" }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -174,10 +176,10 @@ export default function FinanceDashboard() {
                       "bg-red-100 text-red-600";
 
                     return (
-                      <tr key={sub.id} className="border-b hover:bg-gray-50" style={{ borderColor: "#86868B06" }}>
-                        <td className="px-4 py-3 font-medium" style={{ color: "#86868B" }}>{sub.clientName}</td>
-                        <td className="px-4 py-3 opacity-60" style={{ color: "#86868B" }}>{sub.service}</td>
-                        <td className="px-4 py-3" style={{ color: "#C9A97E" }}>₦{Number(sub.monthlyFee).toLocaleString()}</td>
+                      <tr key={sub.id} className="border-b hover:bg-gray-50" style={{ borderColor: "#2D2D2D06" }}>
+                        <td className="px-4 py-3 font-medium" style={{ color: "#2D2D2D" }}>{sub.clientName}</td>
+                        <td className="px-4 py-3 opacity-60" style={{ color: "#2D2D2D" }}>{sub.service}</td>
+                        <td className="px-4 py-3" style={{ color: "#B48C4C" }}>₦{Number(sub.monthlyFee).toLocaleString()}</td>
                         <td className="px-4 py-3">
                           <span className={`text-[10px] px-2 py-1 rounded-full font-semibold uppercase ${subStatusColor}`}>
                             {sub.status}
@@ -188,7 +190,7 @@ export default function FinanceDashboard() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 font-mono text-[12px] opacity-60" style={{ color: isOverdue ? "#DC2626" : "#86868B" }}>
+                        <td className="px-4 py-3 font-mono text-[12px] opacity-60" style={{ color: isOverdue ? "#DC2626" : "#2D2D2D" }}>
                           {sub.status === "cancelled" ? "—" : nextDueStr}
                         </td>
                         <td className="px-4 py-3">
@@ -205,7 +207,7 @@ export default function FinanceDashboard() {
                             <button
                               onClick={() => setPayingMonth({ subscriptionId: sub.id, month: currentMonth, amountDue: Number(sub.monthlyFee) })}
                               className="text-[11px] px-3 py-1.5 rounded-lg"
-                              style={{ backgroundColor: "#86868B10", color: "#86868B" }}
+                              style={{ backgroundColor: "#2D2D2D10", color: "#2D2D2D" }}
                             >
                               Record Payment
                             </button>
@@ -223,8 +225,8 @@ export default function FinanceDashboard() {
               </table>
             </div>
             {payingMonth && (
-              <div className="rounded-2xl p-5 border space-y-3" style={{ borderColor: "#86868B15", backgroundColor: "#86868B04" }}>
-                <p className="text-[13px] font-semibold" style={{ color: "#86868B" }}>
+              <div className="rounded-2xl p-5 border space-y-3" style={{ borderColor: "#2D2D2D15", backgroundColor: "#2D2D2D04" }}>
+                <p className="text-[13px] font-semibold" style={{ color: "#2D2D2D" }}>
                   Record payment for {(subsQuery.data || []).find(s => s.id === payingMonth.subscriptionId)?.clientName} — {payingMonth.month}
                 </p>
                 <input
@@ -232,18 +234,18 @@ export default function FinanceDashboard() {
                   value={paymentRef}
                   onChange={e => setPaymentRef(e.target.value)}
                   className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
-                  style={{ borderColor: "#86868B20" }}
+                  style={{ borderColor: "#2D2D2D20" }}
                 />
                 <div className="flex gap-2">
                   <button
                     onClick={() => { recordPaymentMutation.mutate({ subscriptionId: payingMonth.subscriptionId, month: payingMonth.month, amountPaid: payingMonth.amountDue, paymentRef }); setPayingMonth(null); setPaymentRef(""); }}
                     disabled={recordPaymentMutation.isPending}
                     className="px-4 py-2 rounded-xl text-[13px] font-medium"
-                    style={{ backgroundColor: "#86868B", color: "#C9A97E" }}
+                    style={{ backgroundColor: "#2D2D2D", color: "#B48C4C" }}
                   >
                     Confirm ₦{payingMonth.amountDue.toLocaleString()} Received
                   </button>
-                  <button onClick={() => setPayingMonth(null)} className="px-3 py-2 rounded-xl text-[13px] opacity-40" style={{ color: "#86868B" }}>
+                  <button onClick={() => setPayingMonth(null)} className="px-3 py-2 rounded-xl text-[13px] opacity-40" style={{ color: "#2D2D2D" }}>
                     Cancel
                   </button>
                 </div>
@@ -254,7 +256,265 @@ export default function FinanceDashboard() {
           <TabsContent value="invoices">
             <InvoiceTab />
           </TabsContent>
+
+          <TabsContent value="allocations">
+            <AllocationsTab />
+          </TabsContent>
         </Tabs>
+      </div>
+    </div>
+  );
+}
+
+// ─── Allocations Tab ─────────────────────────────────────────────────────────
+
+const ALLOC_PAGE_SIZE = 15;
+
+const TIER_COLORS: Record<string, { bg: string; text: string }> = {
+  Elite:    { bg: "#B48C4C20", text: "#B48C4C" },
+  Premier:  { bg: "#22C55E20", text: "#22C55E" },
+  Standard: { bg: "#3B82F620", text: "#3B82F6" },
+  Entry:    { bg: "#2D2D2D20", text: "#2D2D2D" },
+};
+
+function getCurrentQuarter() {
+  const now = new Date();
+  const q = Math.ceil((now.getMonth() + 1) / 3);
+  return `Q${q}-${now.getFullYear()}`;
+}
+
+function AllocationsTab() {
+  const [allocPage, setAllocPage] = useState(1);
+  const currentQuarter = getCurrentQuarter();
+
+  // tRPC queries — will return undefined until server routes are wired
+  const allocationsQuery = (trpc.finance as any).allocations?.useQuery?.() ?? { data: undefined, isLoading: false };
+  const aiFundQuery = (trpc.finance as any).aiFund?.useQuery?.() ?? { data: undefined, isLoading: false };
+  const leagueQuery = (trpc.finance as any).leagueTable?.useQuery?.({ quarter: currentQuarter }) ?? { data: undefined, isLoading: false };
+
+  const allocations: any[] = allocationsQuery.data || [];
+  const aiFund: any = aiFundQuery.data || null;
+  const leagueTable: any[] = leagueQuery.data || [];
+
+  const allocTotalPages = Math.max(1, Math.ceil(allocations.length / ALLOC_PAGE_SIZE));
+  const allocPaged = allocations.slice((allocPage - 1) * ALLOC_PAGE_SIZE, allocPage * ALLOC_PAGE_SIZE);
+
+  const G = "#2D2D2D";
+  const GOLD = "#B48C4C";
+
+  const fmtDate = (d: string | Date | null | undefined) => {
+    if (!d) return "—";
+    const dt = typeof d === "string" ? new Date(d) : d;
+    return dt.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* ── Revenue Allocations Table ── */}
+      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+        <div className="p-4 border-b border-[#2D2D2D]/5 flex items-center gap-2">
+          <BarChart3 size={16} style={{ color: GOLD }} />
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>Revenue Allocations</h3>
+        </div>
+        {allocationsQuery.isLoading ? (
+          <div className="p-12 text-center">
+            <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: GOLD }} />
+            <p className="text-sm opacity-40">Loading allocations...</p>
+          </div>
+        ) : allocations.length === 0 ? (
+          <div className="p-12 text-center">
+            <BarChart3 size={36} className="mx-auto mb-3 opacity-20" style={{ color: GOLD }} />
+            <p className="text-sm opacity-40">No allocations recorded yet.</p>
+            <p className="text-xs opacity-30 mt-1">Revenue allocations will appear here once finance routes are wired.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#2D2D2D]/5 text-[11px] uppercase tracking-wider opacity-50">
+                  <th className="p-3 text-left">Ref</th>
+                  <th className="p-3 text-left">Client</th>
+                  <th className="p-3 text-left">Service</th>
+                  <th className="p-3 text-right">Total</th>
+                  <th className="p-3 text-right">Institutional (50%)</th>
+                  <th className="p-3 text-right">Staff Pool (30%)</th>
+                  <th className="p-3 text-right">Affiliate (20%)</th>
+                  <th className="p-3 text-right">AI Fund</th>
+                  <th className="p-3 text-center">Status</th>
+                  <th className="p-3 text-left">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2D2D2D]/5">
+                {allocPaged.map((a: any) => {
+                  const total = Number(a.totalAmount || 0);
+                  const institutional = Number(a.institutional ?? total * 0.5);
+                  const staffPool = Number(a.staffPool ?? total * 0.3);
+                  const affiliatePool = Number(a.affiliatePool ?? total * 0.2);
+                  const aiFundAmt = Number(a.aiFund || 0);
+                  const statusColor = a.status === "allocated" ? "#22C55E" : a.status === "pending" ? "#EAB308" : "#3B82F6";
+                  return (
+                    <tr key={a.id || a.ref} className="hover:bg-[#FFFAF6]/50">
+                      <td className="p-3 font-mono text-[12px] font-bold">{a.ref || "—"}</td>
+                      <td className="p-3">{a.client || "—"}</td>
+                      <td className="p-3">{a.service || "—"}</td>
+                      <td className="p-3 text-right font-semibold" style={{ color: GOLD }}>{formatNaira(total)}</td>
+                      <td className="p-3 text-right" style={{ color: G }}>{formatNaira(institutional)}</td>
+                      <td className="p-3 text-right" style={{ color: "#22C55E" }}>{formatNaira(staffPool)}</td>
+                      <td className="p-3 text-right" style={{ color: "#3B82F6" }}>{formatNaira(affiliatePool)}</td>
+                      <td className="p-3 text-right" style={{ color: "#8B5CF6" }}>{formatNaira(aiFundAmt)}</td>
+                      <td className="p-3 text-center">
+                        <span
+                          className="text-[11px] font-bold uppercase px-2 py-0.5 rounded-full"
+                          style={{ backgroundColor: `${statusColor}20`, color: statusColor }}
+                        >
+                          {a.status || "pending"}
+                        </span>
+                      </td>
+                      <td className="p-3 text-[12px]">{fmtDate(a.date || a.createdAt)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {allocations.length > ALLOC_PAGE_SIZE && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#2D2D2D]/5 text-xs text-gray-500">
+            <span>Showing {(allocPage - 1) * ALLOC_PAGE_SIZE + 1}–{Math.min(allocPage * ALLOC_PAGE_SIZE, allocations.length)} of {allocations.length}</span>
+            <div className="flex gap-2">
+              <button onClick={() => setAllocPage(p => Math.max(1, p - 1))} disabled={allocPage === 1}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">
+                ← Prev
+              </button>
+              <span className="px-3 py-1.5 font-medium">{allocPage} / {allocTotalPages}</span>
+              <button onClick={() => setAllocPage(p => Math.min(allocTotalPages, p + 1))} disabled={allocPage === allocTotalPages}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 disabled:opacity-40 hover:bg-gray-50 transition-colors">
+                Next →
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── AI Fund Card + Affiliate League Table ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* AI Fund Card */}
+        <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[#2D2D2D]/5 flex items-center gap-2">
+            <Bot size={16} style={{ color: "#8B5CF6" }} />
+            <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>AI Fund</h3>
+          </div>
+          <div className="p-6 text-center">
+            <p className="text-[10px] uppercase tracking-wider font-bold opacity-40 mb-2" style={{ color: G }}>Current Balance</p>
+            <p className="text-3xl font-bold" style={{ color: "#8B5CF6" }}>
+              {aiFund ? formatNaira(Number(aiFund.balance || 0)) : "₦0"}
+            </p>
+            <p className="text-[11px] opacity-30 mt-1" style={{ color: G }}>Reserved for AI tools & infrastructure</p>
+          </div>
+          {/* Recent entries log */}
+          <div className="border-t border-[#2D2D2D]/5">
+            <div className="px-4 py-2 border-b border-[#2D2D2D]/3" style={{ backgroundColor: "#FFFAF6" }}>
+              <p className="text-[10px] uppercase tracking-wider font-bold opacity-40" style={{ color: G }}>Recent Entries</p>
+            </div>
+            {aiFund?.entries && aiFund.entries.length > 0 ? (
+              <div className="divide-y divide-[#2D2D2D]/5 max-h-48 overflow-y-auto">
+                {(aiFund.entries as any[]).slice(0, 8).map((entry: any, idx: number) => (
+                  <div key={idx} className="px-4 py-2.5 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[12px] truncate" style={{ color: G }}>{entry.description || entry.ref || "Entry"}</p>
+                      <p className="text-[10px] opacity-30" style={{ color: G }}>{fmtDate(entry.date || entry.createdAt)}</p>
+                    </div>
+                    <span className="text-[12px] font-semibold shrink-0 ml-3" style={{ color: Number(entry.amount) >= 0 ? "#22C55E" : "#EF4444" }}>
+                      {Number(entry.amount) >= 0 ? "+" : ""}{formatNaira(Number(entry.amount || 0))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="px-4 py-6 text-center">
+                <p className="text-[11px] opacity-30" style={{ color: G }}>No entries yet.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Affiliate League Table */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-[#2D2D2D]/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Trophy size={16} style={{ color: GOLD }} />
+              <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>Affiliate League Table</h3>
+            </div>
+            <span className="text-[11px] px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: `${G}08`, color: G }}>
+              {currentQuarter}
+            </span>
+          </div>
+          {leagueQuery.isLoading ? (
+            <div className="p-12 text-center">
+              <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: GOLD }} />
+              <p className="text-sm opacity-40">Loading league table...</p>
+            </div>
+          ) : leagueTable.length === 0 ? (
+            <div className="p-12 text-center">
+              <Trophy size={36} className="mx-auto mb-3 opacity-20" style={{ color: GOLD }} />
+              <p className="text-sm opacity-40">No affiliate data for {currentQuarter}.</p>
+              <p className="text-xs opacity-30 mt-1">League table will populate once affiliate routes are wired.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#2D2D2D]/5 text-[11px] uppercase tracking-wider opacity-50">
+                    <th className="p-3 text-center w-12">#</th>
+                    <th className="p-3 text-left">Name</th>
+                    <th className="p-3 text-center">Tier</th>
+                    <th className="p-3 text-right">Total Revenue</th>
+                    <th className="p-3 text-right">Earnings</th>
+                    <th className="p-3 text-center">Quality Score</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#2D2D2D]/5">
+                  {leagueTable.map((row: any, idx: number) => {
+                    const tier = row.tier || "Entry";
+                    const tc = TIER_COLORS[tier] || TIER_COLORS.Entry;
+                    const position = row.position ?? idx + 1;
+                    return (
+                      <tr key={row.id || idx} className="hover:bg-[#FFFAF6]/50">
+                        <td className="p-3 text-center">
+                          <span className="text-[13px] font-bold" style={{ color: position <= 3 ? GOLD : G }}>
+                            {position}
+                          </span>
+                        </td>
+                        <td className="p-3 font-medium" style={{ color: G }}>{row.name || "—"}</td>
+                        <td className="p-3 text-center">
+                          <span
+                            className="text-[10px] font-bold uppercase px-2.5 py-1 rounded-full"
+                            style={{ backgroundColor: tc.bg, color: tc.text }}
+                          >
+                            {tier}
+                          </span>
+                        </td>
+                        <td className="p-3 text-right font-semibold" style={{ color: GOLD }}>{formatNaira(Number(row.totalRevenue || 0))}</td>
+                        <td className="p-3 text-right" style={{ color: "#22C55E" }}>{formatNaira(Number(row.totalEarnings || 0))}</td>
+                        <td className="p-3 text-center">
+                          <span
+                            className="text-[12px] font-bold"
+                            style={{
+                              color: Number(row.qualityScore || 0) >= 8 ? "#22C55E" :
+                                     Number(row.qualityScore || 0) >= 5 ? "#EAB308" : "#EF4444"
+                            }}
+                          >
+                            {row.qualityScore ?? "—"}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -304,12 +564,12 @@ function InvoiceTab() {
       {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#86868B" }}>Invoices</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#2D2D2D" }}>Invoices</h3>
           <select
             value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
             className="text-[12px] px-3 py-1.5 rounded-lg border outline-none"
-            style={{ borderColor: "#86868B15", color: "#86868B" }}
+            style={{ borderColor: "#2D2D2D15", color: "#2D2D2D" }}
           >
             <option value="all">All Statuses</option>
             <option value="draft">Draft</option>
@@ -324,29 +584,29 @@ function InvoiceTab() {
           onClick={() => setShowCreate(true)}
           size="sm"
           className="gap-1.5 text-[12px]"
-          style={{ backgroundColor: "#86868B", color: "#C9A97E" }}
+          style={{ backgroundColor: "#2D2D2D", color: "#B48C4C" }}
         >
           <Plus size={14} /> Create Invoice
         </Button>
       </div>
 
       {/* Invoice table */}
-      <div className="bg-white rounded-2xl border border-[#86868B]/10 shadow-sm">
+      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
         {invoicesQuery.isLoading ? (
           <div className="p-12 text-center">
-            <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: "#C9A97E" }} />
+            <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: "#B48C4C" }} />
             <p className="text-sm opacity-40">Loading invoices...</p>
           </div>
         ) : invoiceList.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#C9A97E" }} />
+            <FileText size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#B48C4C" }} />
             <p className="text-sm opacity-40">No invoices found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-[#86868B]/5 text-[11px] uppercase tracking-wider opacity-50">
+                <tr className="border-b border-[#2D2D2D]/5 text-[11px] uppercase tracking-wider opacity-50">
                   <th className="p-3 text-left">Invoice #</th>
                   <th className="p-3 text-left">Client Name</th>
                   <th className="p-3 text-right">Total (₦)</th>
@@ -356,14 +616,14 @@ function InvoiceTab() {
                   <th className="p-3 text-center">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#86868B]/5">
+              <tbody className="divide-y divide-[#2D2D2D]/5">
                 {paged.map(inv => {
                   const sc = INVOICE_STATUS_COLORS[inv.status] || INVOICE_STATUS_COLORS.draft;
                   return (
-                    <tr key={inv.id} className="hover:bg-[#FAFAF8]/50">
+                    <tr key={inv.id} className="hover:bg-[#FFFAF6]/50">
                       <td className="p-3 font-mono text-[12px] font-bold">{inv.invoiceNumber}</td>
                       <td className="p-3">{inv.clientName}</td>
-                      <td className="p-3 text-right font-semibold" style={{ color: "#C9A97E" }}>
+                      <td className="p-3 text-right font-semibold" style={{ color: "#B48C4C" }}>
                         ₦{Number(inv.total).toLocaleString()}
                       </td>
                       <td className="p-3 text-right">₦{Number(inv.amountPaid || 0).toLocaleString()}</td>
@@ -415,7 +675,7 @@ function InvoiceTab() {
           </div>
         )}
         {invoiceList.length > INV_PAGE_SIZE && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#86868B]/5 text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-[#2D2D2D]/5 text-xs text-gray-500">
             <span>Showing {(page - 1) * INV_PAGE_SIZE + 1}–{Math.min(page * INV_PAGE_SIZE, invoiceList.length)} of {invoiceList.length}</span>
             <div className="flex gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
@@ -491,10 +751,10 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
         onClick={e => e.stopPropagation()}
       >
         {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#86868B]/10">
-          <h2 className="text-base font-bold" style={{ color: "#86868B" }}>Create Invoice</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[#2D2D2D]/10">
+          <h2 className="text-base font-bold" style={{ color: "#2D2D2D" }}>Create Invoice</h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-            <X size={18} style={{ color: "#86868B" }} />
+            <X size={18} style={{ color: "#2D2D2D" }} />
           </button>
         </div>
 
@@ -502,15 +762,15 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Client Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Client Name *</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Client Name *</label>
               <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Client name" className="text-[13px]" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Client Email</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Client Email</label>
               <Input value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@example.com" type="email" className="text-[13px]" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Client Phone</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Client Phone</label>
               <Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="+234..." className="text-[13px]" />
             </div>
           </div>
@@ -518,8 +778,8 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: "#86868B" }}>Line Items</label>
-              <button onClick={addItem} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: "#C9A97E" }}>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: "#2D2D2D" }}>Line Items</label>
+              <button onClick={addItem} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: "#B48C4C" }}>
                 <Plus size={12} /> Add Row
               </button>
             </div>
@@ -548,7 +808,7 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
                     className="text-[13px]"
                     placeholder="Unit price"
                   />
-                  <div className="text-[13px] font-medium text-right pr-1" style={{ color: "#C9A97E" }}>
+                  <div className="text-[13px] font-medium text-right pr-1" style={{ color: "#B48C4C" }}>
                     ₦{(item.quantity * item.unitPrice).toLocaleString()}
                   </div>
                   <button
@@ -567,22 +827,22 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Totals */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Subtotal</label>
-              <div className="text-[14px] font-semibold px-3 py-2 rounded-lg" style={{ backgroundColor: "#FAFAF8", color: "#86868B" }}>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Subtotal</label>
+              <div className="text-[14px] font-semibold px-3 py-2 rounded-lg" style={{ backgroundColor: "#FFFAF6", color: "#2D2D2D" }}>
                 ₦{subtotal.toLocaleString()}
               </div>
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Discount (₦)</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Discount (₦)</label>
               <Input type="number" min={0} value={discount || ""} onChange={e => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))} className="text-[13px]" placeholder="0" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Tax (₦)</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Tax (₦)</label>
               <Input type="number" min={0} value={tax || ""} onChange={e => setTax(Math.max(0, parseFloat(e.target.value) || 0))} className="text-[13px]" placeholder="0" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Total</label>
-              <div className="text-[14px] font-bold px-3 py-2 rounded-lg" style={{ backgroundColor: "#86868B", color: "#C9A97E" }}>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Total</label>
+              <div className="text-[14px] font-bold px-3 py-2 rounded-lg" style={{ backgroundColor: "#2D2D2D", color: "#B48C4C" }}>
                 ₦{total.toLocaleString()}
               </div>
             </div>
@@ -591,31 +851,31 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Due Date + Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Due Date</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Due Date</label>
               <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="text-[13px]" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#86868B" }}>Notes</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#2D2D2D" }}>Notes</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 placeholder="Optional notes..."
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none resize-none"
-                style={{ borderColor: "#86868B20" }}
+                style={{ borderColor: "#2D2D2D20" }}
               />
             </div>
           </div>
         </div>
 
         {/* Modal footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#86868B]/10">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[#2D2D2D]/10">
           <Button variant="outline" onClick={onClose} className="text-[12px]">Cancel</Button>
           <Button
             onClick={handleSubmit}
             disabled={createMutation.isPending}
             className="gap-1.5 text-[12px]"
-            style={{ backgroundColor: "#86868B", color: "#C9A97E" }}
+            style={{ backgroundColor: "#2D2D2D", color: "#B48C4C" }}
           >
             {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
             Create Invoice
@@ -636,13 +896,13 @@ function CommissionCalculator() {
     return calculateCommission(num);
   }, [price]);
 
-  const G = "#86868B";
-  const GOLD = "#C9A97E";
+  const G = "#2D2D2D";
+  const GOLD = "#B48C4C";
 
   return (
     <div className="max-w-3xl space-y-6">
       {/* Input */}
-      <div className="bg-white rounded-2xl border border-[#86868B]/10 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm p-6">
         <h3 className="text-base font-medium mb-1" style={{ color: G }}>Commission Calculator</h3>
         <p className="text-xs opacity-40 mb-6">Enter the quoted deal price to see the full 40/60 split and 5-tier breakdown.</p>
         <div className="flex items-center gap-3">
@@ -652,7 +912,7 @@ function CommissionCalculator() {
             placeholder="Enter quoted price..."
             value={price}
             onChange={e => setPrice(e.target.value)}
-            className="text-lg bg-[#FAFAF8] border-[#86868B]/10"
+            className="text-lg bg-[#FFFAF6] border-[#2D2D2D]/10"
             style={{ color: G }}
           />
         </div>
@@ -668,34 +928,34 @@ function CommissionCalculator() {
             </div>
             <div className="p-5 rounded-2xl text-center" style={{ backgroundColor: G, border: `1px solid ${G}` }}>
               <p className="text-[10px] uppercase tracking-wider opacity-60 mb-2" style={{ color: GOLD }}>Institutional (60%)</p>
-              <p className="text-2xl font-normal" style={{ color: "#FAFAF8" }}>{formatNaira(breakdown.institutionalAmount)}</p>
+              <p className="text-2xl font-normal" style={{ color: "#FFFAF6" }}>{formatNaira(breakdown.institutionalAmount)}</p>
             </div>
           </div>
 
           {/* Staff Pool Tier Breakdown */}
-          <div className="bg-white rounded-2xl border border-[#86868B]/10 overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#86868B]/5" style={{ backgroundColor: "#FAFAF8" }}>
+          <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: "#FFFAF6" }}>
               <p className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Staff Pool — 5-Tier Breakdown</p>
             </div>
-            <div className="divide-y divide-[#86868B]/5">
+            <div className="divide-y divide-[#2D2D2D]/5">
               <TierRow badge="T1" label="Department Lead" sub="Oversees the work" pct="4% of revenue" amount={breakdown.tiers.deptLead} />
               <TierRow badge="T2" label="CEO" sub="Support layer" pct="4% of revenue" amount={breakdown.tiers.ceo} sub2={`Finance ${formatNaira(breakdown.tiers.finance)} · HR ${formatNaira(breakdown.tiers.hr)}`} />
               <TierRow badge="T3" label="Execution Team" sub="Split by effort %" pct="16% of revenue" amount={breakdown.tiers.execution} highlight />
               <TierRow badge="T4" label="Facilities" sub="Cleaner, Security, Support" pct="2% of revenue" amount={breakdown.tiers.facilities} />
               <TierRow badge="T5" label="Lead Generator (BizDev)" sub="Demand layer" pct="5% of revenue" amount={breakdown.tiers.leadGenerator} sub2={`Converter (CSO): ${formatNaira(breakdown.tiers.converter)}`} />
             </div>
-            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: "#FAFAF8", borderColor: "#86868B10" }}>
+            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: "#FFFAF6", borderColor: "#2D2D2D10" }}>
               <span className="text-[12px] font-medium opacity-50" style={{ color: G }}>Total Staff Pool</span>
               <span className="text-[14px] font-medium" style={{ color: GOLD }}>{formatNaira(breakdown.staffPool)}</span>
             </div>
           </div>
 
           {/* Institutional Breakdown */}
-          <div className="bg-white rounded-2xl border border-[#86868B]/10 overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#86868B]/5" style={{ backgroundColor: "#FAFAF8" }}>
+          <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: "#FFFAF6" }}>
               <p className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Institutional Allocation (60%)</p>
             </div>
-            <div className="divide-y divide-[#86868B]/5">
+            <div className="divide-y divide-[#2D2D2D]/5">
               <TierRow badge="I1" label="Department Reinvestment" sub="Tools, training, equipment" pct="25%" amount={breakdown.institutional.reinvestment} />
               <TierRow badge="I2" label="Institutional Savings" sub="Emergency fund, expansion capital" pct="10%" amount={breakdown.institutional.savings} />
               <TierRow badge="I3" label="Founder's Share" sub="Strategic vision, legacy" pct="5%" amount={breakdown.institutional.founder} />
@@ -703,7 +963,7 @@ function CommissionCalculator() {
               <TierRow badge="I5" label="RIDI Charity" sub="Scholarships, community projects" pct="3%" amount={breakdown.institutional.ridi} />
               <TierRow badge="I6" label="Shareholders" sub="Return on investment" pct="5%" amount={breakdown.institutional.shareholders} />
             </div>
-            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: "#FAFAF8", borderColor: "#86868B10" }}>
+            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: "#FFFAF6", borderColor: "#2D2D2D10" }}>
               <span className="text-[12px] font-medium opacity-50" style={{ color: G }}>Total Institutional</span>
               <span className="text-[14px] font-medium" style={{ color: G }}>{formatNaira(breakdown.institutionalAmount)}</span>
             </div>
@@ -724,19 +984,19 @@ function CommissionCalculator() {
 
 function TierRow({ badge, label, sub, sub2, pct, amount, highlight }: { badge: string; label: string; sub: string; sub2?: string; pct: string; amount: number; highlight?: boolean }) {
   return (
-    <div className="px-5 py-3.5 flex items-center justify-between gap-4" style={{ backgroundColor: highlight ? "#86868B05" : "transparent" }}>
+    <div className="px-5 py-3.5 flex items-center justify-between gap-4" style={{ backgroundColor: highlight ? "#2D2D2D05" : "transparent" }}>
       <div className="flex items-start gap-3 min-w-0">
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 mt-0.5" style={{ backgroundColor: "#86868B08", color: "#86868B", opacity: 0.6 }}>{badge}</span>
+        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 mt-0.5" style={{ backgroundColor: "#2D2D2D08", color: "#2D2D2D", opacity: 0.6 }}>{badge}</span>
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-normal" style={{ color: "#86868B" }}>{label}</span>
-            <span className="text-[11px] opacity-30" style={{ color: "#86868B" }}>{pct}</span>
+            <span className="text-[13px] font-normal" style={{ color: "#2D2D2D" }}>{label}</span>
+            <span className="text-[11px] opacity-30" style={{ color: "#2D2D2D" }}>{pct}</span>
           </div>
-          <p className="text-[11px] opacity-40" style={{ color: "#86868B" }}>{sub}</p>
-          {sub2 && <p className="text-[11px] opacity-30 mt-0.5" style={{ color: "#86868B" }}>{sub2}</p>}
+          <p className="text-[11px] opacity-40" style={{ color: "#2D2D2D" }}>{sub}</p>
+          {sub2 && <p className="text-[11px] opacity-30 mt-0.5" style={{ color: "#2D2D2D" }}>{sub2}</p>}
         </div>
       </div>
-      <span className="text-[14px] font-normal shrink-0" style={{ color: "#C9A97E" }}>{formatNaira(amount)}</span>
+      <span className="text-[14px] font-normal shrink-0" style={{ color: "#B48C4C" }}>{formatNaira(amount)}</span>
     </div>
   );
 }
@@ -782,20 +1042,20 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#86868B]/10 shadow-sm">
-      <div className="p-4 border-b border-[#86868B]/5">
-        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#86868B" }}>All Commissions</h3>
+    <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+      <div className="p-4 border-b border-[#2D2D2D]/5">
+        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#2D2D2D" }}>All Commissions</h3>
       </div>
       {commissions.length === 0 ? (
         <div className="p-12 text-center">
-          <DollarSign size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#C9A97E" }} />
+          <DollarSign size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#B48C4C" }} />
           <p className="text-sm opacity-40">No commissions recorded yet.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[#86868B]/5 text-[11px] uppercase tracking-wider opacity-50">
+              <tr className="border-b border-[#2D2D2D]/5 text-[11px] uppercase tracking-wider opacity-50">
                 <th className="p-3 text-left">Ref</th>
                 <th className="p-3 text-left">Client</th>
                 <th className="p-3 text-left">Service</th>
@@ -806,9 +1066,9 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
                 <th className="p-3 text-center">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#86868B]/5">
+            <tbody className="divide-y divide-[#2D2D2D]/5">
               {paged.map(c => (
-                <tr key={c.id} className="hover:bg-[#FAFAF8]/50">
+                <tr key={c.id} className="hover:bg-[#FFFAF6]/50">
                   <td className="p-3 font-mono text-[12px] font-bold">{c.taskRef}</td>
                   <td className="p-3">{c.clientName || "—"}</td>
                   <td className="p-3">{c.service || "—"}</td>
@@ -886,7 +1146,7 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
         </div>
       )}
       {commissions.length > PAGE_SIZE && (
-        <div className="flex items-center justify-between px-4 py-3 border-t border-[#86868B]/5 text-xs text-gray-500">
+        <div className="flex items-center justify-between px-4 py-3 border-t border-[#2D2D2D]/5 text-xs text-gray-500">
           <span>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, commissions.length)} of {commissions.length}</span>
           <div className="flex gap-2">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
@@ -915,7 +1175,7 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
 
   if (commissions.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-[#86868B]/10 p-12 text-center">
+      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 p-12 text-center">
         <CheckCircle2 size={48} className="mx-auto mb-4 opacity-20" />
         <p className="text-lg font-medium opacity-60">No pending payouts</p>
         <p className="text-sm opacity-40 mt-2">Approved commissions will appear here for payout processing.</p>
@@ -924,19 +1184,19 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#86868B]/10 shadow-sm">
-      <div className="p-4 border-b border-[#86868B]/5">
-        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#86868B" }}>Approved — Ready for Payout</h3>
+    <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+      <div className="p-4 border-b border-[#2D2D2D]/5">
+        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#2D2D2D" }}>Approved — Ready for Payout</h3>
       </div>
-      <div className="divide-y divide-[#86868B]/5">
+      <div className="divide-y divide-[#2D2D2D]/5">
         {commissions.map(c => {
           const tiers = c.tierBreakdown as any;
           return (
             <div key={c.id} className="p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <span className="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded bg-[#86868B]/5">{c.taskRef}</span>
-                  <span className="text-[14px] font-semibold ml-3" style={{ color: "#86868B" }}>{c.clientName}</span>
+                  <span className="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded bg-[#2D2D2D]/5">{c.taskRef}</span>
+                  <span className="text-[14px] font-semibold ml-3" style={{ color: "#2D2D2D" }}>{c.clientName}</span>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -983,9 +1243,9 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
 
 function MiniTier({ label, amount }: { label: string; amount: number }) {
   return (
-    <div className="p-2 rounded-lg bg-[#FAFAF8]">
+    <div className="p-2 rounded-lg bg-[#FFFAF6]">
       <p className="text-[10px] uppercase tracking-wider font-bold opacity-50">{label}</p>
-      <p className="text-[13px] font-bold" style={{ color: "#86868B" }}>{formatNaira(amount)}</p>
+      <p className="text-[13px] font-bold" style={{ color: "#2D2D2D" }}>{formatNaira(amount)}</p>
     </div>
   );
 }
@@ -994,12 +1254,12 @@ function MiniTier({ label, amount }: { label: string; amount: number }) {
 
 function FinStatCard({ label, value, color, icon }: { label: string; value: string; color: string; icon: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-[#86868B]/5 p-4 shadow-sm">
+    <div className="bg-white rounded-xl border border-[#2D2D2D]/5 p-4 shadow-sm">
       <div className="flex items-center gap-2 mb-2" style={{ color }}>
         {icon}
         <span className="text-[10px] uppercase tracking-wider font-bold opacity-60">{label}</span>
       </div>
-      <p className="text-lg font-bold" style={{ color: "#86868B" }}>{value}</p>
+      <p className="text-lg font-bold" style={{ color: "#2D2D2D" }}>{value}</p>
     </div>
   );
 }

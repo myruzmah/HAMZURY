@@ -46,6 +46,15 @@ import {
   contentEngagementLogs, InsertContentEngagementLog, ContentEngagementLog,
   hubMeetingRecords, InsertHubMeetingRecord, HubMeetingRecord,
   studentMilestones, InsertStudentMilestone, StudentMilestone,
+  allocations, InsertAllocation, Allocation,
+  aiFundLog,
+  affiliateLeagueTable,
+  skillsCalendar, InsertSkillsCalendar,
+  skillsTeams, InsertSkillsTeam, SkillsTeam,
+  skillsTeamMembers, SkillsTeamMember,
+  skillsInteractiveSessions, SkillsInteractiveSession,
+  skillsAwards, SkillsAward,
+  clientChats, InsertClientChat, ClientChat,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -1791,4 +1800,155 @@ export async function getStudentMilestones(studentType?: "physical" | "online" |
 export async function markMilestoneCelebrated(id: number): Promise<void> {
   const db = await getDb(); if (!db) return;
   await db.update(studentMilestones).set({ celebrated: true }).where(eq(studentMilestones.id, id));
+}
+
+// ─── Revenue Allocation ──────────────────────────────────────────────────────
+
+export async function createAllocation(data: Omit<InsertAllocation, "id" | "createdAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(allocations).values(data);
+  const result = await db.select().from(allocations).where(eq(allocations.transactionRef, data.transactionRef)).limit(1);
+  return result[0];
+}
+
+export async function getAllocations() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(allocations).orderBy(desc(allocations.createdAt));
+}
+
+export async function getAllocationsByQuarter(quarter: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(allocations).where(eq(allocations.quarter, quarter)).orderBy(desc(allocations.createdAt));
+}
+
+// ─── AI Fund ─────────────────────────────────────────────────────────────────
+
+export async function createAIFundEntry(data: { allocationId?: number; amount: string; source: string; description?: string; balance?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(aiFundLog).values(data);
+}
+
+export async function getAIFundBalance(): Promise<string> {
+  const db = await getDb();
+  if (!db) return "0";
+  const entries = await db.select().from(aiFundLog).orderBy(desc(aiFundLog.createdAt)).limit(1);
+  return entries[0]?.balance ?? "0";
+}
+
+export async function getAIFundLog() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(aiFundLog).orderBy(desc(aiFundLog.createdAt));
+}
+
+// ─── Affiliate League Table ──────────────────────────────────────────────────
+
+export async function getLeagueTable(quarter: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(affiliateLeagueTable).where(eq(affiliateLeagueTable.quarter, quarter)).orderBy(affiliateLeagueTable.position);
+}
+
+// ─── Skills Calendar ─────────────────────────────────────────────────────────
+
+export async function getSkillsCalendar() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(skillsCalendar).orderBy(skillsCalendar.quarter);
+}
+
+export async function createSkillsCalendarEntry(data: Omit<InsertSkillsCalendar, "id" | "createdAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(skillsCalendar).values(data);
+}
+
+// ─── Skills Competition Teams ───────────────────────────────────────────────
+
+export async function getSkillsTeams(quarter: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(skillsTeams).where(eq(skillsTeams.quarter, quarter)).orderBy(desc(skillsTeams.points));
+}
+
+export async function createSkillsTeam(data: Omit<InsertSkillsTeam, "id" | "createdAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(skillsTeams).values(data);
+}
+
+export async function updateSkillsTeamPoints(id: number, points: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(skillsTeams).set({ points }).where(eq(skillsTeams.id, id));
+}
+
+// ─── Skills Interactive Sessions ────────────────────────────────────────────
+
+export async function getInteractiveSessions(quarter: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(skillsInteractiveSessions).where(eq(skillsInteractiveSessions.quarter, quarter)).orderBy(skillsInteractiveSessions.weekNumber);
+}
+
+export async function createInteractiveSession(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(skillsInteractiveSessions).values(data);
+}
+
+// ─── Skills Awards ──────────────────────────────────────────────────────────
+
+export async function getSkillsAwards(quarter: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(skillsAwards).where(eq(skillsAwards.quarter, quarter));
+}
+
+export async function createSkillsAward(data: any) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(skillsAwards).values(data);
+}
+
+// ─── Client AI Chat ──────────────────────────────────────────────────────────
+
+export async function createClientChat(data: Omit<InsertClientChat, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(clientChats).values(data);
+  const result = await db.select().from(clientChats).where(eq(clientChats.clientRef, data.clientRef)).orderBy(desc(clientChats.createdAt)).limit(1);
+  return result[0];
+}
+
+export async function getClientChatsByTask(taskId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clientChats).where(eq(clientChats.taskId, taskId)).orderBy(desc(clientChats.createdAt));
+}
+
+export async function getClientChatByRef(clientRef: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(clientChats).where(eq(clientChats.clientRef, clientRef)).orderBy(desc(clientChats.createdAt)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function getClientChatById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(clientChats).where(eq(clientChats.id, id)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function updateClientChat(id: number, data: Partial<{ chatHistory: any; status: "active" | "paused" | "closed"; systemPrompt: string }>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(clientChats).set(data).where(eq(clientChats.id, id));
+  const result = await db.select().from(clientChats).where(eq(clientChats.id, id)).limit(1);
+  return result[0];
 }

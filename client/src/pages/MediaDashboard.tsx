@@ -17,11 +17,11 @@ import {
 } from "lucide-react";
 
 // ─── Colors (Media = general → Apple grey) ───────────────────────────────────
-const TEAL  = "#86868B";   // Apple grey — general departments
-const GOLD  = "#C9A97E";
-const MILK  = "#FAFAF8";
+const TEAL  = "#2D2D2D";   // Apple grey — general departments
+const GOLD  = "#B48C4C";
+const MILK  = "#FFFAF6";
 const WHITE = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section = "clients" | "inbox" | "overview" | "calendar" | "aitwin" | "podcast" | "vault" | "social";
@@ -305,7 +305,7 @@ export default function MediaDashboard() {
 
   // ─── Content Calendar Section ─────────────────────────────────────────
   function renderCalendar() {
-    const DEPT_COLORS: Record<string, string> = { general: "#0A1F1C", bizdoc: "#1B4D3E", systemise: "#1E3A5F", skills: "#C9A97E" };
+    const DEPT_COLORS: Record<string, string> = { general: "#2563EB", bizdoc: "#1B4D3E", systemise: "#1E3A5F", skills: "#B48C4C" };
     const PLATFORM_ICONS: Record<string, string> = { instagram: "IG", tiktok: "TT", twitter: "X", linkedin: "LI" };
     const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
       draft: { bg: "#6B728014", text: "#6B7280" },
@@ -1065,7 +1065,7 @@ export default function MediaDashboard() {
                             onChange={e => setTaskNotes(p => ({ ...p, [t.id]: e.target.value }))}
                             placeholder="Describe the work done — content links, Canva files, scripts, published post URLs…"
                             className="w-full rounded-xl border px-3 py-2.5 text-[13px] outline-none resize-none"
-                            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: "#FAFAF8" }} />
+                            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: "#FFFAF6" }} />
                         </div>
                         {t.status !== "Completed" && !t.kpiApproved && (
                           <button onClick={() => handleTaskSubmit(t.id)} disabled={submittingId === t.id}

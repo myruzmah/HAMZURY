@@ -1,45 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
-  <!-- Background -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0A1F1C"/>
-
-  <!-- Subtle texture grid -->
-  <line x1="0" y1="210" x2="1200" y2="210" stroke="#C9A97E" stroke-width="0.5" opacity="0.08"/>
-  <line x1="0" y1="420" x2="1200" y2="420" stroke="#C9A97E" stroke-width="0.5" opacity="0.08"/>
-  <line x1="400" y1="0" x2="400" y2="630" stroke="#C9A97E" stroke-width="0.5" opacity="0.08"/>
-  <line x1="800" y1="0" x2="800" y2="630" stroke="#C9A97E" stroke-width="0.5" opacity="0.08"/>
-
-  <!-- Arabic mark — large, right-aligned, ghost -->
-  <text x="950" y="460" font-family="'Noto Naskh Arabic','Arabic Typesetting','Traditional Arabic',serif"
-    font-size="500" font-weight="700" fill="#C9A97E" opacity="0.06" text-anchor="middle">ح</text>
-
-  <!-- Gold accent bar -->
-  <rect x="80" y="260" width="5" height="110" rx="2.5" fill="#C9A97E"/>
-
-  <!-- HAMZURY wordmark -->
-  <text x="108" y="308" font-family="Georgia, 'Times New Roman', serif"
-    font-size="58" font-weight="700" fill="#F5F0E8" letter-spacing="8">HAMZURY</text>
-
-  <!-- Tagline -->
-  <text x="108" y="348" font-family="Georgia, 'Times New Roman', serif"
-    font-size="22" fill="#C9A97E" letter-spacing="3">INNOVATION HUB</text>
-
-  <!-- Descriptor -->
-  <text x="108" y="400" font-family="Arial, Helvetica, sans-serif"
-    font-size="18" fill="#F5F0E8" opacity="0.55">
-    Business Registration · Brand Systems · Professional Skills
+  <text x="600" y="280" text-anchor="middle" dominant-baseline="central"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+        font-size="96" font-weight="600" letter-spacing="12" fill="#FFFFFF">
+    HAMZURY
   </text>
-
-  <!-- Bottom domain -->
-  <text x="80" y="565" font-family="Arial, Helvetica, sans-serif"
-    font-size="16" fill="#C9A97E" opacity="0.6" letter-spacing="2">hamzury.com</text>
-
-  <!-- Three department pills -->
-  <rect x="108" y="440" width="120" height="34" rx="17" fill="#C9A97E" opacity="0.15"/>
-  <text x="168" y="462" font-family="Arial, sans-serif" font-size="13" fill="#C9A97E" text-anchor="middle">BizDoc</text>
-
-  <rect x="244" y="440" width="130" height="34" rx="17" fill="#C9A97E" opacity="0.15"/>
-  <text x="309" y="462" font-family="Arial, sans-serif" font-size="13" fill="#C9A97E" text-anchor="middle">Systemise</text>
-
-  <rect x="390" y="440" width="100" height="34" rx="17" fill="#C9A97E" opacity="0.15"/>
-  <text x="440" y="462" font-family="Arial, sans-serif" font-size="13" fill="#C9A97E" text-anchor="middle">Skills</text>
+  <text x="600" y="370" text-anchor="middle" dominant-baseline="central"
+        font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif"
+        font-size="28" font-weight="300" letter-spacing="6" fill="#C9A97E">
+    Compliance. Systems. Skills.
+  </text>
+  <line x1="480" y1="320" x2="720" y2="320" stroke="#C9A97E" stroke-width="1" opacity="0.4"/>
 </svg>

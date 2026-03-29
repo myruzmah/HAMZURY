@@ -1,20 +1,22 @@
 import { useState, useEffect, useRef } from "react";
+import { toast } from "sonner";
 import {
   CheckCircle, Circle, ChevronRight, Loader2, AlertCircle, LogOut,
   Clock, Send, MessageSquare, Receipt, Activity, Calendar,
   Building2, Phone, User, FileText, CreditCard, Copy,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
+import ChatWidget from "../components/ChatWidget";
 import { trpc } from "@/lib/trpc";
 
 /* ── Unified brand — all refs are HAM-XXXX-YYYY (general grey) ── */
-const THEME = { primary: "#86868B", accent: "#C9A97E", label: "HAMZURY" };
+const THEME = { primary: "#2D2D2D", accent: "#B48C4C", label: "HAMZURY" };
 function getDeptTheme(_ref: string) { return THEME; }
 
-const CREAM = "#FAFAF8";   // Milk white
+const CREAM = "#FFFAF6";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK = "#1D1D1F";
-const GREY = "#86868B";    // Apple grey — general/client
+const DARK = "#1A1A1A";
+const GREY = "#2D2D2D";    // Apple grey — general/client
 
 const STATUS_STEPS = ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"];
 
@@ -59,17 +61,17 @@ function timeAgo(date: string | Date) {
 
 const PROMPTS = [
   {
-    q: "Do you want to know exactly what your business needs to grow?",
-    cta: "Get a free diagnosis",
+    q: "Is your business fully protected? Most businesses miss at least 2 compliance requirements. Let us check yours.",
+    cta: "Get a compliance check",
     href: "/bizdoc",
   },
   {
-    q: "Need brand identity or business automation?",
+    q: "Does your brand make clients trust you instantly? If not, Systemise can fix that in weeks.",
     cta: "Explore Systemise",
     href: "/systemise",
   },
   {
-    q: "Want to upskill yourself or your team?",
+    q: "Learn what actually works. AI-powered programs for founders, operators, and teams.",
     cta: "See Skills programs",
     href: "/skills",
   },
@@ -372,6 +374,68 @@ export default function ClientDashboard() {
           {/* === OVERVIEW TAB === */}
           {activeTab === "overview" && (
             <>
+              {/* Smart Insights — AI-powered next steps */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                {/* Card 1: What's happening now */}
+                <div className="rounded-xl p-4" style={{ backgroundColor: WHITE, border: `1px solid ${PRIMARY}08` }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: PRIMARY, opacity: 0.4 }}>Current Status</p>
+                  <p className="text-[13px] font-medium" style={{ color: DARK }}>{STATUS_MESSAGES[task.status] || "Your file is being processed."}</p>
+                </div>
+
+                {/* Card 2: What you might need next */}
+                <div className="rounded-xl p-4" style={{ backgroundColor: WHITE, border: `1px solid ${PRIMARY}08` }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#B48C4C" }}>Recommended Next</p>
+                  <p className="text-[13px] font-medium" style={{ color: DARK }}>
+                    {task.department === "bizdoc" || task.service?.toLowerCase().includes("cac")
+                      ? "Most businesses also need TIN and tax compliance after registration. Want us to handle that too?"
+                      : task.department === "systemise" || task.service?.toLowerCase().includes("website") || task.service?.toLowerCase().includes("brand")
+                      ? "Your system is being built. Want your team trained to use it properly? Skills can help."
+                      : "Your file is active. Need branding, a website, or automation? Systemise can help you grow faster."}
+                  </p>
+                  <button
+                    className="mt-3 text-[12px] font-medium px-3 py-1.5 rounded-full"
+                    style={{ backgroundColor: `${PRIMARY}10`, color: PRIMARY }}
+                    onClick={() => {
+                      const chatInput = document.querySelector('input[placeholder*="question"]') as HTMLInputElement;
+                      if (chatInput) { chatInput.value = "What else does my business need?"; chatInput.focus(); }
+                    }}
+                  >
+                    Ask my advisor
+                  </button>
+                </div>
+
+                {/* Card 3: Business reality question */}
+                <div className="rounded-xl p-4" style={{ backgroundColor: WHITE, border: `1px solid ${PRIMARY}08` }}>
+                  <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: PRIMARY, opacity: 0.4 }}>Business Check</p>
+                  <p className="text-[13px] font-medium" style={{ color: DARK }}>
+                    {task.status === "Completed"
+                      ? "Your file is done. Is your business also protected with the right contracts and agreements?"
+                      : "While we handle your file, ask yourself: if a premium client checks your website today, will they trust you?"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {[
+                  { label: "Talk to my advisor", action: () => {
+                    const chatInput = document.querySelector('input[placeholder*="question"]') as HTMLInputElement;
+                    if (chatInput) { chatInput.focus(); }
+                  }},
+                  { label: "Upload a document", action: () => toast("Document upload coming soon. Send via WhatsApp: +234 806 714 9356") },
+                  { label: "Book a call", action: () => window.open("https://wa.me/2348067149356?text=I'd like to book a call. My ref: " + task.ref, "_blank") },
+                ].map(btn => (
+                  <button
+                    key={btn.label}
+                    onClick={btn.action}
+                    className="px-4 py-2 rounded-full text-[12px] font-medium transition-colors"
+                    style={{ backgroundColor: `${PRIMARY}08`, color: PRIMARY, border: `1px solid ${PRIMARY}15` }}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+
               {/* Checklist */}
               {checklist.length > 0 && (
                 <div>
@@ -838,6 +902,8 @@ export default function ClientDashboard() {
           </p>
         </div>
       </main>
+      {/* Embedded AI Advisor Chat */}
+      <ChatWidget department="general" />
     </div>
   );
 }

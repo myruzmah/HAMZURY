@@ -384,3 +384,86 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   if (ENV.qwenApiKey) return invokeQwen(params);
   return invokeAnthropic(params);
 }
+
+// ─── Streaming entry point — returns a ReadableStream of SSE chunks ─────────
+export async function invokeLLMStream(
+  params: Pick<InvokeParams, "messages" | "maxTokens">,
+): Promise<ReadableStream<Uint8Array>> {
+  assertApiKey();
+  if (ENV.qwenApiKey) return streamQwen(params);
+  return streamAnthropic(params);
+}
+
+async function streamQwen(
+  params: Pick<InvokeParams, "messages" | "maxTokens">,
+): Promise<ReadableStream<Uint8Array>> {
+  const normalised = params.messages.map(m => ({
+    role: m.role as string,
+    content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+  }));
+
+  const response = await fetch(
+    "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+    {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${ENV.qwenApiKey}`,
+      },
+      body: JSON.stringify({
+        model: "qwen-plus",
+        max_tokens: params.maxTokens || 1024,
+        messages: normalised,
+        stream: true,
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Qwen stream error: ${response.status} – ${errorText}`);
+  }
+
+  return response.body as ReadableStream<Uint8Array>;
+}
+
+async function streamAnthropic(
+  params: Pick<InvokeParams, "messages" | "maxTokens">,
+): Promise<ReadableStream<Uint8Array>> {
+  const systemMsg = params.messages.find(m => m.role === "system");
+  const system = systemMsg
+    ? (typeof systemMsg.content === "string" ? systemMsg.content : JSON.stringify(systemMsg.content))
+    : undefined;
+
+  const filtered = params.messages
+    .filter(m => m.role === "user" || m.role === "assistant")
+    .map(m => ({
+      role: m.role as "user" | "assistant",
+      content: typeof m.content === "string" ? m.content : JSON.stringify(m.content),
+    }));
+
+  const body: Record<string, unknown> = {
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: params.maxTokens || 1024,
+    messages: filtered,
+    stream: true,
+  };
+  if (system) body.system = system;
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": ENV.anthropicApiKey,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Anthropic stream error: ${response.status} – ${errorText}`);
+  }
+
+  return response.body as ReadableStream<Uint8Array>;
+}

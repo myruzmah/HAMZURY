@@ -32,13 +32,23 @@ type ChatState =
   | "LEAD_PHONE"
   | "SUCCESS"
   | "TRACK_PHONE"
+  | "TRACK_REF"
+  | "REFERRAL_ASK"
+  | "REFERRAL_CODE"
+  | "REFERRAL_SOURCE"
   | "SCHEDULE_NAME"
   | "SCHEDULE_DATE"
   | "SCHEDULE_TIME"
   | "SCHEDULE_PHONE"
   | "AI_CHAT"
   | "DIRECT_TELL"
-  | "DIRECT_PACKAGE";
+  | "DIRECT_PACKAGE"
+  | "SELF_SERVICE"
+  | "PAYMENT_SHOW"
+  | "PAYMENT_CONFIRM"
+  | "POSITIONING_GUIDE"
+  | "CANT_EXPLAIN"
+  | "LANG_INPUT";
 
 type LeadData = {
   service?: string;
@@ -49,6 +59,12 @@ type LeadData = {
   schedDate?: string;
   schedTime?: string;
   selectedServices?: string[];
+  referralCode?: string;
+  referrerName?: string;
+  referralSourceType?: string;
+  notifyCso?: boolean;
+  /** Stores the next state to resume after referral capture */
+  postReferralState?: ChatState;
 };
 
 type Props = {
@@ -59,8 +75,8 @@ type Props = {
 };
 
 const TEAL = "#1B4D3E";   // BizDoc leaf green
-const GOLD = "#C9A97E";
-const CREAM = "#FAFAF8";
+const GOLD = "#B48C4C";
+const CREAM = "#FFFAF6";
 
 const SLOGANS = [
   "Without clarity, we cannot serve you better.",
@@ -73,11 +89,11 @@ const SLOGANS = [
 
 const PERSONA: Record<Department, { name: string; title: string; greeting: string; subtitle: string; color: string }> = {
   general: {
-    name: "Evelyn",
-    title: "HAMZURY Advisor",
-    greeting: "Welcome to HAMZURY. How can I help you today?",
+    name: "HAMZURY Advisor",
+    title: "HAMZURY Client Advisor",
+    greeting: "Welcome to HAMZURY.\n\nWe help businesses become ready to start, operate, grow, and scale through compliance, systems, and practical training.\n\nWhich language do you prefer?",
     subtitle: "Get helpful guidance on business registration, digital systems, and growth strategies.",
-    color: TEAL,
+    color: "#2D2D2D",
   },
   bizdoc: {
     name: "Hauwa",
@@ -91,14 +107,14 @@ const PERSONA: Record<Department, { name: string; title: string; greeting: strin
     title: "Systemise Advisor",
     greeting: "Welcome to Systemise. How can I help you?",
     subtitle: "Get guidance on websites, branding, automation, and digital growth systems.",
-    color: "#1E3A5F",
+    color: "#2563EB",
   },
   skills: {
     name: "Maryam",
     title: "Skills Advisor",
     greeting: "Welcome to Skills. We train people who want real market ability, not just certificates. What are you looking to learn?",
     subtitle: "Get guidance on bootcamps, digital skills training, and cohort programs.",
-    color: "#1B2A4A",
+    color: "#1E3A5F",
   },
 };
 
@@ -106,8 +122,11 @@ const SERVICES: Record<Department, { label: string; value: string }[]> = {
   general: [
     { label: "Business Registration (CAC)", value: "CAC" },
     { label: "Licensing and Permits", value: "License" },
+    { label: "Compliance Management", value: "ComplianceMgmt" },
+    { label: "Contract/Document Templates", value: "Templates" },
     { label: "Website or Digital Systems", value: "Website" },
     { label: "Social Media Management", value: "SocialMedia" },
+    { label: "AI Agent or Automation", value: "AIAgent" },
     { label: "Skills Training", value: "Training" },
     { label: "Full Business Architecture", value: "FullBuild" },
   ],
@@ -120,21 +139,31 @@ const SERVICES: Record<Department, { label: string; value: string }[]> = {
     { label: "Trademark and IP", value: "Trademark" },
     { label: "Foreign Business Registration", value: "Foreign" },
     { label: "SCUML Registration", value: "SCUML" },
+    { label: "Contract/Document Templates", value: "Templates" },
+    { label: "Compliance Management Sub", value: "ComplianceMgmt" },
+    { label: "Sector Compliance Roadmap", value: "SectorRoadmap" },
   ],
   systemise: [
     { label: "Website Design and Development", value: "Website" },
     { label: "Social Media Management", value: "SocialMedia" },
-    { label: "Brand Identity and Design", value: "Branding" },
+    { label: "Brand Identity and Positioning", value: "Branding" },
     { label: "Business Automation", value: "Automation" },
+    { label: "AI Agent (Custom Bot)", value: "AIAgent" },
     { label: "CRM and Lead Generation", value: "CRM" },
-    { label: "Podcast or Content Channel", value: "Content" },
+    { label: "Dashboard Build", value: "Dashboard" },
+    { label: "Content Strategy and Production", value: "Content" },
+    { label: "Support Retainer", value: "Retainer" },
   ],
   skills: [
-    { label: "Business Essentials Bootcamp", value: "BusinessBootcamp" },
-    { label: "Digital Marketing Intensive", value: "DigitalMarketing" },
-    { label: "Data Analysis Bootcamp", value: "DataAnalysis" },
-    { label: "AI Powered Business Bundle", value: "AIBundle" },
-    { label: "Custom Training for Teams", value: "CustomTraining" },
+    { label: "AI Founder Launchpad", value: "AIFounder" },
+    { label: "Vibe Coding for Founders", value: "VibeCoding" },
+    { label: "AI Sales Operator", value: "AISales" },
+    { label: "Service Business in 21 Days", value: "ServiceBiz21" },
+    { label: "Operations Automation Sprint", value: "OpsSprint" },
+    { label: "AI Marketing and Content Engine", value: "AIMarketing" },
+    { label: "Corporate Staff Training", value: "CorporateTraining" },
+    { label: "Robotics and Creative Tech Lab", value: "RoboticsLab" },
+    { label: "RIDI Sponsorship", value: "RIDI" },
   ],
 };
 
@@ -153,31 +182,41 @@ const PRICING: Record<string, { label: string; price: string; amount: number }> 
   Automation: { label: "Business Automation", price: "from \u20A6120,000", amount: 120000 },
   CRM: { label: "CRM & Lead Gen", price: "from \u20A6180,000", amount: 180000 },
   Content: { label: "Podcast/Content", price: "from \u20A6100,000", amount: 100000 },
-  BusinessBootcamp: { label: "Business Bootcamp", price: "\u20A635,000", amount: 35000 },
-  DigitalMarketing: { label: "Digital Marketing", price: "\u20A645,000", amount: 45000 },
-  DataAnalysis: { label: "Data Analysis", price: "\u20A650,000", amount: 50000 },
-  AIBundle: { label: "AI Business Bundle", price: "\u20A655,000", amount: 55000 },
-  CustomTraining: { label: "Custom Training", price: "Contact us", amount: 0 },
+  Templates: { label: "Contract/Document Templates", price: "from \u20A615,000", amount: 15000 },
+  ComplianceMgmt: { label: "Compliance Management Sub", price: "\u20A650,000/mo", amount: 50000 },
+  SectorRoadmap: { label: "Sector Compliance Roadmap", price: "\u20A630,000", amount: 30000 },
+  AIAgent: { label: "AI Agent (Custom Bot)", price: "from \u20A6150,000", amount: 150000 },
+  Dashboard: { label: "Dashboard Build", price: "from \u20A6200,000", amount: 200000 },
+  Retainer: { label: "Support Retainer", price: "from \u20A680,000/mo", amount: 80000 },
+  AIFounder: { label: "AI Founder Launchpad", price: "\u20A675,000", amount: 75000 },
+  VibeCoding: { label: "Vibe Coding for Founders", price: "\u20A665,000", amount: 65000 },
+  AISales: { label: "AI Sales Operator", price: "\u20A655,000", amount: 55000 },
+  ServiceBiz21: { label: "Service Business in 21 Days", price: "\u20A645,000", amount: 45000 },
+  OpsSprint: { label: "Operations Automation Sprint", price: "\u20A660,000", amount: 60000 },
+  AIMarketing: { label: "AI Marketing Engine", price: "\u20A655,000", amount: 55000 },
+  CorporateTraining: { label: "Corporate Staff Training", price: "Contact us", amount: 0 },
+  RoboticsLab: { label: "Robotics & Creative Tech", price: "\u20A645,000", amount: 45000 },
+  RIDI: { label: "RIDI Sponsorship", price: "Sponsored", amount: 0 },
+  Training: { label: "Skills Training", price: "from \u20A645,000", amount: 45000 },
   FullBuild: { label: "Full Business Setup", price: "from \u20A6500,000", amount: 500000 },
-  Training: { label: "Skills Training", price: "from \u20A635,000", amount: 35000 },
 };
 
 const TEASERS: Record<Department, string[]> = {
   general: [
-    "Need help structuring your business?",
-    "We help businesses get positioned and protected.",
+    "Not sure what your business needs?",
+    "We can help you figure it out.",
   ],
   bizdoc: [
-    "Need help with business registration?",
-    "Compliance sorted. Peace of mind delivered.",
+    "Documents, licences, compliance — handled.",
+    "Tell us your sector and we show you the path.",
   ],
   systemise: [
-    "Need a website or digital system?",
-    "We build brands that work while you sleep.",
+    "Still doing things manually?",
+    "We automate what slows your business down.",
   ],
   skills: [
-    "Ready to learn a new skill?",
-    "Our next cohort is filling up fast.",
+    "Build real skills that earn.",
+    "AI, coding, business — practical training.",
   ],
 };
 
@@ -229,6 +268,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   const [leadData, setLeadData] = useState<LeadData>({});
   const [aiMessages, setAiMessages] = useState<{ role: string; content: string }[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [userLang, setUserLang] = useState("english");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Notification state
@@ -257,6 +297,17 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   });
 
   const trpcUtils = trpc.useUtils();
+
+  // Bank details for payment step
+  const bankQuery = trpc.invoices.bankDetails.useQuery(undefined, { enabled: false });
+  const fetchBankDetails = async () => {
+    try {
+      const data = await trpcUtils.invoices.bankDetails.fetch();
+      const acct = department === "bizdoc" && data.bizdoc.configured ? data.bizdoc : data.general;
+      if (!acct.configured) return null;
+      return acct;
+    } catch { return null; }
+  };
 
   // Slide-up animation: set mounted after isOpen becomes true
   useEffect(() => {
@@ -304,7 +355,13 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       setTeasers([TEASERS[dept][0], TEASERS[dept][1]]);
     }, 6000);
 
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // Auto-dismiss teasers after 4 seconds of showing
+    const t3 = setTimeout(() => {
+      setTeasers([]);
+      setTeaserDismissed(true);
+    }, 10000);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [isControlled, isOpen, teaserDismissed, department]);
 
   const reset = useCallback(() => {
@@ -354,12 +411,35 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     if (!isOpen) { reset(); }
   }, [isOpen]);
 
+  /** Menu labels per language */
+  const MENU_LABELS: Record<string, { request: string; track: string; choose: string; guide: string; cant: string }> = {
+    english:  { request: "Start a request", track: "Track my work", choose: "Help me choose", guide: "Positioning Guide", cant: "I can't explain my problem" },
+    hausa:    { request: "Fara bukata", track: "Duba aikina", choose: "Taimaka min in zaba", guide: "Jagorar Kasuwanci", cant: "Ba zan iya bayyanawa ba" },
+    pidgin:   { request: "Start request", track: "Check my work", choose: "Help me choose", guide: "Business Guide", cant: "I no fit explain my problem" },
+    arabic:   { request: "ابدأ طلب", track: "تتبع عملي", choose: "ساعدني في الاختيار", guide: "دليل الأعمال", cant: "لا أستطيع شرح مشكلتي" },
+    french:   { request: "Faire une demande", track: "Suivre mon travail", choose: "Aidez-moi à choisir", guide: "Guide de positionnement", cant: "Je ne peux pas expliquer mon problème" },
+  };
+
+  /** Show main menu in the user's selected language */
+  const showMainButtons = () => {
+    const lang = userLang.toLowerCase();
+    const labels = MENU_LABELS[lang] || MENU_LABELS.english;
+    addBotOptions([
+      { label: labels.request, value: "SELF_SERVICE" },
+      { label: labels.track, value: "TRACK" },
+      { label: labels.choose, value: "GUIDANCE" },
+      { label: labels.guide, value: "POSITIONING_GUIDE" },
+      { label: labels.cant, value: "CANT_EXPLAIN" },
+    ]);
+    setChatState("PATHS");
+  };
+
   const showInitialPaths = () => {
     setShowInitTyping(true);
     setTimeout(() => {
       setShowInitTyping(false);
       addBotMsg(persona.greeting);
-      setChatState("PATHS");
+      setChatState("LANG_INPUT");
     }, 1200);
   };
 
@@ -381,6 +461,9 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     if (chatState === "LEAD_PHONE" || chatState === "SCHEDULE_PHONE" || chatState === "TRACK_PHONE") {
       const digits = text.replace(/\D/g, "");
       if (digits.length < 7) return "Please enter a valid phone number.";
+    }
+    if (chatState === "TRACK_REF") {
+      if (text.trim().length < 4) return "Please enter a valid reference or phone number.";
     }
     return "";
   };
@@ -410,24 +493,118 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     const newHistory = [...aiMessages, { role: "user", content: text }];
     setAiMessages(newHistory);
 
+    // Add a placeholder bot message that we will update with streaming tokens
+    const placeholderIdx = messages.length; // current length = index of next message
+    setMessages(prev => [...prev, { sender: "bot", text: "" }]);
+
     try {
-      const result = await trpcUtils.ask.answer.fetch({ question: text });
-      const answer = result.answer || "I could not process that. Please try again or schedule a call with our team.";
-      addBotMsg(answer);
+      const response = await fetch("/api/chat/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: text,
+          history: newHistory.slice(-10).map(h => ({ role: h.role, content: h.content })),
+          department,
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error("Stream failed");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullText = "";
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        // Parse SSE lines
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const data = line.slice(6).trim();
+          if (data === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(data);
+            const delta = parsed.choices?.[0]?.delta?.content;
+            if (delta) {
+              fullText += delta;
+              // Update the placeholder message in-place
+              setMessages(prev => {
+                const updated = [...prev];
+                // Find the last bot message with empty or partial text (our placeholder)
+                for (let i = updated.length - 1; i >= 0; i--) {
+                  if (updated[i].sender === "bot" && !updated[i].options) {
+                    updated[i] = { ...updated[i], text: fullText };
+                    break;
+                  }
+                }
+                return updated;
+              });
+            }
+          } catch {
+            // skip unparseable chunks
+          }
+        }
+      }
+
+      const answer = fullText || "Our team will answer that directly. Start a chat or reach out via the contact options.";
+      // Ensure final state
+      setMessages(prev => {
+        const updated = [...prev];
+        for (let i = updated.length - 1; i >= 0; i--) {
+          if (updated[i].sender === "bot" && !updated[i].options) {
+            updated[i] = { ...updated[i], text: answer };
+            break;
+          }
+        }
+        return updated;
+      });
       setAiMessages(prev => [...prev, { role: "assistant", content: answer }]);
 
-      // After a few exchanges, suggest next steps
-      if (newHistory.filter(m => m.role === "user").length >= 3) {
+      // After several exchanges, gently offer next steps
+      if (newHistory.filter(m => m.role === "user").length >= 5) {
         setTimeout(() => {
           addBotOptions([
-            { label: "I am ready to proceed", value: "DIRECT" },
-            { label: "Schedule a call", value: "SCHEDULE" },
-            { label: "Ask another question", value: "CONTINUE_CHAT" },
+            { label: "Let's start", value: "SELF_SERVICE_FROM_CHAT" },
+            { label: "Book a call", value: "SCHEDULE" },
           ]);
-        }, 500);
+        }, 800);
       }
     } catch {
-      addBotMsg("Something went wrong. Please try again or reach us on WhatsApp.");
+      // Fallback to non-streaming tRPC endpoint
+      try {
+        const result = await trpcUtils.ask.answer.fetch({ question: text });
+        const answer = result.answer || "Our team will answer that directly.";
+        setMessages(prev => {
+          const updated = [...prev];
+          for (let i = updated.length - 1; i >= 0; i--) {
+            if (updated[i].sender === "bot" && !updated[i].options) {
+              updated[i] = { ...updated[i], text: answer };
+              break;
+            }
+          }
+          return updated;
+        });
+        setAiMessages(prev => [...prev, { role: "assistant", content: answer }]);
+      } catch {
+        setMessages(prev => {
+          const updated = [...prev];
+          for (let i = updated.length - 1; i >= 0; i--) {
+            if (updated[i].sender === "bot" && !updated[i].options) {
+              updated[i] = { ...updated[i], text: "Something went wrong. Please try again or reach us on WhatsApp." };
+              break;
+            }
+          }
+          return updated;
+        });
+      }
     } finally {
       setAiLoading(false);
     }
@@ -439,18 +616,102 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   };
 
   const processLogic = useCallback((val: string) => {
+    // Language typed by client — store it and show main menu in that language
+    if (chatState === "LANG_INPUT") {
+      const lang = val.toLowerCase().trim();
+      setUserLang(lang);
+      const greetings: Record<string, string> = {
+        hausa: "Nagode. Yaya zan taimake ka yau?",
+        pidgin: "Thank you. How I fit help you today?",
+        arabic: "شكرا. كيف يمكنني مساعدتك اليوم؟",
+        french: "Merci. Comment puis-je vous aider?",
+      };
+      const greeting = greetings[lang] || "Great. How can I help you today?";
+      setTimeout(() => {
+        addBotMsg(greeting);
+        showMainButtons();
+      }, 400);
+      return;
+    }
+
     // From initial paths
     if (chatState === "PATHS") {
-      if (val === "TRACK") {
-        setTimeout(() => addBotMsg("Enter your registered phone number and I will show your project status."), 400);
-        setChatState("TRACK_PHONE");
+      // Language selection — switch AI language context and re-show menu
+      if (val === "LANG_EN") {
+        setTimeout(() => { addBotMsg("How can I help you today?"); showMainButtons(); }, 300);
         return;
       }
-      if (val === "GUIDANCE") {
+      if (val === "LANG_PID") {
+        setTimeout(() => { addBotMsg("How I fit help you today?"); showMainButtons(); }, 300);
+        return;
+      }
+      if (val === "LANG_AR") {
+        setTimeout(() => { addBotMsg("How can I help you today?"); showMainButtons(); }, 300);
+        return;
+      }
+      if (val === "LANG_FR") {
+        setTimeout(() => { addBotMsg("Comment puis-je vous aider?"); showMainButtons(); }, 300);
+        return;
+      }
+      if (val === "LANG_HA") {
+        setTimeout(() => { addBotMsg("Yaya zan taimake ka yau?"); showMainButtons(); }, 300);
+        return;
+      }
+      if (val === "TRACK") {
+        setTimeout(() => addBotMsg("Enter your reference (e.g. HMZ-17/3-9567) or phone number."), 400);
+        setChatState("TRACK_REF");
+        return;
+      }
+      if (val === "SELF_SERVICE") {
+        // Quick self-service: show service checklist
         setTimeout(() => {
-          addBotMsg("Let me help you find the right solution. Tell me about your business and what challenge you are facing right now.");
+          addBotMsg("Pick the services you need. You can select more than one.");
+          const allServices = SERVICES[department].map(s => {
+            const p = PRICING[s.value];
+            return { label: p ? `${s.label} (${p.price})` : s.label, value: s.value };
+          });
+          addBotOptions([...allServices, { label: "Done selecting", value: "DONE_SELECTING" }]);
+        }, 400);
+        setLeadData(prev => ({ ...prev, selectedServices: [] }));
+        setChatState("SELF_SERVICE");
+        return;
+      }
+      if (val === "GUIDANCE" || val === "QUESTION") {
+        setTimeout(() => {
+          addBotMsg("Were you referred to HAMZURY?");
+          addBotOptions([
+            { label: "Yes", value: "REFERRAL_YES" },
+            { label: "No", value: "REFERRAL_SKIP" },
+          ]);
+        }, 400);
+        setLeadData(prev => ({ ...prev, postReferralState: "AI_CHAT" as ChatState }));
+        setChatState("REFERRAL_ASK");
+        return;
+      }
+      if (val === "POSITIONING_GUIDE") {
+        setTimeout(() => {
+          addBotMsg("I'll help you understand what your business likely needs to operate properly and grow with less confusion. Tell me your business type or sector.");
         }, 400);
         setChatState("AI_CHAT");
+        return;
+      }
+      if (val === "CANT_EXPLAIN") {
+        setTimeout(() => {
+          addBotMsg("That's okay. You do not need to explain it perfectly. What feels most true right now?");
+          addBotOptions([
+            { label: "My business feels stuck", value: "STUCK" },
+            { label: "Things are scattered", value: "SCATTERED" },
+            { label: "I don't know what I need", value: "DONT_KNOW" },
+            { label: "I'm losing time", value: "LOSING_TIME" },
+            { label: "I need clarity", value: "NEED_CLARITY" },
+          ]);
+        }, 400);
+        setChatState("CANT_EXPLAIN");
+        return;
+      }
+      if (val === "SCHEDULE") {
+        setTimeout(() => addBotMsg("What is your name?"), 400);
+        setChatState("SCHEDULE_NAME");
         return;
       }
       if (val === "CONTACT_TEAM") {
@@ -458,36 +719,203 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         window.open(`https://wa.me/${wa}`, "_blank");
         return;
       }
-      if (val === "CHANGE_LANG") {
-        setTimeout(() => {
-          addBotMsg("Language selection is coming soon. For now, our team speaks English, Hausa, and Pidgin. How can I help you?");
-          addBotOptions([
-            { label: "Track my progress", value: "TRACK" },
-            { label: "I need guidance", value: "GUIDANCE" },
-            { label: "Contact team", value: "CONTACT_TEAM" },
-          ]);
+    }
+
+    if (chatState === "CANT_EXPLAIN") {
+      // User selected a feeling — use it as context for AI chat
+      setTimeout(() => {
+        addBotMsg("I understand. Let me ask you one thing to help narrow it down. What is frustrating you most right now?");
+      }, 400);
+      setLeadData(prev => ({ ...prev, context: `Client feeling: ${val}` }));
+      setChatState("AI_CHAT");
+      return;
+    }
+
+    // Self-service flow: tick services from list, then show payment, then lead capture
+    if (chatState === "SELF_SERVICE") {
+      if (val === "DONE_SELECTING") {
+        const selected = leadData.selectedServices || [];
+        if (selected.length === 0) {
+          setTimeout(() => addBotMsg("No worries. What is your full name so I can open a file?"), 400);
+          setChatState("LEAD_NAME");
+          return;
+        }
+        // Show pricing summary then payment details
+        setTimeout(async () => {
+          addBotMsg(buildPricingSummary(selected));
+          const acct = await fetchBankDetails();
+          if (acct) {
+            setTimeout(() => {
+              addBotMsg(`To proceed, make a transfer to:\n\nBank: ${acct.bankName}\nAccount: ${acct.accountNumber}\nName: ${acct.accountName}\n\nOnce you have paid, tap the button below.`);
+              addBotOptions([
+                { label: "I have paid", value: "PAID" },
+                { label: "I will pay later", value: "PAY_LATER" },
+              ]);
+              setChatState("PAYMENT_SHOW");
+            }, 800);
+          } else {
+            setTimeout(() => addBotMsg("What is your full name?"), 600);
+            setChatState("LEAD_NAME");
+          }
         }, 400);
         return;
       }
-      if (val === "DIRECT") {
+      // User selected a service — add it and show remaining
+      const updated = [...(leadData.selectedServices || []), val];
+      setLeadData(prev => ({ ...prev, selectedServices: updated }));
+      const p = PRICING[val];
+      setTimeout(() => {
+        addBotMsg(`Added: ${p?.label || val}. Anything else?`);
+        const remaining = SERVICES[department]
+          .filter(s => !updated.includes(s.value))
+          .map(s => {
+            const pr = PRICING[s.value];
+            return { label: pr ? `${s.label} (${pr.price})` : s.label, value: s.value };
+          });
+        addBotOptions([...remaining, { label: "Done selecting", value: "DONE_SELECTING" }]);
+      }, 300);
+      return;
+    }
+
+    // Payment flow
+    if (chatState === "PAYMENT_SHOW") {
+      if (val === "PAID") {
+        setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [PAYMENT CLAIMED]" }));
+        setTimeout(() => addBotMsg("Thanks for paying. What is your full name so I can open your file?"), 400);
+        setTimeout(() => addBotMsg("You can also send your payment receipt via WhatsApp to +234 806 714 9356 for faster verification."), 1200);
+        setChatState("LEAD_NAME");
+        return;
+      }
+      if (val === "PAY_LATER") {
+        setTimeout(() => addBotMsg("No problem, you can pay anytime. What is your full name so I can open a file?"), 400);
+        setChatState("LEAD_NAME");
+        return;
+      }
+    }
+
+    // Referral flow
+    if (chatState === "REFERRAL_ASK") {
+      if (val === "REFERRAL_YES") {
         setTimeout(() => {
+          addBotMsg("Enter your referral code or the referrer's name.");
+        }, 400);
+        setChatState("REFERRAL_CODE");
+        return;
+      }
+      if (val === "REFERRAL_SKIP") {
+        const nextState = leadData.postReferralState || "AI_CHAT";
+        if (nextState === "AI_CHAT") {
+          setTimeout(() => {
+            addBotMsg("Tell me about your business and what challenge you are facing right now.");
+          }, 400);
+        } else {
+          setTimeout(() => {
+            addBotMsg("Tell me what you need. Be as specific as you like.");
+          }, 400);
+        }
+        setChatState(nextState);
+        return;
+      }
+    }
+
+    if (chatState === "REFERRAL_CODE") {
+      setLeadData(prev => ({ ...prev, referralCode: val, referrerName: val }));
+      setTimeout(() => {
+        addBotMsg("How did this referral come to you?");
+        addBotOptions([
+          { label: "CSO", value: "CSO" },
+          { label: "Team member", value: "Team member" },
+          { label: "Client referral", value: "Client referral" },
+          { label: "Partner", value: "Partner" },
+        ]);
+      }, 400);
+      setChatState("REFERRAL_SOURCE");
+      return;
+    }
+
+    if (chatState === "REFERRAL_SOURCE") {
+      const isCso = val === "CSO";
+      setLeadData(prev => ({
+        ...prev,
+        referralSourceType: val,
+        notifyCso: isCso,
+      }));
+      if (isCso) {
+        setTimeout(() => addBotMsg("Thanks. I've noted that this request came through our CSO.\nWe'll keep that referral attached to your request as we continue."), 400);
+      } else {
+        setTimeout(() => addBotMsg("Thanks, referral noted. Let's continue."), 400);
+      }
+      const nextState = leadData.postReferralState || "AI_CHAT";
+      setTimeout(() => {
+        if (nextState === "AI_CHAT") {
+          addBotMsg("Tell me about your business and what challenge you are facing right now.");
+        } else {
           addBotMsg("Tell me what you need. Be as specific as you like.");
-        }, 400);
-        setChatState("DIRECT_TELL");
-        return;
-      }
-      if (val === "SCHEDULE") {
+        }
+        setChatState(nextState);
+      }, 800);
+      return;
+    }
+
+    // Track by reference or phone
+    if (chatState === "TRACK_REF") {
+      const trimmed = val.trim();
+      // Check if it looks like a reference (contains letters + numbers)
+      if (/[A-Za-z]/.test(trimmed) && /\d/.test(trimmed)) {
+        // Reference-based tracking
+        localStorage.setItem("hamzury-client-session", JSON.stringify({ ref: trimmed, name: "Client", expiresAt: Date.now() + 86400000 }));
         setTimeout(() => {
-          addBotMsg("Let me get you scheduled with our team. What is your name?");
-        }, 400);
-        setChatState("SCHEDULE_NAME");
+          addBotMsg("Looking up your reference...");
+          setTimeout(() => {
+            addBotMsg("Found your records. For full details and real-time updates, visit your dashboard.");
+            addBotOptions([
+              { label: "View My Dashboard", value: "VIEW_DASHBOARD" },
+              { label: "Back to Menu", value: "RESTART" },
+            ]);
+          }, 800);
+        }, 500);
+        setChatState("SUCCESS");
         return;
       }
+      // Fallback to phone-based tracking
+      const digits = trimmed.replace(/\D/g, "");
+      if (digits.length >= 10) {
+        localStorage.setItem("hamzury-client-session", JSON.stringify({ phone: digits, name: "Client", expiresAt: Date.now() + 86400000 }));
+        setTimeout(() => {
+          addBotMsg("Looking up your file...");
+          setTimeout(() => {
+            addBotMsg("Found your records. For full details and real-time updates, visit your dashboard.");
+            addBotOptions([
+              { label: "View My Dashboard", value: "VIEW_DASHBOARD" },
+              { label: "Back to Menu", value: "RESTART" },
+            ]);
+          }, 800);
+        }, 500);
+        setChatState("SUCCESS");
+        return;
+      }
+      addBotMsg("Please enter a valid reference (e.g. HMZ-17/3-9567) or phone number.");
+      return;
     }
 
     // Continue chat after AI suggestion
     if (val === "CONTINUE_CHAT") {
       setChatState("AI_CHAT");
+      return;
+    }
+
+    // From AI chat: user is ready to self-service
+    if (val === "SELF_SERVICE_FROM_CHAT") {
+      setTimeout(() => {
+        addBotMsg("Pick the services you need.");
+        const allServices = SERVICES[department].map(s => {
+          const p = PRICING[s.value];
+          return { label: p ? `${s.label} (${p.price})` : s.label, value: s.value };
+        });
+        addBotOptions([...allServices, { label: "Done selecting", value: "DONE_SELECTING" }]);
+      }, 400);
+      setLeadData(prev => ({ ...prev, selectedServices: [] }));
+      setChatState("SELF_SERVICE");
       return;
     }
 
@@ -533,13 +961,23 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           setChatState("LEAD_NAME");
           return;
         }
-        setTimeout(() => {
+        setTimeout(async () => {
           addBotMsg(buildPricingSummary(selected));
-          setTimeout(() => {
-            addBotMsg("I will open a file for this. What is your full name?");
-          }, 600);
+          const acct = await fetchBankDetails();
+          if (acct) {
+            setTimeout(() => {
+              addBotMsg(`To proceed, make a transfer to:\n\nBank: ${acct.bankName}\nAccount: ${acct.accountNumber}\nName: ${acct.accountName}\n\nOnce you have paid, tap the button below.`);
+              addBotOptions([
+                { label: "I have paid", value: "PAID" },
+                { label: "I will pay later", value: "PAY_LATER" },
+              ]);
+              setChatState("PAYMENT_SHOW");
+            }, 800);
+          } else {
+            setTimeout(() => addBotMsg("What is your full name?"), 600);
+            setChatState("LEAD_NAME");
+          }
         }, 400);
-        setChatState("LEAD_NAME");
         return;
       }
       // User selected an additional service
@@ -597,6 +1035,10 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           phone: finalData.phone,
           service: allServices,
           context: finalData.context,
+          referralCode: leadData.referralCode,
+          referrerName: leadData.referrerName,
+          referralSourceType: leadData.referralSourceType,
+          notifyCso: leadData.notifyCso,
         },
         {
           onSuccess: (result) => {
@@ -698,15 +1140,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       setLeadData({});
       setAiMessages([]);
       addBotMsg("How else can I help you?");
-      setTimeout(() => {
-        addBotOptions([
-          { label: "Track my progress", value: "TRACK" },
-          { label: "I need guidance", value: "GUIDANCE" },
-          { label: "Contact team", value: "CONTACT_TEAM" },
-          { label: "Change language", value: "CHANGE_LANG" },
-        ]);
-      }, 300);
-      setChatState("PATHS");
+      setTimeout(() => showMainButtons(), 300);
       return;
     }
 
@@ -745,7 +1179,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       className={
         isControlled
           ? "w-full h-full flex flex-col overflow-hidden"
-          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl rounded-2xl border border-[#0A1F1C]/10 inset-x-3 bottom-24 top-auto md:inset-auto md:bottom-24 md:right-4 md:w-[400px]"
+          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl rounded-2xl border border-[#1A1A1A]/10 inset-x-3 bottom-24 top-auto md:inset-auto md:bottom-24 md:right-4 md:w-[400px]"
       }
       style={isControlled ? {} : {
         backgroundColor: "white",
@@ -786,24 +1220,37 @@ export default function ChatWidget({ department = "general", open: externalOpen,
               onChange={e => { setInput(e.target.value); if (inputError) setInputError(""); }}
               onKeyDown={e => {
                 if (e.key === "Enter" && input.trim()) {
-                  // Transition to conversation mode
-                  addUserMsg(input.trim());
-                  setInput("");
-                  setChatState("AI_CHAT");
-                  handleAIChat(input.trim());
+                  // If in language input, process language then show menu
+                  if (chatState === "LANG_INPUT") {
+                    addUserMsg(input.trim());
+                    setInput("");
+                    processLogic(input.trim());
+                  } else {
+                    // Transition to conversation mode
+                    addUserMsg(input.trim());
+                    setInput("");
+                    setChatState("AI_CHAT");
+                    handleAIChat(input.trim());
+                  }
                 }
               }}
-              placeholder="Ask a question"
+              placeholder={chatState === "LANG_INPUT" ? "Type your language" : "Ask a question"}
               className="flex-1 rounded-full px-4 py-2.5 text-[13px] outline-none border-0"
               style={{ backgroundColor: "rgba(255,255,255,0.15)", color: "white", caretColor: "white" }}
             />
             <button
               onClick={() => {
                 if (input.trim()) {
-                  addUserMsg(input.trim());
-                  setInput("");
-                  setChatState("AI_CHAT");
-                  handleAIChat(input.trim());
+                  if (chatState === "LANG_INPUT") {
+                    addUserMsg(input.trim());
+                    setInput("");
+                    processLogic(input.trim());
+                  } else {
+                    addUserMsg(input.trim());
+                    setInput("");
+                    setChatState("AI_CHAT");
+                    handleAIChat(input.trim());
+                  }
                 }
               }}
               className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-transform hover:scale-105"
@@ -816,14 +1263,14 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
         {/* Three-dot menu dropdown */}
         {menuOpen && (
-          <div className="absolute left-3 top-14 bg-white rounded-xl shadow-lg border border-[#0A1F1C]/8 py-1 z-10 min-w-[180px]">
+          <div className="absolute left-3 top-14 bg-white rounded-xl shadow-lg border border-[#1A1A1A]/8 py-1 z-10 min-w-[180px]">
             <button
               onClick={() => {
                 setMenuOpen(false);
                 const wa = department === "bizdoc" ? "2348067149356" : "2349130700056";
                 window.open(`https://wa.me/${wa}`, "_blank");
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FFFAF6] transition-colors flex items-center gap-2"
               style={{ color: TEAL }}
             >
               <Phone size={14} />
@@ -835,7 +1282,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                 reset();
                 showInitialPaths();
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FFFAF6] transition-colors"
               style={{ color: "#DC2626" }}
             >
               Clear conversation
@@ -859,38 +1306,19 @@ export default function ChatWidget({ department = "general", open: externalOpen,
               <div className="flex justify-start mb-4">
                 <div
                   className="max-w-[85%] px-4 py-3 text-[13px] leading-relaxed rounded-2xl rounded-tl-sm"
-                  style={{ backgroundColor: "#F5F5F5", color: "#1D1D1F" }}
+                  style={{ backgroundColor: "#F5F5F5", color: "#1A1A1A" }}
                   dangerouslySetInnerHTML={{ __html: formatText(messages.find(m => m.sender === "bot" && m.text)?.text || "") }}
                 />
               </div>
             )}
 
-            {/* "Want help getting started?" + pills */}
-            <p className="text-[14px] font-semibold mb-1" style={{ color: "#1D1D1F" }}>
-              Want help getting started?
+            {/* Language prompt — client types freely */}
+            <p className="text-[14px] font-semibold mb-1" style={{ color: "#1A1A1A" }}>
+              Type your preferred language
             </p>
             <p className="text-[13px] mb-4" style={{ color: "#6B7280" }}>
-              Tell us a little about what you are looking for.
+              e.g. English, Hausa, Pidgin, Arabic, French
             </p>
-
-            {/* 4 vertical pill buttons */}
-            <div className="flex flex-col gap-2.5">
-              {[
-                { label: "Track my progress", value: "TRACK" },
-                { label: "I need guidance", value: "GUIDANCE" },
-                { label: "Contact team", value: "CONTACT_TEAM" },
-                { label: "Change language", value: "CHANGE_LANG" },
-              ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleOptionClick(opt.value, opt.label)}
-                  className="w-full text-left px-4 py-3 text-[13px] border rounded-full hover:border-[#C9A97E] hover:bg-[#FAFAF8] transition-all"
-                  style={{ borderColor: "rgba(10,31,28,0.12)", color: TEAL }}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
 
             {/* Spacer */}
             <div className="flex-1" />
@@ -899,7 +1327,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       </div>
 
       {/* ─── Footer disclaimer ─── */}
-      <div className="shrink-0 px-5 py-3 border-t border-[#0A1F1C]/5" style={{ backgroundColor: "white" }}>
+      <div className="shrink-0 px-5 py-3 border-t border-[#1A1A1A]/5" style={{ backgroundColor: "white" }}>
         <p className="text-center text-[11px]" style={{ color: "#9CA3AF" }}>
           By chatting, you agree to our{" "}
           <a href="/terms" target="_blank" rel="noopener noreferrer" className="underline hover:opacity-70">disclaimer</a>.
@@ -917,7 +1345,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       className={
         isControlled
           ? "w-full h-full flex flex-col overflow-hidden"
-          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl rounded-2xl border border-[#0A1F1C]/10 inset-x-3 bottom-24 top-auto md:inset-auto md:bottom-24 md:right-4 md:w-[400px]"
+          : "fixed z-50 flex flex-col overflow-hidden shadow-2xl rounded-2xl border border-[#1A1A1A]/10 inset-x-3 bottom-24 top-auto md:inset-auto md:bottom-24 md:right-4 md:w-[400px]"
       }
       style={isControlled ? {} : {
         backgroundColor: "white",
@@ -945,14 +1373,14 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
         {/* Three-dot menu dropdown */}
         {menuOpen && (
-          <div className="absolute left-3 top-14 bg-white rounded-xl shadow-lg border border-[#0A1F1C]/8 py-1 z-10 min-w-[180px]">
+          <div className="absolute left-3 top-14 bg-white rounded-xl shadow-lg border border-[#1A1A1A]/8 py-1 z-10 min-w-[180px]">
             <button
               onClick={() => {
                 setMenuOpen(false);
                 const wa = department === "bizdoc" ? "2348067149356" : "2349130700056";
                 window.open(`https://wa.me/${wa}`, "_blank");
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors flex items-center gap-2"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FFFAF6] transition-colors flex items-center gap-2"
               style={{ color: TEAL }}
             >
               <Phone size={14} />
@@ -964,7 +1392,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                 reset();
                 showInitialPaths();
               }}
-              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FAFAF8] transition-colors"
+              className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FFFAF6] transition-colors"
               style={{ color: "#DC2626" }}
             >
               Clear conversation
@@ -987,7 +1415,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                   }`}
                   style={{
                     backgroundColor: msg.sender === "user" ? persona.color : "white",
-                    color: msg.sender === "user" ? "#FAFAF8" : "#1D1D1F",
+                    color: msg.sender === "user" ? "#FFFAF6" : "#1A1A1A",
                     ...(msg.sender === "bot" ? { border: "1px solid rgba(10,31,28,0.06)" } : {}),
                   }}
                   dangerouslySetInnerHTML={{ __html: formatText(msg.text) }}
@@ -1000,7 +1428,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
                   <button
                     key={j}
                     onClick={() => handleOptionClick(opt.value, opt.label)}
-                    className="w-full text-left px-4 py-2.5 text-[13px] border rounded-full hover:border-[#C9A97E] hover:bg-[#FAFAF8] transition-all"
+                    className="w-full text-left px-4 py-2.5 text-[13px] border rounded-full hover:border-[#B48C4C] hover:bg-[#FFFAF6] transition-all"
                     style={{ borderColor: "rgba(10,31,28,0.12)", color: TEAL }}
                   >
                     {opt.label}
@@ -1012,7 +1440,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         ))}
         {aiLoading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-tl-sm bg-white border border-[#0A1F1C]/5">
+            <div className="rounded-2xl rounded-tl-sm bg-white border border-[#1A1A1A]/5">
               <TypingDots color={persona.color} />
             </div>
           </div>
@@ -1022,7 +1450,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
       {/* ─── Input pinned at bottom ─── */}
       {!inputDisabled && (
-        <div className="px-4 pt-2 pb-3 bg-white border-t border-[#0A1F1C]/5 shrink-0">
+        <div className="px-4 pt-2 pb-3 bg-white border-t border-[#1A1A1A]/5 shrink-0">
           {inputError && <p className="text-[11px] mb-1.5 px-1 text-red-500">{inputError}</p>}
           <div className="flex gap-2">
             <input
@@ -1076,7 +1504,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           {teasers.map((teaser, i) => (
             <div
               key={i}
-              className="bg-white rounded-xl shadow-lg border border-[#0A1F1C]/8 px-4 py-2.5 max-w-[240px] text-[13px] cursor-pointer animate-in slide-in-from-right-2 fade-in duration-300"
+              className="bg-white rounded-xl shadow-lg border border-[#1A1A1A]/8 px-4 py-2.5 max-w-[240px] text-[13px] cursor-pointer animate-in slide-in-from-right-2 fade-in duration-300"
               style={{ color: TEAL }}
               onClick={() => { setTeaserDismissed(true); setTeasers([]); setInternalOpen(true); setShowBadge(false); }}
             >
@@ -1120,7 +1548,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
       {/* Feedback popup — 1-5 star rating + message */}
       {feedbackOpen && (
-        <div className="fixed bottom-24 right-6 z-50 bg-white rounded-2xl shadow-2xl border border-[#0A1F1C]/10 p-5 w-72">
+        <div className="fixed bottom-24 right-6 z-50 bg-white rounded-2xl shadow-2xl border border-[#1A1A1A]/10 p-5 w-72">
           <div className="flex justify-between items-center mb-3">
             <p className="text-[14px] font-semibold" style={{ color: TEAL }}>Rate your experience</p>
             <button onClick={() => setFeedbackOpen(false)} className="opacity-40 hover:opacity-100"><X size={16} /></button>
@@ -1128,7 +1556,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           <div className="flex gap-1 mb-3">
             {[1, 2, 3, 4, 5].map(n => (
               <button key={n} onClick={() => setFeedbackRating(n)} className="transition-transform hover:scale-110">
-                <Star size={28} fill={n <= feedbackRating ? "#C9A97E" : "none"} stroke={n <= feedbackRating ? "#C9A97E" : "#D1D5DB"} strokeWidth={1.5} />
+                <Star size={28} fill={n <= feedbackRating ? "#B48C4C" : "none"} stroke={n <= feedbackRating ? "#B48C4C" : "#D1D5DB"} strokeWidth={1.5} />
               </button>
             ))}
           </div>

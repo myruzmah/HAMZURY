@@ -18,10 +18,10 @@ import {
 } from "lucide-react";
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
-const GREEN = "#86868B";   // Apple grey — general departments
-const DARK = "#1D1D1F";    // base dark
-const GOLD = "#C9A97E";    // accent
-const MILK = "#FAFAF8";    // background
+const GREEN = "#2D2D2D";   // Apple grey — general departments
+const DARK = "#1A1A1A";    // base dark
+const GOLD = "#B48C4C";    // accent
+const MILK = "#FFFAF6";    // background
 
 type Section = "overview" | "leads" | "partnerships" | "brandqa" | "affiliates" | "files";
 type LeadRow = { id: number; ref: string; name: string; contact: string; source: string; score: number; budget: string; timeline: string; service: string; status: "handoff_ready" | "qualifying" | "nurturing" | "handed_off" };
@@ -672,7 +672,7 @@ function BrandQASection() {
           <div className="px-4 pb-5 space-y-5 border-t" style={{ borderColor: `${DARK}06` }}>
             {[
               { title: "Tone Check", items: ["Calm — no urgency, no pressure", "Confident — no hedging, no over-explaining", "Strategic — focused on outcomes, not features", "Minimal — no clutter, no filler words", "Professional — no slang, no hype"] },
-              { title: "Visual Check", items: ["Colors: Green #0A1F1C / Milk #FAFAF8 / Gold #C9A97E", "Typography: Inter font family", "Layout: generous whitespace, clear hierarchy", "Imagery: premium, relevant, non-stock"] },
+              { title: "Visual Check", items: ["Colors: Green #2563EB / Milk #FFFAF6 / Gold #B48C4C", "Typography: Inter font family", "Layout: generous whitespace, clear hierarchy", "Imagery: premium, relevant, non-stock"] },
               { title: "Message Check", items: ["Core line present: \"No pressure. Just clarity.\"", "Value proposition clear in <10 seconds", "No misleading claims or overpromises", "Compliant with Nigerian business communication standards"] },
             ].map(({ title, items }) => (
               <div key={title} className="pt-4">

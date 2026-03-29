@@ -15,9 +15,9 @@ import {
 
 // ─── Brand (RIDI = gold primary) ─────────────────────────────────────────────
 const ORANGE = "#E86A2E";
-const GOLD   = "#C9A97E";   // RIDI primary
-const TEAL   = "#C9A97E";   // Alias — RIDI uses gold as primary
-const MILK   = "#FAFAF8";
+const GOLD   = "#B48C4C";   // RIDI primary
+const TEAL   = "#B48C4C";   // Alias — RIDI uses gold as primary
+const MILK   = "#FFFAF6";
 
 type Section = "overview" | "applications" | "funding" | "communities" | "cohort";
 

@@ -18,9 +18,9 @@ import {
 } from "lucide-react";
 
 // ─── Brand (HR = general → Apple grey) ───────────────────────────────────────
-const GREEN = "#86868B";   // Apple grey — general departments
-const GOLD  = "#C9A97E";
-const MILK  = "#FAFAF8";   // Milk white
+const GREEN = "#2D2D2D";   // Apple grey — general departments
+const GOLD  = "#B48C4C";
+const MILK  = "#FFFAF6";   // Milk white
 
 type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "itstudents" | "training" | "leaves" | "discipline" | "commissions" | "policy" | "reports";
 
@@ -82,11 +82,11 @@ const MOCK_PLANS = [
 
 const DEPT_DIST = [
   { dept: "BizDoc",    count: 0, color: "#1B4D3E" },
-  { dept: "Systemise", count: 0, color: "#0A1F1C" },
-  { dept: "CSO",       count: 0, color: "#0A1F1C" },
+  { dept: "Systemise", count: 0, color: "#2563EB" },
+  { dept: "CSO",       count: 0, color: "#2563EB" },
   { dept: "Skills",    count: 0, color: "#8B6914" },
   { dept: "BizDev",    count: 0, color: "#34A853" },
-  { dept: "RIDI",      count: 0, color: "#C9A97E" },
+  { dept: "RIDI",      count: 0, color: "#B48C4C" },
   { dept: "Finance",   count: 0, color: "#7B4F00" },
   { dept: "HR",        count: 0, color: "#2D5A27" },
 ];
@@ -340,8 +340,8 @@ function StaffSection({ staffList }: { staffList: typeof MOCK_STAFF }) {
 
   const deptColor = (dept: string) => {
     const map: Record<string, string> = {
-      CEO: "#0A1F1C", CSO: "#0A1F1C", BizDoc: "#1B4D3E", Systemise: "#0A1F1C",
-      Skills: "#8B6914", BizDev: "#34A853", Finance: "#7B4F00", RIDI: "#C9A97E", HR: "#2D5A27",
+      CEO: "#2563EB", CSO: "#2563EB", BizDoc: "#1B4D3E", Systemise: "#2563EB",
+      Skills: "#8B6914", BizDev: "#34A853", Finance: "#7B4F00", RIDI: "#B48C4C", HR: "#2D5A27",
     };
     return map[dept] ?? GREEN;
   };
@@ -1118,9 +1118,9 @@ const DEPT_OPTIONS = [
 ];
 
 function ITStudentsSection() {
-  const TEAL  = "#86868B";
-  const GOLD  = "#C9A97E";
-  const DARK  = "#1D1D1F";
+  const TEAL  = "#2D2D2D";
+  const GOLD  = "#B48C4C";
+  const DARK  = "#1A1A1A";
   const [form, setForm] = useState({ name: "", phone: "", email: "", skill: "", school: "", startDate: new Date().toISOString().split("T")[0], notes: "" });
   const [assigned, setAssigned] = useState<{ name: string; dept: string; date: string }[]>([]);
   const [newAssign, setNewAssign] = useState({ name: "", dept: "systemise", date: new Date().toISOString().split("T")[0] });
@@ -1341,8 +1341,8 @@ const HR_DEVICE_STAFF = [
 ];
 
 function HRPolicySection() {
-  const TEAL = "#86868B";
-  const GOLD = "#C9A97E";
+  const TEAL = "#2D2D2D";
+  const GOLD = "#B48C4C";
   const [expanded, setExpanded] = useState<number | null>(null);
   const [rollCallDate, setRollCallDate] = useState(new Date().toISOString().split("T")[0]);
   const [rollCall, setRollCall] = useState<Record<string, { device: string; health: string }>>({});

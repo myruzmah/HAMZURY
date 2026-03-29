@@ -13,6 +13,27 @@ export function useAuth(options?: UseAuthOptions) {
     options ?? {};
   const utils = trpc.useUtils();
 
+  // ─── Session expiry check — clear stale localStorage before querying ─────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("manus-runtime-user-info");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
+          localStorage.removeItem("manus-runtime-user-info");
+          localStorage.removeItem("hamzury-affiliate-session");
+          // Force redirect to login if on a protected page
+          if (typeof window !== "undefined" && window.location.pathname !== "/" && window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
+        }
+      }
+    } catch {
+      // Corrupted data — clear it
+      localStorage.removeItem("manus-runtime-user-info");
+    }
+  }, []);
+
   const meQuery = trpc.auth.me.useQuery(undefined, {
     retry: false,
     refetchOnWindowFocus: false,

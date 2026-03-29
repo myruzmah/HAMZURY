@@ -17,8 +17,8 @@ function timeAgo(date: string | Date): string {
   return new Date(date).toLocaleDateString();
 }
 
-const DARK = "#1D1D1F";
-const GOLD = "#C9A97E";
+const DARK = "#1A1A1A";
+const GOLD = "#B48C4C";
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);

@@ -115,7 +115,7 @@ function CopyBtn({ text, label, variant }: { text: string; label: string; varian
       className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg transition shrink-0"
       style={{
         background: copied ? "#16A34A" : isGold ? BRAND.gold : BRAND.federal,
-        color: copied ? "#fff" : isGold ? "#0A1F1C" : BRAND.white,
+        color: copied ? "#fff" : isGold ? "#2563EB" : BRAND.white,
       }}
     >
       {copied ? <Check size={12} /> : <Copy size={12} />}
@@ -188,7 +188,7 @@ function WithdrawalForm({ affiliateId, affiliateCode }: { affiliateId: number; a
   const inputClass = "w-full px-4 py-3 rounded-lg text-sm outline-none";
   const inputStyle = {
     border: "1.5px solid #D5CFC6",
-    background: "#FAFAF8",
+    background: "#FFFAF6",
     color: BRAND.text,
   };
 
@@ -383,7 +383,7 @@ function MarketingAssets({ affiliate }: { affiliate: AffiliateSession }) {
         <Link href="/templates">
           <span
             className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2.5 rounded-lg cursor-pointer shrink-0"
-            style={{ background: BRAND.gold, color: "#0A1F1C" }}
+            style={{ background: BRAND.gold, color: "#2563EB" }}
           >
             <ExternalLink size={12} />
             View Templates
@@ -421,7 +421,7 @@ function MarketingAssets({ affiliate }: { affiliate: AffiliateSession }) {
 // ─── League Table ─────────────────────────────────────────────────────────────
 
 const TIER_CONFIG = [
-  { name: "Elite",        min: 1,  max: 10, rate: 15, color: "#C9A97E", bg: "#FDF8F0" },
+  { name: "Elite",        min: 1,  max: 10, rate: 15, color: "#B48C4C", bg: "#FDF8F0" },
   { name: "Premier",      min: 11, max: 20, rate: 12, color: "#3B82F6", bg: "#EFF6FF" },
   { name: "Standard",     min: 21, max: 30, rate: 10, color: "#16A34A", bg: "#F0FDF4" },
   { name: "Entry",        min: 31, max: 40, rate: 8,  color: "#6B7280", bg: "#F9FAFB" },
@@ -560,7 +560,7 @@ function LeagueTable({
         style={{ border: "1px solid #E8E3DC", background: BRAND.white }}
       >
         <div className="px-5 py-4 flex items-center gap-2" style={{ borderBottom: "1px solid #E8E3DC" }}>
-          <Trophy size={16} style={{ color: "#C9A97E" }} />
+          <Trophy size={16} style={{ color: "#B48C4C" }} />
           <p className="text-sm font-semibold" style={{ color: BRAND.text }}>
             Affiliate League Table — Q2 2026
           </p>
@@ -569,7 +569,7 @@ function LeagueTable({
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
+              <tr style={{ background: "#FFFAF6", borderBottom: "1px solid #E8E3DC" }}>
                 <th className="text-left px-4 py-3 text-xs font-semibold w-16" style={{ color: "#888" }}>Rank</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Affiliate</th>
                 <th className="text-left px-4 py-3 text-xs font-semibold hidden sm:table-cell" style={{ color: "#888" }}>Tier</th>
@@ -865,7 +865,7 @@ export default function AffiliateDashboard() {
             {/* Referral link banner */}
             <div
               className="rounded-2xl p-5"
-              style={{ background: `linear-gradient(135deg, #0A1F1C 0%, #1B4D3E 100%)`, border: `1px solid ${BRAND.gold}30` }}
+              style={{ background: `linear-gradient(135deg, #2563EB 0%, #1B4D3E 100%)`, border: `1px solid ${BRAND.gold}30` }}
             >
               <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: BRAND.gold }}>
                 Your Referral Link
@@ -928,7 +928,7 @@ export default function AffiliateDashboard() {
                 >
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
+                      <tr style={{ background: "#FFFAF6", borderBottom: "1px solid #E8E3DC" }}>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>
                           Client
                         </th>
@@ -1034,7 +1034,7 @@ export default function AffiliateDashboard() {
               >
                 <table className="w-full text-sm">
                   <thead>
-                    <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
+                    <tr style={{ background: "#FFFAF6", borderBottom: "1px solid #E8E3DC" }}>
                       <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>
                         Ref
                       </th>
@@ -1181,7 +1181,7 @@ export default function AffiliateDashboard() {
                 >
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
+                      <tr style={{ background: "#FFFAF6", borderBottom: "1px solid #E8E3DC" }}>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Client</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold hidden sm:table-cell" style={{ color: "#888" }}>Service</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Rate</th>
@@ -1252,7 +1252,7 @@ export default function AffiliateDashboard() {
                 >
                   <table className="w-full text-sm">
                     <thead>
-                      <tr style={{ background: "#FAFAF8", borderBottom: "1px solid #E8E3DC" }}>
+                      <tr style={{ background: "#FFFAF6", borderBottom: "1px solid #E8E3DC" }}>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Date</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold" style={{ color: "#888" }}>Amount</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold hidden sm:table-cell" style={{ color: "#888" }}>Bank</th>
@@ -1301,7 +1301,7 @@ export default function AffiliateDashboard() {
           <div className="space-y-4">
             <div>
               <h2 className="text-base font-semibold flex items-center gap-2" style={{ color: BRAND.text }}>
-                <Trophy size={18} style={{ color: "#C9A97E" }} />
+                <Trophy size={18} style={{ color: "#B48C4C" }} />
                 Affiliate League Table
               </h2>
               <p className="text-sm mt-0.5" style={{ color: "#888" }}>

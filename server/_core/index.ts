@@ -12,6 +12,13 @@ import { getSessionCookieOptions } from "./cookies";
 import * as db from "../db";
 import { seedStaffUsers, syncStaffRoster } from "../seed-staff";
 import { runMigrations, seedTaxClients, seedMediaClients } from "../db";
+import { invokeLLMStream } from "./llm";
+import { buildSystemPrompt } from "../config/chat-config";
+
+/** Strip HTML tags from user input to prevent XSS in stored/reflected content */
+function sanitize(str: string): string {
+  return str.replace(/<[^>]*>/g, "").replace(/[<>]/g, "").trim();
+}
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -38,6 +45,31 @@ async function startServer() {
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ─── Force HTTPS in production (Railway sets x-forwarded-proto) ──────────
+  if (process.env.NODE_ENV === "production") {
+    app.use((req, res, next) => {
+      if (req.headers["x-forwarded-proto"] !== "https") {
+        return res.redirect(301, `https://${req.headers.host}${req.url}`);
+      }
+      next();
+    });
+  }
+
+  // ─── CORS configuration ──────────────────────────────────────────────────
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    const allowed = ["https://hamzury.com", "https://www.hamzury.com", "http://localhost:5173"];
+    if (origin && allowed.includes(origin)) {
+      res.setHeader("Access-Control-Allow-Origin", origin);
+      res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.setHeader("Access-Control-Allow-Credentials", "true");
+    }
+    if (req.method === "OPTIONS") return res.sendStatus(204);
+    next();
+  });
+
   // ─── Staff Login — role-based, env-password-gated ────────────────────────
   app.post("/api/staff-login", async (req, res) => {
     try {
@@ -108,9 +140,25 @@ async function startServer() {
     "HMZ014-26/3": "rabilu@hamzury.com",
   };
 
+  // ─── Login rate limiter (10 attempts per 15 minutes per IP) ──────────────
+  const loginRateMap = new Map<string, number[]>();
+  const LOGIN_RATE_WINDOW = 15 * 60 * 1000;
+  const LOGIN_RATE_LIMIT = 10;
+
   // ─── Unified Staff ID+Password Login ─────────────────────────────────────
   app.post("/api/login", async (req, res) => {
     try {
+      // Rate limit by IP
+      const forwarded = req.headers["x-forwarded-for"];
+      const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip || "unknown";
+      const now = Date.now();
+      const hits = (loginRateMap.get(ip) || []).filter(ts => now - ts < LOGIN_RATE_WINDOW);
+      if (hits.length >= LOGIN_RATE_LIMIT) {
+        return res.status(429).json({ error: "Too many login attempts. Please wait 15 minutes." });
+      }
+      hits.push(now);
+      loginRateMap.set(ip, hits);
+
       const { staffId, password } = req.body ?? {};
       if (!staffId || !password) return res.status(400).json({ error: "Staff ID and password are required." });
 
@@ -436,6 +484,96 @@ async function startServer() {
   });
   // ─────────────────────────────────────────────────────────────────────────
 
+  // ─── AI Chat Streaming ──────────────────────────────────────────────────────
+  const chatStreamRateMap = new Map<string, number[]>();
+  const CHAT_RATE_WINDOW = 10 * 60 * 1000;
+  const CHAT_RATE_LIMIT = 15;
+
+  app.post("/api/chat/stream", async (req, res) => {
+    try {
+      // Rate limit
+      const forwarded = req.headers["x-forwarded-for"];
+      const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip || "unknown";
+      const now = Date.now();
+      const hits = (chatStreamRateMap.get(ip) || []).filter(ts => now - ts < CHAT_RATE_WINDOW);
+      if (hits.length >= CHAT_RATE_LIMIT) {
+        return res.status(429).json({ error: "Too many requests. Please wait a few minutes." });
+      }
+      hits.push(now);
+      chatStreamRateMap.set(ip, hits);
+
+      const { question, history, department } = req.body ?? {};
+      if (!question || typeof question !== "string" || question.length > 1000) {
+        return res.status(400).json({ error: "Invalid question." });
+      }
+
+      const cleanQuestion = sanitize(question);
+
+      const systemPrompt = buildSystemPrompt(department as string);
+
+      const historyMessages = Array.isArray(history)
+        ? history.slice(-10).map((h: { role: string; content: string }) => ({
+            role: h.role as "user" | "assistant",
+            content: sanitize(String(h.content).slice(0, 500)),
+          }))
+        : [];
+
+      const stream = await invokeLLMStream({
+        messages: [
+          { role: "system", content: systemPrompt },
+          ...historyMessages,
+          { role: "user", content: cleanQuestion },
+        ],
+      });
+
+      // Pipe the SSE stream to the client
+      res.setHeader("Content-Type", "text/event-stream");
+      res.setHeader("Cache-Control", "no-cache");
+      res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no");
+
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+
+      const pump = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            res.write("data: [DONE]\n\n");
+            res.end();
+            return;
+          }
+          const chunk = decoder.decode(value, { stream: true });
+          // Forward the SSE lines from the upstream API
+          res.write(chunk);
+        }
+      };
+
+      req.on("close", () => {
+        reader.cancel().catch(() => {});
+      });
+
+      await pump();
+    } catch (err) {
+      console.error("[chat/stream] error:", err);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Chat stream failed." });
+      } else {
+        res.end();
+      }
+    }
+  });
+
+  // ─── Health Check ──────────────────────────────────────────────────────────
+  app.get("/api/health", async (_req, res) => {
+    try {
+      const dbMod = await import("../db").then(m => m.getDb());
+      res.json({ status: "ok", db: dbMod ? "connected" : "disconnected", timestamp: new Date().toISOString() });
+    } catch {
+      res.status(503).json({ status: "error", db: "disconnected" });
+    }
+  });
+
   // ─── SEO: sitemap.xml ──────────────────────────────────────────────────────
   app.get("/sitemap.xml", (_req, res) => {
     const base = process.env.SITE_URL || "https://hamzury.com";
@@ -451,6 +589,13 @@ async function startServer() {
       { loc: "/skills/ceo", changefreq: "monthly", priority: "0.6" },
       { loc: "/systemise/cto", changefreq: "monthly", priority: "0.6" },
       { loc: "/affiliate", changefreq: "monthly", priority: "0.5" },
+      { loc: "/pricing", changefreq: "monthly", priority: "0.7" },
+      { loc: "/team", changefreq: "monthly", priority: "0.5" },
+      { loc: "/ridi", changefreq: "monthly", priority: "0.6" },
+      { loc: "/alumni", changefreq: "monthly", priority: "0.5" },
+      { loc: "/metfix", changefreq: "monthly", priority: "0.5" },
+      { loc: "/skills/programs", changefreq: "monthly", priority: "0.7" },
+      { loc: "/training", changefreq: "monthly", priority: "0.4" },
       { loc: "/privacy", changefreq: "yearly", priority: "0.3" },
       { loc: "/terms", changefreq: "yearly", priority: "0.3" },
     ];

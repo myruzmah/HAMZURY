@@ -3,10 +3,10 @@ import { Link } from "wouter";
 import { Home, X } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 
-const TEAL  = "#86868B";   // Apple grey — general
-const GOLD  = "#C9A97E";
-const CREAM = "#FAFAF8";   // Milk white
-const DARK  = "#1D1D1F";
+const TEAL  = "#2D2D2D";   // Apple grey — general
+const GOLD  = "#B48C4C";
+const CREAM = "#FFFAF6";   // Milk white
+const DARK  = "#1A1A1A";
 
 interface StaffMember {
   name: string;
@@ -25,7 +25,7 @@ const TEAM: StaffMember[] = [
     role: "Chief Executive Officer",
     dept: "HAMZURY",
     initials: "II",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Leads HAMZURY's strategy, growth, and partnerships. 5 years building business infrastructure across Nigeria. Every department reports to this desk.",
   },
   {
@@ -52,7 +52,7 @@ const TEAM: StaffMember[] = [
     role: "Chief Success Officer",
     dept: "CSO Division",
     initials: "TB",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Manages every client relationship from first contact to final delivery. No client ever needs to chase HAMZURY.",
   },
   {
@@ -61,7 +61,7 @@ const TEAM: StaffMember[] = [
     role: "CSO Assistant & Media",
     dept: "CSO Division",
     initials: "MY",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Supports client success operations and manages media communications. Bridges client needs with internal teams.",
   },
   {
@@ -70,7 +70,7 @@ const TEAM: StaffMember[] = [
     role: "Business Development & HR",
     dept: "BizDev & HR",
     initials: "KD",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Drives lead generation, strategic partnerships, and talent acquisition. Also oversees AI content strategy.",
   },
   {
@@ -79,7 +79,7 @@ const TEAM: StaffMember[] = [
     role: "Business Development & Podcast",
     dept: "BizDev",
     initials: "FR",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Builds partnerships and manages HAMZURY's podcast operations. Combines relationship building with content creation.",
   },
   {
@@ -88,7 +88,7 @@ const TEAM: StaffMember[] = [
     role: "Finance & Brand Officer",
     dept: "Finance",
     initials: "AB",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Manages financial planning, reporting, and brand consistency. Every naira is tracked. Every asset is on-brand.",
   },
   {
@@ -97,7 +97,7 @@ const TEAM: StaffMember[] = [
     role: "Skills Lead / Cohort Manager",
     dept: "HAMZURY Skills",
     initials: "AM",
-    color: "#1B2A4A",
+    color: "#1E3A5F",
     bio: "Designs and delivers HAMZURY's education programmes. Manages cohort scheduling, curriculum, and learner outcomes.",
   },
   {
@@ -106,7 +106,7 @@ const TEAM: StaffMember[] = [
     role: "Skills / Code Instructor",
     dept: "HAMZURY Skills",
     initials: "DJ",
-    color: "#1B2A4A",
+    color: "#1E3A5F",
     bio: "Technical instructor for coding and digital skills cohorts. Turns beginners into builders.",
   },
   {
@@ -115,7 +115,7 @@ const TEAM: StaffMember[] = [
     role: "Media Manager",
     dept: "Media",
     initials: "HK",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Creates and manages content across all HAMZURY social platforms. Storytelling that builds trust and converts.",
   },
   {
@@ -124,7 +124,7 @@ const TEAM: StaffMember[] = [
     role: "Video & Sound Producer",
     dept: "Media",
     initials: "SL",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Produces all video and audio content. Podcast production, client testimonials, and brand visuals.",
   },
   {
@@ -142,7 +142,7 @@ const TEAM: StaffMember[] = [
     role: "Security & Operations",
     dept: "Operations",
     initials: "RB",
-    color: "#0A1F1C",
+    color: "#2563EB",
     bio: "Manages physical security, office operations, and logistics. Keeps the building and team safe.",
   },
 ];

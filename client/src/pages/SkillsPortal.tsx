@@ -6,6 +6,7 @@ import {
   ArrowRight, ChevronDown,
   Users, GraduationCap, Star, Target,
   Lightbulb, BookOpen, X, Loader2, Menu,
+  Calendar, Clock, CheckCircle,
 } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 
@@ -13,10 +14,10 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
    HAMZURY SKILLS PORTAL. /skills
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const DARK  = "#1B2A4A";   // Dark navy blue. Skills primary
-const GOLD  = "#C9A97E";   // Gold accent (5% usage)
+const DARK  = "#1E3A5F";   // Dark navy blue. Skills primary
+const GOLD  = "#B48C4C";   // Gold accent (5% usage)
 const TEXT  = "#1A1A1A";
-const BG    = "#FAFAF8";   // Milk white background
+const BG    = "#FFFAF6";   // Milk white background
 const CREAM = "#F5F3EF";   // Soft cream for cards
 const W     = "#FFFFFF";
 
@@ -522,6 +523,160 @@ const COURSE_BLUEPRINTS: CourseBlueprint[] = [
 
 
 
+// ── CALENDAR STATUS HELPERS ──────────────────────────────────────────────────
+function CalendarStatusBadge({ status }: { status: string }) {
+  const map: Record<string, { label: string; bg: string; text: string }> = {
+    upcoming:     { label: "Upcoming",     bg: `${DARK}12`, text: DARK },
+    registration: { label: "Registration Open", bg: `${GOLD}20`, text: "#8B6914" },
+    active:       { label: "Active",       bg: "#16A34A18", text: "#15803D" },
+    support:      { label: "Support Window", bg: "#3B82F615", text: "#1D4ED8" },
+    completed:    { label: "Completed",    bg: `${TEXT}10`, text: `${TEXT}88` },
+  };
+  const s = map[status] ?? { label: status, bg: `${TEXT}10`, text: TEXT };
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wide"
+      style={{ backgroundColor: s.bg, color: s.text }}>
+      {status === "active" && <CheckCircle size={11} />}
+      {status === "registration" && <Calendar size={11} />}
+      {s.label}
+    </span>
+  );
+}
+
+function formatDate(d: string | null | undefined) {
+  if (!d) return "TBD";
+  return new Date(d + "T00:00:00").toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+}
+
+function CalendarSection() {
+  const { data: calendar, isLoading } = trpc.skillsCalendar.list.useQuery();
+
+  return (
+    <section id="calendar" className="py-20 md:py-28 px-6" style={{ backgroundColor: W }}>
+      <div className="max-w-6xl mx-auto">
+        <p className="text-[11px] font-bold tracking-[0.25em] uppercase mb-3" style={{ color: GOLD }}>PROGRAM CALENDAR</p>
+        <h2 className="text-[clamp(24px,3.5vw,36px)] font-light mb-2" style={{ color: TEXT }}>Upcoming quarters.</h2>
+        <p className="text-[14px] mb-4 opacity-50" style={{ color: TEXT }}>Three tracks run Monday to Wednesday. Robotics lab on Thursday and Friday.</p>
+
+        {/* Weekly rhythm note */}
+        <div className="flex flex-wrap gap-3 mb-10">
+          {[
+            { day: "Mon-Wed", desc: "Track sessions", icon: BookOpen },
+            { day: "Thu-Fri", desc: "Robotics lab", icon: Lightbulb },
+          ].map(r => (
+            <div key={r.day} className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12px]"
+              style={{ backgroundColor: `${DARK}08`, border: `1px solid ${DARK}12` }}>
+              <r.icon size={13} style={{ color: DARK }} />
+              <span className="font-semibold" style={{ color: DARK }}>{r.day}</span>
+              <span style={{ color: `${TEXT}88` }}>{r.desc}</span>
+            </div>
+          ))}
+        </div>
+
+        {isLoading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 size={22} className="animate-spin" style={{ color: GOLD }} />
+            <span className="ml-3 text-sm" style={{ color: `${TEXT}55` }}>Loading calendar...</span>
+          </div>
+        )}
+
+        {!isLoading && (!calendar || calendar.length === 0) && (
+          <div className="rounded-2xl border p-8 text-center" style={{ borderColor: `${DARK}15`, backgroundColor: `${DARK}06` }}>
+            <Calendar size={32} className="mx-auto mb-3 opacity-20" style={{ color: TEXT }} />
+            <p className="text-sm font-medium" style={{ color: TEXT }}>Calendar coming soon.</p>
+            <p className="text-xs mt-1 opacity-50" style={{ color: TEXT }}>Check back for upcoming quarter dates.</p>
+          </div>
+        )}
+
+        {!isLoading && calendar && calendar.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            {(calendar as any[]).map((q: any) => (
+              <div key={q.id} className="rounded-2xl border overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-md"
+                style={{ borderColor: `${DARK}15`, backgroundColor: BG }}>
+                {/* Card header */}
+                <div className="px-6 pt-6 pb-4" style={{ borderBottom: `1px solid ${DARK}10` }}>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div>
+                      <p className="text-[18px] font-semibold" style={{ color: DARK }}>{q.quarter?.replace("-", " ")}</p>
+                      {q.theme && <p className="text-[13px] italic mt-0.5" style={{ color: GOLD }}>{q.theme}</p>}
+                    </div>
+                    <CalendarStatusBadge status={q.status ?? q.calendarStatus ?? "upcoming"} />
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px]" style={{ color: `${TEXT}66` }}>
+                    <Calendar size={11} />
+                    <span>Registration: {formatDate(q.registrationStart)} - {formatDate(q.registrationEnd)}</span>
+                  </div>
+                </div>
+
+                {/* Tracks */}
+                <div className="px-6 py-4 space-y-3">
+                  <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: `${TEXT}44` }}>TRACKS (Mon-Wed)</p>
+                  {[
+                    { name: q.track1Name, time: q.track1Time || "8:00 AM - 10:00 AM", num: 1 },
+                    { name: q.track2Name, time: q.track2Time || "10:30 AM - 12:30 PM", num: 2 },
+                    { name: q.track3Name, time: q.track3Time || "1:30 PM - 3:30 PM", num: 3 },
+                  ].filter(t => t.name).map(t => (
+                    <div key={t.num} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5"
+                        style={{ backgroundColor: `${DARK}12`, color: DARK }}>{t.num}</div>
+                      <div>
+                        <p className="text-[13px] font-medium" style={{ color: TEXT }}>{t.name}</p>
+                        <p className="text-[11px] flex items-center gap-1" style={{ color: `${TEXT}55` }}>
+                          <Clock size={10} /> {t.time}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {q.roboticsName && (
+                    <>
+                      <p className="text-[10px] font-bold tracking-[0.2em] uppercase pt-2" style={{ color: `${TEXT}44` }}>
+                        ROBOTICS ({q.roboticsDays || "Thu-Fri"})
+                      </p>
+                      <div className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                          style={{ backgroundColor: `${GOLD}20` }}>
+                          <Lightbulb size={11} style={{ color: GOLD }} />
+                        </div>
+                        <div>
+                          <p className="text-[13px] font-medium" style={{ color: TEXT }}>{q.roboticsName}</p>
+                          <p className="text-[11px] flex items-center gap-1" style={{ color: `${TEXT}55` }}>
+                            <Clock size={10} /> {q.roboticsTime || "10:00 AM - 1:00 PM"}
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Key dates */}
+                <div className="px-6 pb-6 pt-2">
+                  <div className="rounded-xl p-4 space-y-2" style={{ backgroundColor: `${DARK}06` }}>
+                    <p className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: `${TEXT}44` }}>KEY DATES</p>
+                    {[
+                      { label: "Orientation", date: q.orientationDate },
+                      { label: "Classes", date: `${formatDate(q.classesStart)} - ${formatDate(q.classesEnd)}` },
+                      { label: "Graduation", date: q.graduationDate },
+                      ...(q.executiveCircleStart ? [{ label: "Executive Circle", date: `${formatDate(q.executiveCircleStart)} - ${formatDate(q.executiveCircleEnd)}` }] : []),
+                    ].map(d => (
+                      <div key={d.label} className="flex items-center justify-between text-[12px]">
+                        <span style={{ color: `${TEXT}66` }}>{d.label}</span>
+                        <span className="font-medium" style={{ color: DARK }}>
+                          {typeof d.date === "string" && d.date.includes("-") && !d.date.includes(" - ") ? formatDate(d.date) : d.date}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
 // ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function SkillsPortal() {
   const [scrolled, setScrolled] = useState(false);
@@ -615,10 +770,10 @@ export default function SkillsPortal() {
       <section className="min-h-screen flex flex-col justify-center px-6 md:px-[8%] max-w-[1200px] mx-auto pt-16">
         <span className="text-xs tracking-[3px] font-normal mb-6 uppercase" style={{ color: GOLD }}>Business Education</span>
         <h1 className="text-[clamp(40px,7vw,72px)] leading-[1.05] font-normal tracking-tight mb-6" style={{ color: TEXT }}>
-          Skills that build<br />real businesses.
+          Learn what<br />actually works.
         </h1>
         <p className="text-[clamp(16px,2vw,20px)] leading-relaxed font-light max-w-[560px] mb-12" style={{ color: `${TEXT}CC` }}>
-          Taught by operators. Learn what works, then execute.
+          Practical training for founders, operators, and teams. Build income, capability, and real market ability.
         </p>
         <div className="flex flex-wrap gap-4">
           <button onClick={() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" })}
@@ -792,23 +947,11 @@ export default function SkillsPortal() {
             ))}
           </div>
 
-          {/* Our Calendar */}
-          <div className="rounded-2xl border p-6 md:p-8" style={{ borderColor: `${DARK}20`, backgroundColor: `${DARK}08` }}>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <p className="text-[11px] font-bold tracking-[0.25em] uppercase mb-1" style={{ color: GOLD }}>OUR CALENDAR</p>
-                <h3 className="text-[20px] font-light mb-1" style={{ color: TEXT }}>Next cohorts starting soon.</h3>
-                <p className="text-[13px] opacity-50" style={{ color: TEXT }}>Digital Marketing · Business Essentials · IT Foundations · CEO Development</p>
-              </div>
-              <button onClick={() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" })}
-                className="px-6 py-3 rounded-xl text-[13px] font-semibold transition-all hover:-translate-y-0.5 flex-shrink-0"
-                style={{ backgroundColor: DARK, color: "#FFFFFF" }}>
-                Check Availability →
-              </button>
-            </div>
-          </div>
         </div>
       </section>
+
+      {/* ── UPCOMING PROGRAMS CALENDAR ── */}
+      <CalendarSection />
 
       {/* ── HALS - ONLINE LMS ── */}
       <section className="py-12 px-6 border-t" style={{ borderColor: `${TEXT}10`, backgroundColor: BG }}>
@@ -934,7 +1077,7 @@ export default function SkillsPortal() {
       </footer>
 
       {/* ── MOBILE BOTTOM BAR ── */}
-      <MotivationalQuoteBar color="#1B2A4A" />
+      <MotivationalQuoteBar color="#1E3A5F" />
       <div className="md:hidden h-10" />
     </div>
   );

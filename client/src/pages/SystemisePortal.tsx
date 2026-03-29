@@ -14,9 +14,9 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
    SYSTEMIZE PORTAL. /systemise
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const G  = "#0A1F1C";   // Dark teal — Systemise primary
-const Au = "#C9A97E";   // Gold accent (5% usage)
-const Cr = "#FAFAF8";   // Milk white background
+const G  = "#2563EB";   // Authority blue — Systemise primary
+const Au = "#B48C4C";   // Gold accent (5% usage)
+const Cr = "#FFFAF6";   // Milk white background
 const W  = "#FFFFFF";
 
 // ── WHAT YOU GET accordion ────────────────────────────────────────────────────
@@ -960,10 +960,10 @@ export default function SystemizePortal() {
 
       {/* ─── HERO - UNTOUCHED ─── */}
       <section className="min-h-[calc(100vh-72px)] flex flex-col justify-center px-6 md:px-[8%] max-w-[1200px] mx-auto pt-[72px]">
-        <span className="text-[#C9A97E] uppercase text-xs tracking-[3px] font-normal mb-6">
+        <span className="text-[#B48C4C] uppercase text-xs tracking-[3px] font-normal mb-6">
           Strategy & Automation Studio
         </span>
-        <h1 className="text-[clamp(40px,7vw,72px)] leading-[1.05] font-normal text-[#0A1F1C] tracking-tight mb-6">
+        <h1 className="text-[clamp(40px,7vw,72px)] leading-[1.05] font-normal text-[#2563EB] tracking-tight mb-6">
           Clarity first.
           <br />
           Systems that scale.
@@ -974,7 +974,7 @@ export default function SystemizePortal() {
         <div className="flex flex-wrap items-center gap-4">
           <Button
             onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="bg-[#0A1F1C] hover:bg-[#0d2e28] text-white px-10 py-6 rounded-lg text-sm font-medium uppercase tracking-[1px] shadow-lg shadow-[#0A1F1C]/20 hover:-translate-y-1 transition-all gap-3"
+            className="bg-[#2563EB] hover:bg-[#2F86FF] text-white px-10 py-6 rounded-lg text-sm font-medium uppercase tracking-[1px] shadow-lg shadow-[#2563EB]/20 hover:-translate-y-1 transition-all gap-3"
           >
             Business Blueprint <ArrowRight className="w-5 h-5" />
           </Button>
@@ -1106,7 +1106,7 @@ export default function SystemizePortal() {
                 {pagedBiz.map((biz) => (
                   <button key={biz.id}
                     onClick={() => { setSelectedBiz(biz.id); setActiveBpTab(0); }}
-                    className="rounded-2xl p-4 text-left transition-all duration-200 border hover:border-[#0A1F1C] hover:shadow-md"
+                    className="rounded-2xl p-4 text-left transition-all duration-200 border hover:border-[#2563EB] hover:shadow-md"
                     style={{ backgroundColor: W, borderColor: "rgba(10,31,28,0.10)" }}>
                     <p className="text-[14px] font-bold mb-1" style={{ color: G }}>{biz.label}</p>
                     <p className="text-[11px] leading-tight opacity-60" style={{ color: G }}>{biz.tagline.split(".")[0].trim()}</p>
@@ -1369,7 +1369,7 @@ export default function SystemizePortal() {
       </footer>
 
       {/* ─── MOBILE BOTTOM BAR ─── */}
-      <MotivationalQuoteBar color="#1E3A5F" />
+      <MotivationalQuoteBar color="#2563EB" />
       <div className="md:hidden h-10" />
     </div>
   );

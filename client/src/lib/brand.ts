@@ -1,24 +1,31 @@
 /**
- * HAMZURY Brand Design Tokens
- * Each department has its own Primary Accent Color.
- * All other values are shared across the institution.
+ * HAMZURY Brand Design Tokens v2
+ * Milk is the atmosphere. Dark is the structure. Gold is the prestige.
+ * Each department gets one core family color for identity.
  */
 
 export const BRAND = {
-  // Shared across all departments
-  bg: "#FAFAF8",         // Milk white
-  text: "#1D1D1F",       // Dark text
-  gold: "#C9A97E",       // HAMZURY Gold (5% accent max)
+  // Shared atmosphere
+  bg: "#FFFAF6",         // Milk base — main page background
+  card: "#FFFFFF",       // Card/surface background
+  hover: "#FDF8F4",      // Subtle hover state
+  text: "#1A1A1A",       // Primary text (dark structure)
+  muted: "#666666",      // Secondary text
+  gold: "#B48C4C",       // Premium accent (3-5% max)
+  goldHover: "#C9A961",  // Gold hover state
   white: "#FFFFFF",
+  border: "#E5E5E5",     // Subtle dividers
 
   // Department-specific primary colors
-  federal: "#86868B",    // Apple grey — Home, CSO, Finance, HR, Media, general
-  bizdoc: "#1B4D3E",     // Leaf green — BizDoc
-  systemise: "#0A1F1C",  // Dark teal — Systemise
-  skills: "#1B2A4A",     // Dark navy blue — Skills
+  federal: "#2D2D2D",    // Charcoal — HAMZURY master brand
+  bizdoc: "#1B4D3E",     // Leaf green — BizDoc (NO CHANGE)
+  systemise: "#2563EB",  // Authority blue — Systemise (softer)
+  systemiseSoft: "#8BC3F6",
+  skills: "#1E3A5F",     // Deep navy — Skills
+  skillsSoft: "#E8F1F7",
   founder: "#2C1A0E",    // Chocolate — Founder
-  ridi: "#C9A97E",       // Gold — RIDI
-  metfix: "#1D1D1F",     // Dark — MetFix
+  ridi: "#B48C4C",       // Gold — RIDI
+  metfix: "#1A1A1A",     // Dark — MetFix
 } as const;
 
 export type DepartmentKey = "federal" | "bizdoc" | "systemise" | "skills" | "founder" | "ridi" | "metfix";

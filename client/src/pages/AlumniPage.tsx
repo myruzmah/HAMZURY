@@ -1,11 +1,11 @@
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 
-const NAVY  = "#1B2A4A";   // Skills primary — dark navy blue
-const GOLD  = "#C9A97E";
-const CREAM = "#FAFAF8";   // Milk white
+const NAVY  = "#1E3A5F";   // Skills primary — deep navy
+const GOLD  = "#B48C4C";
+const CREAM = "#FFFAF6";   // Milk white
 const W     = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 export default function AlumniPage() {
   return (

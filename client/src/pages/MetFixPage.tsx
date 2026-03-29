@@ -2,9 +2,9 @@ import { Link } from "wouter";
 import { ArrowLeft, Cpu, Wifi, Cog, Zap } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 
-const DARK = "#1D1D1F";
-const ACCENT = "#C9A97E";
-const BG = "#FAFAF8";   // Milk white
+const DARK = "#1A1A1A";
+const ACCENT = "#B48C4C";
+const BG = "#FFFAF6";   // Milk white
 
 const SERVICES = [
   { icon: <Cpu size={24} />, title: "Robotics", desc: "Custom robotics solutions for automation and industrial use." },

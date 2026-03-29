@@ -19,11 +19,11 @@ import { toast } from "sonner";
 import { BRAND } from "@/lib/brand";
 
 // ─── Palette (CSO = general/federal → Apple grey) ────────────────────────────
-const TEAL  = "#86868B";   // Apple grey — general departments
-const GOLD  = "#C9A97E";
-const MILK  = "#FAFAF8";   // Milk white
+const TEAL  = "#2D2D2D";   // Apple grey — general departments
+const GOLD  = "#B48C4C";
+const MILK  = "#FFFAF6";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section =
@@ -100,6 +100,20 @@ export default function CSODashboard() {
       leadsQuery.refetch();
     },
     onError: () => toast.error("Failed to assign lead"),
+  });
+
+  // Manual lead creation
+  const [showCreateLead, setShowCreateLead] = useState(false);
+  const [newLead, setNewLead] = useState({ name: "", businessName: "", phone: "", email: "", service: "", department: "bizdoc", notes: "" });
+  const createLeadMutation = trpc.leads.createManual.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Lead created — Ref: ${result.ref}`);
+      setShowCreateLead(false);
+      setNewLead({ name: "", businessName: "", phone: "", email: "", service: "", department: "bizdoc", notes: "" });
+      unassignedQuery.refetch();
+      leadsQuery.refetch();
+    },
+    onError: () => toast.error("Failed to create lead"),
   });
 
   const pendingQuery = trpc.tasks.pending.useQuery(undefined, { refetchInterval: 15000 });
@@ -304,7 +318,7 @@ export default function CSODashboard() {
                   )}
                   {hasPaymentBadge && (
                     <span className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full animate-pulse hidden md:inline-flex"
-                      style={{ backgroundColor: "#C9A97E", color: "#0A1F1C" }}>
+                      style={{ backgroundColor: "#B48C4C", color: "#2563EB" }}>
                       {newPayments.length}
                     </span>
                   )}
@@ -377,6 +391,53 @@ export default function CSODashboard() {
             {/* ── Overview ── */}
             {activeSection === "overview" && (
               <div className="space-y-6">
+                {/* Create Lead Button */}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowCreateLead(!showCreateLead)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-medium transition-colors"
+                    style={{ backgroundColor: showCreateLead ? `${TEAL}15` : TEAL, color: showCreateLead ? DARK : WHITE }}
+                  >
+                    <Plus size={14} /> {showCreateLead ? "Cancel" : "Create Lead"}
+                  </button>
+                </div>
+
+                {/* Create Lead Form */}
+                {showCreateLead && (
+                  <div className="rounded-xl border p-5 space-y-3" style={{ borderColor: `${TEAL}20`, backgroundColor: WHITE }}>
+                    <p className="text-[13px] font-semibold" style={{ color: DARK }}>New Lead (CSO Manual Entry)</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <input placeholder="Client Name *" value={newLead.name} onChange={e => setNewLead(p => ({ ...p, name: e.target.value }))}
+                        className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+                      <input placeholder="Business Name" value={newLead.businessName} onChange={e => setNewLead(p => ({ ...p, businessName: e.target.value }))}
+                        className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+                      <input placeholder="Phone" value={newLead.phone} onChange={e => setNewLead(p => ({ ...p, phone: e.target.value }))}
+                        className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+                      <input placeholder="Email" value={newLead.email} onChange={e => setNewLead(p => ({ ...p, email: e.target.value }))}
+                        className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+                      <input placeholder="Service Needed *" value={newLead.service} onChange={e => setNewLead(p => ({ ...p, service: e.target.value }))}
+                        className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+                      <select value={newLead.department} onChange={e => setNewLead(p => ({ ...p, department: e.target.value }))}
+                        className="px-3 py-2 rounded-lg border text-[13px] outline-none bg-white" style={{ borderColor: `${TEAL}20` }}>
+                        <option value="bizdoc">BizDoc</option>
+                        <option value="systemise">Systemise</option>
+                        <option value="skills">Skills</option>
+                        <option value="media">Media</option>
+                      </select>
+                    </div>
+                    <textarea placeholder="Notes / Context" value={newLead.notes} onChange={e => setNewLead(p => ({ ...p, notes: e.target.value }))}
+                      rows={2} className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none resize-none" style={{ borderColor: `${TEAL}20` }} />
+                    <button
+                      onClick={() => { if (newLead.name && newLead.service) createLeadMutation.mutate(newLead); else toast.error("Name and Service are required"); }}
+                      disabled={createLeadMutation.isPending}
+                      className="px-4 py-2 rounded-lg text-[13px] font-medium transition-opacity"
+                      style={{ backgroundColor: TEAL, color: WHITE, opacity: createLeadMutation.isPending ? 0.6 : 1 }}
+                    >
+                      {createLeadMutation.isPending ? "Creating..." : "Create Lead & Assign"}
+                    </button>
+                  </div>
+                )}
+
                 {/* Stats row */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   <StatCard label="Total Leads"  value={allLeads.length}                                color={GOLD}     icon={<Users size={16} />} />
@@ -556,12 +617,12 @@ export default function CSODashboard() {
             {activeSection === "pipeline" && (
               <div className="space-y-4">
                 {newPayments.length > 0 && (
-                  <div className="mb-4 p-3 rounded-xl border-l-4" style={{ backgroundColor: "#C9A97E15", borderColor: "#C9A97E" }}>
-                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#0A1F1C" }}>
+                  <div className="mb-4 p-3 rounded-xl border-l-4" style={{ backgroundColor: "#B48C4C15", borderColor: "#B48C4C" }}>
+                    <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#2563EB" }}>
                       🔔 {newPayments.length} New Payment{newPayments.length > 1 ? "s" : ""} — Action Required
                     </p>
                     {newPayments.map((lead: any) => (
-                      <div key={lead.id} className="text-xs py-1.5 border-b last:border-0" style={{ borderColor: "#C9A97E30", color: "#2C2C2C" }}>
+                      <div key={lead.id} className="text-xs py-1.5 border-b last:border-0" style={{ borderColor: "#B48C4C30", color: "#2C2C2C" }}>
                         <span className="font-semibold">{lead.name}</span>
                         <span className="opacity-60 ml-2">{lead.phone}</span>
                         <span className="ml-2 font-mono opacity-70">{lead.ref}</span>
@@ -1441,7 +1502,7 @@ const MOCK_UPDATES = [
     statusChange: null, nextStep: "Awaiting external approval (3–5 business days)", acknowledged: true },
 ];
 
-const DEPT_COLORS: Record<string, string> = { BizDoc: "#1B4D3E", Systemise: "#0A1F1C", Skills: "#8B6914" };
+const DEPT_COLORS: Record<string, string> = { BizDoc: "#1B4D3E", Systemise: "#2563EB", Skills: "#8B6914" };
 
 function DeptUpdatesView() {
   const [updates, setUpdates] = useState(MOCK_UPDATES);
@@ -1543,7 +1604,7 @@ const APPOINTMENT_TYPES = [
   { value: "follow_up",  label: "Follow-up Call",   color: "#22C55E" },
   { value: "review",     label: "Dept Review",      color: "#EAB308" },
   { value: "payment",    label: "Payment Reminder", color: "#F97316" },
-  { value: "delivery",   label: "Delivery Call",    color: "#C9A97E" },
+  { value: "delivery",   label: "Delivery Call",    color: "#B48C4C" },
   { value: "retention",  label: "Retention Check",  color: "#8B5CF6" },
 ];
 
@@ -1900,7 +1961,7 @@ function DiscoveryView() {
               bizdoc: "BizDoc", systemise: "Systemise", skills: "Skills", ridi: "RIDI",
             };
             const colors: Record<string, string> = {
-              bizdoc: "#1B4D3E", systemise: "#0A1F1C", skills: "#8B6914", ridi: GOLD,
+              bizdoc: "#1B4D3E", systemise: "#2563EB", skills: "#8B6914", ridi: GOLD,
             };
             const checked = deptMap[dept];
             return (

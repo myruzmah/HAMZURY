@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { X, Star } from "lucide-react";
 
-const TEAL  = "#86868B";   // Apple grey — general
-const GOLD  = "#C9A97E";
-const CREAM = "#FAFAF8";
+const TEAL  = "#2D2D2D";   // Charcoal — general
+const GOLD  = "#B48C4C";
+const CREAM = "#FFFAF6";
 const W     = "#FFFFFF";
 
 interface Props { open: boolean; onClose: () => void; }
@@ -65,7 +65,7 @@ export function RateUsWidget({ open, onClose }: Props) {
                     placeholder="Tell us more (optional)…"
                     rows={3}
                     className="w-full rounded-2xl px-4 py-3 text-sm outline-none border resize-none mb-4"
-                    style={{ borderColor: `${TEAL}20`, backgroundColor: W, color: "#1D1D1F" }}
+                    style={{ borderColor: `${TEAL}20`, backgroundColor: W, color: "#1A1A1A" }}
                   />
                   <button
                     onClick={() => setSubmitted(true)}

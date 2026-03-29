@@ -14,7 +14,7 @@ import {
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const GREEN = "#1B4D3E";
 const GREEN_LIGHT = "rgba(27,77,62,0.08)";
-const MILK = "#FAFAF8";
+const MILK = "#FFFAF6";
 const WHITE = "#FFFFFF";
 
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {

@@ -2,11 +2,11 @@ import { Link } from "wouter";
 import { ArrowLeft, Check } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 
-const TEAL  = "#86868B";   // Apple grey — general
-const GOLD  = "#C9A97E";
-const MILK  = "#FAFAF8";   // Milk white
+const TEAL  = "#2D2D2D";   // Charcoal — general
+const GOLD  = "#B48C4C";
+const MILK  = "#FFFAF6";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 const BIZDOC_PLANS = [
   {

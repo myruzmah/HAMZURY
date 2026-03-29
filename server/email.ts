@@ -87,7 +87,10 @@ export async function sendNewLeadAlert(data: {
   source: string;
 }) {
   const transport = getTransport();
-  if (!transport) return;
+  if (!transport) {
+    console.warn("[email] SMTP not configured — new lead alert suppressed.");
+    return;
+  }
   const to = ALERT_TO();
   if (!to) return;
 

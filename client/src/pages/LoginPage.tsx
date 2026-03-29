@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Eye, EyeOff, X } from "lucide-react";
+import PageMeta from "@/components/PageMeta";
 
-const TEAL  = "#86868B";   // Apple grey — general
-const GOLD  = "#C9A97E";
-const CREAM = "#FAFAF8";   // Milk white
+const TEAL  = "#2D2D2D";   // Charcoal — general
+const GOLD  = "#B48C4C";
+const CREAM = "#FFFAF6";   // Milk white
 const WHITE = "#FFFFFF";
-const DARK  = "#1D1D1F";
+const DARK  = "#1A1A1A";
 
 export default function LoginPage() {
   const [staffId, setStaffId]   = useState("");
@@ -83,6 +84,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: CREAM }}>
+      <PageMeta title="Staff Login — HAMZURY" description="Staff login portal for HAMZURY team members." canonical="https://hamzury.com/login" />
       <div className="w-full max-w-sm">
 
         {/* Logo */}

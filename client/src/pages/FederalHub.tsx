@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 
 // ─── Brand (Federal Hub = general → Apple grey) ─────────────────────────────
-const GREEN = "#86868B";   // Apple grey
-const GOLD = "#C9A97E";
-const MILK = "#FAFAF8";    // Milk white
+const GREEN = "#2D2D2D";   // Apple grey
+const GOLD = "#B48C4C";
+const MILK = "#FFFAF6";    // Milk white
 
 type Section = "staff" | "audit";
 

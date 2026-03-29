@@ -11,10 +11,10 @@ import {
    HAMZURY SKILLS — PROGRAMS PAGE  /skills/programs
    ═══════════════════════════════════════════════════════════════════════════ */
 
-const DARK  = "#1B2A4A";   // Dark navy blue — Skills primary
-const GOLD  = "#C9A97E";   // Gold accent (5% usage)
-const TEXT  = "#1D1D1F";
-const BG    = "#FAFAF8";   // Milk white background
+const DARK  = "#1E3A5F";   // Dark navy blue — Skills primary
+const GOLD  = "#B48C4C";   // Gold accent (5% usage)
+const TEXT  = "#1A1A1A";
+const BG    = "#FFFAF6";   // Milk white background
 const CREAM = "#F5F3EF";   // Soft cream for cards
 const W     = "#FFFFFF";
 
