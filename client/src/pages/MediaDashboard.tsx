@@ -24,9 +24,10 @@ const WHITE = "#FFFFFF";
 const DARK  = "#1D1D1F";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Section = "inbox" | "overview" | "calendar" | "aitwin" | "podcast" | "vault" | "social";
+type Section = "clients" | "inbox" | "overview" | "calendar" | "aitwin" | "podcast" | "vault" | "social";
 
 const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
+  { id: "clients",   label: "Social Clients",  icon: <Users size={16} /> },
   { id: "inbox",     label: "Client Work",     icon: <Briefcase size={16} /> },
   { id: "overview",  label: "Overview",        icon: <LayoutDashboard size={16} /> },
   { id: "calendar",  label: "Content Calendar", icon: <Calendar size={16} /> },
@@ -116,7 +117,7 @@ function statusColor(status: string) {
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function MediaDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
-  const [activeSection, setActiveSection] = useState<Section>("inbox");
+  const [activeSection, setActiveSection] = useState<Section>("clients");
   const [expandedAI, setExpandedAI] = useState<number | null>(null);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPlatform, setNewTaskPlatform] = useState("LinkedIn");
@@ -128,6 +129,7 @@ export default function MediaDashboard() {
   const [inboxFilter, setInboxFilter]       = useState<string>("all");
 
   const clientTasksQuery = trpc.tasks.list.useQuery({ department: "media" }, { refetchInterval: 15000 });
+  const subsQuery        = trpc.subscriptions.list.useQuery(undefined, { refetchInterval: 30000 });
   const utils            = trpc.useUtils();
   const submitMut = trpc.tasks.submit.useMutation({
     onSuccess: () => { toast.success("Submitted to CSO for review"); utils.tasks.list.invalidate(); },
@@ -1088,8 +1090,136 @@ export default function MediaDashboard() {
     );
   }
 
+  function renderClients() {
+    const allSubs = subsQuery.data ?? [];
+    const mediaSubs = allSubs.filter(s => s.department === "media" && s.status === "active");
+
+    const PLATFORM_ICONS: Record<string, string> = {
+      instagram: "📸", tiktok: "🎵", linkedin: "💼", facebook: "📘",
+      x: "𝕏", youtube: "▶️", podcast: "🎙️",
+    };
+
+    function getPlatformTags(service: string): string[] {
+      const s = service.toLowerCase();
+      const tags: string[] = [];
+      if (s.includes("fb") || s.includes("facebook")) tags.push("Facebook");
+      if (s.includes("ig") || s.includes("instagram")) tags.push("Instagram");
+      if (s.includes("tiktok")) tags.push("TikTok");
+      if (s.includes("linkedin")) tags.push("LinkedIn");
+      if (s.includes("x,") || s.includes(", x") || s.includes("twitter")) tags.push("X");
+      if (s.includes("youtube")) tags.push("YouTube");
+      if (s.includes("podcast")) tags.push("Podcast");
+      if (tags.length === 0 && s.includes("social")) tags.push("All Platforms");
+      return tags;
+    }
+
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-[18px] font-semibold" style={{ color: TEAL }}>Social Media Clients</h2>
+            <p className="text-[12px] opacity-50 mt-0.5" style={{ color: TEAL }}>{mediaSubs.length} active clients managed by Media team</p>
+          </div>
+        </div>
+
+        {/* Summary stats */}
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: "Active Clients", value: mediaSubs.length },
+            { label: "Monthly Value", value: `₦${mediaSubs.reduce((sum, s) => sum + Number(s.monthlyFee), 0).toLocaleString()}` },
+            { label: "Platforms Managed", value: "5+" },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${TEAL}10` }}>
+              <p className="text-[18px] font-light" style={{ color: TEAL }}>{value}</p>
+              <p className="text-[10px] uppercase tracking-wider opacity-40 mt-1" style={{ color: TEAL }}>{label}</p>
+            </div>
+          ))}
+        </div>
+
+        {subsQuery.isLoading ? (
+          <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${TEAL}10` }}>
+            <Loader2 className="animate-spin mx-auto" size={24} style={{ color: GOLD }} />
+          </div>
+        ) : mediaSubs.length === 0 ? (
+          <div className="bg-white rounded-2xl border p-14 text-center" style={{ borderColor: `${TEAL}10` }}>
+            <Users size={40} className="mx-auto mb-4 opacity-20" style={{ color: TEAL }} />
+            <p className="text-[14px] opacity-40" style={{ color: TEAL }}>No social media clients yet</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {mediaSubs.map(sub => {
+              const tags = getPlatformTags(sub.service);
+              const fee = Number(sub.monthlyFee);
+              return (
+                <div key={sub.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="text-[15px] font-semibold" style={{ color: TEAL }}>{sub.clientName}</p>
+                      {sub.businessName && sub.businessName !== sub.clientName && (
+                        <p className="text-[11px] opacity-40 mt-0.5" style={{ color: TEAL }}>{sub.businessName}</p>
+                      )}
+                      <p className="text-[12px] opacity-60 mt-1" style={{ color: TEAL }}>{sub.service}</p>
+                    </div>
+                    <div className="text-right">
+                      {fee > 0 ? (
+                        <p className="text-[14px] font-light" style={{ color: GOLD }}>₦{fee.toLocaleString()}/mo</p>
+                      ) : (
+                        <p className="text-[11px] opacity-30" style={{ color: TEAL }}>Internal</p>
+                      )}
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Active</span>
+                    </div>
+                  </div>
+
+                  {/* Platform tags */}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {tags.map(tag => (
+                        <span key={tag} className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{ backgroundColor: `${TEAL}12`, color: TEAL }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Staff notes */}
+                  {sub.notesForStaff && (
+                    <div className="text-[11px] px-3 py-2 rounded-xl" style={{ backgroundColor: `${GOLD}10`, color: TEAL }}>
+                      {sub.notesForStaff}
+                    </div>
+                  )}
+
+                  <p className="text-[10px] opacity-30 mt-2" style={{ color: TEAL }}>Started {sub.startDate}</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Scope Reference */}
+        <div className="rounded-2xl border p-5" style={{ borderColor: `${TEAL}10`, backgroundColor: `${TEAL}04` }}>
+          <p className="text-[12px] font-semibold mb-3" style={{ color: TEAL }}>Standard Scope Reference</p>
+          <div className="space-y-1.5">
+            {[
+              ["Full Package (Skills/Systemise)", "2 Reels/week · 8 Carousels/month · 5 Flyers/month · Daily Stories · 5 Platforms"],
+              ["LinkedIn + Instagram", "1 post/day · Stories · Community engagement · Monthly report"],
+              ["Personal Brand (Hamzury)", "TikTok + Instagram · Mix of educational + behind-the-scenes"],
+              ["Tilz Spa", "Instagram-first · Luxury aesthetic · Booking CTAs · Growth Partner tier"],
+            ].map(([client, scope]) => (
+              <div key={client} className="flex gap-3 text-[11px]">
+                <span className="font-medium shrink-0" style={{ color: TEAL }}>{client}:</span>
+                <span className="opacity-50" style={{ color: TEAL }}>{scope}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderSection() {
     switch (activeSection) {
+      case "clients":  return renderClients();
       case "inbox":    return renderInbox();
       case "overview": return renderOverview();
       case "calendar": return renderCalendar();

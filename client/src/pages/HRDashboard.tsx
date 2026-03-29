@@ -13,7 +13,7 @@ import {
   UserPlus, GraduationCap, DollarSign, BarChart2,
   UserCog, LogOut, ArrowLeft, Loader2, TrendingUp,
   CheckCircle2, Clock, Briefcase, AlertTriangle,
-  ChevronRight, Search, Download, FileText,
+  ChevronRight, Search, Download, FileText, Monitor, Send, Plus,
 } from "lucide-react";
 
 // ─── Brand (HR = general → Apple grey) ───────────────────────────────────────
@@ -21,7 +21,7 @@ const GREEN = "#86868B";   // Apple grey — general departments
 const GOLD  = "#C9A97E";
 const MILK  = "#FAFAF8";   // Milk white
 
-type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "training" | "commissions" | "reports";
+type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "itstudents" | "training" | "commissions" | "reports";
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK_STAFF = [
@@ -159,6 +159,7 @@ export default function HRDashboard() {
     { key: "attendance",   icon: CalendarCheck,   label: "Attendance"      },
     { key: "performance",  icon: ClipboardCheck,  label: "Performance"     },
     { key: "hiring",       icon: UserPlus,        label: "Hiring Pipeline" },
+    { key: "itstudents",   icon: Monitor,         label: "IT Students"     },
     { key: "training",     icon: GraduationCap,   label: "Training Log"    },
     { key: "commissions",  icon: DollarSign,      label: "Commissions"     },
     { key: "reports",      icon: BarChart2,       label: "Reports"         },
@@ -231,6 +232,7 @@ export default function HRDashboard() {
             {activeSection === "attendance"  && <AttendanceSection attendanceList={attendanceList} />}
             {activeSection === "performance" && <PerformanceSection />}
             {activeSection === "hiring"      && <HiringSection joinApps={joinApps} />}
+            {activeSection === "itstudents"  && <ITStudentsSection />}
             {activeSection === "training"    && <TrainingSection />}
             {activeSection === "commissions" && <CommissionsSection />}
             {activeSection === "reports"     && <ReportsSection />}
@@ -856,6 +858,161 @@ function CommissionsSection() {
             </Button>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ─── IT Students Section ──────────────────────────────────────────────────────
+const IT_WORKFLOW_STEPS = [
+  { step: "1", title: "HR Receives Application", detail: "Student applies through website or is referred. HR reviews and approves intake." },
+  { step: "2", title: "Training Begins", detail: "Student placed under HR supervision for orientation, basic training, and assessment." },
+  { step: "3", title: "Department Assignment", detail: "Based on skills & assessment: assigned to Systemise (tech/ops), Skills (training & cohort), or BizDoc (compliance & admin)." },
+  { step: "4", title: "Onboarding to Department", detail: "Department head receives the student. HR transfers record to their dashboard." },
+  { step: "5", title: "Stipend / Scholarship Review", detail: "After 4 weeks: HR + CEO review performance for stipend eligibility." },
+];
+
+const DEPT_OPTIONS = [
+  { value: "systemise", label: "Systemise — Tech & Operations" },
+  { value: "skills",    label: "Hamzury Skills — Training & Cohort" },
+  { value: "bizdoc",    label: "BizDoc — Compliance & Admin" },
+  { value: "media",     label: "Media — Content & Brand" },
+];
+
+function ITStudentsSection() {
+  const TEAL  = "#86868B";
+  const GOLD  = "#C9A97E";
+  const DARK  = "#1D1D1F";
+  const [form, setForm] = useState({ name: "", phone: "", email: "", skill: "", school: "", startDate: new Date().toISOString().split("T")[0], notes: "" });
+  const [assigned, setAssigned] = useState<{ name: string; dept: string; date: string }[]>([]);
+  const [newAssign, setNewAssign] = useState({ name: "", dept: "systemise", date: new Date().toISOString().split("T")[0] });
+  const [showForm, setShowForm] = useState(false);
+
+  function handleIntake(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name || !form.phone) return;
+    toast.success(`IT Student intake recorded: ${form.name}`);
+    setForm({ name: "", phone: "", email: "", skill: "", school: "", startDate: new Date().toISOString().split("T")[0], notes: "" });
+    setShowForm(false);
+  }
+
+  function handleAssign(e: React.FormEvent) {
+    e.preventDefault();
+    if (!newAssign.name) return;
+    setAssigned(prev => [{ ...newAssign }, ...prev]);
+    toast.success(`${newAssign.name} assigned to ${newAssign.dept}`);
+    setNewAssign({ name: "", dept: "systemise", date: new Date().toISOString().split("T")[0] });
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Workflow */}
+      <div>
+        <h2 className="text-[18px] font-semibold mb-1" style={{ color: TEAL }}>IT Student Programme</h2>
+        <p className="text-[12px] opacity-50 mb-4" style={{ color: TEAL }}>New IT students are managed under HR, trained, then assigned to a department.</p>
+        <div className="space-y-2">
+          {IT_WORKFLOW_STEPS.map(s => (
+            <div key={s.step} className="flex gap-4 bg-white rounded-2xl border p-4" style={{ borderColor: `${TEAL}10` }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0"
+                style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>{s.step}</div>
+              <div>
+                <p className="text-[13px] font-medium" style={{ color: TEAL }}>{s.title}</p>
+                <p className="text-[11px] opacity-50 mt-0.5" style={{ color: TEAL }}>{s.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Intake Form */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-[13px] font-semibold" style={{ color: TEAL }}>Record New IT Student</p>
+          <button onClick={() => setShowForm(!showForm)}
+            className="text-[12px] px-4 py-1.5 rounded-xl font-medium"
+            style={{ backgroundColor: TEAL, color: GOLD }}>
+            <Plus size={13} className="inline mr-1" />{showForm ? "Cancel" : "New Intake"}
+          </button>
+        </div>
+        {showForm && (
+          <form onSubmit={handleIntake} className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${TEAL}10` }}>
+            <div className="grid grid-cols-2 gap-3">
+              <input required placeholder="Full Name *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="Phone *" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="Email" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="Primary Skill (e.g. Web Dev, Design)" value={form.skill} onChange={e => setForm(p => ({ ...p, skill: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input placeholder="School / Background" value={form.school} onChange={e => setForm(p => ({ ...p, school: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+              <input type="date" value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+            </div>
+            <textarea placeholder="Notes (referral source, observed skills, initial assessment…)" value={form.notes}
+              onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={2}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none resize-none" style={{ borderColor: `${TEAL}20` }} />
+            <button type="submit" className="px-5 py-2 rounded-xl text-[13px] font-medium"
+              style={{ backgroundColor: TEAL, color: GOLD }}>
+              Record Intake
+            </button>
+          </form>
+        )}
+      </div>
+
+      {/* Department Assignment */}
+      <div>
+        <p className="text-[13px] font-semibold mb-3" style={{ color: TEAL }}>Assign to Department</p>
+        <form onSubmit={handleAssign} className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${TEAL}10` }}>
+          <p className="text-[11px] opacity-50" style={{ color: TEAL }}>Use this to record that a student has completed HR training and is moving to a department.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <input required placeholder="Student Name" value={newAssign.name} onChange={e => setNewAssign(p => ({ ...p, name: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+            <select value={newAssign.dept} onChange={e => setNewAssign(p => ({ ...p, dept: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none bg-white" style={{ borderColor: `${TEAL}20` }}>
+              {DEPT_OPTIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+            </select>
+            <input type="date" value={newAssign.date} onChange={e => setNewAssign(p => ({ ...p, date: e.target.value }))}
+              className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
+          </div>
+          <button type="submit" className="flex items-center gap-2 px-5 py-2 rounded-xl text-[13px] font-medium"
+            style={{ backgroundColor: TEAL, color: GOLD }}>
+            <Send size={13} /> Record Assignment
+          </button>
+        </form>
+        {assigned.length > 0 && (
+          <div className="mt-3 space-y-2">
+            {assigned.map((a, i) => (
+              <div key={i} className="bg-white rounded-xl border px-4 py-3 flex items-center justify-between" style={{ borderColor: `${TEAL}10` }}>
+                <div>
+                  <p className="text-[13px] font-medium" style={{ color: TEAL }}>{a.name}</p>
+                  <p className="text-[11px] opacity-40" style={{ color: TEAL }}>{DEPT_OPTIONS.find(d => d.value === a.dept)?.label}</p>
+                </div>
+                <p className="text-[11px] opacity-30" style={{ color: TEAL }}>{a.date}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Known IT Students */}
+      <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+        <p className="text-[13px] font-semibold mb-3" style={{ color: TEAL }}>Known IT Students</p>
+        <div className="space-y-2">
+          {[
+            { name: "Abdulwafeed Tanko", skill: "IT / Tech", status: "Active Staff", dept: "Tech/Systemise", date: "2026" },
+          ].map(s => (
+            <div key={s.name} className="flex items-center justify-between px-3 py-2.5 rounded-xl" style={{ backgroundColor: `${TEAL}06` }}>
+              <div>
+                <p className="text-[13px] font-medium" style={{ color: TEAL }}>{s.name}</p>
+                <p className="text-[11px] opacity-40" style={{ color: TEAL }}>{s.skill} · {s.dept}</p>
+              </div>
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-green-100 text-green-700">{s.status}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] opacity-30 mt-3" style={{ color: TEAL }}>Add more students using the intake form above.</p>
       </div>
     </div>
   );

@@ -1105,6 +1105,179 @@ export async function seedTaxClients(): Promise<void> {
   }
 }
 
+// ─── Seed Media / Social Media Management Clients ────────────────────────────
+
+export async function seedMediaClients(): Promise<void> {
+  const db = await getDb();
+  if (!db) { console.log("[seed-media] DB not available — skipping"); return; }
+
+  type SubSeed = {
+    clientName: string;
+    businessName?: string;
+    email?: string;
+    phone?: string;
+    service: string;
+    department: string;
+    monthlyFee: string;
+    billingDay: number;
+    startDate: string;
+    status: "active" | "paused" | "cancelled";
+    createdBy: string;
+    notesForStaff?: string;
+  };
+
+  type PaymentSeed = {
+    month: string;
+    amountDue: string;
+    status: "paid" | "pending" | "overdue";
+    paidAt?: Date;
+    recordedBy: string;
+    notes: string;
+  };
+
+  const clients: (SubSeed & { payment?: PaymentSeed })[] = [
+    // ── Internal dept clients (social media managed by HAMZURY Media) ──
+    {
+      clientName: "Hamzury Skills",
+      businessName: "Hamzury Skills Academy",
+      service: "Social Media Full Management — FB, IG, TikTok, LinkedIn, X",
+      department: "media",
+      monthlyFee: "400000",
+      billingDay: 1,
+      startDate: "2026-01-01",
+      status: "active",
+      createdBy: "system-seed",
+      notesForStaff: "2 Reels/week · 8 Carousels · 5 Flyers · Story management · ₦1.2M for 3 months",
+      payment: {
+        month: "2026-01",
+        amountDue: "1200000",
+        status: "paid",
+        paidAt: new Date("2026-01-01"),
+        recordedBy: "system-seed",
+        notes: "3-month package paid in full — ₦1.2M (Jan–Mar 2026)",
+      },
+    },
+    {
+      clientName: "Systemise",
+      businessName: "Hamzury Systemise",
+      service: "Social Media Full Management — FB, IG, TikTok, LinkedIn, X",
+      department: "media",
+      monthlyFee: "400000",
+      billingDay: 1,
+      startDate: "2026-01-01",
+      status: "active",
+      createdBy: "system-seed",
+      notesForStaff: "Same package as Hamzury Skills — 2 Reels/week · 8 Carousels · 5 Flyers · Story management",
+      payment: {
+        month: "2026-01",
+        amountDue: "1200000",
+        status: "paid",
+        paidAt: new Date("2026-01-01"),
+        recordedBy: "system-seed",
+        notes: "3-month package paid in full — ₦1.2M (Jan–Mar 2026)",
+      },
+    },
+    {
+      clientName: "RIDI",
+      businessName: "RIDI Initiative",
+      service: "Social Media Management — LinkedIn & Instagram",
+      department: "media",
+      monthlyFee: "0",
+      billingDay: 1,
+      startDate: "2026-01-01",
+      status: "active",
+      createdBy: "system-seed",
+      notesForStaff: "LinkedIn and Instagram only — internal initiative, pricing TBD",
+    },
+    // ── External clients ──
+    {
+      clientName: "Muhammad Hamzury",
+      businessName: "Muhammad Hamzury (Personal Brand)",
+      email: "founder@hamzury.com",
+      service: "Personal Brand — Instagram & TikTok Management",
+      department: "media",
+      monthlyFee: "0",
+      billingDay: 1,
+      startDate: "2026-01-01",
+      status: "active",
+      createdBy: "system-seed",
+      notesForStaff: "Founder personal brand — Instagram and TikTok. Full plan and execution by Media team.",
+    },
+    // ── Tilz Spa — Full Branding + Social Media Project ──
+    {
+      clientName: "Tilda",
+      businessName: "Tilz Spa by Tilda",
+      service: "Full Business Architecture + Social Media — Build Package",
+      department: "media",
+      monthlyFee: "150000",
+      billingDay: 18,
+      startDate: "2026-03-18",
+      status: "active",
+      createdBy: "system-seed",
+      notesForStaff: "Total project: ₦1.2M · Paid deposit: ₦500k · Balance: ₦700k at week 6 · 8-week build. Wuse 2, Abuja luxury spa. Proposal approved March 18 2026.",
+      payment: {
+        month: "2026-03",
+        amountDue: "600000",
+        status: "paid",
+        paidAt: new Date("2026-03-18"),
+        recordedBy: "system-seed",
+        notes: "Deposit payment received — ₦500,000 (client paid ₦500k of ₦600k deposit. ₦100k outstanding on deposit, ₦700k at delivery week 6)",
+      },
+    },
+    // ── Bakori — SCUML Certificate (one-time, BizDoc) ──
+    {
+      clientName: "Bakori Client",
+      businessName: "Bakori",
+      service: "SCUML Certificate Registration",
+      department: "bizdoc",
+      monthlyFee: "50000",
+      billingDay: 1,
+      startDate: "2026-03-01",
+      status: "active",
+      createdBy: "system-seed",
+      notesForStaff: "One-time SCUML cert. Original fee ₦60k — ₦10k loyalty card discount applied = ₦50k. Client has loyalty card.",
+      payment: {
+        month: "2026-03",
+        amountDue: "50000",
+        status: "paid",
+        paidAt: new Date("2026-03-01"),
+        recordedBy: "system-seed",
+        notes: "Paid ₦50,000 (₦60k - ₦10k loyalty discount)",
+      },
+    },
+  ];
+
+  for (const client of clients) {
+    // Check by businessName + service combo to avoid duplicates
+    const existing = await db.select({ id: subscriptions.id })
+      .from(subscriptions)
+      .where(
+        and(
+          eq(subscriptions.businessName, client.businessName || client.clientName),
+          eq(subscriptions.service, client.service)
+        )
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      console.log(`[seed-media] ${client.businessName || client.clientName} already exists — skipping`);
+      continue;
+    }
+
+    const { payment: paymentData, ...subData } = client;
+    const result = await db.insert(subscriptions).values(subData);
+    const sub = await db.select().from(subscriptions).where(eq(subscriptions.id, result[0].insertId)).limit(1);
+
+    if (paymentData) {
+      await db.insert(subscriptionPayments).values({
+        subscriptionId: sub[0].id,
+        ...paymentData,
+      });
+    }
+    console.log(`[seed-media] Created: ${client.businessName || client.clientName}`);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // SERVICE PRICING, INVOICING, NOTIFICATIONS, PROPOSALS & CERTIFICATES
 // ═══════════════════════════════════════════════════════════════════════════════

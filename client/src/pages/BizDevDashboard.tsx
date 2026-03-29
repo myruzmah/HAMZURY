@@ -436,21 +436,91 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
   );
 }
 
+// ─── Real Partnership Data ────────────────────────────────────────────────────
+const REAL_PARTNERSHIPS = [
+  {
+    id: 1,
+    name: "NITDA",
+    fullName: "National Information Technology Development Agency",
+    type: "Government — LMS Development",
+    stage: "Outreach" as const,
+    status: "Verbal agreement — strong. No legal yet.",
+    milestone: "Designing Hamzury HALs LMS (90% AI, startup-focused). NITDA to validate and recommend to students.",
+    value: "₦30,000/student/month",
+    note: "LMS name: Hamzury HALs. Our students also use it online (Bakori cohort). Push for written agreement.",
+  },
+  {
+    id: 2,
+    name: "NJFP",
+    fullName: "National Job Framework Programme",
+    type: "Government — Approved Training Centre",
+    stage: "Agreed" as const,
+    status: "Approved. Staff coming — not yet commenced.",
+    milestone: "HAMZURY approved as NJFP training centre. Awaiting first batch of staff to be sent.",
+    value: "TBD per batch",
+    note: "Monitor for commencement date. Prepare onboarding docs for incoming NJFP staff.",
+  },
+  {
+    id: 3,
+    name: "TVET",
+    fullName: "Technical & Vocational Education & Training",
+    type: "Government — Approved Partner",
+    stage: "Agreed" as const,
+    status: "Approved partner. Students starting at other centres first — ours may be next batch.",
+    milestone: "TVET approved HAMZURY as training partner. Awaiting student allocation.",
+    value: "₦30,000/student/month",
+    note: "Follow up on when our centre gets the next batch. Document readiness.",
+  },
+  {
+    id: 4,
+    name: "Plan Aid Academy",
+    fullName: "Plan Aid Academy (Secondary School)",
+    type: "Exchange Partner — Education",
+    stage: "Active" as const,
+    status: "Active. Using 3rd floor of their building.",
+    milestone: "300+ students trained. HAMZURY renovated 3rd floor — in exchange for training their students and staff.",
+    value: "Exchange — No cash",
+    note: "Milestone: 300+ students trained. Continue tracking cohorts at this location.",
+  },
+];
+
+const PENDING_DEALS = [
+  {
+    id: 1,
+    name: "Ikedi Peace",
+    service: "Business Architecture / Consulting",
+    status: "Proposal sent — awaiting engagement",
+    meeting: "Wednesday 2 April 2026 · 1:00 PM · Abuja",
+    note: "Travelling to Abuja for this meeting. High priority.",
+    urgent: true,
+  },
+  {
+    id: 2,
+    name: "Life Style Med Spa",
+    service: "Full Branding + Social Media (similar to Tilz Spa)",
+    status: "Proposal sent — awaiting feedback",
+    meeting: null,
+    note: "Follow up after Tilz Spa delivery milestone to demonstrate results.",
+    urgent: false,
+  },
+];
+
 // ─── Partnerships ─────────────────────────────────────────────────────────────
 function PartnershipsSection() {
   const STAGE_COLORS: Record<string, string> = {
-    Researching: "#6B7280", Outreach: "#3B82F6", Agreed: GOLD, Active: GREEN, Paused: "#EF4444",
+    Researching: "#6B7280", Outreach: "#3B82F6", Agreed: GOLD, Active: "#16A34A", Paused: "#EF4444",
   };
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Partners", value: 0 },
-          { label: "Active", value: 0 },
-          { label: "Agreements", value: 0 },
-          { label: "Referrals Generated", value: 0 },
+          { label: "Total Partners", value: REAL_PARTNERSHIPS.length },
+          { label: "Active", value: REAL_PARTNERSHIPS.filter(p => p.stage === "Active").length },
+          { label: "Approved / Agreed", value: REAL_PARTNERSHIPS.filter(p => p.stage === "Agreed").length },
+          { label: "Pending Deals", value: PENDING_DEALS.length },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${DARK}08` }}>
             <p className="text-2xl font-normal" style={{ color: GREEN }}>{value}</p>
@@ -459,42 +529,73 @@ function PartnershipsSection() {
         ))}
       </div>
 
-      <div className="flex justify-end">
-        <Button size="sm" style={{ backgroundColor: GREEN, color: "white" }} onClick={() => toast("Add partner form coming soon")}>
-          <Plus size={14} className="mr-1.5" /> Add Partner
-        </Button>
+      {/* Partnership Cards */}
+      <div>
+        <p className="text-[11px] uppercase tracking-widest opacity-40 mb-3" style={{ color: DARK }}>Institutional Partnerships</p>
+        <div className="space-y-3">
+          {REAL_PARTNERSHIPS.map(p => (
+            <div key={p.id} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${DARK}08` }}>
+              <button
+                className="w-full flex items-center justify-between p-4 text-left"
+                onClick={() => setExpanded(expanded === p.id ? null : p.id)}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: STAGE_COLORS[p.stage] }} />
+                  <div>
+                    <p className="text-[14px] font-medium" style={{ color: DARK }}>{p.name}</p>
+                    <p className="text-[11px] opacity-40" style={{ color: DARK }}>{p.type}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${STAGE_COLORS[p.stage]}18`, color: STAGE_COLORS[p.stage] }}>
+                    {p.stage}
+                  </span>
+                  {expanded === p.id ? <ChevronUp size={14} className="opacity-30" /> : <ChevronDown size={14} className="opacity-30" />}
+                </div>
+              </button>
+              {expanded === p.id && (
+                <div className="px-4 pb-4 pt-0 space-y-2 border-t" style={{ borderColor: `${DARK}06` }}>
+                  <p className="text-[12px] font-light" style={{ color: DARK }}>{p.fullName}</p>
+                  <p className="text-[12px]" style={{ color: GREEN }}>{p.status}</p>
+                  <p className="text-[11px] opacity-60" style={{ color: DARK }}>Milestone: {p.milestone}</p>
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-[11px] opacity-40" style={{ color: DARK }}>Value: {p.value}</p>
+                  </div>
+                  <div className="text-[11px] px-3 py-2 rounded-lg" style={{ backgroundColor: `${GOLD}10`, color: DARK }}>
+                    Note: {p.note}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Kanban */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {KANBAN_STAGES.map(stage => {
-          const cards: typeof MOCK_PARTNERSHIPS = [];
-          return (
-            <div key={stage} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: STAGE_COLORS[stage] }} />
-                <p className="text-xs font-normal opacity-60" style={{ color: DARK }}>{stage}</p>
-                <span className="ml-auto text-xs opacity-30" style={{ color: DARK }}>{cards.length}</span>
+      {/* Pending Deals */}
+      <div>
+        <p className="text-[11px] uppercase tracking-widest opacity-40 mb-3" style={{ color: DARK }}>Pending Deals</p>
+        <div className="space-y-3">
+          {PENDING_DEALS.map(d => (
+            <div key={d.id} className="bg-white rounded-2xl border p-4" style={{ borderColor: d.urgent ? `${GOLD}40` : `${DARK}08` }}>
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="text-[14px] font-medium" style={{ color: DARK }}>{d.name}</p>
+                  <p className="text-[11px] opacity-50" style={{ color: DARK }}>{d.service}</p>
+                </div>
+                {d.urgent && (
+                  <span className="text-[10px] px-2.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>
+                    Urgent
+                  </span>
+                )}
               </div>
-              <div className="space-y-2">
-                {cards.length === 0 ? (
-                  <div className="bg-white rounded-xl border border-dashed p-4 text-center" style={{ borderColor: `${DARK}12` }}>
-                    <p className="text-xs opacity-20" style={{ color: DARK }}>Empty</p>
-                  </div>
-                ) : cards.map(p => (
-                  <div key={p.id} className="bg-white rounded-xl border p-3" style={{ borderColor: `${DARK}08` }}>
-                    <p className="text-xs font-normal mb-0.5" style={{ color: DARK }}>{p.name}</p>
-                    <p className="text-[10px] opacity-40" style={{ color: DARK }}>{p.type}</p>
-                    <p className="text-[10px] opacity-30 mt-1" style={{ color: DARK }}>{p.contact}</p>
-                    {p.referrals > 0 && (
-                      <p className="text-[10px] mt-2" style={{ color: GREEN }}>{p.referrals} referrals</p>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <p className="text-[12px] mb-1" style={{ color: GREEN }}>{d.status}</p>
+              {d.meeting && (
+                <p className="text-[11px] font-medium mb-1" style={{ color: GOLD }}>📍 Meeting: {d.meeting}</p>
+              )}
+              <p className="text-[11px] opacity-50" style={{ color: DARK }}>{d.note}</p>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
     </div>
   );

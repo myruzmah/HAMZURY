@@ -10,8 +10,8 @@ import { sdk } from "./sdk";
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./cookies";
 import * as db from "../db";
-import { seedStaffUsers } from "../seed-staff";
-import { runMigrations, seedTaxClients } from "../db";
+import { seedStaffUsers, syncStaffRoster } from "../seed-staff";
+import { runMigrations, seedTaxClients, seedMediaClients } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -514,7 +514,9 @@ Sitemap: ${base}/sitemap.xml
     try {
       await runMigrations();
       await seedStaffUsers();
+      await syncStaffRoster();
       await seedTaxClients();
+      await seedMediaClients();
     } catch (err) {
       console.log("[startup] DB init error:", String(err));
     }

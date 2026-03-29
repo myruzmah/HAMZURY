@@ -22,7 +22,8 @@ import {
   generateRef,
   generateInvoiceNumber,
 } from "./db";
-import { tasks } from "../drizzle/schema";
+import { tasks, staffUsers } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 const DEFAULT_PASSWORD = "Hamzury@2026";
 
@@ -42,21 +43,24 @@ const STAFF_ROSTER: {
     | "bizdev_staff" | "media" | "skills_staff" | "systemise_head"
     | "tech_lead" | "compliance_staff" | "security_staff" | "department_staff";
 }[] = [
-  { name: "Muhammad Hamzury",  email: "founder@hamzury.com",     hamzuryRole: "founder" },
-  { name: "Idris Ibrahim",     email: "idris@hamzury.com",       hamzuryRole: "ceo" },
-  { name: "Abdullahi Musa",    email: "abdullahi@hamzury.com",   hamzuryRole: "bizdev" },           // BizDoc department lead
-  { name: "Yusuf",             email: "yusuf@hamzury.com",       hamzuryRole: "compliance_staff" },
-  { name: "Khadija",           email: "khadija@hamzury.com",     hamzuryRole: "bizdev" },
-  { name: "Faree",             email: "faree@hamzury.com",       hamzuryRole: "bizdev" },
-  { name: "Tabitha",           email: "tabitha@hamzury.com",     hamzuryRole: "cso" },
-  { name: "Maryam",            email: "maryam@hamzury.com",      hamzuryRole: "department_staff" }, // CSO assist
-  { name: "Abubakar",          email: "abubakar@hamzury.com",    hamzuryRole: "finance" },
-  { name: "Hikma",             email: "hikma@hamzury.com",       hamzuryRole: "media" },
-  { name: "Salis",             email: "salis@hamzury.com",       hamzuryRole: "media" },
-  { name: "Abdulmalik Musa",   email: "abdulmalik@hamzury.com",  hamzuryRole: "skills_staff" },    // Skills department lead
-  { name: "Dajot",             email: "dajot@hamzury.com",       hamzuryRole: "tech_lead" },
-  { name: "Lalo",              email: "lalo@hamzury.com",        hamzuryRole: "department_staff" },
-  { name: "Rabilu",            email: "rabilu@hamzury.com",      hamzuryRole: "security_staff" },
+  { name: "Muhammad Hamzury",  email: "founder@hamzury.com",      hamzuryRole: "founder" },
+  { name: "Idris Ibrahim",     email: "idris@hamzury.com",        hamzuryRole: "ceo" },
+  { name: "Abdullahi Musa",    email: "abdullahi@hamzury.com",    hamzuryRole: "bizdev" },           // BizDoc dept lead
+  { name: "Yusuf Haruna",      email: "yusuf@hamzury.com",        hamzuryRole: "compliance_staff" },
+  { name: "Khadija Saad",      email: "khadija@hamzury.com",      hamzuryRole: "bizdev" },           // BizDev + HR + AI Content
+  { name: "Farida Munir",      email: "faree@hamzury.com",        hamzuryRole: "bizdev" },           // BizDev + Podcast
+  { name: "Tabitha John",      email: "tabitha@hamzury.com",      hamzuryRole: "cso" },
+  { name: "Maryam Ashir",      email: "maryam@hamzury.com",       hamzuryRole: "department_staff" }, // CSO assist + Media
+  { name: "Abubakar Sadiq",    email: "abubakar@hamzury.com",     hamzuryRole: "finance" },          // Finance + Brand
+  { name: "Sulaiman Hikma",    email: "hikma@hamzury.com",        hamzuryRole: "media" },
+  { name: "Salis",             email: "salis@hamzury.com",        hamzuryRole: "media" },            // Video/Sound
+  { name: "Abdulmalik Musa",   email: "abdulmalik@hamzury.com",   hamzuryRole: "skills_staff" },     // Skills dept lead
+  { name: "Dajot",             email: "dajot@hamzury.com",        hamzuryRole: "tech_lead" },        // Skills/Code
+  { name: "Lalo",              email: "lalo@hamzury.com",         hamzuryRole: "department_staff" }, // Design
+  { name: "Rabilu Musa",       email: "rabilu@hamzury.com",       hamzuryRole: "security_staff" },
+  { name: "Habeeba",           email: "habeeba@hamzury.com",      hamzuryRole: "department_staff" }, // New staff
+  { name: "Pius Emmanuel",     email: "pius@hamzury.com",         hamzuryRole: "department_staff" }, // New staff
+  { name: "Abdulwafeed Tanko", email: "abdulwafeed@hamzury.com",  hamzuryRole: "tech_lead" },        // IT Student/Tech
 ];
 
 /**
@@ -99,6 +103,45 @@ export async function seedStaffUsers(): Promise<number> {
 
   console.log(`[seed] Staff seeding complete: ${created} users created.`);
   return created;
+}
+
+/**
+ * Updates names for existing staff using the real full names from STAFF_ROSTER.
+ * Also adds any staff from STAFF_ROSTER that don't exist yet (new hires).
+ * Safe to re-run — skips anyone already matching.
+ */
+export async function syncStaffRoster(): Promise<void> {
+  const db = await getDb();
+  if (!db) { console.log("[sync-staff] DB not available — skipping"); return; }
+
+  for (const staff of STAFF_ROSTER) {
+    const existing = await getStaffUserByEmail(staff.email);
+    if (existing) {
+      // Update name if it differs
+      if (existing.name !== staff.name) {
+        await db.update(staffUsers)
+          .set({ name: staff.name })
+          .where(eq(staffUsers.email, staff.email));
+        console.log(`[sync-staff] Updated name: ${existing.name} → ${staff.name}`);
+      }
+    } else {
+      // New hire — add them
+      const { hash, salt } = await hashPassword(DEFAULT_PASSWORD);
+      await createStaffUser({
+        email: staff.email,
+        passwordHash: hash,
+        passwordSalt: salt,
+        name: staff.name,
+        hamzuryRole: staff.hamzuryRole,
+        isActive: true,
+        firstLogin: true,
+        passwordChanged: false,
+        failedAttempts: 0,
+      });
+      console.log(`[sync-staff] Added new staff: ${staff.name} (${staff.email})`);
+    }
+  }
+  console.log("[sync-staff] Roster sync complete");
 }
 
 // ─── Sample Client / Lead Seed ────────────────────────────────────────────────
