@@ -510,6 +510,11 @@ Sitemap: ${base}/sitemap.xml
 
   server.listen(port, async () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Debug: show DB URL presence (mask password)
+    const dbUrl = process.env.DATABASE_URL ?? "";
+    const maskedUrl = dbUrl ? dbUrl.replace(/:([^@]+)@/, ":***@") : "(not set)";
+    console.log(`[startup] DATABASE_URL: ${maskedUrl}`);
+    console.log(`[startup] MYSQL_URL: ${process.env.MYSQL_URL ? "(set)" : "(not set)"}`);
     // Run migrations then seed staff — both are safe to re-run
     try {
       await runMigrations();
