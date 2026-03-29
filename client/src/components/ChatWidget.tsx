@@ -611,13 +611,24 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       });
       setAiMessages(prev => [...prev, { role: "assistant", content: answer }]);
 
-      // After several exchanges, gently offer next steps
-      if (newHistory.filter(m => m.role === "user").length >= 5) {
+      // After 2 exchanges, offer to close the lead
+      const userCount = newHistory.filter(m => m.role === "user").length;
+      if (userCount >= 2) {
         setTimeout(() => {
-          addBotOptions([
-            { label: "Let's start", value: "SELF_SERVICE_FROM_CHAT" },
-            { label: "Book a call", value: "SCHEDULE" },
-          ]);
+          // Check if AI mentioned starting/proceeding — show action buttons
+          const lower = answer.toLowerCase();
+          if (lower.includes("want me to") || lower.includes("ready to") || lower.includes("set this up") || lower.includes("get started") || lower.includes("open a file") || lower.includes("proceed")) {
+            addBotOptions([
+              { label: "Yes, let's start", value: "AI_CLOSE_YES" },
+              { label: "Tell me more first", value: "AI_CLOSE_MORE" },
+              { label: "Book a call instead", value: "SCHEDULE" },
+            ]);
+          } else {
+            addBotOptions([
+              { label: "Start my request", value: "AI_CLOSE_YES" },
+              { label: "Keep chatting", value: "AI_CLOSE_MORE" },
+            ]);
+          }
         }, 800);
       }
     } catch {
@@ -954,6 +965,29 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     }
 
     // From AI chat: user is ready to self-service
+    // AI closing — user agreed to start
+    if (val === "AI_CLOSE_YES") {
+      // Get the service context from the AI conversation
+      const lastAiMsg = aiMessages.filter(m => m.role === "assistant").pop()?.content || "";
+      const inferredService = lastAiMsg.toLowerCase().includes("bizdoc") || lastAiMsg.toLowerCase().includes("compliance") || lastAiMsg.toLowerCase().includes("cac") || lastAiMsg.toLowerCase().includes("registration")
+        ? "BizDoc Compliance"
+        : lastAiMsg.toLowerCase().includes("systemise") || lastAiMsg.toLowerCase().includes("website") || lastAiMsg.toLowerCase().includes("brand") || lastAiMsg.toLowerCase().includes("automation")
+        ? "Systemise Systems"
+        : lastAiMsg.toLowerCase().includes("skills") || lastAiMsg.toLowerCase().includes("training") || lastAiMsg.toLowerCase().includes("founder")
+        ? "Skills Training"
+        : "General Consultation";
+      setLeadData(prev => ({ ...prev, service: inferredService, context: aiMessages.map(m => `${m.role}: ${m.content}`).slice(-4).join("\n") }));
+      setTimeout(() => addBotMsg("Let me get your details. What is your full name?"), 400);
+      setChatState("LEAD_NAME");
+      return;
+    }
+
+    // AI closing — user wants more info
+    if (val === "AI_CLOSE_MORE") {
+      setChatState("AI_CHAT");
+      return;
+    }
+
     if (val === "SELF_SERVICE_FROM_CHAT") {
       setTimeout(() => {
         addBotMsg("Pick the services you need.");
