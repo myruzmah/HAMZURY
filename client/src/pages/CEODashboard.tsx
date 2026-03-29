@@ -180,12 +180,12 @@ export default function CEODashboard() {
 // ─── Overview Section ────────────────────────────────────────────────────────
 function OverviewSection({ stats, leads, commissions, activity }: { stats: any; leads: any[]; commissions: any[]; activity: any[] }) {
   const fmtNaira = (n: number) => `₦${n.toLocaleString("en-NG")}`;
-  const totalRevenue = stats?.totalRevenue ?? 4850000;
-  const activeLeads = leads.length || 23;
-  const staffCount = stats?.totalStaff ?? 18;
-  const activeTasks = (stats?.totalTasks ?? 46) - (stats?.completedTasks ?? 34);
-  const completedThis = stats?.completedTasks ?? 34;
-  const pendingComms = commissions.filter(c => c.status === "pending").length || 3;
+  const totalRevenue = stats?.totalRevenue ?? 0;
+  const activeLeads = leads.length;
+  const staffCount = stats?.totalStaff ?? 0;
+  const activeTasks = (stats?.totalTasks ?? 0) - (stats?.completedTasks ?? 0);
+  const completedThis = stats?.completedTasks ?? 0;
+  const pendingComms = commissions.filter(c => c.status === "pending").length;
 
   const STAT_CARDS = [
     { label: "Total Revenue", value: fmtNaira(totalRevenue), icon: BarChart2, color: GOLD, isText: true },
@@ -259,14 +259,7 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Recent Activity</h2>
         {activity.length === 0 ? (
-          <div className="space-y-3">
-            {["BizDev handed off new lead — Chukwuemeka Foods Ltd", "Finance approved commission — ₦45,000", "Skills enrolled 3 new students — Business Essentials Cohort 3", "BizDoc completed CAC registration — NorthStar Trading Co", "Systemise delivered Clarity Audit — Kemi Properties"].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: `${GREEN}06` }}>
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
-                <p className="text-sm font-normal opacity-70" style={{ color: GREEN }}>{item}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm opacity-30 py-4 text-center" style={{ color: GREEN }}>No recent activity yet.</p>
         ) : (
           <div className="space-y-2">
             {activity.map((a: any) => (
@@ -374,21 +367,20 @@ function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingCom
 function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: any; deptStats: any[]; leads: any[] }) {
   const fmtNaira = (v: number) => v >= 1000000 ? `₦${(v / 1000000).toFixed(1)}M` : `₦${(v / 1000).toFixed(0)}K`;
 
-  const revenueData = revenueStats?.monthlyRevenue || MOCK_REVENUE;
+  const revenueData = revenueStats?.monthlyRevenue || [];
   const hasDeptStats = deptStats && deptStats.length > 0;
 
   // Lead source breakdown from real leads
   const sourceMap: Record<string, number> = {};
   leads.forEach(l => { const src = l.source || "Direct"; sourceMap[src] = (sourceMap[src] || 0) + 1; });
-  const leadSources = Object.entries(sourceMap).map(([source, count]) => ({ source, count }));
-  const displaySources = leadSources.length > 0 ? leadSources : MOCK_LEAD_SOURCES;
+  const displaySources = Object.entries(sourceMap).map(([source, count]) => ({ source, count }));
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: GREEN }}>Company Analytics</h2>
         <p className="text-xs opacity-30" style={{ color: GREEN }}>
-          {revenueStats ? "Live data from database" : "Loading…"}
+          {revenueStats ? "Live data from database" : "No revenue data yet"}
         </p>
       </div>
 
@@ -412,41 +404,51 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
       {/* Revenue chart */}
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
         <p className="text-sm font-normal mb-6 opacity-60" style={{ color: GREEN }}>Monthly Revenue — Last 6 Months</p>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={revenueData} barSize={28}>
-            <XAxis dataKey="month" tick={{ fontSize: 11, fill: GREEN, opacity: 0.4 }} axisLine={false} tickLine={false} />
-            <YAxis tickFormatter={fmtNaira} tick={{ fontSize: 11, fill: GREEN, opacity: 0.4 }} axisLine={false} tickLine={false} />
-            <Tooltip
-              formatter={(v: number) => [`₦${v.toLocaleString("en-NG")}`, "Revenue"]}
-              contentStyle={{ borderRadius: 10, border: `1px solid ${GREEN}10`, fontSize: 12 }}
-            />
-            <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
-              {revenueData.map((_: any, i: number) => (
-                <Cell key={i} fill={i === revenueData.length - 1 ? GOLD : `${GREEN}25`} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {revenueData.length === 0 ? (
+          <div className="h-[220px] flex items-center justify-center">
+            <p className="text-sm opacity-25" style={{ color: GREEN }}>No revenue data yet.</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={revenueData} barSize={28}>
+              <XAxis dataKey="month" tick={{ fontSize: 11, fill: GREEN, opacity: 0.4 }} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={fmtNaira} tick={{ fontSize: 11, fill: GREEN, opacity: 0.4 }} axisLine={false} tickLine={false} />
+              <Tooltip
+                formatter={(v: number) => [`₦${v.toLocaleString("en-NG")}`, "Revenue"]}
+                contentStyle={{ borderRadius: 10, border: `1px solid ${GREEN}10`, fontSize: 12 }}
+              />
+              <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
+                {revenueData.map((_: any, i: number) => (
+                  <Cell key={i} fill={i === revenueData.length - 1 ? GOLD : `${GREEN}25`} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
 
       {/* Lead sources + Department performance */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
-          <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Lead Sources {leadSources.length === 0 ? "(No leads yet)" : ""}</p>
-          <div className="space-y-4">
-            {displaySources.map(({ source, count }: any) => {
-              const max = Math.max(...displaySources.map((l: any) => l.count));
-              return (
-                <div key={source} className="flex items-center gap-3">
-                  <p className="text-sm w-20 shrink-0 font-normal opacity-60" style={{ color: GREEN }}>{source}</p>
-                  <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div className="h-full rounded-full" style={{ width: `${(count / max) * 100}%`, backgroundColor: GOLD }} />
+          <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Lead Sources</p>
+          {displaySources.length === 0 ? (
+            <p className="text-sm opacity-25 py-4 text-center" style={{ color: GREEN }}>No lead data yet.</p>
+          ) : (
+            <div className="space-y-4">
+              {displaySources.map(({ source, count }: any) => {
+                const max = Math.max(...displaySources.map((l: any) => l.count));
+                return (
+                  <div key={source} className="flex items-center gap-3">
+                    <p className="text-sm w-20 shrink-0 font-normal opacity-60" style={{ color: GREEN }}>{source}</p>
+                    <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${(count / max) * 100}%`, backgroundColor: GOLD }} />
+                    </div>
+                    <p className="text-sm font-medium w-6 text-right" style={{ color: GREEN }}>{count}</p>
                   </div>
-                  <p className="text-sm font-medium w-6 text-right" style={{ color: GREEN }}>{count}</p>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>

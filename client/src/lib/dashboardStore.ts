@@ -146,15 +146,15 @@ export const SHARED_TASKS: SharedTask[] = [
 
 // ─── Finance Summary (shared across all dashboards) ───────────────────────────
 export const FINANCE_SUMMARY: FinanceSummary = {
-  totalRevenue:    3_850_000,
-  operationalCost: 1_240_000,
-  profit:          2_610_000,   // 3,850,000 - 1,240,000
-  commissionPool:    261_000,   // 10% of profit
-  retained:        2_349_000,   // profit - commissionPool
+  totalRevenue:    0,
+  operationalCost: 0,
+  profit:          0,
+  commissionPool:  0,
+  retained:        0,
   mtd: {
-    revenue:   1_280_000,
-    cost:        420_000,
-    profit:      860_000,
+    revenue: 0,
+    cost:    0,
+    profit:  0,
   },
 };
 

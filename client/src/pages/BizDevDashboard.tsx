@@ -100,33 +100,29 @@ export default function BizDevDashboard() {
 
   const realLeads = leadsQuery.data || [];
   const realAffiliates = affiliatesQuery.data || [];
-  // Use real leads if available, else MOCK_LEADS
-  const leadsList: LeadRow[] = realLeads.length > 0
-    ? realLeads.map(l => ({
-        id: l.id,
-        ref: l.ref || `HAM-LD${String(l.id).padStart(2, "0")}-0000`,
-        name: l.businessName || l.name || "Unknown",
-        contact: l.name || "—",
-        source: l.source || "Unknown",
-        score: 3,
-        budget: "—",
-        timeline: "—",
-        service: l.service || "TBD",
-        status: (l.status === "new" || l.status === "contacted" ? "qualifying" : l.status === "converted" ? "handed_off" : "nurturing") as LeadRow["status"],
-      }))
-    : MOCK_LEADS;
-  // Use real affiliates if available, else MOCK_AFFILIATES
-  const affiliatesList: AffRow[] = realAffiliates.length > 0
-    ? realAffiliates.map(a => ({
-        id: a.id,
-        name: a.name,
-        ref: a.code || `AFF-${String(a.id).padStart(3, "0")}`,
-        leads: 0,
-        converted: 0,
-        earnings: "₦0",
-        status: a.status || "active",
-      }))
-    : MOCK_AFFILIATES;
+  // Use real leads only — no mock fallback
+  const leadsList: LeadRow[] = realLeads.map(l => ({
+    id: l.id,
+    ref: l.ref || `HAM-LD${String(l.id).padStart(2, "0")}-0000`,
+    name: l.businessName || l.name || "Unknown",
+    contact: l.name || "—",
+    source: l.source || "Unknown",
+    score: 3,
+    budget: "—",
+    timeline: "—",
+    service: l.service || "TBD",
+    status: (l.status === "new" || l.status === "contacted" ? "qualifying" : l.status === "converted" ? "handed_off" : "nurturing") as LeadRow["status"],
+  }));
+  // Use real affiliates only — no mock fallback
+  const affiliatesList: AffRow[] = realAffiliates.map(a => ({
+    id: a.id,
+    name: a.name,
+    ref: a.code || `AFF-${String(a.id).padStart(3, "0")}`,
+    leads: 0,
+    converted: 0,
+    earnings: "₦0",
+    status: a.status || "active",
+  }));
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview", icon: LayoutDashboard, label: "Overview" },
@@ -210,12 +206,12 @@ function OverviewSection({ leadsList, affiliatesList }: { leadsList: LeadRow[]; 
   const activeAffs = affiliatesList.filter(a => a.status === "active").length;
 
   const KPI_CARDS = [
-    { label: "Qualified Leads", value: qualifiedThisWeek || MOCK_KPI.qualifiedLeadsWeek, unit: "", target: "10–15/week", color: GREEN },
+    { label: "Qualified Leads", value: qualifiedThisWeek, unit: "", target: "10–15/week", color: GREEN },
     { label: "Lead → Handoff Rate", value: handoffRate, unit: "%", target: "Target ≥60%", color: "#3B82F6" },
     { label: "Handoff Ready", value: handoffReady, unit: "", target: "Send to CSO", color: GOLD },
-    { label: "Brand QA Pass Rate", value: MOCK_KPI.brandQAPass, unit: "%", target: "Target ≥85%", color: "#8B5CF6" },
-    { label: "Active Affiliates", value: activeAffs || MOCK_KPI.activePartnerships, unit: "", target: "Q1 target: 15", color: DARK },
-    { label: "Referral Conversion", value: MOCK_KPI.referralConversion, unit: "%", target: "Target ≥20%", color: "#22C55E" },
+    { label: "Brand QA Pass Rate", value: 0, unit: "%", target: "Target ≥85%", color: "#8B5CF6" },
+    { label: "Active Affiliates", value: activeAffs, unit: "", target: "Q1 target: 15", color: DARK },
+    { label: "Referral Conversion", value: 0, unit: "%", target: "Target ≥20%", color: "#22C55E" },
   ];
 
   const WEEKLY = [
@@ -451,10 +447,10 @@ function PartnershipsSection() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Partners", value: 17 },
-          { label: "Active", value: 12 },
-          { label: "Agreements", value: 3 },
-          { label: "Referrals Generated", value: 13 },
+          { label: "Total Partners", value: 0 },
+          { label: "Active", value: 0 },
+          { label: "Agreements", value: 0 },
+          { label: "Referrals Generated", value: 0 },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${DARK}08` }}>
             <p className="text-2xl font-normal" style={{ color: GREEN }}>{value}</p>
@@ -472,7 +468,7 @@ function PartnershipsSection() {
       {/* Kanban */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {KANBAN_STAGES.map(stage => {
-          const cards = MOCK_PARTNERSHIPS.filter(p => p.stage === stage);
+          const cards: typeof MOCK_PARTNERSHIPS = [];
           return (
             <div key={stage} className="space-y-3">
               <div className="flex items-center gap-2">
@@ -506,7 +502,7 @@ function PartnershipsSection() {
 
 // ─── Brand QA ─────────────────────────────────────────────────────────────────
 function BrandQASection() {
-  const [qaItems, setQaItems] = useState(MOCK_QA);
+  const [qaItems, setQaItems] = useState<typeof MOCK_QA>([]);
   const [expanded, setExpanded] = useState(false);
 
   const STATUS_CONFIG = {

@@ -141,19 +141,17 @@ export default function HRDashboard() {
   const joinApps      = joinAppsQuery.data || [];
   const todayAttendance = attendanceQuery.data || [];
 
-  // Map real staffUsers to display format — fall back to MOCK_STAFF while DB is empty
-  const staffList = realStaff.length > 0 ? realStaff : MOCK_STAFF;
+  // Use real staff from DB — no mock fallback
+  const staffList = realStaff;
 
-  // Build today's attendance from real data
-  const attendanceList = todayAttendance.length > 0
-    ? todayAttendance.map((a: any) => ({
-        name: a.userName || `User #${a.userId}`,
-        dept: a.department || "—",
-        checkIn: a.checkIn ? new Date(a.checkIn).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }) : null,
-        checkOut: a.checkOut ? new Date(a.checkOut).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }) : null,
-        status: a.status || "Present",
-      }))
-    : MOCK_ATTENDANCE;
+  // Build today's attendance from real data only
+  const attendanceList = todayAttendance.map((a: any) => ({
+    name: a.userName || `User #${a.userId}`,
+    dept: a.department || "—",
+    checkIn: a.checkIn ? new Date(a.checkIn).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }) : null,
+    checkOut: a.checkOut ? new Date(a.checkOut).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }) : null,
+    status: a.status || "Present",
+  }));
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview",     icon: LayoutDashboard, label: "Overview"        },
@@ -245,14 +243,14 @@ export default function HRDashboard() {
 
 // ─── Overview Section ─────────────────────────────────────────────────────────
 function OverviewSection({ stats, activity, staffList }: { stats: any; activity: any[]; staffList: typeof MOCK_STAFF }) {
-  const totalStaff = stats?.totalStaff ?? 24;
+  const totalStaff = stats?.totalStaff ?? 0;
   const STAT_CARDS = [
-    { label: "Total Staff",       value: totalStaff, icon: Users,         color: GREEN                },
-    { label: "Present Today",     value: 22,         icon: CheckCircle2,  color: "#22C55E"            },
-    { label: "On Leave",          value: 2,          icon: Clock,         color: "#EAB308"            },
-    { label: "Open Positions",    value: 5,          icon: Briefcase,     color: "#3B82F6"            },
-    { label: "Reviews Due",       value: 8,          icon: AlertTriangle, color: "#EF4444"            },
-    { label: "Commission Earned", value: formatNaira(Math.round(FINANCE_SUMMARY.profit * 0.02)), icon: DollarSign, color: GOLD, isText: true },
+    { label: "Total Staff",       value: totalStaff,  icon: Users,         color: GREEN   },
+    { label: "Present Today",     value: stats?.presentToday ?? 0, icon: CheckCircle2,  color: "#22C55E" },
+    { label: "On Leave",          value: stats?.onLeave ?? 0,      icon: Clock,         color: "#EAB308" },
+    { label: "Open Positions",    value: 0,           icon: Briefcase,     color: "#3B82F6"            },
+    { label: "Reviews Due",       value: 0,           icon: AlertTriangle, color: "#EF4444"            },
+    { label: "Commission Earned", value: "₦0",        icon: DollarSign,    color: GOLD, isText: true   },
   ];
 
   const maxCount = Math.max(...DEPT_DIST.map(d => d.count));
@@ -294,14 +292,7 @@ function OverviewSection({ stats, activity, staffList }: { stats: any; activity:
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Recent Activity</h2>
         {activity.length === 0 ? (
-          <div className="space-y-3">
-            {RECENT_ACTIVITY.map((item, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: `${GREEN}06` }}>
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: GOLD }} />
-                <p className="text-sm font-normal opacity-70" style={{ color: GREEN }}>{item}</p>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm opacity-30 py-4 text-center" style={{ color: GREEN }}>No recent activity yet.</p>
         ) : (
           <div className="space-y-2">
             {activity.map((a: any) => (
@@ -408,9 +399,6 @@ function StaffSection({ staffList }: { staffList: typeof MOCK_STAFF }) {
 type AttendanceRow = { name: string; dept: string; checkIn: string | null; checkOut: string | null; status: string };
 function AttendanceSection({ attendanceList }: { attendanceList: AttendanceRow[] }) {
   const [tab, setTab] = useState<"today" | "leave">("today");
-  const [leaveStatuses, setLeaveStatuses] = useState<Record<string, string>>(
-    Object.fromEntries(MOCK_LEAVE.map(l => [l.id, l.status]))
-  );
 
   const attendanceStatusColor = (status: string) => {
     if (status === "Present")  return { bg: "#22C55E15", text: "#22C55E" };
@@ -466,55 +454,8 @@ function AttendanceSection({ attendanceList }: { attendanceList: AttendanceRow[]
       )}
 
       {tab === "leave" && (
-        <div className="space-y-3">
-          {MOCK_LEAVE.map(l => {
-            const currentStatus = leaveStatuses[l.id];
-            return (
-              <div key={l.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: currentStatus === "Pending" ? `${GOLD}30` : `${GREEN}08` }}>
-                <div className="flex items-start justify-between gap-4 mb-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-mono opacity-40" style={{ color: GREEN }}>{l.id}</span>
-                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{l.type}</span>
-                    </div>
-                    <p className="text-sm font-medium" style={{ color: GREEN }}>{l.staff}</p>
-                    <p className="text-xs opacity-50 mt-0.5" style={{ color: GREEN }}>{l.start} → {l.end}</p>
-                  </div>
-                  {currentStatus === "Pending" ? (
-                    <div className="flex gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        className="text-xs h-8"
-                        style={{ backgroundColor: "#22C55E", color: "white" }}
-                        onClick={() => { setLeaveStatuses(p => ({ ...p, [l.id]: "Approved" })); toast.success(`Leave approved for ${l.staff}`); }}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs h-8"
-                        style={{ borderColor: "#EF444430", color: "#EF4444" }}
-                        onClick={() => { setLeaveStatuses(p => ({ ...p, [l.id]: "Rejected" })); toast.error(`Leave rejected for ${l.staff}`); }}
-                      >
-                        Reject
-                      </Button>
-                    </div>
-                  ) : (
-                    <span
-                      className="text-[11px] px-2.5 py-0.5 rounded-full font-normal shrink-0"
-                      style={{
-                        backgroundColor: currentStatus === "Approved" ? "#22C55E15" : "#EF444415",
-                        color: currentStatus === "Approved" ? "#22C55E" : "#EF4444",
-                      }}
-                    >
-                      {currentStatus}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <p className="text-sm opacity-30" style={{ color: GREEN }}>No leave requests yet.</p>
         </div>
       )}
     </div>
@@ -686,26 +627,8 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
       {/* Job Postings */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Job Postings</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {MOCK_JOBS.map(j => {
-            const sc = jobStatusColor(j.status);
-            return (
-              <div key={j.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
-                <div className="flex items-start justify-between mb-3">
-                  <span className="text-[10px] font-mono opacity-40" style={{ color: GREEN }}>{j.id}</span>
-                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal" style={{ backgroundColor: sc.bg, color: sc.text }}>{j.status}</span>
-                </div>
-                <p className="text-sm font-medium mb-1" style={{ color: GREEN }}>{j.title}</p>
-                <p className="text-xs opacity-50 mb-3" style={{ color: GREEN }}>{j.dept} · Posted {j.posted}</p>
-                <div className="flex items-center justify-between">
-                  <p className="text-xs opacity-50" style={{ color: GREEN }}>{j.apps} applications</p>
-                  <Button size="sm" variant="outline" className="text-xs h-7" style={{ borderColor: `${GREEN}20`, color: GREEN }} onClick={() => toast(`Viewing ${j.title} applications`)}>
-                    View
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <p className="text-sm opacity-30" style={{ color: GREEN }}>No job postings yet.</p>
         </div>
       </div>
 
@@ -799,25 +722,8 @@ function TrainingSection() {
       {/* Training Sessions */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Training Sessions</h2>
-        <div className="space-y-3">
-          {MOCK_SESSIONS.map(s => {
-            const sc = sessionStatusColor(s.status);
-            return (
-              <div key={s.id} className="bg-white rounded-2xl border p-5 flex items-center gap-4" style={{ borderColor: `${GREEN}08` }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
-                  <GraduationCap size={16} style={{ color: GOLD }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium" style={{ color: GREEN }}>{s.title}</p>
-                  <p className="text-xs opacity-50 mt-0.5" style={{ color: GREEN }}>
-                    {s.type} · {s.date} · {s.participants} participants
-                  </p>
-                </div>
-                <span className="text-[10px] font-mono opacity-40 hidden sm:block shrink-0" style={{ color: GREEN }}>{s.id}</span>
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{s.status}</span>
-              </div>
-            );
-          })}
+        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <p className="text-sm opacity-30" style={{ color: GREEN }}>No training sessions logged yet.</p>
         </div>
         <Button
           className="mt-4"
@@ -831,28 +737,8 @@ function TrainingSection() {
       {/* Development Plans */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Development Plans</h2>
-        <div className="space-y-4">
-          {MOCK_PLANS.map((p, i) => (
-            <div key={i} className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <p className="text-sm font-medium" style={{ color: GREEN }}>{p.staff}</p>
-                  <p className="text-xs opacity-50 mt-0.5" style={{ color: GREEN }}>{p.goal}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs opacity-40" style={{ color: GREEN }}>Target</p>
-                  <p className="text-xs font-medium" style={{ color: GREEN }}>{p.targetDate}</p>
-                </div>
-              </div>
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs opacity-50" style={{ color: GREEN }}>Support: {p.support}</p>
-                <p className="text-sm font-medium" style={{ color: GREEN }}>{p.progress}%</p>
-              </div>
-              <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                <div className="h-full rounded-full transition-all" style={{ width: `${p.progress}%`, backgroundColor: GOLD }} />
-              </div>
-            </div>
-          ))}
+        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <p className="text-sm opacity-30" style={{ color: GREEN }}>No development plans yet.</p>
         </div>
       </div>
     </div>
