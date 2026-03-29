@@ -470,20 +470,6 @@ export async function seedAll(): Promise<{ staffCreated: number; pricingSeeded: 
   return { staffCreated, pricingSeeded: true };
 }
 
-// ─── Standalone execution ─────────────────────────────────────────────────────
-
-async function main() {
-  console.log("[seed] Starting standalone seed...");
-  const result = await seedAll();
-  console.log("[seed] Done.", result);
-  process.exit(0);
-}
-
-// ESM-compatible standalone execution check
-const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, "/"));
-if (isMain) {
-  main().catch((err) => {
-    console.error("[seed] Fatal error:", err);
-    process.exit(1);
-  });
-}
+// Standalone execution is intentionally removed.
+// Run via: railway run pnpm tsx server/seed-staff.ts
+// Or trigger via tRPC: staff.seed (founderCEOProcedure)
