@@ -65,10 +65,18 @@ const SERVICE_DETAILS: Record<string, { pitch: string; includes: string[]; price
   board_res: { pitch: "Board resolutions formalize your company's major decisions.", includes: ["Resolution drafting", "Minutes template", "Filing support"], price: "from \u20A625,000" },
   ip: { pitch: "Your brand name and ideas are assets. Protect them before someone else takes them.", includes: ["Trademark search", "Application filing", "Certificate delivery"], price: "\u20A675,000" },
   workspace: { pitch: "Set up your team's digital workspace -- email, cloud storage, collaboration tools.", includes: ["Google Workspace or Microsoft 365", "Email setup", "Team onboarding"], price: "from \u20A650,000" },
+  monthly_filing: { pitch: "We file your taxes every month so you never miss a deadline or face penalties.", includes: ["Monthly FIRS filing", "VAT returns", "PAYE processing"], price: "Included in \u20A6150,000/year", value: "We handle every filing so you never think about tax deadlines again." },
+  renewal_tracking: { pitch: "Licences and registrations expire. We track every deadline and renew on time.", includes: ["CAC annual returns", "Licence renewals", "Permit tracking"], price: "Included in subscription" },
+  penalty_prevention: { pitch: "Late filings cost money. We prevent every penalty before it happens.", includes: ["Deadline alerts", "Proactive filing", "Penalty review"], price: "Included in subscription" },
+  tcc_annual: { pitch: "Your Tax Clearance Certificate proves you are a serious business. We get it for you yearly.", includes: ["3-year tax review", "Application filing", "Certificate delivery"], price: "Included in subscription" },
+  compliance_report: { pitch: "Monthly compliance status reports so you always know where you stand.", includes: ["Filing status", "Upcoming deadlines", "Compliance score"], price: "Included in subscription" },
+  audit_support: { pitch: "If regulators come knocking, we have your records ready.", includes: ["Record keeping", "Audit preparation", "Response support"], price: "Included in subscription" },
+  online_always: { pitch: "Learn at your own pace. Our online programs are always open.", includes: ["Self-paced modules", "HALS access", "Certificate on completion"], price: "from \u20A645,000", value: "Start learning today -- no waiting for a cohort." },
+  physical_cohort: { pitch: "Limited seats. Next cohort filling fast. In-person training in Abuja.", includes: ["3-week intensive", "Hands-on projects", "Networking", "Certificate"], price: "from \u20A655,000", value: "Only 25 seats per cohort. Early registration recommended." },
 };
 
 /* ── Monthly/subscription service IDs ── */
-const MONTHLY_SERVICE_IDS = new Set(["management", "social_mgmt"]);
+const MONTHLY_SERVICE_IDS = new Set(["monthly_filing", "social_mgmt"]);
 
 /* ── Tax Management Pipeline Data ── */
 const TAX_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -800,7 +808,22 @@ export default function ClientDashboard() {
                   { id: "tcc", label: "Tax Clearance", short: "TCC" },
                   { id: "licence", label: "Sector Licence", short: "Licence" },
                   { id: "annual", label: "Annual Returns", short: "Returns" },
-                  { id: "management", label: "Tax Management", short: "Tax Mgmt" },
+                ],
+              },
+              {
+                id: "compliance_mgmt",
+                icon: Clock,
+                label: "Compliance Management",
+                desc: "Monthly filing, penalty prevention, renewals, TCC",
+                pitch: "We prevent penalties, track deadlines, and file on your behalf every month. \u20A6150,000/year.",
+                color: "#1B4D3E",
+                items: [
+                  { id: "monthly_filing", label: "Monthly Tax Filing", short: "Filing" },
+                  { id: "renewal_tracking", label: "Renewal Tracking", short: "Renewals" },
+                  { id: "penalty_prevention", label: "Penalty Prevention", short: "Prevent" },
+                  { id: "tcc_annual", label: "Annual TCC Certificate", short: "TCC" },
+                  { id: "compliance_report", label: "Compliance Reports", short: "Reports" },
+                  { id: "audit_support", label: "Audit Support", short: "Audit" },
                 ],
               },
               {
@@ -876,6 +899,8 @@ export default function ClientDashboard() {
                   { id: "founder", label: "Founder Program", short: "Founder" },
                   { id: "team", label: "Team Training", short: "Team" },
                   { id: "ai_skills", label: "AI Skills", short: "AI" },
+                  { id: "online_always", label: "Online (Always Open)", short: "Online" },
+                  { id: "physical_cohort", label: "Physical Cohort", short: "Physical" },
                   { id: "growth", label: "Growth Strategy", short: "Growth" },
                 ],
               },
@@ -894,9 +919,19 @@ export default function ClientDashboard() {
                 active.tin = "paid"; active.tcc = "paid";
                 active.brand_id = "paid"; active.website = "paid";
                 active.social_setup = "paid"; active.social_mgmt = "paid";
-                active.management = "paid";  // tax management subscription
+                active.monthly_filing = "paid"; active.renewal_tracking = "paid";
+                active.penalty_prevention = "paid"; active.tcc_annual = "paid";
+                active.compliance_report = "paid"; active.audit_support = "paid";
                 active.dashboard = "paid";   // dashboard build
                 active.team = "paid";        // 1 staff in skills
+              }
+              if (s.includes("management") || s.includes("subscription") || s.includes("tax management")) {
+                active.monthly_filing = done ? "delivered" : "in_progress";
+                active.renewal_tracking = "paid";
+                active.penalty_prevention = "paid";
+                active.tcc_annual = "paid";
+                active.compliance_report = "paid";
+                active.audit_support = "paid";
               }
               if (s.includes("cac") || s.includes("registration")) active.cac = done ? "delivered" : "in_progress";
               if (s.includes("tax") || s.includes("tin")) active.tin = done ? "delivered" : "in_progress";
@@ -1182,7 +1217,7 @@ export default function ClientDashboard() {
                               const isMonthly = MONTHLY_SERVICE_IDS.has(item.id);
 
                               /* ── Tax Management: 12-month pipeline ── */
-                              if (selectedItem === "management" && pillar.id === "compliance" && state !== "inactive") {
+                              if (selectedItem === "monthly_filing" && pillar.id === "compliance_mgmt" && state !== "inactive") {
                                 return (
                                   <div
                                     className="mx-4 mb-4 rounded-xl p-5"
