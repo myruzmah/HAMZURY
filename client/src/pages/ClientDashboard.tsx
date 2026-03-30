@@ -5,7 +5,7 @@ import {
   CreditCard, Copy, Upload,
   ArrowRight, Quote,
   Shield, Globe, Zap, TrendingUp, Clock,
-  Users, Sparkles, Palette,
+  Users, Sparkles, Palette, Briefcase,
   X, UserPlus, FileCheck, Award, GraduationCap, Lock,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
@@ -61,6 +61,10 @@ const SERVICE_DETAILS: Record<string, { pitch: string; includes: string[]; price
   team: { pitch: "Your systems are only as good as the people using them.", includes: ["Custom curriculum", "Practical exercises", "Certification"], price: "Custom pricing" },
   ai_skills: { pitch: "AI is changing business. Learn how to use it before your competitors do.", includes: ["AI tools mastery", "Prompt engineering", "Business application"], price: "\u20A655,000" },
   growth: { pitch: "Scaling without structure breaks businesses. We help you grow right.", includes: ["Growth strategy", "Expansion planning", "Management systems"], price: "Custom pricing" },
+  nda: { pitch: "Protect your business relationships with proper non-disclosure agreements.", includes: ["NDA drafting", "Customization", "Legal review"], price: "from \u20A630,000" },
+  board_res: { pitch: "Board resolutions formalize your company's major decisions.", includes: ["Resolution drafting", "Minutes template", "Filing support"], price: "from \u20A625,000" },
+  ip: { pitch: "Your brand name and ideas are assets. Protect them before someone else takes them.", includes: ["Trademark search", "Application filing", "Certificate delivery"], price: "\u20A675,000" },
+  workspace: { pitch: "Set up your team's digital workspace — email, cloud storage, collaboration tools.", includes: ["Google Workspace or Microsoft 365", "Email setup", "Team onboarding"], price: "from \u20A650,000" },
 };
 
 /* ── Monthly/subscription service IDs ── */
@@ -354,6 +358,9 @@ export default function ClientDashboard() {
   const [invoicesOpen, setInvoicesOpen] = useState(false);
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<string | null>(null);
+  const [uploads, setUploads] = useState<{name: string; file: string; time: string}[]>([]);
+  const [uploadName, setUploadName] = useState("");
+  const [showUploadInput, setShowUploadInput] = useState(false);
 
   /* Chat state */
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
@@ -760,8 +767,8 @@ export default function ClientDashboard() {
               {
                 id: "compliance",
                 icon: Shield,
-                label: "Compliance & Documents",
-                desc: "Registration, tax, licences, contracts, templates",
+                label: "Compliance",
+                desc: "Registration, tax, licences, permits",
                 pitch: "Is your business legally protected? Most businesses miss at least 2 critical documents.",
                 color: "#1B4D3E",
                 items: [
@@ -769,10 +776,23 @@ export default function ClientDashboard() {
                   { id: "tin", label: "TIN Registration", short: "TIN" },
                   { id: "tcc", label: "Tax Clearance", short: "TCC" },
                   { id: "licence", label: "Sector Licence", short: "Licence" },
-                  { id: "contracts", label: "Contracts & Legal", short: "Legal" },
-                  { id: "templates", label: "Document Templates", short: "Docs" },
                   { id: "annual", label: "Annual Returns", short: "Returns" },
-                  { id: "management", label: "Compliance Mgmt", short: "Mgmt" },
+                  { id: "management", label: "Tax Management", short: "Tax Mgmt" },
+                ],
+              },
+              {
+                id: "legal",
+                icon: Briefcase,
+                label: "Legal & Templates",
+                desc: "Contracts, agreements, documents, templates",
+                pitch: "If a partner or staff betrays you, are your agreements protecting you?",
+                color: "#1B4D3E",
+                items: [
+                  { id: "contracts", label: "Contracts & Legal", short: "Contracts" },
+                  { id: "templates", label: "Document Templates", short: "Templates" },
+                  { id: "nda", label: "NDAs & Agreements", short: "NDAs" },
+                  { id: "board_res", label: "Board Resolutions", short: "Board" },
+                  { id: "ip", label: "IP & Trademark", short: "IP" },
                 ],
               },
               {
@@ -819,6 +839,7 @@ export default function ClientDashboard() {
                   { id: "dashboard", label: "Dashboard", short: "Dash" },
                   { id: "ai_agent", label: "AI Agent", short: "AI" },
                   { id: "research", label: "Research Tools", short: "Research" },
+                  { id: "workspace", label: "Digital Workspace Setup", short: "Workspace" },
                 ],
               },
               {
@@ -850,6 +871,9 @@ export default function ClientDashboard() {
                 active.tin = "paid"; active.tcc = "paid";
                 active.brand_id = "paid"; active.website = "paid";
                 active.social_setup = "paid"; active.social_mgmt = "paid";
+                active.management = "paid";  // tax management subscription
+                active.dashboard = "paid";   // dashboard build
+                active.team = "paid";        // 1 staff in skills
               }
               if (s.includes("cac") || s.includes("registration")) active.cac = done ? "delivered" : "in_progress";
               if (s.includes("tax") || s.includes("tin")) active.tin = done ? "delivered" : "in_progress";
@@ -870,7 +894,7 @@ export default function ClientDashboard() {
 
             /* ── Business Strength ── */
             const pillarsWithActive = PILLARS.filter(p => p.items.some(it => activeItems[it.id]));
-            const strengthPct = Math.round((pillarsWithActive.length / 5) * 100);
+            const strengthPct = Math.round((pillarsWithActive.length / PILLARS.length) * 100);
 
             const strengthMessages: Record<number, string> = {
               0: "Your business is unstructured. Let's fix that.",
@@ -897,6 +921,47 @@ export default function ClientDashboard() {
 
             return (
               <>
+                {/* ═══ YOUR PLAN — paid services pipeline ═══ */}
+                {(() => {
+                  const paidItems = PILLARS.flatMap(p =>
+                    p.items.filter(item => activeItems[item.id]).map(item => ({
+                      ...item,
+                      state: activeItems[item.id],
+                      pillarColor: p.color,
+                      pillarLabel: p.label,
+                    }))
+                  );
+                  if (paidItems.length === 0) return null;
+                  return (
+                    <div className="mt-6 mb-4">
+                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: GOLD, marginBottom: 12 }}>Your Plan</p>
+                      <div className="rounded-2xl p-4 overflow-x-auto" style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 0, minWidth: "max-content" }}>
+                          {paidItems.map((item, i) => (
+                            <div key={item.id} style={{ display: "flex", alignItems: "center" }}>
+                              {i > 0 && <div style={{ width: 20, height: 1, background: item.state === "delivered" ? "#22C55E" : GOLD, flexShrink: 0 }} />}
+                              <div style={{ textAlign: "center", flexShrink: 0, padding: "0 4px" }}>
+                                <div style={{
+                                  width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto",
+                                  background: item.state === "delivered" ? "#22C55E" : item.state === "in_progress" ? "#22C55E" : `${GOLD}20`,
+                                  border: item.state === "paid" ? `2px solid ${GOLD}` : "none",
+                                  animation: item.state === "in_progress" ? "stagePulse 2s infinite" : "none",
+                                }}>
+                                  {item.state === "delivered" ? <CheckCircle size={16} color="white" /> : item.state === "in_progress" ? <Clock size={14} color="white" /> : <span style={{ fontSize: 10, color: GOLD }}>₦</span>}
+                                </div>
+                                <p style={{ fontSize: 10, color: DARK, marginTop: 4, fontWeight: 500 }}>{item.short}</p>
+                                <p style={{ fontSize: 9, color: "#999", marginTop: 1 }}>
+                                  {item.state === "delivered" ? "Done" : item.state === "in_progress" ? "Now" : "Queued"}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* ═══ BUSINESS STRENGTH METER ═══ */}
                 <div
                   className="mt-6 mb-6 rounded-2xl p-5 md:p-6 flex items-center gap-5"
@@ -1194,52 +1259,67 @@ export default function ClientDashboard() {
                   <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: GOLD }}>
                     Documents
                   </p>
-                  {checklist.length > 0 ? (
-                    <div className="space-y-1">
-                      {checklist.map((item, ci) => (
-                        <div key={ci} className="flex items-center gap-2 py-1.5">
-                          {item.checked ? (
-                            <CheckCircle size={16} style={{ color: GREEN }} />
-                          ) : (
-                            <Circle size={16} style={{ color: GREY }} />
-                          )}
-                          <span className="text-[13px] font-light flex-1" style={{ color: item.checked ? DARK : LABEL }}>
-                            {item.label}
-                          </span>
-                          {item.checked && (
-                            <span className="text-[11px]" style={{ color: LABEL }}>Received</span>
-                          )}
+
+                  {/* Uploaded files */}
+                  {uploads.length > 0 && (
+                    <div style={{marginBottom: 12}}>
+                      {uploads.map((u, i) => (
+                        <div key={i} style={{display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:"1px solid #f0f0f0"}}>
+                          <CheckCircle size={14} color="#22C55E" />
+                          <span style={{fontSize:13, color:"#1A1A1A"}}>{u.name}</span>
+                          <span style={{fontSize:11, color:"#999", marginLeft:"auto"}}>{u.file} · {u.time}</span>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-[13px] font-light" style={{ color: LABEL }}>No documents needed at this stage.</p>
                   )}
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    style={{ display: "none" }}
-                    id="doc-upload"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      if (file.size > 5 * 1024 * 1024) {
-                        setChatMessages(prev => [...prev, { role: "assistant", content: "File must be under 5MB. Please try a smaller file." }]);
-                        setMobileChatOpen(true);
-                        return;
-                      }
-                      setChatMessages(prev => [...prev, { role: "assistant", content: `${file.name} received. Our team will process it shortly.` }]);
-                      setMobileChatOpen(true);
-                    }}
-                  />
-                  <button
-                    onClick={() => document.getElementById("doc-upload")?.click()}
-                    className="flex items-center gap-1.5 mt-3 text-[12px] font-light transition-opacity hover:opacity-70"
-                    style={{ color: GOLD, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                  >
-                    <Upload size={12} />
-                    Upload a document (PDF, JPG, PNG -- max 5MB)
-                  </button>
+
+                  {/* Checklist items */}
+                  {checklist.map((item, ci) => (
+                    <div key={ci} style={{display:"flex", alignItems:"center", gap:8, padding:"6px 0"}}>
+                      {item.checked ? <CheckCircle size={16} color="#22C55E" /> : <Circle size={16} color="#D1D5DB" />}
+                      <span style={{fontSize:13, color: item.checked ? "#1A1A1A" : "#999"}}>{item.label}</span>
+                    </div>
+                  ))}
+
+                  {/* Upload flow */}
+                  {!showUploadInput ? (
+                    <button onClick={() => setShowUploadInput(true)} style={{marginTop:12, fontSize:12, color:GOLD, background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:4}}>
+                      <Upload size={14} /> Upload a document
+                    </button>
+                  ) : !uploadName ? (
+                    <div style={{marginTop:12}}>
+                      <input
+                        placeholder="Name this file (e.g. NIN Copy)"
+                        onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) setUploadName((e.target as HTMLInputElement).value.trim()); }}
+                        style={{width:"100%", padding:"8px 12px", border:"1px solid #E5E5E5", borderRadius:8, fontSize:13, outline:"none"}}
+                        autoFocus
+                      />
+                      <p style={{fontSize:11, color:"#999", marginTop:4}}>Press Enter to continue</p>
+                    </div>
+                  ) : (
+                    <div style={{marginTop:12}}>
+                      <p style={{fontSize:12, color:"#666", marginBottom:4}}>Uploading: <strong>{uploadName}</strong></p>
+                      <input
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 5 * 1024 * 1024) {
+                            setChatMessages(prev => [...prev, { role: "assistant", content: "File must be under 5MB. Please try a smaller file." }]);
+                            setMobileChatOpen(true);
+                            return;
+                          }
+                          setUploads(prev => [...prev, { name: uploadName, file: file.name, time: new Date().toLocaleTimeString() }]);
+                          setUploadName("");
+                          setShowUploadInput(false);
+                          setChatMessages(prev => [...prev, { role: "assistant", content: `${uploadName} uploaded successfully.` }]);
+                        }}
+                        style={{fontSize:13}}
+                      />
+                      <p style={{fontSize:11, color:"#999", marginTop:4}}>PDF, JPG, PNG — max 5MB</p>
+                    </div>
+                  )}
                 </div>
 
 
