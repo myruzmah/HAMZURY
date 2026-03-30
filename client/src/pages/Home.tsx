@@ -453,7 +453,17 @@ export default function Home() {
                           className="flex-1 rounded-xl px-4 py-3 text-sm outline-none border font-mono"
                           style={{ borderColor: `${TEAL}18`, backgroundColor: WHITE, color: TEAL }}
                           value={trackRef}
-                          onChange={e => { setTrackRef(e.target.value); setTrackNotFound(false); setTrackResult(null); }}
+                          onChange={e => {
+                            let raw = e.target.value.replace(/[^0-9]/g, "");
+                            if (raw.length > 8) raw = raw.slice(0, 8);
+                            let formatted = "HMZ-";
+                            if (raw.length > 0) formatted += raw.slice(0, 2);
+                            if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
+                            if (raw.length > 3) formatted += "-" + raw.slice(3);
+                            setTrackRef(formatted);
+                            setTrackNotFound(false);
+                            setTrackResult(null);
+                          }}
                           onKeyDown={e => e.key === "Enter" && handleTrack()} />
                         <button onClick={handleTrack} disabled={trackLoading}
                           className="px-5 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"

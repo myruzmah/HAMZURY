@@ -1691,11 +1691,11 @@ export default function BizDocPortal() {
                 Our Services <ArrowRight size={16} className="inline ml-1" />
               </button>
               <button
-                onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" })}
                 className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-[14px] font-semibold transition-opacity hover:opacity-90 border"
                 style={{ borderColor: `${Au}50`, color: Au }}
               >
-                Business Blueprint <ArrowRight size={16} />
+                Track <ArrowRight size={16} />
               </button>
             </div>
           </div>
@@ -1832,7 +1832,11 @@ export default function BizDocPortal() {
                         style={{ backgroundColor: `${Au}12`, color: G }}>{p.highlight}</p>
 
                       <button
-                        onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
+                        onClick={() => {
+                          localStorage.setItem("hamzury-chat-context", `I am interested in ${p.title}. Tell me more.`);
+                          const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                          if (btn) btn.click();
+                        }}
                         className="inline-flex items-center gap-2 text-[13px] font-semibold"
                         style={{ color: Au }}
                       >
@@ -1970,7 +1974,11 @@ export default function BizDocPortal() {
                           ))}
                         </ul>
                       </div>
-                      <button onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
+                      <button onClick={() => {
+                          localStorage.setItem("hamzury-chat-context", `I need help setting up a ${selectedBp?.label || "business"}. Tell me more about the process.`);
+                          const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                          if (btn) btn.click();
+                        }}
                         className="mt-2 w-full py-3 rounded-xl text-[13px] font-semibold transition-opacity hover:opacity-90"
                         style={{ backgroundColor: G, color: Au }}>
                         Get Started →
@@ -2028,9 +2036,18 @@ export default function BizDocPortal() {
             <input
               type="text"
               value={trackCode}
-              onChange={(e) => handleTrackInput(e.target.value)}
+              onChange={(e) => {
+                let raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw.length > 8) raw = raw.slice(0, 8);
+                let formatted = "HMZ-";
+                if (raw.length > 0) formatted += raw.slice(0, 2);
+                if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
+                if (raw.length > 3) formatted += "-" + raw.slice(3);
+                setTrackCode(formatted);
+                setTrackSubmitted(false);
+              }}
               onKeyDown={(e) => e.key === "Enter" && handleTrack()}
-              placeholder="Enter your reference code"
+              placeholder="HMZ-26/3-XXXX"
               maxLength={17}
               className="flex-1 rounded-2xl px-4 py-3.5 text-[14px] outline-none border font-mono"
               style={{ borderColor: `${G}18`, backgroundColor: Cr, color: G }}
@@ -2105,7 +2122,11 @@ export default function BizDocPortal() {
             We stay ahead of every deadline. So you never face the consequences.
           </p>
           <button
-            onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
+            onClick={() => {
+              localStorage.setItem("hamzury-chat-context", "I need help with business registration and compliance. Tell me more.");
+              const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+              if (btn) btn.click();
+            }}
             className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-[15px] font-semibold transition-opacity hover:opacity-90"
             style={{ backgroundColor: Au, color: G }}
           >

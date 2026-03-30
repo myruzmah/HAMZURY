@@ -389,13 +389,13 @@ export default function SkillsPortal() {
           <button onClick={() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" })}
             className="px-10 py-5 rounded-lg text-sm font-medium uppercase tracking-[1px] shadow-lg flex items-center gap-3 hover:-translate-y-1 transition-all"
             style={{ backgroundColor: DARK, color: BG, boxShadow: `0 8px 32px ${DARK}25` }}>
-            View Programs <ArrowRight className="w-5 h-5" />
+            Our Services <ArrowRight className="w-5 h-5" />
           </button>
-          <a href="/skills/blueprint"
+          <button onClick={() => myUpdateRef.current?.scrollIntoView({ behavior: "smooth" })}
             className="px-7 py-4 rounded-lg text-sm font-medium border transition-opacity hover:opacity-80 inline-flex items-center gap-2"
             style={{ borderColor: `${TEXT}30`, color: TEXT }}>
-            Course Blueprint <ArrowRight className="w-4 h-4" />
-          </a>
+            Track <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </section>
 
@@ -440,7 +440,11 @@ export default function SkillsPortal() {
                   <p className="text-[13px] leading-relaxed mb-4" style={{ color: `${TEXT}88` }}>{p.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${DARK}08`, color: DARK }}>{p.duration}</span>
-                    <button onClick={() => document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth" })}
+                    <button onClick={() => {
+                        localStorage.setItem("hamzury-chat-context", `I am interested in the ${p.program} program. Tell me more.`);
+                        const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                        if (btn) btn.click();
+                      }}
                       className="text-[12px] font-semibold flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: DARK }}>
                       Apply Now <ArrowRight size={12} />
                     </button>
@@ -467,7 +471,11 @@ export default function SkillsPortal() {
                   <p className="text-[13px] leading-relaxed mb-4" style={{ color: `${TEXT}88` }}>{p.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${DARK}08`, color: DARK }}>{p.duration}</span>
-                    <button onClick={() => document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth" })}
+                    <button onClick={() => {
+                        localStorage.setItem("hamzury-chat-context", `I am interested in the ${p.program} program. Tell me more.`);
+                        const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                        if (btn) btn.click();
+                      }}
                       className="text-[12px] font-semibold flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: DARK }}>
                       Apply Now <ArrowRight size={12} />
                     </button>
@@ -494,7 +502,11 @@ export default function SkillsPortal() {
                   <p className="text-[13px] leading-relaxed mb-4" style={{ color: `${TEXT}88` }}>{p.description}</p>
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${DARK}08`, color: DARK }}>{p.duration}</span>
-                    <button onClick={() => document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth" })}
+                    <button onClick={() => {
+                        localStorage.setItem("hamzury-chat-context", `I am interested in the ${p.program} program. Tell me more.`);
+                        const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                        if (btn) btn.click();
+                      }}
                       className="text-[12px] font-semibold flex items-center gap-1 transition-opacity hover:opacity-70" style={{ color: DARK }}>
                       Apply Now <ArrowRight size={12} />
                     </button>
@@ -677,9 +689,18 @@ export default function SkillsPortal() {
             <input
               type="text"
               value={trackRef}
-              onChange={e => { setTrackRef(e.target.value); setTrackSubmitted(false); }}
+              onChange={e => {
+                let raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw.length > 8) raw = raw.slice(0, 8);
+                let formatted = "HMZ-";
+                if (raw.length > 0) formatted += raw.slice(0, 2);
+                if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
+                if (raw.length > 3) formatted += "-" + raw.slice(3);
+                setTrackRef(formatted);
+                setTrackSubmitted(false);
+              }}
               onKeyDown={e => e.key === "Enter" && handleTrack()}
-              placeholder="e.g. HMZ-26/3-XXXX"
+              placeholder="HMZ-26/3-XXXX"
               className="flex-1 px-4 py-3 rounded-xl border text-[14px] font-mono outline-none transition-all"
               style={{ borderColor: `${TEXT}20`, backgroundColor: `${TEXT}04`, color: TEXT }}
             />

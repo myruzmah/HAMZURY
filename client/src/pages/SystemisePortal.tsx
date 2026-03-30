@@ -7,7 +7,7 @@ import {
   Layers, Monitor, Search, Instagram,
   PieChart, Home, Loader2, Menu, X,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -972,18 +972,23 @@ export default function SystemizePortal() {
           Structure and visibility for ambitious businesses. Built to scale.
         </p>
         <div className="flex flex-wrap items-center gap-4">
-          <Button
-            onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="bg-[#2563EB] hover:bg-[#2F86FF] text-white px-10 py-6 rounded-lg text-sm font-medium uppercase tracking-[1px] shadow-lg shadow-[#2563EB]/20 hover:-translate-y-1 transition-all gap-3"
-          >
-            Business Blueprint <ArrowRight className="w-5 h-5" />
-          </Button>
           <button
             onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+            className="inline-flex items-center gap-2 px-10 py-5 rounded-lg text-sm font-medium uppercase tracking-[1px] shadow-lg hover:-translate-y-1 transition-all"
+            style={{ backgroundColor: G, color: W, boxShadow: `0 8px 32px ${G}25` }}
+          >
+            Our Services <ArrowRight size={16} />
+          </button>
+          <button
+            onClick={() => {
+              localStorage.setItem("hamzury-chat-context", "I want to track my project status. Can you help me check?");
+              const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+              if (btn) btn.click();
+            }}
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-2xl text-[14px] font-semibold transition-opacity hover:opacity-80 border"
             style={{ borderColor: `${G}30`, color: G, backgroundColor: "transparent" }}
           >
-            Our Services <ArrowRight size={16} />
+            Track <ArrowRight size={16} />
           </button>
         </div>
       </section>
@@ -1031,7 +1036,11 @@ export default function SystemizePortal() {
                             </li>
                           ))}
                         </ul>
-                        <button onClick={() => blueprintRef.current?.scrollIntoView({ behavior: "smooth" })}
+                        <button onClick={() => {
+                            localStorage.setItem("hamzury-chat-context", `I am interested in ${svc.solution}. Tell me more.`);
+                            const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                            if (btn) btn.click();
+                          }}
                           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold transition-all hover:-translate-y-0.5"
                           style={{ backgroundColor: Au, color: G }}>
                           Get Started <ArrowRight className="w-3.5 h-3.5" />
@@ -1215,7 +1224,11 @@ export default function SystemizePortal() {
                           </ul>
                         </div>
 
-                        <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                        <button onClick={() => {
+                            localStorage.setItem("hamzury-chat-context", `I need help systemising a ${selectedBp?.label || "business"}. Tell me more about the process.`);
+                            const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
+                            if (btn) btn.click();
+                          }}
                           className="mt-2 w-full py-3 rounded-xl text-[13px] font-semibold transition-opacity hover:opacity-90"
                           style={{ backgroundColor: G, color: Au }}>
                           Get Started →

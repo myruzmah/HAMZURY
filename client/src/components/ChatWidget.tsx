@@ -415,7 +415,20 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   // Show initial paths with typing animation on open
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      showInitialPaths();
+      const ctx = localStorage.getItem("hamzury-chat-context");
+      if (ctx) {
+        localStorage.removeItem("hamzury-chat-context");
+        // Skip language selection, go straight to AI with context
+        setShowInitTyping(true);
+        setTimeout(() => {
+          setShowInitTyping(false);
+          addUserMsg(ctx);
+          setChatState("AI_CHAT");
+          handleAIChat(ctx);
+        }, 800);
+      } else {
+        showInitialPaths();
+      }
     }
     if (!isOpen) { reset(); }
   }, [isOpen]);
@@ -1589,6 +1602,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
           {/* Chat button */}
           <button
+            data-chat-trigger
             onClick={() => {
               if (isOpen) { close(); } else { setInternalOpen(true); setShowBadge(false); setTeaserDismissed(true); setTeasers([]); }
             }}
