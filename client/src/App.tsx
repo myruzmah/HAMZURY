@@ -167,7 +167,8 @@ function Router() {
         </RoleGuard>
       </Route>
 
-      {/* Client Portal — /client checks session: dashboard if logged in, home if not */}
+      {/* Client Portal — dashboard first, then /client redirect */}
+      <Route path={"/client/dashboard"} component={ClientDashboard} />
       <Route path={"/client"}>{() => {
         try {
           const s = localStorage.getItem("hamzury-client-session");
@@ -176,7 +177,6 @@ function Router() {
         window.location.href = "/#track";
         return null;
       }}</Route>
-      <Route path={"/client/dashboard"} component={ClientDashboard} />
 
       {/* Affiliate Portal */}
       <Route path={"/affiliate"} component={AffiliatePage} />
