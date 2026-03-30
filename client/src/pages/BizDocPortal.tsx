@@ -2110,7 +2110,7 @@ export default function BizDocPortal() {
           {/* Result: not found */}
           {trackSubmitted && !trackQuery.isFetching && trackQuery.data && !trackQuery.data.found && (
             <p className="text-[13px]" style={{ color: G, opacity: 0.5 }}>
-              No file found for that reference. Contact your CSO for help.
+              Reference not found. You will receive your reference after payment. Use our chat to get started.
             </p>
           )}
 

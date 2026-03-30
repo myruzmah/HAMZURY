@@ -475,7 +475,7 @@ export default function Home() {
 
                       {/* Not found */}
                       {trackNotFound && (
-                        <p className="text-[12px] mb-3" style={{ color: `${TEAL}90` }}>No file found. Contact your CSO if you just enrolled.</p>
+                        <p className="text-[12px] mb-3" style={{ color: `${TEAL}90` }}>No file found. You will receive your reference after payment. Use our chat to get started.</p>
                       )}
 
                       {/* Result card */}

@@ -763,7 +763,7 @@ export default function SkillsPortal() {
                 <div className="rounded-2xl p-5 text-center" style={{ backgroundColor: `${TEXT}05` }}>
                   <p className="text-[14px] font-light mb-1" style={{ color: TEXT }}>Reference not found</p>
                   <p className="text-[12px] opacity-40" style={{ color: TEXT }}>
-                    Check the ref format. E.g. HMZ-26/3-1234. Or WhatsApp us on 08067149356.
+                    You will receive your reference after payment. Use our chat to get started.
                   </p>
                 </div>
               )}
