@@ -122,24 +122,45 @@ export default function SystemizePortal() {
 
           {navMenuOpen && (
             <div
-              className="absolute top-12 right-0 rounded-2xl py-2 min-w-[200px] shadow-xl"
+              className="absolute top-12 right-0 rounded-2xl py-2 min-w-[220px] shadow-xl"
               style={{ backgroundColor: W }}
               onClick={() => setNavMenuOpen(false)}
             >
+              <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${G}40` }}>Departments</p>
               {[
-                { label: "Home",          href: "/" },
+                { label: "Home",           href: "/" },
                 { label: "BizDoc Consult", href: "/bizdoc" },
-                { label: "Skills",         href: "/skills" },
+                { label: "Hamzury Skills", href: "/skills" },
+                { label: "RIDI",           href: "/ridi" },
               ].map(item => (
-                <a
-                  key={item.href}
-                  href={item.href}
-                  className="block px-5 py-3 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer"
-                  style={{ color: G }}
-                >
-                  {item.label}
-                </a>
+                <Link key={item.href} href={item.href}>
+                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: G }}>
+                    {item.label}
+                  </span>
+                </Link>
               ))}
+              <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${G}0C` }} />
+              <p className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${G}40` }}>More</p>
+              {[
+                { label: "Pricing",    href: "/pricing" },
+                { label: "Affiliate",  href: "/affiliate" },
+                { label: "Team",       href: "/team" },
+                { label: "Training",   href: "/training" },
+                { label: "Alumni",     href: "/alumni" },
+                { label: "Consultant", href: "/consultant" },
+              ].map(item => (
+                <Link key={item.href} href={item.href}>
+                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: G, opacity: 0.7 }}>
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+              <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${G}0C` }} />
+              <Link href="/login">
+                <span className="block px-5 py-2.5 text-[12px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: `${G}50` }}>
+                  Staff Login
+                </span>
+              </Link>
             </div>
           )}
         </div>

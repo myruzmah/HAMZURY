@@ -251,6 +251,25 @@ export default function Home() {
                 ))}
               </div>
 
+              <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+                <p className="px-3 text-[10px] font-semibold tracking-[0.2em] uppercase mb-1 opacity-30" style={{ color: CHARCOAL }}>More</p>
+                {[
+                  { label: "Pricing",     href: "/pricing" },
+                  { label: "Affiliate",   href: "/affiliate" },
+                  { label: "Team",        href: "/team" },
+                  { label: "Training",    href: "/training" },
+                  { label: "Alumni",      href: "/alumni" },
+                  { label: "Consultant",  href: "/consultant" },
+                  { label: "MetFix",      href: "/metfix" },
+                ].map(d => (
+                  <Link key={d.href} href={d.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/[0.03] transition-colors duration-200">
+                    <span className="text-[13px]" style={{ color: CHARCOAL, opacity: 0.6 }}>{d.label}</span>
+                  </Link>
+                ))}
+              </div>
+
               <div className="mt-2 pt-2 pb-1" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
                 <Link href="/login"
                   onClick={() => setMobileMenuOpen(false)}

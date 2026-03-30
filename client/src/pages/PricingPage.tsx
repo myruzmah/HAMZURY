@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
-import { ArrowLeft, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Menu, X } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 
 const MILK    = "#FFFAF6";
@@ -118,6 +118,7 @@ function ServiceCard({ service }: { service: Service }) {
 
 export default function PricingPage() {
   const [activeTab, setActiveTab] = useState<string>("bizdoc");
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
   const currentTab = TABS.find((t) => t.key === activeTab) || TABS[0];
 
   return (
@@ -140,9 +141,59 @@ export default function PricingPage() {
         >
           <ArrowLeft size={14} /> HAMZURY
         </Link>
-        <span className="text-[11px] font-normal tracking-[0.2em] uppercase" style={{ color: `${CHARCOAL}40` }}>
-          Pricing
-        </span>
+        <div className="relative">
+          <button
+            onClick={() => setNavMenuOpen(p => !p)}
+            className="flex items-center justify-center w-9 h-9 transition-opacity hover:opacity-70"
+            style={{ color: CHARCOAL }}
+            aria-label="Menu"
+          >
+            {navMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+          {navMenuOpen && (
+            <div
+              className="absolute top-10 right-0 rounded-2xl py-2 min-w-[220px] shadow-xl"
+              style={{ backgroundColor: WHITE }}
+              onClick={() => setNavMenuOpen(false)}
+            >
+              <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${CHARCOAL}40` }}>Departments</p>
+              {[
+                { label: "Home",           href: "/" },
+                { label: "BizDoc Consult", href: "/bizdoc" },
+                { label: "Systemise",      href: "/systemise" },
+                { label: "Hamzury Skills", href: "/skills" },
+                { label: "RIDI",           href: "/ridi" },
+              ].map(item => (
+                <Link key={item.href} href={item.href}>
+                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: CHARCOAL }}>
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+              <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${CHARCOAL}0C` }} />
+              <p className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${CHARCOAL}40` }}>More</p>
+              {[
+                { label: "Affiliate",  href: "/affiliate" },
+                { label: "Team",       href: "/team" },
+                { label: "Training",   href: "/training" },
+                { label: "Alumni",     href: "/alumni" },
+                { label: "Consultant", href: "/consultant" },
+              ].map(item => (
+                <Link key={item.href} href={item.href}>
+                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: CHARCOAL, opacity: 0.7 }}>
+                    {item.label}
+                  </span>
+                </Link>
+              ))}
+              <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${CHARCOAL}0C` }} />
+              <Link href="/login">
+                <span className="block px-5 py-2.5 text-[12px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: `${CHARCOAL}50` }}>
+                  Staff Login
+                </span>
+              </Link>
+            </div>
+          )}
+        </div>
       </nav>
 
       {/* Hero */}
