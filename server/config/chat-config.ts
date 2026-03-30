@@ -3,7 +3,7 @@ import chatJson from "./hamzury-chat.json";
 export const CHAT_CONFIG = chatJson;
 
 /** Build the full system prompt for the AI advisor, optionally scoped to a department. */
-export function buildSystemPrompt(department?: string): string {
+export function buildSystemPrompt(department?: string, tonePreference?: string): string {
   const base = CHAT_CONFIG.master_system_prompt;
 
   // CRITICAL: Force short, minimal, conversational responses
@@ -30,7 +30,6 @@ CRITICAL OUTPUT RULES (follow these strictly):
     const questions = dept.questions || [];
     deptContext = `\n\nYou are currently helping with ${dept.name}. ${dept.positioning} Services: ${services.slice(0, 6).join(", ")}. Ask smart diagnostic questions when needed: ${questions.slice(0, 3).join(" / ")}`;
   } else {
-    // General mode — full business advisor with all departments
     deptContext = `\n\nYou are the master HAMZURY advisor covering all departments.
 
 BizDoc: ${CHAT_CONFIG.departments.bizdoc.positioning} Covers all licences, permits, registrations, templates, document packs, foreigner support, and ongoing compliance management subscriptions. Can guide by sector.
@@ -40,14 +39,24 @@ Systemise: ${CHAT_CONFIG.departments.systemise.positioning} Covers branding, web
 Skills: ${CHAT_CONFIG.departments.skills.positioning} Programs include AI Founder Launchpad, Vibe Coding, AI Sales Operator, Service Business in 21 Days, Operations Automation Sprint, Robotics Lab, Corporate Staff Training, and RIDI sponsorship.
 
 YOUR ADVISORY METHOD:
-When a user tells you about their business, help them understand what they likely need. Identify their sector, whether they are Nigerian or foreign, and what stage they are at. Then recommend the best first move and one supporting option. You can recommend templates, subscriptions, or done-for-you services depending on what fits. If the user says "what does my business need", guide them through their sector requirements step by step. Remove the stress of not knowing. Turn chaos into clarity.`;
+When a user tells you about their business, help them understand what they likely need. Identify their sector, whether they are Nigerian or foreign, and what stage they are at. Then recommend the best first move and one supporting option. You can recommend templates, subscriptions, or done-for-you services depending on what fits.`;
+  }
+
+  let toneContext = "";
+  if (tonePreference) {
+    const toneMap: Record<string, string> = {
+      "Friendly": "Use a warm, approachable tone. Be encouraging and supportive.",
+      "Professional": "Use a clean, business-first tone. Be precise and efficient.",
+      "Executive": "Use a high-level, strategic tone. Be concise and authoritative. Assume the reader is a decision-maker.",
+    };
+    toneContext = `\n\nTONE PREFERENCE: ${toneMap[tonePreference] || toneMap.Professional}`;
   }
 
   const staffContext = `\n\nIf you detect the user is a staff member (they mention creating a dashboard, setting up a client, or managing services), help them collect all needed client info and provide a formatted summary they can use in the Create Lead form.`;
 
   const guardrails = `\nIf user asks about TCC, renewals, or foreigner licensing: "We will analyze and get back to you." If complex systems, AI agents, or RIDI: "We will review and get back to you." Never promise approvals or final prices. Never lose referral attribution.`;
 
-  return base + styleEnforcement + deptContext + staffContext + guardrails;
+  return base + styleEnforcement + deptContext + toneContext + staffContext + guardrails;
 }
 
 /** Get the welcome message from opening flow. */
@@ -70,4 +79,29 @@ export function getLanguageButtons(): string[] {
 /** Get department config by key. */
 export function getDeptConfig(dept: string) {
   return CHAT_CONFIG.departments[dept as keyof typeof CHAT_CONFIG.departments] ?? null;
+}
+
+/** Get specific service flow config. */
+export function getSpecificServiceConfig() {
+  return CHAT_CONFIG.flows.specific_service;
+}
+
+/** Get business reality check questions. */
+export function getBusinessRealityQuestions(): string[] {
+  return CHAT_CONFIG.business_reality_check.questions;
+}
+
+/** Get dashboard chat buttons. */
+export function getDashboardButtons(): string[] {
+  return CHAT_CONFIG.dashboard_chat.default_buttons;
+}
+
+/** Get the full button library. */
+export function getButtonLibrary(): string[] {
+  return CHAT_CONFIG.button_library;
+}
+
+/** Get payment accounts config. */
+export function getPaymentAccounts() {
+  return CHAT_CONFIG.payment.accounts;
 }

@@ -271,7 +271,7 @@ async function invokeQwen(params: InvokeParams): Promise<InvokeResult> {
   }));
 
   const body = {
-    model: "qwen-plus",          // Qwen 3.5 Plus — change to "qwen-max" for highest quality
+    model: ENV.qwenModel,
     max_tokens: maxTokens || max_tokens || 1024,
     messages: normalised,
   };
@@ -411,7 +411,7 @@ async function streamQwen(
         authorization: `Bearer ${ENV.qwenApiKey}`,
       },
       body: JSON.stringify({
-        model: "qwen-plus",
+        model: ENV.qwenModel,
         max_tokens: params.maxTokens || 1024,
         messages: normalised,
         stream: true,

@@ -13,7 +13,12 @@ export const ENV = {
   forgeApiUrl: process.env.BUILT_IN_FORGE_API_URL ?? "",
   forgeApiKey: process.env.BUILT_IN_FORGE_API_KEY ?? "",
   anthropicApiKey: process.env.ANTHROPIC_API_KEY ?? "",
-  qwenApiKey: process.env.QWEN_API_KEY ?? "",
+  qwenApiKey: process.env.DASHSCOPE_API_KEY || process.env.QWEN_API_KEY || "",
+  qwenModel: process.env.QWEN_MODEL || "qwen3.5-plus",
+  chatStreaming: process.env.CHAT_STREAMING !== "false",
+  enableDashboardChat: process.env.ENABLE_DASHBOARD_CHAT !== "false",
+  enablePaymentReceiptUpload: process.env.ENABLE_PAYMENT_RECEIPT_UPLOAD !== "false",
+  enableUrlReferralCapture: process.env.ENABLE_URL_REFERRAL_CAPTURE !== "false",
   // Bank transfer details — general (HAMZURY LTD)
   bankName: process.env.BANK_NAME ?? "MONIEPOINT",
   bankAccountNumber: process.env.BANK_ACCOUNT_NUMBER ?? "8034620520",

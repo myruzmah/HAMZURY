@@ -1,32 +1,36 @@
 import { useState } from "react";
 import { Link, useParams } from "wouter";
-import { ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowLeft, ChevronDown } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
+
+const MILK     = "#FFFAF6";
+const CHARCOAL = "#1A1A1A";
+const GOLD     = "#B48C4C";
+const WHITE    = "#FFFFFF";
 
 /* ── Department training content ─────────────────────────────────────────── */
 
 type Section = { title: string; items: string[] };
 
-const DEPARTMENTS: Record<string, { label: string; color: string; sections: Section[] }> = {
+const DEPARTMENTS: Record<string, { label: string; sections: Section[] }> = {
   general: {
     label: "General",
-    color: "#1A1A1A",
     sections: [
       {
         title: "Company Values & Culture",
         items: [
-          "HAMZURY exists to handle everything your business owes the system — completely.",
+          "HAMZURY exists to handle everything your business owes the system \u2014 completely.",
           "Core values: Integrity, Excellence, Calm Confidence, Client Obsession.",
           "We operate with the precision of a system and the warmth of a partner.",
-          "Every department is one body — BizDoc, Systemise, Skills work as a unified front.",
+          "Every department is one body \u2014 BizDoc, Systemise, Skills work as a unified front.",
         ],
       },
       {
         title: "Communication Policy",
         items: [
           "All client communication must be professional, concise, and empathetic.",
-          "Internal communication uses the HAMZURY workspace — no personal WhatsApp for work matters.",
-          "Response time: Client queries within 2 hours during business hours (9am–6pm WAT, Mon–Fri).",
+          "Internal communication uses the HAMZURY workspace \u2014 no personal WhatsApp for work matters.",
+          "Response time: Client queries within 2 hours during business hours (9am\u20136pm WAT, Mon\u2013Fri).",
           "Escalation: If unresolved within 24 hours, escalate to your department lead.",
         ],
       },
@@ -34,7 +38,7 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
         title: "Security Awareness",
         items: [
           "Never share client credentials, documents, or personal data externally.",
-          "All client passwords are stored encrypted — never in plain text, WhatsApp, or notes.",
+          "All client passwords are stored encrypted \u2014 never in plain text, WhatsApp, or notes.",
           "Lock your workstation when stepping away. Use strong passwords (8+ characters).",
           "Report any suspected data breach to the Security Officer (Rabilu Musa) immediately.",
         ],
@@ -42,7 +46,7 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
       {
         title: "Working Hours & Attendance",
         items: [
-          "Standard hours: Monday–Friday, 9:00 AM – 6:00 PM WAT.",
+          "Standard hours: Monday\u2013Friday, 9:00 AM \u2013 6:00 PM WAT.",
           "Check-in via the attendance system daily. Late arrivals are recorded.",
           "Leave requests must be submitted 48 hours in advance through the HR dashboard.",
           "Unapproved absence for 3 consecutive days is grounds for disciplinary action.",
@@ -52,12 +56,11 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
   },
   bizdoc: {
     label: "BizDoc Consult",
-    color: "#1B4D3E",
     sections: [
       {
         title: "CAC Business Registration SOP",
         items: [
-          "Step 1: Collect client details — business name (3 options), directors, share capital, registered address.",
+          "Step 1: Collect client details \u2014 business name (3 options), directors, share capital, registered address.",
           "Step 2: Run name availability check on CAC portal. Reserve approved name.",
           "Step 3: Prepare Memart (Articles of Association) and upload incorporation documents.",
           "Step 4: Pay statutory fees. Track status daily. Deliver certificate + documents to client.",
@@ -69,7 +72,7 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
           "Determine applicable license based on client's industry and product category.",
           "Compile required documents: product formulation, facility inspection readiness, lab test results.",
           "Submit application through the relevant portal. Follow up bi-weekly.",
-          "NAFDAC processing: 8–12 weeks. SON: 4–6 weeks. DPR: 6–10 weeks.",
+          "NAFDAC processing: 8\u201312 weeks. SON: 4\u20136 weeks. DPR: 6\u201310 weeks.",
         ],
       },
       {
@@ -84,7 +87,7 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
       {
         title: "Document Handling & Confidentiality",
         items: [
-          "All client documents stored in the secure file system — never on personal devices.",
+          "All client documents stored in the secure file system \u2014 never on personal devices.",
           "Physical documents: scanned, uploaded, and returned to client within 48 hours.",
           "Reference numbers (HMZ-26/3-XXXX) must be attached to every file and communication.",
           "Document retention: 7 years minimum as per Nigerian tax law requirements.",
@@ -94,22 +97,21 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
   },
   skills: {
     label: "HAMZURY Skills",
-    color: "#1E3A5F",
     sections: [
       {
         title: "Curriculum Overview",
         items: [
           "Programs: Digital Marketing, Data Analysis, AI-Powered Business, Faceless Content, Business Development.",
-          "Each cohort runs 8–12 weeks with weekly modules, assignments, and live sessions.",
+          "Each cohort runs 8\u201312 weeks with weekly modules, assignments, and live sessions.",
           "Pathways: Physical (in-person Abuja), Online (remote), NITDA-sponsored, TVET-partnered.",
-          "Capstone project required for certification — real business problem, mentor-reviewed.",
+          "Capstone project required for certification \u2014 real business problem, mentor-reviewed.",
         ],
       },
       {
         title: "Facilitator Guidelines",
         items: [
           "Prepare module content 1 week before delivery. Submit to Skills Lead for review.",
-          "Live sessions: 60–90 minutes. Record all sessions for student replay.",
+          "Live sessions: 60\u201390 minutes. Record all sessions for student replay.",
           "Office hours: minimum 2 hours per week for student Q&A.",
           "Grading rubric: Assignments (40%), Participation (20%), Capstone (40%).",
         ],
@@ -136,7 +138,6 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
   },
   hr: {
     label: "Human Resources",
-    color: "#1A1A1A",
     sections: [
       {
         title: "Leave Policy",
@@ -150,7 +151,7 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
       {
         title: "Discipline Framework",
         items: [
-          "Verbal warning → Written warning → Suspension → Termination.",
+          "Verbal warning \u2192 Written warning \u2192 Suspension \u2192 Termination.",
           "Gross misconduct (theft, fraud, data breach): immediate suspension pending investigation.",
           "All disciplinary actions documented in the HR system with timestamps.",
           "Appeals: Submit within 5 working days to CEO. Decision is final.",
@@ -178,7 +179,6 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
   },
   media: {
     label: "Media",
-    color: "#1A1A1A",
     sections: [
       {
         title: "Content Calendar Process",
@@ -194,14 +194,14 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
         items: [
           "Primary font: Inter. Tone: Calm, confident, premium. Never casual or overly corporate.",
           "Photography: Clean backgrounds, natural lighting, professional attire.",
-          "Video: 15–60 seconds for social. Subtitles required on all video content.",
+          "Video: 15\u201360 seconds for social. Subtitles required on all video content.",
           "Logo usage: Minimum clear space of 1x logo height on all sides.",
         ],
       },
       {
         title: "Posting Workflow",
         items: [
-          "Draft → Internal review → Scheduling → Post → Engagement monitoring.",
+          "Draft \u2192 Internal review \u2192 Scheduling \u2192 Post \u2192 Engagement monitoring.",
           "Engagement window: Respond to all comments within 4 hours during business hours.",
           "Weekly social engagement log: All staff must engage with company content.",
           "Monthly report: Reach, engagement rate, follower growth, top-performing content.",
@@ -211,7 +211,7 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
         title: "Podcast Production",
         items: [
           "Episode planning: Topic + guest confirmed 2 weeks before recording.",
-          "Recording: Studio setup, sound check, 30–45 minute episodes.",
+          "Recording: Studio setup, sound check, 30\u201345 minute episodes.",
           "Post-production: Edit within 3 days. Publish within 1 week of recording.",
           "Distribution: Spotify, Apple Podcasts, YouTube, website embed.",
         ],
@@ -220,7 +220,6 @@ const DEPARTMENTS: Record<string, { label: string; color: string; sections: Sect
   },
   systemise: {
     label: "Systemise",
-    color: "#2563EB",
     sections: [
       {
         title: "Tech Stack Documentation",
@@ -273,7 +272,7 @@ export default function TrainingPage() {
   const [openSections, setOpenSections] = useState<Set<number>>(new Set([0]));
 
   const toggle = (idx: number) => {
-    setOpenSections(prev => {
+    setOpenSections((prev) => {
       const next = new Set(prev);
       if (next.has(idx)) next.delete(idx);
       else next.add(idx);
@@ -282,49 +281,51 @@ export default function TrainingPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FFFAF6" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: MILK }}>
       <PageMeta
-        title={`${dept.label} Training & Policies — HAMZURY`}
+        title={`${dept.label} Training & Policies \u2014 HAMZURY`}
         description={`Standard operating procedures and training documents for ${dept.label} at HAMZURY.`}
         canonical={`https://hamzury.com/training/${activeDept}`}
       />
 
-      {/* NAV */}
-      <nav className="fixed top-0 left-0 right-0 px-6 md:px-12 py-4 bg-[#FFFAF6]/90 backdrop-blur-md border-b border-[#B48C4C]/20 z-50 flex justify-between items-center">
-        <Link href="/" className="text-[13px] font-semibold flex items-center gap-1 hover:text-[#B48C4C] transition-colors" style={{ color: "#1A1A1A" }}>
+      {/* Nav */}
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-14"
+        style={{ backgroundColor: `${MILK}F0`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+      >
+        <Link href="/" className="flex items-center gap-2 text-[13px] font-medium transition-opacity hover:opacity-50" style={{ color: CHARCOAL }}>
           <ArrowLeft size={14} /> HAMZURY
         </Link>
-        <span className="text-[13px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#1A1A1A" }}>
-          Training &amp; Policies
+        <span className="text-[11px] font-normal tracking-[0.2em] uppercase" style={{ color: `${CHARCOAL}40` }}>
+          Training & Policies
         </span>
       </nav>
 
-      {/* CONTENT */}
-      <main className="pt-36 pb-24 px-6 md:px-12">
-        <div className="max-w-3xl mx-auto">
-          <span className="text-[12px] font-bold tracking-[0.3em] uppercase mb-6 block" style={{ color: "#B48C4C" }}>
-            Internal
-          </span>
-          <h1 className="text-4xl md:text-5xl font-medium tracking-tight mb-4 leading-[1.1]" style={{ color: "#1A1A1A" }}>
+      {/* Content */}
+      <main className="pt-32 pb-28 md:pt-40 md:pb-36 px-6 md:px-12">
+        <div className="max-w-2xl mx-auto">
+          <h1
+            className="text-[clamp(28px,4vw,42px)] font-light tracking-tight leading-[1.1] mb-3"
+            style={{ color: CHARCOAL }}
+          >
             {dept.label}
           </h1>
-          <p className="text-[14px] opacity-50 mb-12" style={{ color: "#1A1A1A" }}>
+          <p className="text-[13px] mb-14" style={{ color: `${CHARCOAL}40` }}>
             Standard operating procedures, policies, and training materials.
           </p>
 
           {/* Department switcher */}
           <div className="flex flex-wrap gap-2 mb-16">
-            {DEPT_KEYS.map(key => {
+            {DEPT_KEYS.map((key) => {
               const d = DEPARTMENTS[key];
               const isActive = key === activeDept;
               return (
                 <Link key={key} href={`/training/${key}`}>
                   <button
-                    className="text-[12px] font-medium px-4 py-2 rounded-full transition-all"
+                    className="text-[12px] font-medium px-5 py-2 rounded-full transition-all duration-200"
                     style={{
-                      backgroundColor: isActive ? d.color : "transparent",
-                      color: isActive ? "#FFFAF6" : "#1A1A1A",
-                      border: `1px solid ${isActive ? d.color : "#1A1A1A20"}`,
+                      backgroundColor: isActive ? CHARCOAL : "transparent",
+                      color: isActive ? MILK : `${CHARCOAL}50`,
                     }}
                   >
                     {d.label}
@@ -335,38 +336,50 @@ export default function TrainingPage() {
           </div>
 
           {/* Accordion sections */}
-          <div className="space-y-4">
+          <div className="space-y-1">
             {dept.sections.map((section, idx) => {
               const isOpen = openSections.has(idx);
               return (
                 <div
                   key={idx}
-                  className="border rounded-xl overflow-hidden transition-all"
-                  style={{ borderColor: "#1A1A1A10" }}
+                  className="rounded-[16px] overflow-hidden transition-all duration-300"
+                  style={{
+                    backgroundColor: isOpen ? WHITE : "transparent",
+                    boxShadow: isOpen ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
+                  }}
                 >
                   <button
                     onClick={() => toggle(idx)}
-                    className="w-full flex items-center justify-between px-6 py-5 text-left hover:bg-[#1A1A1A05] transition-colors"
+                    className="w-full flex items-center justify-between px-6 py-5 text-left transition-colors duration-200"
                   >
-                    <span className="text-[15px] font-semibold" style={{ color: dept.color }}>
+                    <span className="text-[15px] font-semibold" style={{ color: CHARCOAL }}>
                       {section.title}
                     </span>
-                    {isOpen ? (
-                      <ChevronDown size={18} style={{ color: "#1A1A1A", opacity: 0.4 }} />
-                    ) : (
-                      <ChevronRight size={18} style={{ color: "#1A1A1A", opacity: 0.4 }} />
-                    )}
+                    <ChevronDown
+                      size={16}
+                      className="shrink-0 transition-transform duration-300"
+                      style={{
+                        color: `${CHARCOAL}30`,
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      }}
+                    />
                   </button>
-                  {isOpen && (
+                  <div
+                    className="overflow-hidden transition-all duration-300"
+                    style={{
+                      maxHeight: isOpen ? 400 : 0,
+                      opacity: isOpen ? 1 : 0,
+                    }}
+                  >
                     <div className="px-6 pb-6">
                       <ul className="space-y-3">
                         {section.items.map((item, i) => (
                           <li
                             key={i}
-                            className="text-[14px] font-light leading-relaxed pl-4"
+                            className="text-[14px] font-light leading-[1.8] pl-4"
                             style={{
-                              color: "#1A1A1A",
-                              borderLeft: `2px solid ${dept.color}20`,
+                              color: `${CHARCOAL}70`,
+                              borderLeft: `2px solid ${GOLD}30`,
                             }}
                           >
                             {item}
@@ -374,7 +387,7 @@ export default function TrainingPage() {
                         ))}
                       </ul>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
@@ -382,13 +395,13 @@ export default function TrainingPage() {
         </div>
       </main>
 
-      {/* FOOTER */}
-      <footer className="mt-auto py-8 px-6 md:px-12 border-t" style={{ borderColor: "#1A1A1A10" }}>
-        <div className="max-w-3xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-[12px] opacity-40" style={{ color: "#1A1A1A" }}>
+      {/* Footer */}
+      <footer className="mt-auto py-10 px-6 md:px-12">
+        <div className="max-w-2xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 text-[12px]" style={{ color: `${CHARCOAL}40` }}>
           <span>&copy; {new Date().getFullYear()} HAMZURY. Internal use only.</span>
           <div className="flex gap-4">
-            <Link href="/privacy" className="hover:opacity-70 transition-opacity">Privacy</Link>
-            <Link href="/terms" className="hover:opacity-70 transition-opacity">Terms</Link>
+            <Link href="/privacy" className="transition-opacity hover:opacity-70">Privacy</Link>
+            <Link href="/terms" className="transition-opacity hover:opacity-70">Terms</Link>
           </div>
         </div>
       </footer>

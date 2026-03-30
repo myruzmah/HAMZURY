@@ -9,79 +9,72 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 
 const LOGIN_URL = "/login";
 
-// Home page brand: Apple-inspired grey
-const GREY  = "#2D2D2D";
-const DARK_GREY = "#1A1A1A";
-const TEAL  = "#2D2D2D";  // Alias for backward compat — Home uses charcoal now
-const GREEN = "#34A853";
-const GOLD  = "#B48C4C";
-const CREAM = "#FFFAF6";   // Milk white
-const WHITE = "#FFFFFF";
-const DARK  = "#1A1A1A";
+// Apple-standard palette
+const CHARCOAL = "#1A1A1A";
+const GOLD     = "#B48C4C";
+const GREEN    = "#22C55E";
+const MILK     = "#FFFAF6";
+const WHITE    = "#FFFFFF";
 
+// Department accents
+const BIZDOC_GREEN  = "#1B4D3E";
+const SYSTEMISE_BLUE = "#2563EB";
+const SKILLS_NAVY   = "#1E3A5F";
+
+// Backward compat aliases
+const TEAL  = CHARCOAL;
+const DARK  = CHARCOAL;
+const CREAM = MILK;
 
 const DEPARTMENTS = [
   {
     id: "bizdoc" as const,
-    label: "BizDoc Consult",
-    sub: "Compliance & Regulatory",
-    icon: <ShieldCheck size={28} />,
-    color: "#1B4D3E",
+    label: "BizDoc",
+    pitch: "Everything your business owes the system.",
+    icon: <ShieldCheck size={24} />,
+    color: BIZDOC_GREEN,
     href: "/bizdoc",
-    intro: "Legal protection for your business. Every filing, licence, and compliance obligation handled.",
-    pricing: "Starting from ₦50,000",
-    services: [
-      "CAC registration & annual filings",
-      "Industry licenses (NAFDAC, SON, DPR, Export)",
-      "Tax compliance: VAT, PAYE, TCC",
-      "Corporate contracts & legal frameworks",
-      "Trademark & intellectual property",
-      "Business bank account facilitation",
-    ],
   },
   {
     id: "systemise" as const,
-    label: "Systemize",
-    sub: "Strategy & Automation",
-    icon: <Cpu size={28} />,
-    color: "#2563EB",
+    label: "Systemise",
+    pitch: "Systems that scale while you sleep.",
+    icon: <Cpu size={24} />,
+    color: SYSTEMISE_BLUE,
     href: "/systemise",
-    intro: "Systems that run without you. Strategy, automation, and digital infrastructure.",
-    pricing: "Starting from ₦150,000",
-    services: [
-      "Premium brand identity & positioning",
-      "Website design & digital architecture",
-      "Business process automation",
-      "CRM & client management systems",
-      "Social media & content systems",
-      "Growth strategy & market positioning",
-    ],
   },
   {
     id: "skills" as const,
-    label: "Hamzury Skills",
-    sub: "Talent & Development",
-    icon: <GraduationCap size={28} />,
-    color: "#1E3A5F",
+    label: "Skills",
+    pitch: "Learn what actually works.",
+    icon: <GraduationCap size={24} />,
+    color: SKILLS_NAVY,
     href: "/skills",
-    intro: "Practical skills from operators. Not theory. Real market ability.",
-    pricing: "Starting from ₦35,000 per cohort",
-    services: [
-      "Business Essentials intensive cohorts",
-      "Digital marketing & growth programs",
-      "IT internship & technical training",
-      "CEO & leadership development programs",
-      "AI-powered learning tracks",
-      "RIDI scholarship program for communities",
-    ],
   },
 ];
+
+/* ── Fade-up on scroll hook ── */
+function useFadeUp() {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return { ref, style: { opacity: visible ? 1 : 0, transform: visible ? "translateY(0)" : "translateY(24px)", transition: "opacity 0.6s ease, transform 0.6s ease" } as React.CSSProperties };
+}
 
 export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
@@ -125,8 +118,7 @@ export default function Home() {
   }
 
   function openTrackTab() {
-    setActiveTab("track");
-    setTimeout(() => document.getElementById("what")?.scrollIntoView({ behavior: "smooth" }), 50);
+    setTimeout(() => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" }), 50);
   }
 
   useEffect(() => {
@@ -137,15 +129,20 @@ export default function Home() {
 
   const scrollTo = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
+  // Fade-up refs for each section
+  const fadeDepts = useFadeUp();
+  const fadeTrack = useFadeUp();
+  const fadeQuote = useFadeUp();
+  const fadeWhy   = useFadeUp();
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: CREAM, fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: MILK, fontFamily: "'Inter', sans-serif" }}>
       <PageMeta
         title="HAMZURY | Compliance, Systems & Skills for Businesses"
         description="Compliance, systems, and skills for Nigerian businesses. BizDoc, Systemize, and Hamzury Skills under one roof."
         ogImage="https://hamzury.com/og-image.jpg"
         canonical="https://hamzury.com/"
       />
-      {/* JSON-LD LocalBusiness Schema */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify({
@@ -163,7 +160,7 @@ export default function Home() {
           },
           "telephone": "+2348034620520",
           "openingHours": "Mo-Fr 09:00-18:00",
-          "priceRange": "₦₦",
+          "priceRange": "\u20A6\u20A6",
           "sameAs": [
             "https://instagram.com/hamzury",
             "https://linkedin.com/company/hamzury"
@@ -173,34 +170,44 @@ export default function Home() {
 
       {/* ─── NAV ─── */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 relative ${scrolled ? "py-3" : "py-5"}`}
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-200"
         style={{
-          backgroundColor: scrolled ? `${WHITE}F8` : "transparent",
-          backdropFilter: scrolled ? "blur(20px)" : "none",
-          borderBottom: scrolled ? `1px solid ${GOLD}18` : "none",
-          boxShadow: scrolled ? "0 1px 20px rgba(0,0,0,0.04)" : "none",
+          padding: scrolled ? "12px 0" : "20px 0",
+          backgroundColor: scrolled ? `${WHITE}F2` : "transparent",
+          backdropFilter: scrolled ? "blur(24px)" : "none",
+          boxShadow: scrolled ? "0 1px 3px rgba(0,0,0,0.04)" : "none",
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 flex justify-between items-center">
           <div
-            className="text-xl font-semibold tracking-tight cursor-pointer"
+            className="text-lg font-semibold tracking-tight cursor-pointer select-none"
             onClick={() => scrollTo("hero")}
-            style={{ color: TEAL, letterSpacing: "-0.03em" }}
+            style={{ color: CHARCOAL, letterSpacing: "-0.04em" }}
           >
             HAMZURY
           </div>
 
-          {/* Desktop center nav — scroll links */}
-          <div className="hidden md:flex items-center gap-8 text-[12px] font-semibold tracking-[0.14em] uppercase" style={{ color: DARK }}>
-            <button onClick={() => scrollTo("what")} className="transition-opacity hover:opacity-40">Services</button>
-            <button onClick={() => scrollTo("process")} className="transition-opacity hover:opacity-40">Process</button>
-            <Link href="/founder" className="transition-opacity hover:opacity-40">Founder</Link>
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-8 text-[12px] font-medium tracking-[0.12em] uppercase" style={{ color: CHARCOAL }}>
+            <button onClick={() => scrollTo("departments")} className="opacity-50 hover:opacity-100 transition-opacity duration-200">Services</button>
+            <Link href="/founder" className="opacity-50 hover:opacity-100 transition-opacity duration-200">Founder</Link>
+            <button onClick={openTrackTab} className="opacity-50 hover:opacity-100 transition-opacity duration-200">Track</button>
           </div>
 
           {/* Hamburger */}
           <button
-            className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-black/5 transition-colors"
-            style={{ color: TEAL }}
+            className="flex items-center justify-center w-11 h-11 rounded-full hover:bg-black/5 transition-colors duration-200 md:hidden"
+            style={{ color: CHARCOAL }}
+            onClick={() => setMobileMenuOpen(p => !p)}
+            aria-label="Menu"
+          >
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+
+          {/* Desktop menu icon */}
+          <button
+            className="hidden md:flex items-center justify-center w-11 h-11 rounded-full hover:bg-black/5 transition-colors duration-200"
+            style={{ color: CHARCOAL }}
             onClick={() => setMobileMenuOpen(p => !p)}
             aria-label="Menu"
           >
@@ -211,51 +218,45 @@ export default function Home() {
         {/* Dropdown menu */}
         {mobileMenuOpen && (
           <div
-            className="absolute top-full left-0 right-0 z-50 border-t"
-            style={{ backgroundColor: WHITE, borderColor: `${GOLD}20`, boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+            className="absolute top-full left-0 right-0 z-50"
+            style={{ backgroundColor: WHITE, boxShadow: "0 8px 40px rgba(0,0,0,0.06)" }}
           >
-            <div className="max-w-7xl mx-auto px-6 py-3 flex flex-col">
+            <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 flex flex-col">
               {[
-                { label: "Services",  action: () => { scrollTo("what"); setMobileMenuOpen(false); } },
-                { label: "Process",   action: () => { scrollTo("process"); setMobileMenuOpen(false); } },
-                { label: "Pricing",   action: () => { window.location.href = "/pricing"; } },
+                { label: "Services",  action: () => { scrollTo("departments"); setMobileMenuOpen(false); } },
+                { label: "Track",     action: () => { openTrackTab(); setMobileMenuOpen(false); } },
                 { label: "Founder",   action: () => { window.location.href = "/founder"; } },
-                { label: "Track", action: () => { openTrackTab(); setMobileMenuOpen(false); } },
               ].map(item => (
                 <button key={item.label}
                   onClick={item.action}
-                  className="block text-left px-3 py-3 rounded-xl text-sm font-medium hover:bg-black/5 transition-colors"
-                  style={{ color: TEAL }}>
+                  className="block text-left px-3 py-3.5 rounded-xl text-sm font-medium hover:bg-black/[0.03] transition-colors duration-200"
+                  style={{ color: CHARCOAL }}>
                   {item.label}
                 </button>
               ))}
 
-              {/* Departments */}
-              <div className="border-t mt-1 pt-2" style={{ borderColor: `${GOLD}15` }}>
-                <p className="px-3 text-[10px] font-bold tracking-[0.25em] uppercase mb-1" style={{ color: `${GOLD}90` }}>Departments</p>
+              <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
+                <p className="px-3 text-[10px] font-semibold tracking-[0.2em] uppercase mb-1 opacity-30" style={{ color: CHARCOAL }}>Departments</p>
                 {[
                   { label: "BizDoc Consult",  href: "/bizdoc" },
                   { label: "Systemise",        href: "/systemise" },
                   { label: "Hamzury Skills",   href: "/skills" },
                   { label: "RIDI Initiative",  href: "/ridi" },
-                  { label: "MetFix Hardware \u00B7 Coming Soon",  href: "/metfix" },
                 ].map(d => (
                   <Link key={d.href} href={d.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-black/5 transition-colors">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: GOLD }} />
-                    <span className="text-sm font-medium" style={{ color: TEAL }}>{d.label}</span>
+                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-black/[0.03] transition-colors duration-200">
+                    <span className="text-sm font-medium" style={{ color: CHARCOAL }}>{d.label}</span>
                   </Link>
                 ))}
               </div>
 
-              {/* Staff Login */}
-              <div className="border-t mt-1 pt-2 pb-1" style={{ borderColor: `${GOLD}15` }}>
+              <div className="mt-2 pt-2 pb-1" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
                 <Link href="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-black/5 transition-colors">
-                  <LogOut size={14} style={{ color: TEAL, opacity: 0.4 }} />
-                  <span className="text-[13px] font-medium" style={{ color: TEAL, opacity: 0.5 }}>Staff Login</span>
+                  className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-black/[0.03] transition-colors duration-200">
+                  <LogOut size={14} style={{ color: CHARCOAL, opacity: 0.3 }} />
+                  <span className="text-[13px] font-medium" style={{ color: CHARCOAL, opacity: 0.35 }}>Staff Login</span>
                 </Link>
               </div>
             </div>
@@ -263,459 +264,229 @@ export default function Home() {
         )}
       </nav>
 
-      {/* ─── HERO ─── */}
-      <section id="hero" className="relative flex flex-col justify-center overflow-hidden" style={{ minHeight: "100svh", backgroundColor: CREAM }}>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 w-full">
-          <div className="pt-36 pb-24 md:pt-44 md:pb-32">
+      {/* ─── HERO (full viewport) ─── */}
+      <section id="hero" className="relative flex flex-col justify-center" style={{ minHeight: "100svh", backgroundColor: MILK }}>
+        <div className="max-w-6xl mx-auto px-4 md:px-8 w-full">
+          <div className="pt-32 pb-20 md:pt-40 md:pb-28">
 
-            <div className="flex items-center gap-3 mb-10">
-              <div className="h-px w-8" style={{ backgroundColor: GOLD }} />
-              <span className="text-[11px] font-medium tracking-[0.3em] uppercase" style={{ color: GOLD }}>
-                Business Infrastructure
-              </span>
-            </div>
+            <p className="text-[11px] font-semibold tracking-[0.3em] uppercase mb-8" style={{ color: GOLD }}>
+              Business Infrastructure
+            </p>
 
-            <h1 className="font-light tracking-tight leading-[0.92] mb-10" style={{
-              color: TEAL,
-              fontSize: "clamp(3.2rem, 10vw, 8.5rem)",
-              letterSpacing: "-0.045em",
+            <h1 className="font-semibold tracking-tight leading-[0.95] mb-8" style={{
+              color: CHARCOAL,
+              fontSize: "clamp(40px, 8vw, 72px)",
+              letterSpacing: "-0.04em",
             }}>
               Structure for<br />
-              <em style={{ color: GREEN, fontStyle: "normal" }}>businesses</em><br />
+              <span style={{ color: GREEN }}>businesses</span><br />
               that last.
             </h1>
 
-            <p className="text-lg font-light leading-relaxed max-w-lg mb-14" style={{ color: DARK, opacity: 0.5 }}>
-              Compliance. Systems. Skills. One integrated platform for serious businesses.
+            <p className="text-base font-normal leading-relaxed max-w-md mb-12" style={{ color: CHARCOAL, opacity: 0.4 }}>
+              Compliance. Systems. Skills.<br />
+              One platform for serious businesses.
             </p>
 
-            <div className="flex flex-wrap gap-3 mt-8">
-              {/* PRIMARY - explore departments */}
+            <div className="flex flex-wrap gap-3">
               <button
-                onClick={(e) => { e.preventDefault(); document.getElementById("what")?.scrollIntoView({ behavior: "smooth" }); }}
-                className="inline-flex items-center gap-2 rounded-xl px-6 py-3.5 font-bold text-sm transition-all hover:opacity-90 active:scale-95"
-                style={{ backgroundColor: GREEN, color: WHITE }}
+                onClick={() => scrollTo("departments")}
+                className="inline-flex items-center gap-2 rounded-full px-7 h-12 font-medium text-[14px] transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+                style={{ backgroundColor: CHARCOAL, color: WHITE }}
               >
                 Explore Services
               </button>
-              {/* SECONDARY - for existing clients */}
               <button onClick={openTrackTab}
-                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-sm border transition-all hover:opacity-80"
-                style={{ borderColor: `${TEAL}50`, color: TEAL, backgroundColor: "transparent", opacity: 0.7 }}
+                className="inline-flex items-center gap-2 px-7 h-12 rounded-full font-medium text-[14px] transition-all duration-200 hover:bg-black/[0.04]"
+                style={{ color: CHARCOAL, border: `1.5px solid ${CHARCOAL}25` }}
               >
                 Track
               </button>
             </div>
-
-            <div className="grid grid-cols-3 gap-6 mt-20 pt-10 border-t max-w-sm" style={{ borderColor: GOLD + "25" }}>
-              {[
-                { num: "250+",   label: "Businesses Served" },
-                { num: "1,200+", label: "Students Trained"  },
-                { num: "₦50M+",  label: "Revenue Facilitated" },
-              ].map(s => (
-                <div key={s.label}>
-                  <p className="text-3xl font-light mb-1" style={{ color: GREEN }}>{s.num}</p>
-                  <p className="text-[10px] font-medium uppercase tracking-wider opacity-40" style={{ color: DARK }}>{s.label}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-20 animate-bounce">
-          <ChevronDown size={20} style={{ color: TEAL }} />
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 opacity-15 animate-bounce">
+          <ChevronDown size={18} style={{ color: CHARCOAL }} />
         </div>
       </section>
 
-      {/* ─── WHAT (4 cards: 3 Departments + Track) ─── */}
-      <section id="what" className="py-10 md:py-14 px-6 md:px-12" style={{ backgroundColor: WHITE }}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-5">
-            <span className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[0.25em] uppercase border" style={{ color: GREEN, borderColor: CREAM, backgroundColor: CREAM }}>What We Do</span>
-          </div>
-
-          <div className="flex flex-col gap-2">
-
-            {/* ── Cards 1–3: Departments ── */}
-            {DEPARTMENTS.map(dept => {
-              const isOpen = activeTab === dept.id;
-              return (
+      {/* ─── DEPARTMENTS (3 clean cards) ─── */}
+      <section id="departments" className="px-4 md:px-8" style={{ paddingTop: 120, paddingBottom: 120, backgroundColor: MILK }}>
+        <div ref={fadeDepts.ref} style={fadeDepts.style} className="max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {DEPARTMENTS.map(dept => (
+              <Link key={dept.id} href={dept.href} className="block group">
                 <div
-                  key={dept.id}
-                  className="rounded-2xl border overflow-hidden transition-all duration-300"
+                  className="relative rounded-[20px] p-8 md:p-9 h-full flex flex-col transition-shadow duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.06)]"
                   style={{
-                    borderColor: isOpen ? dept.color : dept.color + "18",
-                    backgroundColor: isOpen ? CREAM : WHITE,
+                    backgroundColor: WHITE,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                   }}
                 >
-                  {/* Header */}
-                  <button
-                    className="w-full text-left p-6 md:p-7"
-                    onClick={() => setActiveTab(isOpen ? null : dept.id)}
+                  {/* Accent bar */}
+                  <div className="absolute top-8 left-0 w-[3px] h-8 rounded-r-full" style={{ backgroundColor: dept.color }} />
+
+                  <div className="mb-6" style={{ color: dept.color }}>
+                    {dept.icon}
+                  </div>
+
+                  <h3 className="text-xl font-semibold tracking-tight mb-3" style={{ color: CHARCOAL, letterSpacing: "-0.02em" }}>
+                    {dept.label}
+                  </h3>
+
+                  <p className="text-[15px] leading-relaxed flex-1 mb-8" style={{ color: CHARCOAL, opacity: 0.45 }}>
+                    {dept.pitch}
+                  </p>
+
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[13px] font-medium transition-opacity duration-200 group-hover:opacity-100"
+                    style={{ color: dept.color, opacity: 0.7 }}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: dept.color + "12", color: dept.color }}>
-                          {dept.icon}
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold tracking-tight" style={{ color: TEAL, letterSpacing: "-0.025em" }}>
-                            {dept.label}
-                          </h3>
-                          <p className="text-[11px] uppercase tracking-wider font-medium opacity-35 mt-0.5" style={{ color: DARK }}>
-                            {dept.sub}
-                          </p>
-                        </div>
-                      </div>
-                      <ChevronDown size={18} style={{ color: dept.color, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease", flexShrink: 0 }} />
-                    </div>
-                  </button>
-
-                  {/* Expanded content */}
-                  <div style={{ maxHeight: isOpen ? "700px" : "0px", overflow: "hidden", transition: "max-height 0.4s ease" }}>
-                    <div className="px-6 md:px-7 pb-8 border-t" style={{ borderColor: dept.color + "18", backgroundColor: CREAM }}>
-                      {/* Close button */}
-                      <div className="flex justify-end pt-4 pb-2">
-                        <button
-                          onClick={() => setActiveTab(null)}
-                          className="flex items-center gap-1 text-[11px] font-medium opacity-40 hover:opacity-80 transition-opacity"
-                          style={{ color: dept.color }}
-                        >
-                          <X size={14} /> Close
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div>
-                          <p className="text-[14px] leading-relaxed mb-6" style={{ color: DARK, opacity: 0.65 }}>{dept.intro}</p>
-                          <button
-                            onClick={() => setLocation(dept.href)}
-                            className="inline-flex items-center gap-2 h-11 px-7 rounded-full text-[11px] font-semibold uppercase tracking-wider transition-all hover:scale-[1.02]"
-                            style={{ backgroundColor: dept.color, color: "white" }}
-                          >
-                            Enter {dept.label} <ArrowRight size={14} />
-                          </button>
-                        </div>
-                        <div>
-                          <p className="text-[10px] font-bold uppercase tracking-wider mb-4 opacity-35" style={{ color: DARK }}>What we handle</p>
-                          <div className="space-y-2.5">
-                            {dept.services.map(s => (
-                              <div key={s} className="flex items-start gap-3">
-                                <CheckCircle size={13} className="mt-0.5 shrink-0" style={{ color: GOLD }} />
-                                <span className="text-[13px] leading-relaxed" style={{ color: DARK, opacity: 0.7 }}>{s}</span>
-                              </div>
-                            ))}
-                          </div>
-                          {dept.id === "bizdoc" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: `1px solid ${dept.color}12` }}>Services <strong style={{ color: dept.color }}>from ₦50,000</strong> · Free consultation included</p>}
-                          {dept.id === "skills" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: `1px solid ${dept.color}12` }}>Programs <strong style={{ color: dept.color }}>from ₦35,000</strong> · Flexible payment plans available</p>}
-                          {dept.id === "systemise" && <p className="text-xs mt-3 pt-3" style={{ color: "#888", borderTop: `1px solid ${dept.color}12` }}>Projects <strong style={{ color: dept.color }}>from ₦80,000</strong> · Scope review is free</p>}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                    Enter <ArrowRight size={14} />
+                  </span>
                 </div>
-              );
-            })}
-
-            {/* ── Card 4: Track (Client Portal) ── */}
-            {(() => {
-              const isOpen = activeTab === "track";
-              return (
-                <div
-                  id="track"
-                  className="rounded-2xl border overflow-hidden transition-all duration-300"
-                  style={{ borderColor: isOpen ? TEAL : TEAL + "20", backgroundColor: isOpen ? CREAM : WHITE }}
-                >
-                  <button className="w-full text-left p-6 md:p-7" onClick={() => setActiveTab(isOpen ? null : "track")}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: TEAL + "10", color: TEAL }}>
-                          <TrendingUp size={24} />
-                        </div>
-                        <div>
-                          <h3 className="text-xl font-semibold tracking-tight" style={{ color: TEAL, letterSpacing: "-0.025em" }}>Track</h3>
-                          <p className="text-sm opacity-70 mt-1">A dedicated dashboard for your business. Track all your needs and progress in one place.</p>
-                          <p className="text-[11px] uppercase tracking-wider font-medium opacity-35 mt-0.5" style={{ color: DARK }}>Live Project Tracking</p>
-                        </div>
-                      </div>
-                      <ChevronDown size={18} style={{ color: TEAL, transform: isOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.3s ease", flexShrink: 0 }} />
-                    </div>
-                  </button>
-                  <div style={{ maxHeight: isOpen ? "900px" : "0px", overflow: "hidden", transition: "max-height 0.45s ease" }}>
-                    <div className="px-6 md:px-8 pb-8 pt-4 border-t" style={{ borderColor: `${TEAL}15`, backgroundColor: CREAM }}>
-                      {/* TRACK label */}
-                      <p className="text-[11px] font-bold tracking-[0.25em] uppercase mb-3" style={{ color: GOLD }}>TRACK</p>
-
-                      {/* Input row */}
-                      <div className="flex gap-2 mb-3">
-                        <input type="text" placeholder="HMZ-26/3-XXXX"
-                          className="flex-1 rounded-xl px-4 py-3 text-sm outline-none border font-mono"
-                          style={{ borderColor: `${TEAL}18`, backgroundColor: WHITE, color: TEAL }}
-                          value={trackRef}
-                          onChange={e => {
-                            let raw = e.target.value.replace(/[^0-9]/g, "");
-                            if (raw.length > 8) raw = raw.slice(0, 8);
-                            let formatted = "HMZ-";
-                            if (raw.length > 0) formatted += raw.slice(0, 2);
-                            if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
-                            if (raw.length > 3) formatted += "-" + raw.slice(3);
-                            setTrackRef(formatted);
-                            setTrackNotFound(false);
-                            setTrackResult(null);
-                          }}
-                          onKeyDown={e => e.key === "Enter" && handleTrack()} />
-                        <button onClick={handleTrack} disabled={trackLoading}
-                          className="px-5 py-3 rounded-xl text-sm font-semibold transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
-                          style={{ backgroundColor: TEAL, color: GOLD }}>
-                          {trackLoading ? "…" : "Access"}
-                        </button>
-                      </div>
-                      <p className="text-[11px] mb-4" style={{ color: TEAL, opacity: 0.35 }}>Enter your reference number e.g. HMZ-26/3-XXXX</p>
-
-                      {/* Not found */}
-                      {trackNotFound && (
-                        <p className="text-[12px] mb-3" style={{ color: `${TEAL}90` }}>No file found. You will receive your reference after payment. Use our chat to get started.</p>
-                      )}
-
-                      {/* Result card */}
-                      {trackResult && (
-                        <div className="rounded-2xl p-4 text-left border" style={{ backgroundColor: WHITE, borderColor: `${TEAL}12` }}>
-                          <p className="text-[11px] font-bold tracking-wider uppercase mb-1" style={{ color: GOLD }}>
-                            {trackResult.ref}
-                          </p>
-                          <p className="text-[16px] font-bold mb-0.5" style={{ color: TEAL }}>
-                            {trackResult.businessName || trackResult.clientName || "Your File"}
-                          </p>
-                          <p className="text-[13px] mb-3" style={{ color: TEAL, opacity: 0.55 }}>{trackResult.service}</p>
-                          <div className="mb-3">
-                            <div className="flex justify-between text-[11px] mb-1.5" style={{ color: `${TEAL}55` }}>
-                              <span>{trackResult.status}</span>
-                              <span style={{ color: GOLD }}>{trackResult.progress}%</span>
-                            </div>
-                            <div className="h-1.5 rounded-full" style={{ backgroundColor: `${TEAL}12` }}>
-                              <div className="h-full rounded-full" style={{ width: `${trackResult.progress}%`, backgroundColor: GOLD }} />
-                            </div>
-                          </div>
-                          <a href="/client/dashboard"
-                            onClick={e => {
-                              e.preventDefault();
-                              localStorage.setItem("hamzury-client-session", JSON.stringify({
-                                ref: trackResult.ref, phone: trackRef, name: trackResult.clientName,
-                                businessName: trackResult.businessName, service: trackResult.service,
-                                status: trackResult.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
-                              }));
-                              window.location.href = "/client/dashboard";
-                            }}
-                            className="block w-full py-2.5 rounded-xl text-sm font-semibold text-center transition-opacity hover:opacity-90"
-                            style={{ backgroundColor: TEAL, color: GOLD }}>
-                            Open Full Dashboard →
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-
-          </div>
-        </div>
-      </section>
-
-      {/* ─── WHO ─── */}
-      <section id="who" className="py-24 px-6 md:px-12" style={{ backgroundColor: CREAM }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-12">
-            <div className="h-px w-8" style={{ backgroundColor: GOLD }} />
-            <span className="text-[11px] font-medium tracking-[0.3em] uppercase" style={{ color: GOLD }}>Founder</span>
-          </div>
-          <blockquote>
-            <p
-              className="font-light leading-[1.5] mb-10"
-              style={{
-                color: TEAL,
-                fontSize: "clamp(1.35rem, 3vw, 2rem)",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              "Businesses deserve more than consultants who disappear after the invoice. We stay until the work is done. And build systems that keep working after we leave."
-            </p>
-            <Link
-              href="/founder"
-              className="text-sm font-semibold tracking-wide transition-opacity hover:opacity-60 inline-flex items-center gap-2"
-              style={{ color: TEAL }}
-            >
-              Muhammad Hamzury <ArrowRight size={14} />
-            </Link>
-          </blockquote>
-        </div>
-      </section>
-
-
-      {/* ─── WHY ─── */}
-      <section id="why" className="py-16 px-6 md:px-12" style={{ backgroundColor: WHITE }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 mb-3">
-            <div className="h-px w-8" style={{ backgroundColor: GOLD }} />
-            <span className="text-[11px] font-medium tracking-[0.3em] uppercase" style={{ color: GOLD }}>Why HAMZURY</span>
-          </div>
-          <h2 className="text-2xl md:text-3xl font-light tracking-tight mb-2" style={{ color: TEAL, letterSpacing: "-0.025em" }}>
-            Built to solve real problems.
-          </h2>
-          <div className="mb-10" />
-
-          {/* Founder's Why — 3 cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-12">
-            {[
-              {
-                dept: "BizDoc Consult",
-                why: "Incomplete compliance shuts businesses down. BizDoc eliminates that risk.",
-                color: "#1B4D3E",
-              },
-              {
-                dept: "Systemize",
-                why: "A business without systems is just a job. We build the structure to scale.",
-                color: "#2563EB",
-              },
-              {
-                dept: "Hamzury Skills",
-                why: "The market can't take your skills. We invest in people who build lasting businesses.",
-                color: "#B48C4C",
-              },
-            ].map(item => (
-              <div key={item.dept} className="p-7 rounded-2xl" style={{ backgroundColor: "white", border: "1px solid rgba(10,31,28,0.07)" }}>
-                <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: item.color }}>{item.dept}</p>
-                <p className="text-sm leading-relaxed" style={{ color: "#2C2C2C", opacity: 0.75 }}>{item.why}</p>
-              </div>
+              </Link>
             ))}
           </div>
-
         </div>
       </section>
 
-      {/* ─── PROCESS INFOGRAPHIC ─── */}
-      <section id="process" className="py-20 px-6 md:px-12" style={{ backgroundColor: WHITE }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center gap-3 mb-10">
-            <div className="h-px w-8" style={{ backgroundColor: GOLD }} />
-            <span className="text-[11px] font-medium tracking-[0.3em] uppercase" style={{ color: GOLD }}>Structure from Day One</span>
+      {/* ─── TRACK (minimal) ─── */}
+      <section id="track" className="px-4 md:px-8" style={{ paddingTop: 120, paddingBottom: 120, backgroundColor: WHITE }}>
+        <div ref={fadeTrack.ref} style={fadeTrack.style} className="max-w-md mx-auto text-center">
+          <h2 className="text-2xl font-semibold tracking-tight mb-10" style={{ color: CHARCOAL, letterSpacing: "-0.03em" }}>
+            Track
+          </h2>
+
+          <div className="flex gap-2 mb-3">
+            <input type="text" placeholder="HMZ-26/3-XXXX"
+              className="flex-1 rounded-full px-5 h-12 text-sm outline-none font-mono"
+              style={{ backgroundColor: MILK, color: CHARCOAL, border: "none" }}
+              value={trackRef}
+              onChange={e => {
+                let raw = e.target.value.replace(/[^0-9]/g, "");
+                if (raw.length > 8) raw = raw.slice(0, 8);
+                let formatted = "HMZ-";
+                if (raw.length > 0) formatted += raw.slice(0, 2);
+                if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
+                if (raw.length > 3) formatted += "-" + raw.slice(3);
+                setTrackRef(formatted);
+                setTrackNotFound(false);
+                setTrackResult(null);
+              }}
+              onKeyDown={e => e.key === "Enter" && handleTrack()} />
+            <button onClick={handleTrack} disabled={trackLoading}
+              className="px-6 h-12 rounded-full text-sm font-medium transition-opacity duration-200 hover:opacity-90 disabled:opacity-40 shrink-0"
+              style={{ backgroundColor: CHARCOAL, color: WHITE }}>
+              {trackLoading ? "..." : "Access"}
+            </button>
           </div>
 
-          {(() => {
-            const STEPS = [
-              { num: "01", title: "Brief",    short: "Tell us what you need",                detail: "Service type, timeline, context. The more specific, the faster we move." },
-              { num: "02", title: "Assigned", short: "CSO responds within 24 hours",         detail: "Your Client Success Officer reviews and responds within 24 hours." },
-              { num: "03", title: "Execute",  short: "Specialists handle the work",          detail: "Full ownership. No chasing. No repeating yourself." },
-              { num: "04", title: "Verify",   short: "Quality checked before it reaches you",detail: "Every deliverable passes internal quality check. No exceptions." },
-              { num: "05", title: "Deliver",  short: "Certified and actively maintained",   detail: "Certified, filed, and set up for ongoing maintenance." },
-            ];
+          <p className="text-[13px] mb-6" style={{ color: CHARCOAL, opacity: 0.3 }}>
+            Enter your reference to see your dashboard.
+          </p>
 
-            return (
-              <>
-                {/* ── Vertical timeline (all viewports) ── */}
-                <div className="flex flex-col">
-                  {STEPS.map((s, i) => (
-                    <div key={s.num}>
-                      <button
-                        className="flex items-start gap-4 w-full text-left py-3"
-                        onClick={() => setSelectedStep(selectedStep === i ? null : i)}
-                      >
-                        {/* Circle + connector line */}
-                        <div className="flex flex-col items-center shrink-0" style={{ width: "40px" }}>
-                          <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[11px] shrink-0 transition-all"
-                            style={{
-                              backgroundColor: selectedStep === i ? GOLD : TEAL,
-                              color: selectedStep === i ? TEAL : GOLD,
-                            }}
-                          >
-                            {s.num}
-                          </div>
-                          {i < STEPS.length - 1 && (
-                            <div className="w-px flex-1 mt-1" style={{ minHeight: "20px", backgroundColor: GOLD + "25" }} />
-                          )}
-                        </div>
-                        {/* Text */}
-                        <div className="flex-1 pb-4">
-                          <div className="flex items-center justify-between">
-                            <p className="text-[14px] font-semibold" style={{ color: selectedStep === i ? GOLD : TEAL }}>{s.title}</p>
-                            <ChevronDown size={16} style={{ color: GOLD, opacity: 0.5, transform: selectedStep === i ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.25s" }} />
-                          </div>
-                          <p className="text-[12px] mt-0.5" style={{ color: DARK, opacity: 0.4 }}>{s.short}</p>
-                          {/* Inline detail on mobile */}
-                          <div style={{ maxHeight: selectedStep === i ? "80px" : "0px", overflow: "hidden", transition: "max-height 0.3s ease" }}>
-                            <p className="text-[13px] leading-relaxed mt-3 pr-4" style={{ color: DARK, opacity: 0.6 }}>{s.detail}</p>
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  ))}
+          {/* Not found */}
+          {trackNotFound && (
+            <p className="text-[13px] mb-4" style={{ color: CHARCOAL, opacity: 0.5 }}>
+              No file found. You will receive your reference after payment.
+            </p>
+          )}
+
+          {/* Result card */}
+          {trackResult && (
+            <div className="rounded-[20px] p-6 text-left mt-6" style={{ backgroundColor: MILK, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+              <p className="text-[11px] font-semibold tracking-wider uppercase mb-1" style={{ color: GOLD }}>
+                {trackResult.ref}
+              </p>
+              <p className="text-[17px] font-semibold mb-0.5" style={{ color: CHARCOAL }}>
+                {trackResult.businessName || trackResult.clientName || "Your File"}
+              </p>
+              <p className="text-[13px] mb-4" style={{ color: CHARCOAL, opacity: 0.45 }}>{trackResult.service}</p>
+              <div className="mb-4">
+                <div className="flex justify-between text-[11px] mb-1.5" style={{ color: `${CHARCOAL}60` }}>
+                  <span>{trackResult.status}</span>
+                  <span style={{ color: GOLD }}>{trackResult.progress}%</span>
                 </div>
-              </>
-            );
-          })()}
+                <div className="h-1 rounded-full" style={{ backgroundColor: `${CHARCOAL}08` }}>
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${trackResult.progress}%`, backgroundColor: GOLD }} />
+                </div>
+              </div>
+              <a href="/client/dashboard"
+                onClick={e => {
+                  e.preventDefault();
+                  localStorage.setItem("hamzury-client-session", JSON.stringify({
+                    ref: trackResult.ref, phone: trackRef, name: trackResult.clientName,
+                    businessName: trackResult.businessName, service: trackResult.service,
+                    status: trackResult.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
+                  }));
+                  window.location.href = "/client/dashboard";
+                }}
+                className="block w-full h-11 rounded-full text-sm font-medium text-center leading-[44px] transition-opacity duration-200 hover:opacity-90"
+                style={{ backgroundColor: CHARCOAL, color: WHITE }}>
+                Open Full Dashboard
+              </a>
+            </div>
+          )}
         </div>
       </section>
 
-
-      {/* ── OUR TEAM ── */}
-      <section className="py-16 md:py-24 px-6 md:px-12" style={{ backgroundColor: CREAM }}>
-        <div className="max-w-7xl mx-auto text-center">
-          <span className="px-4 py-1.5 rounded-full text-[11px] font-bold tracking-[0.25em] uppercase border inline-block mb-6"
-            style={{ color: GREEN, borderColor: `${GREEN}20` }}>
-            Our Team
-          </span>
-          <h2 className="text-[clamp(28px,4vw,42px)] font-light tracking-tight mb-3" style={{ color: TEAL, letterSpacing: "-0.02em" }}>
-            The people behind HAMZURY.
-          </h2>
-          <p className="text-[15px] mb-8 max-w-md mx-auto opacity-55" style={{ color: DARK }}>
-            15 operators, advisors, and educators. Each role is deliberate.
+      {/* ─── FOUNDER QUOTE ─── */}
+      <section className="px-4 md:px-8" style={{ paddingTop: 120, paddingBottom: 120, backgroundColor: MILK }}>
+        <div ref={fadeQuote.ref} style={fadeQuote.style} className="max-w-2xl mx-auto text-center">
+          <p className="text-base italic leading-relaxed mb-6" style={{ color: CHARCOAL, opacity: 0.6 }}>
+            "Businesses deserve more than consultants who disappear after the invoice. We stay until the work is done."
           </p>
-          <Link href="/team">
-            <span className="inline-block px-8 py-3 rounded-full text-[13px] font-medium cursor-pointer transition-all hover:scale-105"
-              style={{ backgroundColor: TEAL, color: CREAM }}>
-              Meet the team
-            </span>
+          <Link
+            href="/founder"
+            className="text-sm font-medium transition-opacity duration-200 hover:opacity-60 inline-flex items-center gap-2"
+            style={{ color: GOLD }}
+          >
+            Muhammad Hamzury <ArrowRight size={14} />
           </Link>
         </div>
       </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer className="px-6 md:px-12 py-8 border-t" style={{ backgroundColor: TEAL, borderColor: `${GOLD}15` }}>
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <span className="text-base font-light tracking-tight" style={{ color: CREAM, letterSpacing: "-0.03em" }}>HAMZURY</span>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] font-medium uppercase tracking-wider" style={{ color: CREAM }}>
-            <Link href="/bizdoc"    className="opacity-40 hover:opacity-80 transition-opacity">BizDoc</Link>
-            <Link href="/systemise" className="opacity-40 hover:opacity-80 transition-opacity">Systemize</Link>
-            <Link href="/skills"    className="opacity-40 hover:opacity-80 transition-opacity">Skills</Link>
-            <Link href="/affiliate" className="opacity-40 hover:opacity-80 transition-opacity">Affiliates</Link>
-            <button onClick={() => setPartnershipOpen(true)} className="opacity-40 hover:opacity-80 transition-opacity">Partnership</button>
-            <Link href="/privacy"   className="opacity-40 hover:opacity-80 transition-opacity">Privacy</Link>
-            <Link href="/terms"     className="opacity-40 hover:opacity-80 transition-opacity">Terms</Link>
-            <a href="/affiliate" className="hover:opacity-100 transition-opacity" style={{ color: GOLD, opacity: 0.5 }}>
-              Affiliate Programme
-            </a>
+      {/* ─── WHY HAMZURY (3 statements) ─── */}
+      <section className="px-4 md:px-8" style={{ paddingTop: 120, paddingBottom: 120, backgroundColor: WHITE }}>
+        <div ref={fadeWhy.ref} style={fadeWhy.style} className="max-w-2xl mx-auto text-center space-y-4">
+          <p className="text-xl font-medium tracking-tight" style={{ color: BIZDOC_GREEN, letterSpacing: "-0.02em" }}>
+            Compliance that protects.
+          </p>
+          <p className="text-xl font-medium tracking-tight" style={{ color: SYSTEMISE_BLUE, letterSpacing: "-0.02em" }}>
+            Systems that scale.
+          </p>
+          <p className="text-xl font-medium tracking-tight" style={{ color: SKILLS_NAVY, letterSpacing: "-0.02em" }}>
+            Skills that earn.
+          </p>
+        </div>
+      </section>
+
+      {/* ─── FOOTER (minimal) ─── */}
+      <footer className="px-4 md:px-8" style={{ paddingTop: 60, paddingBottom: 60, backgroundColor: MILK }}>
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-sm font-normal mb-4" style={{ color: CHARCOAL, opacity: 0.3 }}>
+            HAMZURY &middot; Abuja, Nigeria
+          </p>
+          <div className="flex items-center justify-center gap-4 text-[12px] font-medium" style={{ color: CHARCOAL }}>
+            <Link href="/privacy"  className="opacity-30 hover:opacity-60 transition-opacity duration-200">Privacy</Link>
+            <span className="opacity-15">&middot;</span>
+            <Link href="/terms"    className="opacity-30 hover:opacity-60 transition-opacity duration-200">Terms</Link>
+            <span className="opacity-15">&middot;</span>
+            <Link href="/skills"   className="opacity-30 hover:opacity-60 transition-opacity duration-200">Training</Link>
           </div>
           <button
             onClick={() => { window.location.href = LOGIN_URL; }}
-            className="text-[11px] font-medium uppercase tracking-wider opacity-30 hover:opacity-70 transition-opacity"
-            style={{ color: GOLD }}
+            className="mt-6 text-[11px] font-medium uppercase tracking-wider opacity-15 hover:opacity-40 transition-opacity duration-200"
+            style={{ color: CHARCOAL }}
           >
-            Staff Login →
+            Staff
           </button>
-        </div>
-        <div className="max-w-7xl mx-auto text-center mt-6">
-          <p className="text-[12px] font-light italic mb-4" style={{ color: `${CREAM}80` }}>
-            "Structure before speed. That is how we build." — Muhammad Hamzury, Founder
-          </p>
         </div>
       </footer>
 
-      <MotivationalQuoteBar color="#2D2D2D" />
-      <div className="md:hidden h-10" />
+      <MotivationalQuoteBar color="#1A1A1A" />
 
       {/* Partnership Modal */}
       <PartnershipModal open={partnershipOpen} onClose={() => setPartnershipOpen(false)} />
@@ -760,7 +531,7 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
       });
       setStep("done");
     } catch {
-      setStep("done"); // still show success to user
+      setStep("done");
     } finally {
       setSubmitting(false);
     }
@@ -769,25 +540,20 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <div
       className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center"
-      style={{ backgroundColor: "rgba(10,31,28,0.6)", backdropFilter: "blur(12px)" }}
+      style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(16px)" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="mt-auto md:mt-0 w-full md:max-w-lg">
-        {/* Mobile drag handle */}
         <div className="md:hidden flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full" style={{ backgroundColor: WHITE + "30" }} />
         </div>
-        <div className="rounded-t-3xl md:rounded-2xl overflow-hidden shadow-2xl" style={{ backgroundColor: WHITE }}>
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-5 border-b" style={{ borderColor: GOLD + "20" }}>
+        <div className="rounded-t-3xl md:rounded-2xl overflow-hidden" style={{ backgroundColor: WHITE, boxShadow: "0 8px 40px rgba(0,0,0,0.12)" }}>
+          <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid rgba(0,0,0,0.04)" }}>
             <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: GOLD }} />
-                <span className="text-[10px] font-bold tracking-[0.25em] uppercase" style={{ color: GOLD }}>Partnership</span>
-              </div>
-              <h3 className="text-lg font-semibold tracking-tight" style={{ color: TEAL, letterSpacing: "-0.02em" }}>Let's build together.</h3>
+              <p className="text-[10px] font-semibold tracking-[0.25em] uppercase mb-0.5" style={{ color: GOLD }}>Partnership</p>
+              <h3 className="text-lg font-semibold tracking-tight" style={{ color: CHARCOAL, letterSpacing: "-0.02em" }}>Let's build together.</h3>
             </div>
-            <button onClick={onClose} className="opacity-25 hover:opacity-60 transition-opacity" style={{ color: DARK }}>
+            <button onClick={onClose} className="opacity-25 hover:opacity-60 transition-opacity duration-200" style={{ color: CHARCOAL }}>
               <X size={20} />
             </button>
           </div>
@@ -797,67 +563,65 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
               <div className="w-12 h-12 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: GREEN + "15" }}>
                 <CheckCircle size={24} style={{ color: GREEN }} />
               </div>
-              <h4 className="text-xl font-semibold mb-2 tracking-tight" style={{ color: TEAL }}>We'll reach out shortly.</h4>
-              <p className="text-sm leading-relaxed mb-6" style={{ color: DARK, opacity: 0.5 }}>Your inquiry has been received. Our team reviews every partnership request personally. Expect a response within 48 hours.</p>
+              <h4 className="text-xl font-semibold mb-2 tracking-tight" style={{ color: CHARCOAL }}>We'll reach out shortly.</h4>
+              <p className="text-sm leading-relaxed mb-6" style={{ color: CHARCOAL, opacity: 0.45 }}>Your inquiry has been received. Expect a response within 48 hours.</p>
               <button onClick={onClose}
-                className="px-6 py-3 rounded-full text-sm font-semibold transition-all hover:opacity-90"
-                style={{ backgroundColor: TEAL, color: CREAM }}>
+                className="px-6 h-11 rounded-full text-sm font-medium transition-all duration-200 hover:opacity-90"
+                style={{ backgroundColor: CHARCOAL, color: WHITE }}>
                 Done
               </button>
             </div>
           ) : (
             <div className="px-6 py-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <p className="text-sm leading-relaxed" style={{ color: DARK, opacity: 0.55 }}>
-                HAMZURY is open to partnerships that create real value for businesses. Tell us who you are and what you have in mind.
+              <p className="text-sm leading-relaxed" style={{ color: CHARCOAL, opacity: 0.4 }}>
+                Tell us who you are and what you have in mind.
               </p>
 
-              {/* Name + Business */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: DARK, opacity: 0.4 }}>Your Name *</label>
+                  <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: CHARCOAL, opacity: 0.35 }}>Your Name *</label>
                   <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     placeholder="Full name"
-                    className="w-full rounded-xl px-4 py-3 text-sm outline-none border"
-                    style={{ borderColor: TEAL + "15", backgroundColor: CREAM, color: DARK }} />
+                    className="w-full rounded-xl px-4 h-11 text-sm outline-none"
+                    style={{ backgroundColor: MILK, color: CHARCOAL, border: "none" }} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: DARK, opacity: 0.4 }}>Company / Organisation</label>
+                  <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: CHARCOAL, opacity: 0.35 }}>Company</label>
                   <input value={form.business} onChange={e => setForm(f => ({ ...f, business: e.target.value }))}
                     placeholder="Business name"
-                    className="w-full rounded-xl px-4 py-3 text-sm outline-none border"
-                    style={{ borderColor: TEAL + "15", backgroundColor: CREAM, color: DARK }} />
+                    className="w-full rounded-xl px-4 h-11 text-sm outline-none"
+                    style={{ backgroundColor: MILK, color: CHARCOAL, border: "none" }} />
                 </div>
               </div>
 
-              {/* Phone + Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: DARK, opacity: 0.4 }}>Phone</label>
+                  <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: CHARCOAL, opacity: 0.35 }}>Phone</label>
                   <input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                     type="tel" placeholder="WhatsApp preferred"
-                    className="w-full rounded-xl px-4 py-3 text-sm outline-none border"
-                    style={{ borderColor: TEAL + "15", backgroundColor: CREAM, color: DARK }} />
+                    className="w-full rounded-xl px-4 h-11 text-sm outline-none"
+                    style={{ backgroundColor: MILK, color: CHARCOAL, border: "none" }} />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: DARK, opacity: 0.4 }}>Email</label>
+                  <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: CHARCOAL, opacity: 0.35 }}>Email</label>
                   <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                     type="email" placeholder="your@email.com"
-                    className="w-full rounded-xl px-4 py-3 text-sm outline-none border"
-                    style={{ borderColor: TEAL + "15", backgroundColor: CREAM, color: DARK }} />
+                    className="w-full rounded-xl px-4 h-11 text-sm outline-none"
+                    style={{ backgroundColor: MILK, color: CHARCOAL, border: "none" }} />
                 </div>
               </div>
 
-              {/* Partnership type */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: DARK, opacity: 0.4 }}>Partnership Type *</label>
+                <label className="block text-[11px] font-medium uppercase tracking-wider mb-2" style={{ color: CHARCOAL, opacity: 0.35 }}>Partnership Type *</label>
                 <div className="flex flex-wrap gap-2">
                   {PARTNER_TYPES.map(t => (
                     <button key={t} onClick={() => setForm(f => ({ ...f, type: t }))}
-                      className="px-3.5 py-2 rounded-full text-[12px] font-medium border transition-all"
+                      className="px-3.5 py-2 rounded-full text-[12px] font-medium transition-all duration-200"
                       style={{
-                        borderColor: form.type === t ? TEAL : TEAL + "18",
-                        backgroundColor: form.type === t ? TEAL : CREAM,
-                        color: form.type === t ? CREAM : TEAL,
+                        backgroundColor: form.type === t ? CHARCOAL : MILK,
+                        color: form.type === t ? WHITE : CHARCOAL,
+                        opacity: form.type === t ? 1 : 0.6,
+                        border: "none",
                       }}>
                       {t}
                     </button>
@@ -865,22 +629,21 @@ function PartnershipModal({ open, onClose }: { open: boolean; onClose: () => voi
                 </div>
               </div>
 
-              {/* Brief idea */}
               <div>
-                <label className="block text-[11px] font-semibold uppercase tracking-wider mb-1.5" style={{ color: DARK, opacity: 0.4 }}>Your Idea (optional)</label>
+                <label className="block text-[11px] font-medium uppercase tracking-wider mb-1.5" style={{ color: CHARCOAL, opacity: 0.35 }}>Your Idea (optional)</label>
                 <textarea value={form.idea} onChange={e => setForm(f => ({ ...f, idea: e.target.value }))}
-                  placeholder="What do you have in mind? The more specific, the faster we can respond."
+                  placeholder="What do you have in mind?"
                   rows={3}
-                  className="w-full rounded-xl px-4 py-3 text-sm outline-none border resize-none"
-                  style={{ borderColor: TEAL + "15", backgroundColor: CREAM, color: DARK }} />
+                  className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none"
+                  style={{ backgroundColor: MILK, color: CHARCOAL, border: "none" }} />
               </div>
 
               <button
                 onClick={handleSubmit}
                 disabled={!form.name.trim() || !form.type || submitting}
-                className="w-full py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40"
-                style={{ backgroundColor: TEAL, color: CREAM }}>
-                {submitting ? "Submitting…" : "Submit Partnership Inquiry →"}
+                className="w-full h-12 rounded-full text-sm font-medium transition-all duration-200 hover:opacity-90 disabled:opacity-30"
+                style={{ backgroundColor: CHARCOAL, color: WHITE }}>
+                {submitting ? "Submitting..." : "Submit Inquiry"}
               </button>
             </div>
           )}

@@ -484,83 +484,134 @@ async function startServer() {
   });
   // ─────────────────────────────────────────────────────────────────────────
 
-  // ─── AI Chat Streaming ──────────────────────────────────────────────────────
-  const chatStreamRateMap = new Map<string, number[]>();
+  // ─── HAMZURY v7 Chat API ────────────────────────────────────────────────────
+  const chatRateMap = new Map<string, number[]>();
   const CHAT_RATE_WINDOW = 10 * 60 * 1000;
   const CHAT_RATE_LIMIT = 15;
 
-  app.post("/api/chat/stream", async (req, res) => {
+  /** Shared rate limiter for all chat endpoints */
+  function chatRateLimit(req: any, res: any): boolean {
+    const forwarded = req.headers["x-forwarded-for"];
+    const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip || "unknown";
+    const now = Date.now();
+    const hits = (chatRateMap.get(ip) || []).filter((ts: number) => now - ts < CHAT_RATE_WINDOW);
+    if (hits.length >= CHAT_RATE_LIMIT) {
+      res.status(429).json({ error: "Too many requests. Please wait a few minutes." });
+      return false;
+    }
+    hits.push(now);
+    chatRateMap.set(ip, hits);
+    return true;
+  }
+
+  /** Shared SSE stream helper */
+  async function streamChatResponse(req: any, res: any, systemPrompt: string, question: string, history: any[]) {
+    const historyMessages = Array.isArray(history)
+      ? history.slice(-10).map((h: { role: string; content: string }) => ({
+          role: h.role as "user" | "assistant",
+          content: sanitize(String(h.content).slice(0, 500)),
+        }))
+      : [];
+
+    const stream = await invokeLLMStream({
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...historyMessages,
+        { role: "user", content: sanitize(question) },
+      ],
+    });
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+
+    req.on("close", () => { reader.cancel().catch(() => {}); });
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { res.write("data: [DONE]\n\n"); res.end(); return; }
+      res.write(decoder.decode(value, { stream: true }));
+    }
+  }
+
+  // POST /api/chat/message — Main public website chat (v7)
+  app.post("/api/chat/message", async (req, res) => {
     try {
-      // Rate limit
-      const forwarded = req.headers["x-forwarded-for"];
-      const ip = typeof forwarded === "string" ? forwarded.split(",")[0].trim() : req.ip || "unknown";
-      const now = Date.now();
-      const hits = (chatStreamRateMap.get(ip) || []).filter(ts => now - ts < CHAT_RATE_WINDOW);
-      if (hits.length >= CHAT_RATE_LIMIT) {
-        return res.status(429).json({ error: "Too many requests. Please wait a few minutes." });
+      if (!chatRateLimit(req, res)) return;
+      const { message, history, department, language, selected_mode, session_id, url_referral } = req.body ?? {};
+      if (!message || typeof message !== "string" || message.length > 1000) {
+        return res.status(400).json({ error: "Invalid message." });
       }
-      hits.push(now);
-      chatStreamRateMap.set(ip, hits);
-
-      const { question, history, department } = req.body ?? {};
-      if (!question || typeof question !== "string" || question.length > 1000) {
-        return res.status(400).json({ error: "Invalid question." });
-      }
-
-      const cleanQuestion = sanitize(question);
-
       const systemPrompt = buildSystemPrompt(department as string);
-
-      const historyMessages = Array.isArray(history)
-        ? history.slice(-10).map((h: { role: string; content: string }) => ({
-            role: h.role as "user" | "assistant",
-            content: sanitize(String(h.content).slice(0, 500)),
-          }))
-        : [];
-
-      const stream = await invokeLLMStream({
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...historyMessages,
-          { role: "user", content: cleanQuestion },
-        ],
-      });
-
-      // Pipe the SSE stream to the client
-      res.setHeader("Content-Type", "text/event-stream");
-      res.setHeader("Cache-Control", "no-cache");
-      res.setHeader("Connection", "keep-alive");
-      res.setHeader("X-Accel-Buffering", "no");
-
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-
-      const pump = async () => {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            res.write("data: [DONE]\n\n");
-            res.end();
-            return;
-          }
-          const chunk = decoder.decode(value, { stream: true });
-          // Forward the SSE lines from the upstream API
-          res.write(chunk);
-        }
-      };
-
-      req.on("close", () => {
-        reader.cancel().catch(() => {});
-      });
-
-      await pump();
+      await streamChatResponse(req, res, systemPrompt, message, history || []);
     } catch (err) {
-      console.error("[chat/stream] error:", err);
-      if (!res.headersSent) {
-        res.status(500).json({ error: "Chat stream failed." });
-      } else {
-        res.end();
+      console.error("[chat/message] error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Chat failed." });
+      else res.end();
+    }
+  });
+
+  // POST /api/chat/dashboard-message — Client dashboard chat (v7)
+  app.post("/api/chat/dashboard-message", async (req, res) => {
+    try {
+      if (!chatRateLimit(req, res)) return;
+      const { message, history, tone_preference, session_id } = req.body ?? {};
+      if (!message || typeof message !== "string" || message.length > 1000) {
+        return res.status(400).json({ error: "Invalid message." });
       }
+      const systemPrompt = buildSystemPrompt(undefined, tone_preference as string);
+      await streamChatResponse(req, res, systemPrompt, message, history || []);
+    } catch (err) {
+      console.error("[chat/dashboard-message] error:", err);
+      if (!res.headersSent) res.status(500).json({ error: "Dashboard chat failed." });
+      else res.end();
+    }
+  });
+
+  // POST /api/chat/track-reference — Reference number lookup (v7)
+  app.post("/api/chat/track-reference", async (req, res) => {
+    try {
+      const { reference_number } = req.body ?? {};
+      if (!reference_number || typeof reference_number !== "string") {
+        return res.status(400).json({ error: "Reference number required." });
+      }
+      const { getTaskByRef } = await import("../db");
+      const task = await getTaskByRef(reference_number.trim().toUpperCase());
+      if (!task) return res.json({ found: false, message: "No records found for this reference." });
+      res.json({
+        found: true,
+        ref: task.ref,
+        clientName: task.clientName,
+        businessName: task.businessName,
+        status: task.status,
+        department: task.department,
+        service: task.service,
+      });
+    } catch (err) {
+      console.error("[chat/track-reference] error:", err);
+      res.status(500).json({ error: "Tracking lookup failed." });
+    }
+  });
+
+  // POST /api/chat/payment-receipt — Receipt upload + pending verification (v7)
+  app.post("/api/chat/payment-receipt", async (req, res) => {
+    try {
+      const { reference_number, receipt_note, session_id } = req.body ?? {};
+      if (!reference_number) {
+        return res.status(400).json({ error: "Reference number required." });
+      }
+      // Mark as pending verification — finance team verifies manually
+      res.json({
+        status: "pending_verification",
+        message: "Receipt noted. Payment remains pending until finance verifies. You will be notified once confirmed.",
+      });
+    } catch (err) {
+      console.error("[chat/payment-receipt] error:", err);
+      res.status(500).json({ error: "Receipt submission failed." });
     }
   });
 
