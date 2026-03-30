@@ -5,7 +5,7 @@ import {
   Phone, CreditCard, Copy,
   ArrowRight, Quote,
   Shield, Globe, Zap, TrendingUp, Clock,
-  Users, Sparkles,
+  Users, Sparkles, Palette,
   X, UserPlus, FileCheck, Award, GraduationCap, Lock, Unlock,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
@@ -318,6 +318,7 @@ export default function ClientDashboard() {
   const [copiedAcct, setCopiedAcct] = useState(false);
   const [invoicesOpen, setInvoicesOpen] = useState(false);
   const [expandedArea, setExpandedArea] = useState<string | null>(null);
+  const [selectedItem, setSelectedItem] = useState<string | null>(null);
 
   /* Chat state */
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
@@ -727,419 +728,433 @@ export default function ClientDashboard() {
           </div>
 
 
-          {/* ═══ CLIENT JOURNEY PIPELINE ═══ */}
+          {/* ═══ 5 VERTICAL BUSINESS PILLARS ═══ */}
           {(() => {
-            /* ── Stage definitions ── */
-            const STAGES = [
-              { key: "lead", label: "Lead", sub: "Client onboarded", icon: UserPlus },
-              { key: "registration", label: "Registration", sub: "CAC, Business Name", icon: Shield },
-              { key: "tax", label: "Tax & Compliance", sub: "TIN, VAT, TCC", icon: FileCheck },
-              { key: "licences", label: "Licences & Permits", sub: "NAFDAC, SON, sector", icon: Award },
-              { key: "brand", label: "Brand & Website", sub: "Brand, website, social", icon: Globe },
-              { key: "systems", label: "Systems & Automation", sub: "CRM, dashboard, AI", icon: Zap },
-              { key: "team", label: "Team & Training", sub: "Skills, staff training", icon: GraduationCap },
-              { key: "delivery", label: "Delivery & Growth", sub: "Scaling, management", icon: TrendingUp },
-            ] as const;
+            /* ── Pillar definitions ── */
+            const PILLARS = [
+              {
+                id: "compliance",
+                icon: Shield,
+                label: "Compliance & Documents",
+                desc: "Registration, tax, licences, contracts, templates",
+                pitch: "Is your business legally protected? Most businesses miss at least 2 critical documents.",
+                color: "#1B4D3E",
+                items: [
+                  { id: "cac", label: "CAC Registration", short: "CAC" },
+                  { id: "tin", label: "TIN Registration", short: "TIN" },
+                  { id: "tcc", label: "Tax Clearance", short: "TCC" },
+                  { id: "licence", label: "Sector Licence", short: "Licence" },
+                  { id: "contracts", label: "Contracts & Legal", short: "Legal" },
+                  { id: "templates", label: "Document Templates", short: "Docs" },
+                  { id: "annual", label: "Annual Returns", short: "Returns" },
+                  { id: "management", label: "Compliance Mgmt", short: "Mgmt" },
+                ],
+              },
+              {
+                id: "branding",
+                icon: Palette,
+                label: "Branding & Strategy",
+                desc: "Brand identity, positioning, website, strategy",
+                pitch: "If a premium client finds you online, will they trust you enough to pay?",
+                color: "#2563EB",
+                items: [
+                  { id: "brand_id", label: "Brand Identity", short: "Brand" },
+                  { id: "positioning", label: "Positioning", short: "Position" },
+                  { id: "website", label: "Website", short: "Web" },
+                  { id: "content_strategy", label: "Content Strategy", short: "Content" },
+                  { id: "materials", label: "Business Materials", short: "Materials" },
+                  { id: "pitch_deck", label: "Pitch Deck", short: "Pitch" },
+                ],
+              },
+              {
+                id: "visibility",
+                icon: Globe,
+                label: "Visibility & Presence",
+                desc: "Social media, content, online presence",
+                pitch: "Are premium clients finding you? If not, you are invisible to the market.",
+                color: "#2563EB",
+                items: [
+                  { id: "social_setup", label: "Social Media Setup", short: "Setup" },
+                  { id: "social_mgmt", label: "Social Media Mgmt", short: "Mgmt" },
+                  { id: "content", label: "Content Creation", short: "Content" },
+                  { id: "seo", label: "Search Visibility", short: "SEO" },
+                  { id: "reputation", label: "Online Reputation", short: "Trust" },
+                ],
+              },
+              {
+                id: "tools",
+                icon: Zap,
+                label: "Tools & Systems",
+                desc: "Automation, CRM, dashboard, AI agents",
+                pitch: "Are repeated tasks still wasting your team's time every week?",
+                color: "#2563EB",
+                items: [
+                  { id: "crm", label: "CRM & Leads", short: "CRM" },
+                  { id: "automation", label: "Automation", short: "Auto" },
+                  { id: "dashboard", label: "Dashboard", short: "Dash" },
+                  { id: "ai_agent", label: "AI Agent", short: "AI" },
+                  { id: "research", label: "Research Tools", short: "Research" },
+                ],
+              },
+              {
+                id: "skills",
+                icon: GraduationCap,
+                label: "Skills & Growth",
+                desc: "Training, team capability, programs",
+                pitch: "Can your team run the business without you being there every day?",
+                color: "#1E3A5F",
+                items: [
+                  { id: "founder", label: "Founder Program", short: "Founder" },
+                  { id: "team", label: "Team Training", short: "Team" },
+                  { id: "ai_skills", label: "AI Skills", short: "AI" },
+                  { id: "growth", label: "Growth Strategy", short: "Growth" },
+                ],
+              },
+            ];
 
-            type StageState = "delivered" | "in_progress" | "paid" | "next" | "inactive";
+            type ItemState = "delivered" | "in_progress" | "paid" | "inactive";
 
-            const STAGE_PITCHES: Record<string, { question: string; includes: string[] }> = {
-              registration: {
-                question: "Is your business legally recognized? Without CAC, you can't open a corporate bank account or bid for contracts.",
-                includes: ["CAC Registration", "Business Name", "Annual Returns", "Amendments"],
-              },
-              tax: {
-                question: "Can you get a Tax Clearance Certificate right now? Without one, government contracts and banking privileges are blocked.",
-                includes: ["TIN Registration", "VAT Setup", "PAYE", "Tax Clearance Certificate"],
-              },
-              licences: {
-                question: "Does your sector require specific permits? Operating without them risks shutdown, fines, or legal action.",
-                includes: ["NAFDAC", "SON Certification", "DPR Licence", "Sector Permits", "Export Documentation"],
-              },
-              brand: {
-                question: "If a premium client finds you online right now, will they trust you enough to pay?",
-                includes: ["Brand Identity", "Professional Website", "Social Media Setup", "Content Strategy"],
-              },
-              systems: {
-                question: "Are you still doing things manually that should already be automated?",
-                includes: ["CRM Setup", "Business Automation", "Internal Dashboard", "AI Agent", "Workflow Systems"],
-              },
-              team: {
-                question: "Can your team run the business properly without you being present every day?",
-                includes: ["Staff Training", "AI Skills Program", "Founder Launchpad", "Operations Training"],
-              },
-              delivery: {
-                question: "Is your business structured to handle 10x more clients without breaking?",
-                includes: ["Growth Strategy", "Management Subscription", "Expansion Planning", "Compliance Calendar"],
-              },
-            };
+            /* ── Map service to active items ── */
+            function mapServiceToItems(service: string, status: string): Record<string, ItemState> {
+              const s = service.toLowerCase();
+              const done = status === "Completed";
+              const active: Record<string, ItemState> = {};
 
-            /* ── Determine stage states from task data ── */
-            const svc = (task.service || "").toLowerCase();
-            const status = task.status || "";
-            const isDone = status === "Completed";
-            const isActive = status === "In Progress" || status === "Pending";
-            const isFullArch = svc.includes("full business") || svc.includes("architecture");
-
-            function getStageState(key: string): StageState {
-              if (key === "lead") return "delivered";
-              if (isFullArch) {
-                if (key === "registration") return isDone ? "delivered" : "in_progress";
-                if (key === "tax" || key === "brand" || key === "systems") return isDone ? "delivered" : "paid";
-                if (key === "licences" || key === "team") return "next";
-                if (key === "delivery") return "inactive";
-                return "inactive";
+              if (s.includes("full business") || s.includes("architecture")) {
+                active.cac = done ? "delivered" : "in_progress";
+                active.tin = "paid"; active.tcc = "paid";
+                active.brand_id = "paid"; active.website = "paid";
+                active.social_setup = "paid"; active.social_mgmt = "paid";
               }
-              // Single-service mapping
-              const svcMap: Record<string, string[]> = {
-                registration: ["cac", "registration", "business name", "foreign", "cerpac"],
-                tax: ["tax", "tin", "tcc", "vat", "paye", "scuml"],
-                licences: ["licence", "permit", "nafdac", "son", "dpr"],
-                brand: ["website", "brand", "social media", "social"],
-                systems: ["automation", "crm", "dashboard", "ai agent", "systemise"],
-                team: ["training", "skill", "cohort"],
-                delivery: ["strategy", "expansion", "management", "growth"],
-              };
-              const keywords = svcMap[key] || [];
-              const matches = keywords.some(k => svc.includes(k));
-              if (matches) return isDone ? "delivered" : isActive ? "in_progress" : "paid";
-              // Check if this should be "next" (adjacent to an active stage)
-              const stageOrder = ["lead", "registration", "tax", "licences", "brand", "systems", "team", "delivery"];
-              const myIdx = stageOrder.indexOf(key);
-              const activeIdx = stageOrder.findIndex(sk => {
-                const kw = svcMap[sk] || [];
-                return kw.some(k => svc.includes(k));
-              });
-              if (activeIdx >= 0 && myIdx === activeIdx + 1) return "next";
-              return "inactive";
+              if (s.includes("cac") || s.includes("registration")) active.cac = done ? "delivered" : "in_progress";
+              if (s.includes("tax") || s.includes("tin")) active.tin = done ? "delivered" : "in_progress";
+              if (s.includes("tcc")) active.tcc = done ? "delivered" : "in_progress";
+              if (s.includes("licence") || s.includes("nafdac")) active.licence = done ? "delivered" : "in_progress";
+              if (s.includes("website")) active.website = done ? "delivered" : "in_progress";
+              if (s.includes("brand")) active.brand_id = done ? "delivered" : "in_progress";
+              if (s.includes("social media")) { active.social_setup = done ? "delivered" : "in_progress"; active.social_mgmt = done ? "delivered" : "in_progress"; }
+              if (s.includes("automation") || s.includes("crm")) { active.crm = done ? "delivered" : "in_progress"; active.automation = done ? "delivered" : "in_progress"; }
+              if (s.includes("dashboard")) active.dashboard = done ? "delivered" : "in_progress";
+              if (s.includes("training") || s.includes("skill") || s.includes("cohort")) active.team = done ? "delivered" : "in_progress";
+              if (s.includes("contract") || s.includes("legal")) active.contracts = done ? "delivered" : "in_progress";
+
+              return active;
             }
 
-            const stageStates: Record<string, StageState> = {};
-            STAGES.forEach(s => { stageStates[s.key] = getStageState(s.key); });
+            const activeItems = mapServiceToItems(task.service || "", task.status || "");
 
-            function stageColor(state: StageState): string {
-              if (state === "delivered" || state === "in_progress") return GREEN;
-              if (state === "paid" || state === "next") return GOLD;
-              return GREY;
-            }
+            /* ── Business Strength ── */
+            const pillarsWithActive = PILLARS.filter(p => p.items.some(it => activeItems[it.id]));
+            const strengthPct = Math.round((pillarsWithActive.length / 5) * 100);
 
-            function lineStyle(fromState: StageState, toState: StageState): { color: string; dash: string } {
-              const fromActive = fromState === "delivered" || fromState === "in_progress";
-              const toActive = toState === "delivered" || toState === "in_progress";
-              if (fromActive && toActive) return { color: GREEN, dash: "none" };
-              const fromGold = fromState === "paid" || fromState === "next";
-              const toGold = toState === "paid" || toState === "next";
-              if (fromActive && toGold) return { color: GOLD, dash: "8 4" };
-              if ((fromGold || fromActive) && (toGold || toActive)) return { color: GOLD, dash: "8 4" };
-              return { color: GREY, dash: "4 4" };
-            }
-
-            const stageStatusLabel: Record<StageState, string> = {
-              delivered: "Delivered",
-              in_progress: "In Progress",
-              paid: "Paid, Queued",
-              next: "Recommended Next",
-              inactive: "Not Yet Active",
+            const strengthMessages: Record<number, string> = {
+              0: "Your business is unstructured. Let's fix that.",
+              20: "You've started. But 4 critical areas are still exposed.",
+              40: "Getting stronger. But gaps remain.",
+              60: "Solid foundation. A few more steps to full protection.",
+              80: "Almost there. One more area to complete.",
+              100: "Fully structured. Your business is built to last.",
             };
+            const strengthMessage = strengthMessages[strengthPct] || strengthMessages[0];
 
-            const stageEmoji: Record<StageState, string> = {
-              delivered: "\u2705",
-              in_progress: "\u23F3",
-              paid: "\uD83D\uDCB0",
-              next: "\uD83D\uDD13",
-              inactive: "\uD83D\uDD12",
-            };
-
-            /* ── Build checklist items for expanded view ── */
-            function getStageChecklist(key: string, state: StageState): { label: string; done: boolean; inProgress: boolean }[] {
-              if (key === "lead") return [{ label: "Client onboarded", done: true, inProgress: false }];
-              if (state === "delivered" || state === "in_progress") {
-                // Use actual checklist data when available
-                const items: { label: string; done: boolean; inProgress: boolean }[] = [];
-                if (key === "registration") {
-                  const cacItem = checklist.find(c => c.label.toLowerCase().includes("cac") || c.label.toLowerCase().includes("registration") || c.label.toLowerCase().includes("name"));
-                  const docItem = checklist.find(c => c.label.toLowerCase().includes("document"));
-                  const nameItem = checklist.find(c => c.label.toLowerCase().includes("name search") || c.label.toLowerCase().includes("name"));
-                  if (cacItem) items.push({ label: cacItem.label, done: cacItem.checked, inProgress: !cacItem.checked });
-                  if (docItem) items.push({ label: docItem.label, done: docItem.checked, inProgress: !docItem.checked });
-                  if (nameItem && nameItem !== cacItem) items.push({ label: nameItem.label, done: nameItem.checked, inProgress: !nameItem.checked });
-                  if (items.length === 0) {
-                    items.push({ label: "CAC Filing", done: state === "delivered", inProgress: state === "in_progress" });
-                    items.push({ label: "Document Collection", done: true, inProgress: false });
-                    items.push({ label: "Name Search", done: true, inProgress: false });
-                  }
-                } else if (key === "tax") {
-                  items.push({ label: "TIN Registration", done: state === "delivered", inProgress: false });
-                  items.push({ label: "VAT Setup", done: state === "delivered", inProgress: false });
-                  items.push({ label: "First Tax Filing", done: state === "delivered", inProgress: false });
-                } else if (key === "brand") {
-                  items.push({ label: "Brand Identity", done: state === "delivered", inProgress: false });
-                  items.push({ label: "Website Development", done: state === "delivered", inProgress: false });
-                  items.push({ label: "Social Media Setup", done: state === "delivered", inProgress: false });
-                } else if (key === "systems") {
-                  items.push({ label: "CRM Setup", done: state === "delivered", inProgress: false });
-                  items.push({ label: "Dashboard & AI", done: state === "delivered", inProgress: false });
-                  items.push({ label: "Workflow Automation", done: state === "delivered", inProgress: false });
-                }
-                return items.length > 0 ? items : [{ label: "Service active", done: state === "delivered", inProgress: state === "in_progress" }];
-              }
-              return [];
+            function itemStateColor(state: ItemState): string {
+              if (state === "delivered") return GREEN;
+              if (state === "in_progress") return GREEN;
+              if (state === "paid") return GOLD;
+              return `${GREY}60`;
             }
 
-            const selectedStage = expandedArea;
+            function lineColor(fromState: ItemState, toState: ItemState): string {
+              if (fromState !== "inactive" && toState !== "inactive") return GREEN;
+              if (fromState !== "inactive" || toState !== "inactive") return GOLD;
+              return `${GREY}40`;
+            }
 
             return (
               <>
-                {/* Pipeline header */}
-                <div className="mt-6 mb-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: LABEL }}>
-                    Your Business Journey
-                  </p>
-                </div>
-
-                {/* Horizontal scrollable pipeline */}
+                {/* ═══ BUSINESS STRENGTH METER ═══ */}
                 <div
-                  className="rounded-2xl p-5 md:p-6 mb-4 overflow-x-auto"
+                  className="mt-6 mb-6 rounded-2xl p-5 md:p-6 flex items-center gap-5"
                   style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
                 >
-                  <div className="flex items-start gap-0 min-w-[700px]">
-                    {STAGES.map((stage, idx) => {
-                      const state = stageStates[stage.key];
-                      const color = stageColor(state);
-                      const StageIcon = stage.icon;
-                      const isSelected = selectedStage === stage.key;
-                      const isLast = idx === STAGES.length - 1;
-
-                      return (
-                        <div key={stage.key} className="flex items-start flex-1 min-w-0">
-                          {/* Circle + label column */}
-                          <div className="flex flex-col items-center" style={{ width: 64, flexShrink: 0 }}>
-                            <button
-                              onClick={() => setExpandedArea(isSelected ? null : stage.key)}
-                              className="relative flex items-center justify-center rounded-full transition-all hover:scale-110"
-                              style={{
-                                width: 48, height: 48,
-                                backgroundColor: state === "inactive" ? `${GREY}30` : state === "next" ? "transparent" : `${color}18`,
-                                border: state === "next" ? `2px dashed ${GOLD}` : state === "inactive" ? `1px solid ${GREY}` : `2px solid ${color}`,
-                                animation: state === "in_progress" ? "stagePulse 2s infinite" : "none",
-                                boxShadow: isSelected ? `0 0 0 3px ${color}30` : "none",
-                              }}
-                            >
-                              {state === "delivered" ? (
-                                <CheckCircle size={22} style={{ color: GREEN }} />
-                              ) : state === "inactive" ? (
-                                <Lock size={18} style={{ color: GREY }} />
-                              ) : (
-                                <StageIcon size={20} style={{ color }} />
-                              )}
-                            </button>
-                            <p
-                              className="text-[10px] font-medium text-center mt-2 leading-tight"
-                              style={{ color: state === "inactive" ? GREY : DARK, maxWidth: 64 }}
-                            >
-                              {stage.label}
-                            </p>
-                            <p
-                              className="text-[8px] text-center mt-0.5 leading-tight"
-                              style={{ color: LABEL, maxWidth: 64 }}
-                            >
-                              {stage.sub}
-                            </p>
-                          </div>
-
-                          {/* Connecting line */}
-                          {!isLast && (
-                            <div className="flex-1 flex items-center" style={{ height: 48, minWidth: 16 }}>
-                              <svg width="100%" height="4" className="overflow-visible">
-                                <line
-                                  x1="0" y1="2" x2="100%" y2="2"
-                                  stroke={lineStyle(stageStates[STAGES[idx].key], stageStates[STAGES[idx + 1].key]).color}
-                                  strokeWidth="2"
-                                  strokeDasharray={lineStyle(stageStates[STAGES[idx].key], stageStates[STAGES[idx + 1].key]).dash}
-                                />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                  {/* Circular gauge */}
+                  <div className="relative shrink-0" style={{ width: 80, height: 80 }}>
+                    <svg width="80" height="80" viewBox="0 0 80 80">
+                      <circle cx="40" cy="40" r="34" fill="none" stroke={`${GREY}30`} strokeWidth="6" />
+                      <circle
+                        cx="40" cy="40" r="34" fill="none"
+                        stroke={strengthPct >= 60 ? GREEN : strengthPct >= 20 ? GOLD : GREY}
+                        strokeWidth="6"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(strengthPct / 100) * 213.6} 213.6`}
+                        transform="rotate(-90 40 40)"
+                        style={{ transition: "stroke-dasharray 0.7s ease-out" }}
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[20px] font-semibold tabular-nums" style={{ color: DARK }}>{strengthPct}%</span>
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-1" style={{ color: LABEL }}>
+                      Business Strength
+                    </p>
+                    <p className="text-[14px] font-medium leading-snug mb-1" style={{ color: DARK }}>
+                      {pillarsWithActive.length} of 5 pillars active
+                    </p>
+                    <p className="text-[12px] font-light leading-relaxed" style={{ color: MUTED }}>
+                      {strengthMessage}
+                    </p>
                   </div>
                 </div>
 
-                {/* ── Expanded Stage Detail Panel ── */}
-                {selectedStage && (() => {
-                  const stage = STAGES.find(s => s.key === selectedStage);
-                  if (!stage) return null;
-                  const state = stageStates[stage.key];
-                  const color = stageColor(state);
-                  const pitch = STAGE_PITCHES[stage.key];
-                  const items = getStageChecklist(stage.key, state);
+                {/* ═══ PILLAR CARDS ═══ */}
+                <div className="space-y-3 mb-8">
+                  {PILLARS.map((pillar) => {
+                    const PillarIcon = pillar.icon;
+                    const activeCount = pillar.items.filter(it => activeItems[it.id]).length;
+                    const totalCount = pillar.items.length;
+                    const isExpanded = expandedArea === pillar.id;
+                    const pillarColor = activeCount > 0 ? pillar.color : GREY;
 
-                  return (
-                    <div
-                      className="rounded-2xl p-5 md:p-6 mb-6 overflow-hidden"
-                      style={{
-                        backgroundColor: WHITE,
-                        border: `1px solid ${color}25`,
-                        animation: "expandDown 0.3s ease-out both",
-                      }}
-                    >
-                      {/* Header */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <span className="text-[18px]">{stageEmoji[state]}</span>
-                          <div>
-                            <p className="text-[15px] font-medium" style={{ color: DARK }}>
-                              {stage.label}
-                            </p>
-                            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color }}>
-                              {stageStatusLabel[state]}
-                            </p>
-                          </div>
-                        </div>
+                    return (
+                      <div
+                        key={pillar.id}
+                        className="rounded-2xl overflow-hidden transition-all"
+                        style={{
+                          backgroundColor: WHITE,
+                          borderLeft: `3px solid ${pillarColor}`,
+                          border: `1px solid ${BORDER}`,
+                          borderLeftWidth: 3,
+                          borderLeftColor: pillarColor,
+                        }}
+                      >
+                        {/* Collapsed header */}
                         <button
-                          onClick={() => setExpandedArea(null)}
-                          className="p-1.5 rounded-lg hover:bg-gray-100"
+                          onClick={() => { setExpandedArea(isExpanded ? null : pillar.id); setSelectedItem(null); }}
+                          className="w-full px-4 py-4 flex items-center justify-between text-left"
                         >
-                          <X size={16} style={{ color: LABEL }} />
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div
+                              className="shrink-0 flex items-center justify-center"
+                              style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${pillarColor}10` }}
+                            >
+                              <PillarIcon size={20} style={{ color: pillarColor }} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-[14px] font-semibold truncate" style={{ color: DARK }}>{pillar.label}</p>
+                              <p className="text-[12px] font-light truncate" style={{ color: MUTED }}>{pillar.desc}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 ml-2">
+                            {activeCount > 0 ? (
+                              <span
+                                className="text-[11px] font-medium px-2 py-0.5"
+                                style={{ backgroundColor: `${GREEN}20`, color: GREEN, borderRadius: 12 }}
+                              >
+                                {activeCount}/{totalCount}
+                              </span>
+                            ) : (
+                              <Lock size={14} style={{ color: GREY }} />
+                            )}
+                            <ChevronDown
+                              size={16}
+                              style={{ color: LABEL, transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                            />
+                          </div>
                         </button>
-                      </div>
 
-                      {/* Divider */}
-                      <div className="w-full h-px mb-4" style={{ backgroundColor: `${color}20` }} />
-
-                      {/* DELIVERED state */}
-                      {state === "delivered" && (
-                        <>
-                          <div className="space-y-2 mb-4">
-                            {items.map((item, i) => (
-                              <div key={i} className="flex items-center gap-2.5">
-                                <CheckCircle size={14} style={{ color: GREEN }} />
-                                <span className="text-[12px] font-light" style={{ color: DARK }}>
-                                  {item.label} {task.createdAt ? `-- ${formatDate(task.createdAt)}` : ""}
-                                </span>
-                              </div>
-                            ))}
+                        {/* Pitch for inactive pillars */}
+                        {!isExpanded && activeCount === 0 && (
+                          <div className="px-4 pb-3 -mt-1">
+                            <p className="text-[12px] font-light italic" style={{ color: LABEL }}>{pillar.pitch}</p>
                           </div>
-                          <p className="text-[12px] font-light leading-relaxed italic" style={{ color: MUTED }}>
-                            {pitch
-                              ? `This area is handled. ${pitch.includes[0]} and related services are in place.`
-                              : "Your business is legally recognized. This unlocks banking, contracts, and tender eligibility."}
-                          </p>
-                        </>
-                      )}
+                        )}
 
-                      {/* IN_PROGRESS state */}
-                      {state === "in_progress" && (
-                        <>
-                          <div className="space-y-2 mb-4">
-                            {items.map((item, i) => (
-                              <div key={i} className="flex items-center gap-2.5">
-                                {item.done ? (
-                                  <CheckCircle size={14} style={{ color: GREEN }} />
-                                ) : (
-                                  <div className="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: GOLD }}>
-                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+                        {/* Expanded: horizontal timeline + item detail */}
+                        {isExpanded && (
+                          <div style={{ animation: "expandDown 0.3s ease-out both" }}>
+                            {/* Horizontal scrollable items */}
+                            <div className="overflow-x-auto px-4 pb-2">
+                              <div className="flex items-center gap-1 py-4" style={{ minWidth: "max-content" }}>
+                                {pillar.items.map((item, i) => {
+                                  const state: ItemState = activeItems[item.id] || "inactive";
+                                  const isSelected = selectedItem === item.id;
+                                  const bgColor = state === "delivered" ? GREEN
+                                    : state === "in_progress" ? GREEN
+                                    : state === "paid" ? GOLD
+                                    : `${GREY}40`;
+
+                                  return (
+                                    <div key={item.id} className="flex items-center">
+                                      {i > 0 && (
+                                        <div
+                                          className="shrink-0"
+                                          style={{
+                                            width: 24,
+                                            height: 2,
+                                            backgroundColor: lineColor(
+                                              activeItems[pillar.items[i - 1].id] || "inactive",
+                                              state
+                                            ),
+                                          }}
+                                        />
+                                      )}
+                                      <div
+                                        className="shrink-0 text-center cursor-pointer"
+                                        onClick={() => setSelectedItem(isSelected ? null : item.id)}
+                                      >
+                                        <div
+                                          className="flex items-center justify-center mx-auto"
+                                          style={{
+                                            width: 44,
+                                            height: 44,
+                                            borderRadius: "50%",
+                                            backgroundColor: bgColor,
+                                            animation: state === "in_progress" ? "stagePulse 2s infinite" : "none",
+                                            boxShadow: isSelected ? `0 0 0 3px ${bgColor}40` : "none",
+                                            transition: "box-shadow 0.2s",
+                                          }}
+                                        >
+                                          {state === "delivered" ? (
+                                            <CheckCircle size={20} color="white" />
+                                          ) : state === "in_progress" ? (
+                                            <Clock size={20} color="white" />
+                                          ) : state === "paid" ? (
+                                            <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>N</span>
+                                          ) : (
+                                            <Lock size={16} color="#999" />
+                                          )}
+                                        </div>
+                                        <p className="text-[10px] mt-1 leading-tight" style={{ color: state === "inactive" ? LABEL : MUTED }}>
+                                          {item.short}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                            {/* Item detail panel */}
+                            {selectedItem && (() => {
+                              const item = pillar.items.find(it => it.id === selectedItem);
+                              if (!item) return null;
+                              const state: ItemState = activeItems[item.id] || "inactive";
+
+                              return (
+                                <div
+                                  className="mx-4 mb-4 rounded-xl p-4"
+                                  style={{ backgroundColor: CREAM, border: `1px solid ${BORDER}`, animation: "fadeIn 0.2s ease-out" }}
+                                >
+                                  <div className="flex items-center justify-between mb-2">
+                                    <p className="text-[13px] font-medium" style={{ color: DARK }}>{item.label}</p>
+                                    <span
+                                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                      style={{
+                                        backgroundColor: state === "delivered" ? `${GREEN}15` : state === "in_progress" ? `${GREEN}15` : state === "paid" ? `${GOLD}15` : `${GREY}20`,
+                                        color: state === "delivered" ? GREEN : state === "in_progress" ? GREEN : state === "paid" ? GOLD : LABEL,
+                                      }}
+                                    >
+                                      {state === "delivered" ? "Delivered" : state === "in_progress" ? "In Progress" : state === "paid" ? "Paid, Queued" : "Not Active"}
+                                    </span>
                                   </div>
-                                )}
-                                <span className="text-[12px] font-light" style={{ color: item.done ? DARK : MUTED }}>
-                                  {item.label} -- {item.done ? "Done" : task.deadline ? `Expected: ${formatDate(task.deadline)}` : "In progress"}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-[12px] font-light leading-relaxed italic" style={{ color: MUTED }}>
-                            We're handling this now. You'll be notified when complete.
-                          </p>
-                        </>
-                      )}
 
-                      {/* PAID state */}
-                      {state === "paid" && (
-                        <>
-                          <div className="space-y-2 mb-4">
-                            {(pitch?.includes || []).map((inc, i) => (
-                              <div key={i} className="flex items-center gap-2.5">
-                                <Circle size={14} style={{ color: `${DARK}18` }} />
-                                <span className="text-[12px] font-light" style={{ color: MUTED }}>{inc}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="text-[12px] font-light leading-relaxed italic" style={{ color: MUTED }}>
-                            This will start once the current active stage is complete.
-                          </p>
-                        </>
-                      )}
+                                  {(state === "delivered" || state === "in_progress") && (
+                                    <p className="text-[12px] font-light italic" style={{ color: MUTED }}>
+                                      {state === "delivered"
+                                        ? `Completed${task.createdAt ? ` -- ${formatDate(task.createdAt)}` : ""}. This item is in place.`
+                                        : `Currently being handled.${task.deadline ? ` Expected: ${formatDate(task.deadline)}` : ""}`}
+                                    </p>
+                                  )}
 
-                      {/* NEXT (recommended) state */}
-                      {state === "next" && pitch && (
-                        <>
-                          <p className="text-[13px] font-light leading-relaxed mb-4" style={{ color: DARK }}>
-                            {pitch.question}
-                          </p>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: LABEL }}>
-                            What this includes
-                          </p>
-                          <div className="space-y-1.5 mb-5">
-                            {pitch.includes.map((inc, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <div className="w-1 h-1 rounded-full" style={{ backgroundColor: GOLD }} />
-                                <span className="text-[11px] font-light" style={{ color: DARK }}>{inc}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            onClick={() => {
-                              setMobileChatOpen(true);
-                              setTimeout(() => handleChatSend(`I want to activate ${stage.label}. Show me what's included and how to get started.`), 100);
-                            }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
-                            style={{ backgroundColor: GOLD, color: WHITE }}
-                          >
-                            <Unlock size={13} /> Activate this stage <ArrowRight size={13} />
-                          </button>
-                        </>
-                      )}
+                                  {state === "paid" && (
+                                    <p className="text-[12px] font-light italic" style={{ color: MUTED }}>
+                                      Paid and queued. This will start once the current active work completes.
+                                    </p>
+                                  )}
 
-                      {/* INACTIVE state */}
-                      {state === "inactive" && pitch && (
-                        <>
-                          <p className="text-[13px] font-light leading-relaxed mb-4" style={{ color: DARK }}>
-                            {pitch.question}
-                          </p>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: LABEL }}>
-                            What this includes
-                          </p>
-                          <div className="space-y-1.5 mb-5">
-                            {pitch.includes.map((inc, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <div className="w-1 h-1 rounded-full" style={{ backgroundColor: `${DARK}30` }} />
-                                <span className="text-[11px] font-light" style={{ color: MUTED }}>{inc}</span>
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            onClick={() => {
-                              setMobileChatOpen(true);
-                              setTimeout(() => handleChatSend(`I want to activate ${stage.label}. Show me what's included and how to get started.`), 100);
-                            }}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
-                            style={{ backgroundColor: DARK, color: GOLD }}
-                          >
-                            <Unlock size={13} /> Activate this stage <ArrowRight size={13} />
-                          </button>
-                        </>
-                      )}
+                                  {state === "inactive" && (
+                                    <>
+                                      <p className="text-[12px] font-light leading-relaxed mb-3" style={{ color: DARK }}>
+                                        {pillar.pitch}
+                                      </p>
+                                      <button
+                                        onClick={() => {
+                                          setMobileChatOpen(true);
+                                          setTimeout(() => handleChatSend(`I want to activate ${item.label}. What does it include and how do I get started?`), 100);
+                                        }}
+                                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
+                                        style={{ backgroundColor: GOLD, color: WHITE }}
+                                      >
+                                        <Unlock size={13} /> Activate <ArrowRight size={13} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
-                      {/* INACTIVE with no pitch (lead) */}
-                      {state === "delivered" && stage.key === "lead" && (
-                        <p className="text-[12px] font-light leading-relaxed italic mt-2" style={{ color: MUTED }}>
-                          You're in the system. This is where every successful business journey begins.
-                        </p>
-                      )}
+                            {/* If no item selected and pillar is inactive, show activate CTA */}
+                            {!selectedItem && activeCount === 0 && (
+                              <div className="mx-4 mb-4">
+                                <button
+                                  onClick={() => {
+                                    setMobileChatOpen(true);
+                                    setTimeout(() => handleChatSend(`I want to build my ${pillar.label.toLowerCase()}. What's included?`), 100);
+                                  }}
+                                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
+                                  style={{ backgroundColor: DARK, color: GOLD }}
+                                >
+                                  <Unlock size={13} /> Activate {pillar.label} <ArrowRight size={13} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+
+                {/* ═══ DOCUMENTS SECTION ═══ */}
+                <div
+                  className="rounded-2xl p-4 mb-8"
+                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: GOLD }}>
+                    Documents
+                  </p>
+                  {checklist.length > 0 ? (
+                    <div className="space-y-1">
+                      {checklist.map((item, ci) => (
+                        <div key={ci} className="flex items-center gap-2 py-1.5">
+                          {item.checked ? (
+                            <CheckCircle size={16} style={{ color: GREEN }} />
+                          ) : (
+                            <Circle size={16} style={{ color: GREY }} />
+                          )}
+                          <span className="text-[13px] font-light flex-1" style={{ color: item.checked ? DARK : LABEL }}>
+                            {item.label}
+                          </span>
+                          {item.checked && (
+                            <span className="text-[11px]" style={{ color: LABEL }}>Received</span>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                  );
-                })()}
+                  ) : (
+                    <p className="text-[13px] font-light" style={{ color: LABEL }}>No documents needed at this stage.</p>
+                  )}
+                  <button
+                    onClick={() => window.open(`https://wa.me/2348067149356?text=I need to upload documents. Ref: ${task.ref}`)}
+                    className="mt-3 text-[12px] font-light"
+                    style={{ color: GOLD, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  >
+                    Upload via WhatsApp →
+                  </button>
+                </div>
 
 
                 {/* ═══ ACTIVE SERVICE CARD ═══ */}
@@ -1196,35 +1211,16 @@ export default function ClientDashboard() {
                       )}
                     </div>
 
-                    {/* Checklist progress */}
-                    {checklist.length > 0 && (
+                    {/* Progress bar */}
+                    {!isCompleted && (task.progress || 0) > 0 && (
                       <div className="px-5 pb-4">
-                        {!isCompleted && (
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="flex-1">
-                              <ProgressBar pct={task.progress || 0} color={deptAccent} />
-                            </div>
-                            <span className="text-[11px] font-medium tabular-nums" style={{ color: deptAccent }}>
-                              {task.progress}%
-                            </span>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <ProgressBar pct={task.progress || 0} color={deptAccent} />
                           </div>
-                        )}
-                        <div className="space-y-2">
-                          {checklist.map((c, ci) => (
-                            <div key={ci} className="flex items-center gap-2.5">
-                              {c.checked ? (
-                                <CheckCircle size={14} style={{ color: GREEN }} />
-                              ) : (
-                                <Circle size={14} style={{ color: `${DARK}18` }} />
-                              )}
-                              <span
-                                className="text-[12px] font-light"
-                                style={{ color: c.checked ? DARK : MUTED }}
-                              >
-                                {c.label}
-                              </span>
-                            </div>
-                          ))}
+                          <span className="text-[11px] font-medium tabular-nums" style={{ color: deptAccent }}>
+                            {task.progress}%
+                          </span>
                         </div>
                       </div>
                     )}
