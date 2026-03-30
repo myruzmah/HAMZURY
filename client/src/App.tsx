@@ -31,6 +31,7 @@ import LoginPage from "./pages/LoginPage";
 import StaffWorkspace from "./pages/StaffWorkspace";
 import SkillsCEOPage from "./pages/SkillsCEOPage";
 import CTOPage from "./pages/CTOPage";
+import CTOPublicPage from "./pages/CTOPublicPage";
 import ClientPage from "./pages/ClientPage";
 import ClientDashboard from "./pages/ClientDashboard";
 import AlumniPage from "./pages/AlumniPage";
@@ -184,6 +185,7 @@ function Router() {
 
       {/* Leadership Pages */}
       <Route path={"/skills/ceo"} component={SkillsCEOPage} />
+      <Route path={"/cto"} component={CTOPublicPage} />
       <Route path={"/systemise/cto"} component={CTOPage} />
 
       {/* Community / Public Pages */}

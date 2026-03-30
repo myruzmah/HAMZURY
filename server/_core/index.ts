@@ -638,7 +638,7 @@ async function startServer() {
       { loc: "/founder", changefreq: "monthly", priority: "0.6" },
       { loc: "/consultant", changefreq: "monthly", priority: "0.6" },
       { loc: "/skills/ceo", changefreq: "monthly", priority: "0.6" },
-      { loc: "/systemise/cto", changefreq: "monthly", priority: "0.6" },
+      { loc: "/cto", changefreq: "monthly", priority: "0.6" },
       { loc: "/affiliate", changefreq: "monthly", priority: "0.5" },
       { loc: "/pricing", changefreq: "monthly", priority: "0.7" },
       { loc: "/team", changefreq: "monthly", priority: "0.5" },

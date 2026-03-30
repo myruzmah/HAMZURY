@@ -163,7 +163,7 @@ export default function SystemizePortal() {
                 { label: "BizDoc",    href: "/bizdoc" },
                 { label: "Skills",    href: "/skills" },
                 { label: "Pricing",   href: "/pricing" },
-                { label: "CTO",       href: "/systemise/cto" },
+                { label: "CTO",       href: "/cto" },
               ].map(item => (
                 <Link key={item.href} href={item.href}>
                   <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: G }}>
