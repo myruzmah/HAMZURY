@@ -659,6 +659,7 @@ export default function ClientDashboard() {
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
   const [mobileChatOpen, setMobileChatOpen] = useState(false);
+  const [pitchArea, setPitchArea] = useState<string | null>(null);
   const [autoGreeted, setAutoGreeted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
@@ -1595,38 +1596,61 @@ export default function ClientDashboard() {
                 <div style={{ height: 40 }} />
 
 
-                {/* ═══ SECTION 6: INACTIVE SUGGESTIONS — 5 dots ═══ */}
-                <div style={{ textAlign: "center", padding: "32px 0", animation: "fadeUp 0.6s ease-out 0.3s both" }}>
-                  <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 24 }}>
-                    Your business could be stronger
-                  </p>
-                  <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 16, flexWrap: "wrap" }}>
-                    {(["Compliance", "Brand", "Systems", "Team", "Growth"] as const).map((area, i) => {
-                      const areaMap: Record<string, string[]> = {
-                        Compliance: ["compliance", "compliance_mgmt", "legal"],
-                        Brand: ["branding", "visibility"],
-                        Systems: ["tools"],
-                        Team: ["skills"],
-                        Growth: ["skills"],
-                      };
-                      const isActive = areaMap[area]?.some(pid => PILLARS.find(p => p.id === pid)?.items.some(it => activeItems[it.id])) || false;
-                      return (
-                        <button
-                          key={area}
-                          onClick={() => {
-                            setMobileChatOpen(true);
-                            setTimeout(() => handleChatSend(isActive ? `How can I strengthen my ${area.toLowerCase()}?` : `I want to build my ${area.toLowerCase()}`), 200);
-                          }}
-                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", minHeight: 44, padding: "8px 4px" }}
-                        >
-                          <div style={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: isActive ? GREEN : `${MUTED}30`, transition: "background-color 0.3s ease" }} />
-                          <span style={{ fontSize: 11, color: MUTED, fontWeight: 400 }}>{area}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <p style={{ fontSize: 13, color: MUTED }}>Tap to explore</p>
-                </div>
+                {/* ═══ SECTION 6: 5 DOTS — tap for closing pitch ═══ */}
+                {(() => {
+                  const DOT_PITCHES: Record<string, { title: string; why: string; risk: string; includes: string[]; price: string }> = {
+                    Compliance: { title: "Legal & Compliance", why: "Without proper documentation, your business is one audit away from shutdown. Every licence, every filing, every contract protects you.", risk: "Operating without compliance exposes you to fines, shutdowns, and lost contracts.", includes: ["CAC Registration", "TIN & Tax Filing", "Sector Licences", "Legal Contracts", "Annual Returns", "Compliance Management"], price: "from ₦50,000" },
+                    Brand: { title: "Brand & Visibility", why: "Premium clients decide in 3 seconds. If your brand looks amateur or you are invisible online, they move to your competitor.", risk: "Weak branding costs you premium clients every single day.", includes: ["Brand Identity", "Professional Website", "Social Media Setup", "Content Strategy", "Social Media Management"], price: "from ₦150,000" },
+                    Systems: { title: "Systems & Automation", why: "Every task your team repeats manually is money burned. Automation handles follow-ups, invoicing, and leads while you sleep.", risk: "Manual operations limit your growth and waste your team's time.", includes: ["CRM & Lead Management", "Workflow Automation", "Business Dashboard", "AI Agent", "WhatsApp Automation"], price: "from ₦120,000" },
+                    Team: { title: "Team & Capability", why: "Your business is only as strong as the people running it. Trained teams deliver better, faster, and without you being present.", risk: "Untrained staff make expensive mistakes and depend on you for everything.", includes: ["AI Founder Launchpad", "Corporate Staff Training", "Operations Sprint", "Team Enablement"], price: "from ₦45,000" },
+                    Growth: { title: "Growth & Scale", why: "Structure is what separates businesses that last from businesses that don't. Growth without structure breaks everything.", risk: "Scaling without systems creates chaos, not revenue.", includes: ["Growth Strategy", "Expansion Planning", "Management Subscription", "Performance Dashboards"], price: "Custom" },
+                  };
+                  const areaMap: Record<string, string[]> = { Compliance: ["compliance", "compliance_mgmt", "legal"], Brand: ["branding", "visibility"], Systems: ["tools"], Team: ["skills"], Growth: ["skills"] };
+                  return (
+                    <div style={{ textAlign: "center", padding: "32px 0" }}>
+                      <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 24 }}>Your business could be stronger</p>
+                      <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 16, flexWrap: "wrap" }}>
+                        {(["Compliance", "Brand", "Systems", "Team", "Growth"] as const).map(area => {
+                          const isActive = areaMap[area]?.some(pid => PILLARS.find(p => p.id === pid)?.items.some(it => activeItems[it.id])) || false;
+                          return (
+                            <button key={area} onClick={() => setPitchArea(pitchArea === area ? null : area)}
+                              style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", minHeight: 44, padding: "8px 4px", opacity: pitchArea && pitchArea !== area ? 0.3 : 1, transition: "opacity 0.2s" }}>
+                              <div style={{ width: 14, height: 14, borderRadius: "50%", backgroundColor: isActive ? GREEN : `${MUTED}30`, boxShadow: pitchArea === area ? `0 0 0 4px ${GOLD}40` : "none", transition: "all 0.2s" }} />
+                              <span style={{ fontSize: 11, color: pitchArea === area ? DARK : MUTED, fontWeight: pitchArea === area ? 600 : 400 }}>{area}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* ── PITCH POPUP ── */}
+                      {pitchArea && DOT_PITCHES[pitchArea] && (() => {
+                        const p = DOT_PITCHES[pitchArea];
+                        return (
+                          <div style={{ margin: "16px auto", maxWidth: 400, background: WHITE, borderRadius: 20, padding: 24, boxShadow: "0 8px 32px rgba(0,0,0,0.08)", textAlign: "left", animation: "fadeUp 0.3s ease-out" }}>
+                            <p style={{ fontSize: 16, fontWeight: 600, color: DARK, marginBottom: 12 }}>{p.title}</p>
+                            <p style={{ fontSize: 13, color: DARK, lineHeight: 1.6, marginBottom: 12 }}>{p.why}</p>
+                            <p style={{ fontSize: 12, color: ORANGE, fontWeight: 500, marginBottom: 16 }}>{p.risk}</p>
+                            <div style={{ marginBottom: 16 }}>
+                              {p.includes.map((item, i) => (
+                                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: i < p.includes.length - 1 ? `1px solid ${CREAM}` : "none" }}>
+                                  <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: GOLD, flexShrink: 0 }} />
+                                  <span style={{ fontSize: 12, color: DARK }}>{item}</span>
+                                </div>
+                              ))}
+                            </div>
+                            <p style={{ fontSize: 13, color: MUTED, marginBottom: 16 }}>{p.price}</p>
+                            <button onClick={() => { setPitchArea(null); setMobileChatOpen(true); setTimeout(() => handleChatSend(`I want to activate ${p.title}. Show me how to get started.`), 200); }}
+                              style={{ width: "100%", padding: "14px 0", borderRadius: 12, background: GOLD, color: WHITE, border: "none", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+                              Activate
+                            </button>
+                          </div>
+                        );
+                      })()}
+
+                      {!pitchArea && <p style={{ fontSize: 13, color: MUTED }}>Tap to explore</p>}
+                    </div>
+                  );
+                })()}
 
 
                 {/* ═══ SECTION 7: QUOTE — tiny, almost invisible ═══ */}
