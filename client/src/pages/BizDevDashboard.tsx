@@ -283,6 +283,32 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
   const CHECKLIST_ITEMS = ["Budget fit (₦500k+ threshold)", "Timeline confirmed (1–2 months)", "Decision-maker access confirmed", "Pain point clearly stated", "Service fit confirmed (4–5 = handoff-ready)"];
   const score = checklist.filter(Boolean).length;
 
+  // Form state
+  const [formBiz, setFormBiz] = useState("");
+  const [formName, setFormName] = useState("");
+  const [formRole, setFormRole] = useState("");
+  const [formSource, setFormSource] = useState("");
+  const [formBudget, setFormBudget] = useState("");
+  const [formTimeline, setFormTimeline] = useState("");
+  const [formPain, setFormPain] = useState("");
+  const submitLead = trpc.leads.submit.useMutation({
+    onSuccess: () => {
+      toast.success("Lead logged successfully");
+      setShowForm(false);
+      setFormBiz(""); setFormName(""); setFormRole(""); setFormSource(""); setFormBudget(""); setFormTimeline(""); setFormPain(""); setChecklist([false,false,false,false,false]);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+  const handleLogLead = (handoff: boolean) => {
+    if (!formBiz.trim() || !formName.trim()) { toast.error("Business name and contact name required"); return; }
+    submitLead.mutate({
+      name: formName.trim(),
+      businessName: formBiz.trim(),
+      service: "BizDev Lead",
+      context: `Role: ${formRole}. Source: ${formSource}. Budget: ${formBudget}. Timeline: ${formTimeline}. Pain: ${formPain}. Score: ${score}/5.${handoff ? " HANDOFF TO CSO." : ""}`,
+    });
+  };
+
   const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
     handoff_ready: { bg: "#22C55E15", text: "#16A34A", label: "Handoff Ready" },
     qualifying: { bg: "#3B82F615", text: "#2563EB", label: "Qualifying" },
@@ -322,9 +348,9 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
         <div className="bg-white rounded-2xl p-6 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-normal opacity-60" style={{ color: DARK }}>Log New Lead</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input placeholder="Business name" className="bg-gray-50 border-gray-200" />
-            <Input placeholder="Contact name" className="bg-gray-50 border-gray-200" />
-            <Input placeholder="Contact role / title" className="bg-gray-50 border-gray-200" />
+            <Input placeholder="Business name" value={formBiz} onChange={e => setFormBiz(e.target.value)} className="bg-gray-50 border-gray-200" />
+            <Input placeholder="Contact name" value={formName} onChange={e => setFormName(e.target.value)} className="bg-gray-50 border-gray-200" />
+            <Input placeholder="Contact role / title" value={formRole} onChange={e => setFormRole(e.target.value)} className="bg-gray-50 border-gray-200" />
             <Select>
               <SelectTrigger className="bg-gray-50 border-gray-200">
                 <SelectValue placeholder="Lead source" />
@@ -335,10 +361,10 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
                 ))}
               </SelectContent>
             </Select>
-            <Input placeholder="Budget range (e.g. ₦500K–₦1M)" className="bg-gray-50 border-gray-200" />
-            <Input placeholder="Timeline (e.g. 4 weeks)" className="bg-gray-50 border-gray-200" />
+            <Input placeholder="Budget range (e.g. ₦500K–₦1M)" value={formBudget} onChange={e => setFormBudget(e.target.value)} className="bg-gray-50 border-gray-200" />
+            <Input placeholder="Timeline (e.g. 4 weeks)" value={formTimeline} onChange={e => setFormTimeline(e.target.value)} className="bg-gray-50 border-gray-200" />
           </div>
-          <Textarea placeholder="Pain point description" className="bg-gray-50 border-gray-200 min-h-[80px]" />
+          <Textarea placeholder="Pain point description" value={formPain} onChange={e => setFormPain(e.target.value)} className="bg-gray-50 border-gray-200 min-h-[80px]" />
           <div>
             <p className="text-xs font-normal opacity-50 mb-3" style={{ color: DARK }}>5-Point Qualification Checklist</p>
             <div className="space-y-2">
@@ -366,10 +392,10 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button size="sm" style={{ backgroundColor: DARK, color: GOLD }} onClick={() => { toast.success("Lead logged"); setShowForm(false); }}>
-              Log Lead
+            <Button size="sm" style={{ backgroundColor: DARK, color: GOLD }} disabled={submitLead.isPending} onClick={() => handleLogLead(false)}>
+              {submitLead.isPending ? "Saving..." : "Log Lead"}
             </Button>
-            <Button size="sm" style={{ backgroundColor: GREEN, color: "white" }} disabled={score < 4} onClick={() => { toast.success("Lead handed off to CSO. They will follow up within 24 hours."); setShowForm(false); }}>
+            <Button size="sm" style={{ backgroundColor: GREEN, color: "white" }} disabled={score < 4 || submitLead.isPending} onClick={() => handleLogLead(true)}>
               Handoff to CSO {score < 4 && "(score ≥4 required)"}
             </Button>
             <Button size="sm" variant="ghost" onClick={() => setShowForm(false)}>Cancel</Button>

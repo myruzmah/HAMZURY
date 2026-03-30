@@ -561,6 +561,10 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: {
 
 // ─── Commissions Section (Founder Only) ──────────────────────────────────────
 function CommissionsSection({ commissions }: { commissions: any[] }) {
+  const approveCommission = trpc.commissions.updateStatus.useMutation({
+    onSuccess: () => toast.success("Commission approved"),
+    onError: (err: any) => toast.error(err.message),
+  });
   const pending = commissions.filter((c: any) => c.status === "pending");
 
   const statusBadge = (status: string) => {
@@ -644,7 +648,7 @@ function CommissionsSection({ commissions }: { commissions: any[] }) {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => toast.success(`Commission approved for ${c.staffName || c.staff?.name}`)}
+                            onClick={() => approveCommission.mutate({ id: c.id, status: "approved" })}
                           >
                             Yes, Approve
                           </AlertDialogAction>
@@ -810,10 +814,25 @@ function AssignSection() {
     { value: "finance",   label: "Finance" },
   ];
 
+  const createTask = trpc.tasks.create.useMutation({
+    onSuccess: (task) => {
+      toast.success(`Task ${task.ref} assigned to ${assignee}`);
+      setTitle(""); setDept(""); setAssignee(""); setPriority(""); setDueDate(""); setDesc("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const handleSubmit = () => {
     if (!title || !dept || !assignee || !priority) { toast.error("Please fill all required fields"); return; }
-    toast.success(`Task assigned to ${assignee}`);
-    setTitle(""); setDept(""); setAssignee(""); setPriority(""); setDueDate(""); setDesc("");
+    createTask.mutate({
+      clientName: assignee,
+      service: title,
+      department: dept,
+      priority,
+      deadline: dueDate || undefined,
+      expectedDelivery: dueDate || undefined,
+      notes: desc || undefined,
+    });
   };
 
   return (

@@ -226,6 +226,35 @@ export async function assignLead(leadId: number, department: string, assignedBy:
 
 // ─── Tasks ───────────────────────────────────────────────────────────────────
 
+export async function createTask(data: {
+  clientName: string; service: string; department: string;
+  assignedTo?: number; notes?: string; deadline?: string;
+  businessName?: string; phone?: string; expectedDelivery?: string;
+  estimatedHours?: number; priority?: string; category?: string;
+}): Promise<Task> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const ref = generateRef();
+  await db.insert(tasks).values({
+    ref,
+    clientName: data.clientName,
+    businessName: data.businessName,
+    phone: data.phone,
+    service: data.service,
+    department: data.department,
+    assignedTo: data.assignedTo,
+    notes: data.notes,
+    deadline: data.deadline,
+    expectedDelivery: data.expectedDelivery,
+    estimatedHours: data.estimatedHours,
+    priority: (data.priority?.toLowerCase() || "normal") as "urgent" | "high" | "normal" | "low",
+    category: data.category,
+    status: "Not Started",
+  });
+  const result = await db.select().from(tasks).where(eq(tasks.ref, ref)).limit(1);
+  return result[0];
+}
+
 export async function createTaskFromLead(lead: Lead): Promise<Task> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

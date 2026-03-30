@@ -603,10 +603,25 @@ function AssignSection() {
     { value: "finance", label: "Finance" },
   ];
 
+  const createTask = trpc.tasks.create.useMutation({
+    onSuccess: (task) => {
+      toast.success(`Task ${task.ref} assigned to ${assignee}`);
+      setTitle(""); setDept(""); setAssignee(""); setPriority(""); setDueDate(""); setDesc("");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   const handleSubmit = () => {
     if (!title || !dept || !assignee || !priority) { toast.error("Please fill all required fields"); return; }
-    toast.success(`Task assigned to ${assignee}`);
-    setTitle(""); setDept(""); setAssignee(""); setPriority(""); setDueDate(""); setDesc("");
+    createTask.mutate({
+      clientName: assignee,
+      service: title,
+      department: dept,
+      priority,
+      deadline: dueDate || undefined,
+      expectedDelivery: dueDate || undefined,
+      notes: desc || undefined,
+    });
   };
 
   return (

@@ -8,7 +8,7 @@ import {
   generateHZRefNumber, createSystemiseLead, getSystemiseLeads, getSystemiseLeadByRef,
   createAppointment, getAppointments,
   createJoinApplication, getJoinApplications,
-  createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, getCompletedTasksWithPrice, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore,
+  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, getCompletedTasksWithPrice, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore,
   getChecklistItemsByTaskId, toggleChecklistItem, getChecklistTemplates,
   createDocument, getDocumentsByTaskId, deleteDocument,
   createActivityLog, getActivityLogsByTaskId, getRecentActivityLogs,
@@ -330,6 +330,27 @@ export const appRouter = router({
 
   // ─── Tasks (Protected) ───────────────────────────────────────────────────
   tasks: router({
+    create: protectedProcedure
+      .input(z.object({
+        clientName: z.string().min(1),
+        service: z.string().min(1),
+        department: z.string().min(1),
+        assignedTo: z.number().optional(),
+        notes: z.string().optional(),
+        deadline: z.string().optional(),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        expectedDelivery: z.string().optional(),
+        estimatedHours: z.number().optional(),
+        priority: z.string().optional(),
+        category: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const task = await createTask(input);
+        await createAuditLog({ userId: ctx.user.id, userName: ctx.user.name || "Staff", action: "task_created", resource: "tasks", details: `Created task ${task.ref}: ${input.service} for ${input.clientName}` });
+        return task;
+      }),
+
     list: protectedProcedure
       .input(z.object({ department: z.string().optional() }).optional())
       .query(async ({ input, ctx }) => {
