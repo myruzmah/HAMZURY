@@ -38,7 +38,7 @@ export default function SkillsCEOPage() {
       </nav>
 
       {/* Hero */}
-      <section className="pt-20 pb-16 px-6" style={{ background: CREAM }}>
+      <section className="pt-20 pb-16 px-6" style={{ background: BG }}>
         <div className="max-w-3xl mx-auto text-center">
           <p className="text-xs font-semibold uppercase tracking-[3px] mb-4" style={{ color: GOLD }}>
             Leadership
@@ -117,7 +117,7 @@ export default function SkillsCEOPage() {
       </section>
 
       {/* Philosophy pillars */}
-      <section className="py-20 px-6" style={{ background: CREAM }}>
+      <section className="py-20 px-6" style={{ background: BG }}>
         <div className="max-w-5xl mx-auto">
           <h2 className="text-2xl font-bold text-center text-gray-900 mb-12">
             What Drives the Department

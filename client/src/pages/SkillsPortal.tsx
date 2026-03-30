@@ -184,6 +184,26 @@ export default function SkillsPortal() {
     finally { setStaffLoading(false); }
   }
 
+  // Apply form
+  const [applyName, setApplyName] = useState("");
+  const [applyPhone, setApplyPhone] = useState("");
+  const [applyEmail, setApplyEmail] = useState("");
+  const [applyProgram, setApplyProgram] = useState("");
+  const [applyLoading, setApplyLoading] = useState(false);
+  const [applyResult, setApplyResult] = useState<{ ref: string } | null>(null);
+  const [applyError, setApplyError] = useState("");
+  const submitApp = trpc.skills.submitApplication.useMutation();
+  async function handleApply(e: React.FormEvent) {
+    e.preventDefault();
+    if (!applyName.trim() || !applyPhone.trim() || !applyProgram) return;
+    setApplyLoading(true); setApplyError("");
+    try {
+      const res = await submitApp.mutateAsync({ fullName: applyName.trim(), phone: applyPhone.trim(), email: applyEmail.trim() || undefined, program: applyProgram });
+      setApplyResult({ ref: res.ref });
+    } catch (err: unknown) { setApplyError(err instanceof Error ? err.message : String(err)); }
+    finally { setApplyLoading(false); }
+  }
+
   // Track
   const myUpdateRef = useRef<HTMLElement>(null);
   const [trackRef, setTrackRef] = useState("");
@@ -300,18 +320,18 @@ export default function SkillsPortal() {
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
             <button
-              onClick={() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => document.getElementById("apply")?.scrollIntoView({ behavior: "smooth" })}
               className="px-8 py-4 rounded-full text-[14px] font-medium transition-all duration-300 hover:scale-[1.02]"
               style={{ backgroundColor: DARK, color: BG, boxShadow: `0 4px 24px ${DARK}20` }}
             >
-              Our Programs
+              Apply Now
             </button>
             <button
-              onClick={() => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => document.getElementById("programs")?.scrollIntoView({ behavior: "smooth" })}
               className="px-8 py-4 rounded-full text-[14px] font-medium transition-all duration-300 hover:opacity-80"
               style={{ color: TEXT, border: `1px solid ${TEXT}20` }}
             >
-              Track
+              Programs
             </button>
           </div>
         </div>
@@ -399,6 +419,94 @@ export default function SkillsPortal() {
 
       {/* ── CALENDAR ── */}
       <CalendarSection />
+
+      {/* ── APPLY ── */}
+      <section id="apply" className="py-24 md:py-32" style={{ backgroundColor: W }}>
+        <div className="max-w-md mx-auto px-6">
+          <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4 text-center" style={{ color: GOLD }}>
+            APPLY
+          </p>
+          <h2 className="text-[clamp(24px,3.5vw,36px)] font-light tracking-tight mb-3 text-center" style={{ color: TEXT }}>
+            Start your application
+          </h2>
+          <p className="text-[13px] mb-10 text-center" style={{ color: TEXT, opacity: 0.45 }}>
+            Pick a program or apply as an IT intern. We'll get back to you within 48 hours.
+          </p>
+
+          {applyResult ? (
+            <div className="rounded-[20px] p-6 text-center" style={{ backgroundColor: BG }}>
+              <p className="text-[13px] font-medium mb-2" style={{ color: DARK }}>Application submitted</p>
+              <p className="text-[20px] font-mono font-bold mb-3" style={{ color: GOLD }}>{applyResult.ref}</p>
+              <p className="text-[12px]" style={{ color: TEXT, opacity: 0.5 }}>
+                Save this reference. Use it in the Track section below to check your status.
+              </p>
+            </div>
+          ) : (
+            <form onSubmit={handleApply} className="space-y-3">
+              <input
+                type="text" value={applyName} onChange={e => setApplyName(e.target.value)}
+                placeholder="Full name" required
+                className="w-full px-5 py-3.5 rounded-full text-[14px] outline-none"
+                style={{ backgroundColor: `${TEXT}05`, color: TEXT }}
+              />
+              <input
+                type="tel" value={applyPhone} onChange={e => setApplyPhone(e.target.value)}
+                placeholder="Phone number" required
+                className="w-full px-5 py-3.5 rounded-full text-[14px] outline-none"
+                style={{ backgroundColor: `${TEXT}05`, color: TEXT }}
+              />
+              <input
+                type="email" value={applyEmail} onChange={e => setApplyEmail(e.target.value)}
+                placeholder="Email (optional)"
+                className="w-full px-5 py-3.5 rounded-full text-[14px] outline-none"
+                style={{ backgroundColor: `${TEXT}05`, color: TEXT }}
+              />
+              <select
+                value={applyProgram} onChange={e => setApplyProgram(e.target.value)} required
+                className="w-full px-5 py-3.5 rounded-full text-[14px] outline-none appearance-none"
+                style={{ backgroundColor: `${TEXT}05`, color: applyProgram ? TEXT : `${TEXT}50` }}
+              >
+                <option value="">Select a program</option>
+                <optgroup label="IT Internship">
+                  <option value="IT Internship — Systemise">IT Internship — Systemise</option>
+                  <option value="IT Internship — Skills">IT Internship — Skills</option>
+                  <option value="IT Internship — BizDoc">IT Internship — BizDoc</option>
+                  <option value="IT Internship — Media">IT Internship — Media</option>
+                </optgroup>
+                <optgroup label="Q2 — Start and Sell">
+                  <option value="AI Founder Launchpad">AI Founder Launchpad</option>
+                  <option value="Vibe Coding for Founders">Vibe Coding for Founders</option>
+                  <option value="AI Sales Operator">AI Sales Operator</option>
+                </optgroup>
+                <optgroup label="Q3 — Systemize and Grow">
+                  <option value="Service Business in 21 Days">Service Business in 21 Days</option>
+                  <option value="Operations Automation Sprint">Operations Automation Sprint</option>
+                  <option value="AI Marketing and Content Engine">AI Marketing and Content Engine</option>
+                </optgroup>
+                <optgroup label="Q4 — Productize and Scale">
+                  <option value="Digital Product Builder">Digital Product Builder</option>
+                  <option value="Dashboard Builder Lab">Dashboard Builder Lab</option>
+                  <option value="Customer Success and Business Ops Lab">Customer Success and Business Ops Lab</option>
+                </optgroup>
+                <optgroup label="Always Running">
+                  <option value="Robotics and Creative Tech Lab">Robotics and Creative Tech Lab</option>
+                  <option value="Corporate Staff Training">Corporate Staff Training</option>
+                </optgroup>
+              </select>
+              {applyError && <p className="text-[12px] text-red-500 text-center">{applyError}</p>}
+              <button
+                type="submit"
+                disabled={applyLoading || !applyName.trim() || !applyPhone.trim() || !applyProgram}
+                className="w-full py-3.5 rounded-full text-[14px] font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+                style={{ backgroundColor: DARK, color: BG }}
+              >
+                {applyLoading ? <Loader2 size={14} className="animate-spin" /> : null}
+                {applyLoading ? "Submitting..." : "Submit Application"}
+              </button>
+            </form>
+          )}
+        </div>
+      </section>
 
       {/* ── TRACK ── */}
       <section id="track" ref={myUpdateRef} className="py-24 md:py-32" style={{ backgroundColor: BG }}>
