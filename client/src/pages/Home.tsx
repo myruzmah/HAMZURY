@@ -1,6 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
-import { getLoginUrl } from "@/const";
 
 import {
   ShieldCheck, Cpu, GraduationCap,
@@ -205,11 +204,9 @@ export default function Home() {
             HAMZURY
           </div>
 
-          {/* Desktop nav */}
+          {/* Desktop nav — only page links, no scroll-to duplicates */}
           <div className="hidden md:flex items-center gap-8 text-[12px] font-medium tracking-[0.12em] uppercase" style={{ color: CHARCOAL }}>
-            <button onClick={() => scrollTo("departments")} className="opacity-50 hover:opacity-100 transition-opacity duration-200">Services</button>
             <Link href="/founder" className="opacity-50 hover:opacity-100 transition-opacity duration-200">Founder</Link>
-            <button onClick={openTrackTab} className="opacity-50 hover:opacity-100 transition-opacity duration-200">Track</button>
           </div>
 
           {/* Hamburger */}
@@ -253,25 +250,12 @@ export default function Home() {
                 <span className="text-[13px] font-medium">Chat with us</span>
               </button>
               {[
-                { label: "Services",  action: () => { scrollTo("departments"); setMobileMenuOpen(false); } },
-                { label: "Track",     action: () => { openTrackTab(); setMobileMenuOpen(false); } },
-                { label: "Founder",   action: () => { window.location.href = "/founder"; } },
-              ].map(item => (
-                <button key={item.label}
-                  onClick={item.action}
-                  className="block text-left px-3 py-3.5 rounded-xl text-sm font-medium hover:bg-black/[0.03] transition-colors duration-200"
-                  style={{ color: CHARCOAL }}>
-                  {item.label}
-                </button>
-              ))}
-
-              <div className="mt-2 pt-2" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
-                {[
                   { label: "BizDoc",    href: "/bizdoc" },
                   { label: "Systemise", href: "/systemise" },
                   { label: "Skills",    href: "/skills" },
                   { label: "Pricing",   href: "/pricing" },
                   { label: "Team",      href: "/team" },
+                  { label: "Founder",   href: "/founder" },
                 ].map(d => (
                   <Link key={d.href} href={d.href}
                     onClick={() => setMobileMenuOpen(false)}
@@ -279,7 +263,6 @@ export default function Home() {
                     <span className="text-sm font-medium" style={{ color: CHARCOAL }}>{d.label}</span>
                   </Link>
                 ))}
-              </div>
 
             </div>
           </div>
@@ -518,13 +501,6 @@ export default function Home() {
             <span className="opacity-15">&middot;</span>
             <Link href="/skills"   className="opacity-30 hover:opacity-60 transition-opacity duration-200">Training</Link>
           </div>
-          <button
-            onClick={() => { window.location.href = LOGIN_URL; }}
-            className="mt-6 text-[11px] font-medium uppercase tracking-wider opacity-15 hover:opacity-40 transition-opacity duration-200"
-            style={{ color: CHARCOAL }}
-          >
-            Staff
-          </button>
         </div>
       </footer>
 
