@@ -204,7 +204,7 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {STAT_CARDS.map(({ label, value, icon: Icon, color, isText }) => (
-          <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Icon size={16} className="mx-auto mb-2" style={{ color }} />
             <p className="text-xl font-medium leading-none mb-1" style={{ color: isText ? color : color }}>{value}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: GREEN }}>{label}</p>
@@ -242,7 +242,7 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
             const d = (stats as any)?.deptStats?.find((x: any) => x.dept === dept) ||
               { completedTasks: 0, totalTasks: 0, completionRate: 0, totalLeads: 0 };
             return (
-              <div key={dept} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
+              <div key={dept} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
                   <p className="text-sm font-medium" style={{ color: GREEN }}>{label}</p>
@@ -259,7 +259,7 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Recent Activity</h2>
         {activity.length === 0 ? (
           <p className="text-sm opacity-30 py-4 text-center" style={{ color: GREEN }}>No recent activity yet.</p>
@@ -330,7 +330,7 @@ function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingCom
           Escalations ({active.length})
         </p>
         {active.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <CheckCircle2 size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#22C55E" }} />
             <p className="text-sm opacity-40" style={{ color: GREEN }}>No pending escalations</p>
           </div>
@@ -396,7 +396,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
             { label: "Commissions Paid", value: revenueStats.paidCount, color: GREEN },
             { label: "Pending Approvals", value: revenueStats.pendingCount, color: "#EF4444" },
           ].map(({ label, value, color }) => (
-            <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${GREEN}08` }}>
+            <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <p className="text-xl font-medium" style={{ color }}>{value}</p>
               <p className="text-[10px] uppercase tracking-wider mt-1 opacity-40" style={{ color: GREEN }}>{label}</p>
             </div>
@@ -405,7 +405,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
       )}
 
       {/* Revenue chart */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <p className="text-sm font-normal mb-6 opacity-60" style={{ color: GREEN }}>Monthly Revenue — Last 6 Months</p>
         {revenueData.length === 0 ? (
           <div className="h-[220px] flex items-center justify-center">
@@ -432,7 +432,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
 
       {/* Lead sources + Department performance */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Lead Sources</p>
           {displaySources.length === 0 ? (
             <p className="text-sm opacity-25 py-4 text-center" style={{ color: GREEN }}>No lead data yet.</p>
@@ -454,7 +454,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: { revenueStats: an
           )}
         </div>
 
-        <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-normal mb-5 opacity-60" style={{ color: GREEN }}>Department Task Performance</p>
           <div className="space-y-4">
             {(hasDeptStats ? deptStats : [
@@ -517,7 +517,7 @@ function CalendarSection() {
       </div>
 
       {/* Week strip */}
-      <div className="bg-white rounded-2xl border p-4" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex justify-between mb-4 gap-1">
           {days.map((d, i) => {
             const dateStr = weekDates[i];
@@ -538,11 +538,11 @@ function CalendarSection() {
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>Upcoming Deadlines</p>
         {upcomingTasks.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-8 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <p className="text-sm opacity-40" style={{ color: GREEN }}>No upcoming deadlines</p>
           </div>
         ) : upcomingTasks.map((t) => (
-          <div key={t.id} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${GREEN}08` }}>
+          <div key={t.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
               <CalendarDays size={16} style={{ color: GOLD }} />
             </div>
@@ -612,7 +612,7 @@ function AssignSection() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">
       {/* Form */}
-      <div className="bg-white rounded-2xl border p-6 space-y-4" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal mb-2" style={{ color: GREEN }}>Assign Task</h2>
         <Input
           placeholder="Task title *"
@@ -668,7 +668,7 @@ function AssignSection() {
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-4" style={{ color: GREEN }}>Recently Assigned</p>
         <div className="space-y-3">
           {RECENT_ASSIGNED.map(t => (
-            <div key={t.id} className="bg-white rounded-2xl border p-4" style={{ borderColor: `${GREEN}08` }}>
+            <div key={t.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] font-mono opacity-30 mr-1" style={{ color: GREEN }}>{t.id}</span>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{t.dept}</span>
@@ -784,7 +784,7 @@ function HubMeetingSection() {
         <p className="text-[11px] uppercase tracking-widest opacity-40 mb-3" style={{ color: GREEN }}>Standing Agenda (60 minutes)</p>
         <div className="space-y-2">
           {STANDING_AGENDA.map((item, i) => (
-            <div key={i} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}10` }}>
+            <div key={i} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
               <button className="w-full flex items-center gap-3 p-4 text-left" onClick={() => setExpanded(expanded === i ? null : i)}>
                 <span className="text-[18px] shrink-0">{item.icon}</span>
                 <div className="flex-1 min-w-0">
@@ -804,7 +804,7 @@ function HubMeetingSection() {
       </div>
 
       {/* Research Topic This Week */}
-      <div className="bg-white rounded-2xl border p-5 space-y-4" style={{ borderColor: `${GREEN}10` }}>
+      <div className="bg-white rounded-2xl p-5 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-2 mb-1">
           <Mic size={15} style={{ color: GOLD }} />
           <p className="text-[13px] font-semibold" style={{ color: GREEN }}>This Week's Research Assignment</p>
@@ -843,7 +843,7 @@ function HubMeetingSection() {
       </div>
 
       {/* Bi-weekly Training */}
-      <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+      <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-2 mb-1">
           <GraduationCap size={15} style={{ color: GOLD }} />
           <p className="text-[13px] font-semibold" style={{ color: GREEN }}>Bi-Weekly Training (30 min — every 2 weeks)</p>
@@ -881,7 +881,7 @@ function HubMeetingSection() {
       </div>
 
       {/* Staff of the Week */}
-      <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+      <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-2 mb-1">
           <Star size={15} style={{ color: GOLD }} />
           <p className="text-[13px] font-semibold" style={{ color: GREEN }}>Staff of the Week — Best Sale</p>
@@ -913,7 +913,7 @@ function HubMeetingSection() {
       </div>
 
       {/* This Week's To-Do List */}
-      <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+      <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-semibold" style={{ color: GREEN }}>✅ This Week's To-Do List</p>
           <button onClick={() => addTodo("this")} className="text-[11px] px-3 py-1.5 rounded-xl"
@@ -940,7 +940,7 @@ function HubMeetingSection() {
       </div>
 
       {/* Next Week's To-Do List */}
-      <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+      <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between">
           <p className="text-[13px] font-semibold" style={{ color: GREEN }}>🔭 Next Week Preview</p>
           <button onClick={() => addTodo("next")} className="text-[11px] px-3 py-1.5 rounded-xl"
@@ -1005,7 +1005,7 @@ function HubMeetingSection() {
         {showHistory && (
           <div className="space-y-2">
             {(historyQuery.data || []).map((rec: any) => (
-              <div key={rec.id} className="bg-white rounded-2xl border px-5 py-4 space-y-1" style={{ borderColor: `${GREEN}08` }}>
+              <div key={rec.id} className="bg-white rounded-2xl px-5 py-4 space-y-1 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="flex items-center justify-between">
                   <p className="text-[12px] font-semibold" style={{ color: GREEN }}>Week of {rec.weekOf}</p>
                   {rec.staffOfWeek && (
@@ -1036,7 +1036,7 @@ function FilesSection() {
       <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>Files & Resources</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {FILES.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="bg-white rounded-2xl border p-5 flex flex-col gap-3" style={{ borderColor: `${GREEN}08` }}>
+          <div key={title} className="bg-white rounded-2xl p-5 flex flex-col gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${GOLD}15` }}>
               <Icon size={16} style={{ color: GOLD }} />
             </div>

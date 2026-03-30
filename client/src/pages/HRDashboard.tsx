@@ -273,7 +273,7 @@ function OverviewSection({ stats, activity, staffList }: { stats: any; activity:
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {STAT_CARDS.map(({ label, value, icon: Icon, color, isText }) => (
-          <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Icon size={16} className="mx-auto mb-2" style={{ color }} />
             <p className="text-xl font-medium leading-none mb-1" style={{ color: isText ? color : color }}>{value}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: GREEN }}>{label}</p>
@@ -286,7 +286,7 @@ function OverviewSection({ stats, activity, staffList }: { stats: any; activity:
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Department Distribution</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {DEPT_DIST.map(d => (
-            <div key={d.dept} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
+            <div key={d.dept} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
                 <p className="text-sm font-medium" style={{ color: GREEN }}>{d.dept}</p>
@@ -302,7 +302,7 @@ function OverviewSection({ stats, activity, staffList }: { stats: any; activity:
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Recent Activity</h2>
         {activity.length === 0 ? (
           <p className="text-sm opacity-30 py-4 text-center" style={{ color: GREEN }}>No recent activity yet.</p>
@@ -361,7 +361,7 @@ function StaffSection({ staffList }: { staffList: typeof MOCK_STAFF }) {
         <p className="text-xs opacity-40" style={{ color: GREEN }}>{filtered.length} staff</p>
       </div>
 
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         {/* Desktop table header */}
         <div className="hidden md:grid grid-cols-[100px_1fr_160px_120px_120px_100px] gap-4 px-5 py-3 border-b" style={{ borderColor: `${GREEN}06`, backgroundColor: `${GREEN}04` }}>
           {["ID", "Name / Role", "Department", "Hire Date", "Status", ""].map(h => (
@@ -448,7 +448,7 @@ function AttendanceSection({ attendanceList }: { attendanceList: AttendanceRow[]
           {attendanceList.map((a, i) => {
             const sc = attendanceStatusColor(a.status);
             return (
-              <div key={i} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${GREEN}08` }}>
+              <div key={i} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GREEN}08` }}>
                   <CalendarCheck size={16} style={{ color: GREEN }} />
                 </div>
@@ -467,7 +467,7 @@ function AttendanceSection({ attendanceList }: { attendanceList: AttendanceRow[]
       )}
 
       {tab === "leave" && (
-        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm opacity-30" style={{ color: GREEN }}>No leave requests yet.</p>
         </div>
       )}
@@ -520,7 +520,7 @@ function PerformanceSection() {
             const sc = cycleStatusColor(c.status);
             const pct = c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0;
             return (
-              <div key={c.cycle} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
+              <div key={c.cycle} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div>
@@ -554,7 +554,7 @@ function PerformanceSection() {
       </div>
 
       {/* SOP Checklist */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>SOP Checklist</h2>
           <span className="text-xs px-2.5 py-0.5 rounded-full" style={{ backgroundColor: `${GREEN}10`, color: GREEN }}>{doneCount}/{totalItems} done</span>
@@ -640,7 +640,7 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
       {/* Job Postings */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Job Postings</h2>
-        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm opacity-30" style={{ color: GREEN }}>No job postings yet.</p>
         </div>
       </div>
@@ -650,7 +650,7 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>
           Join Applications {joinApps.length > 0 && <span className="normal-case px-2 py-0.5 rounded-full text-[10px]" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>{joinApps.length} received</span>}
         </h2>
-        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           {joinApps.length === 0 ? (
             <div className="py-10 text-center">
               <p className="text-sm opacity-40" style={{ color: GREEN }}>No join applications yet. They appear here when candidates apply via the website.</p>
@@ -685,7 +685,7 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
       </div>
 
       {/* SOP Checklist */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>SOP Hiring Checklist</h2>
           <span className="text-xs px-2.5 py-0.5 rounded-full" style={{ backgroundColor: `${GREEN}10`, color: GREEN }}>{doneCount}/{totalItems} done</span>
@@ -735,7 +735,7 @@ function TrainingSection() {
       {/* Training Sessions */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Training Sessions</h2>
-        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm opacity-30" style={{ color: GREEN }}>No training sessions logged yet.</p>
         </div>
         <Button
@@ -750,7 +750,7 @@ function TrainingSection() {
       {/* Development Plans */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Development Plans</h2>
-        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm opacity-30" style={{ color: GREEN }}>No development plans yet.</p>
         </div>
       </div>
@@ -784,7 +784,7 @@ function LeaveSection({ leaveRequests, refetch }: { leaveRequests: any[]; refetc
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+        <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="grid grid-cols-2 gap-3">
             <input placeholder="Staff Email *" value={form.staffEmail} onChange={e => setForm(p => ({ ...p, staffEmail: e.target.value }))}
               className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
@@ -818,7 +818,7 @@ function LeaveSection({ leaveRequests, refetch }: { leaveRequests: any[]; refetc
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="hidden md:grid grid-cols-[1fr_1fr_120px_120px_100px_80px] gap-3 px-5 py-3 border-b" style={{ borderColor: `${GREEN}06`, backgroundColor: `${GREEN}04` }}>
           {["Staff", "Dates", "Replacement", "Reason", "Status", ""].map(h => (
             <p key={h} className="text-[10px] uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>{h}</p>
@@ -878,7 +878,7 @@ function DisciplineSection({ disciplineLogs, staffList, refetch }: { disciplineL
       </div>
 
       {showForm && (
-        <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${GREEN}10` }}>
+        <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="grid grid-cols-2 gap-3">
             <select value={form.staffEmail} onChange={e => {
               const staff = staffList.find(s => s.email === e.target.value);
@@ -916,7 +916,7 @@ function DisciplineSection({ disciplineLogs, staffList, refetch }: { disciplineL
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         {disciplineLogs.length === 0 && (
           <div className="py-12 text-center"><p className="text-sm opacity-40" style={{ color: GREEN }}>No discipline records. Keep it that way.</p></div>
         )}
@@ -1021,7 +1021,7 @@ function CommissionsSection({ staffList }: { staffList: any[] }) {
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {SUMMARY.map(s => (
-          <div key={s.label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${GREEN}08` }}>
+          <div key={s.label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <p className="text-xl font-medium mb-1" style={{ color: s.color }}>{s.value}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: GREEN }}>{s.label}</p>
           </div>
@@ -1029,7 +1029,7 @@ function CommissionsSection({ staffList }: { staffList: any[] }) {
       </div>
 
       {/* Formula box */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Commission Breakdown</h2>
         <div className="rounded-xl p-4 font-mono text-xs space-y-1" style={{ backgroundColor: `${GREEN}06`, color: GREEN }}>
           <p className="opacity-70">Company Net Profit: {formatNaira(FINANCE_SUMMARY.profit)}</p>
@@ -1045,7 +1045,7 @@ function CommissionsSection({ staffList }: { staffList: any[] }) {
       {/* History */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Commission History</h2>
-        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${GREEN}08` }}>
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           {HR_COMM_HISTORY.map((c, i) => (
             <div
               key={c.id}
@@ -1070,7 +1070,7 @@ function CommissionsSection({ staffList }: { staffList: any[] }) {
       </div>
 
       {/* Withdrawal request */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${GREEN}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Request Withdrawal</h2>
         {submitted ? (
           <div className="flex flex-col items-center py-6 gap-3">
@@ -1173,7 +1173,7 @@ function ITStudentsSection() {
           </button>
         </div>
         {showForm && (
-          <form onSubmit={handleIntake} className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${TEAL}10` }}>
+          <form onSubmit={handleIntake} className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="grid grid-cols-2 gap-3">
               <input required placeholder="Full Name *" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                 className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${TEAL}20` }} />
@@ -1202,7 +1202,7 @@ function ITStudentsSection() {
       {/* Department Assignment */}
       <div>
         <p className="text-[13px] font-semibold mb-3" style={{ color: TEAL }}>Assign to Department</p>
-        <form onSubmit={handleAssign} className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${TEAL}10` }}>
+        <form onSubmit={handleAssign} className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-[11px] opacity-50" style={{ color: TEAL }}>Use this to record that a student has completed HR training and is moving to a department.</p>
           <div className="grid grid-cols-2 gap-3">
             <input required placeholder="Student Name" value={newAssign.name} onChange={e => setNewAssign(p => ({ ...p, name: e.target.value }))}
@@ -1235,7 +1235,7 @@ function ITStudentsSection() {
       </div>
 
       {/* Known IT Students */}
-      <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <p className="text-[13px] font-semibold mb-3" style={{ color: TEAL }}>Known IT Students</p>
         <div className="space-y-2">
           {[
@@ -1361,7 +1361,7 @@ function HRPolicySection() {
       {/* Policy Cards */}
       <div className="space-y-2">
         {POLICY_ITEMS.map((item, i) => (
-          <div key={i} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${TEAL}10` }}>
+          <div key={i} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
             <button className="w-full flex items-center gap-3 p-4 text-left" onClick={() => setExpanded(expanded === i ? null : i)}>
               <span className="text-[20px] shrink-0">{item.icon}</span>
               <p className="flex-1 text-[14px] font-medium" style={{ color: TEAL }}>{item.title}</p>
@@ -1385,7 +1385,7 @@ function HRPolicySection() {
       </div>
 
       {/* Weekly Device & Health Roll Call */}
-      <div className="bg-white rounded-2xl border p-5 space-y-4" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl p-5 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[14px] font-semibold" style={{ color: TEAL }}>Weekly Device & Health Roll Call</p>
@@ -1438,7 +1438,7 @@ function ReportsSection() {
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Available Reports</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {REPORTS_LIST.map(r => (
-            <div key={r.title} className="bg-white rounded-2xl border p-5 flex flex-col gap-3" style={{ borderColor: `${GREEN}08` }}>
+            <div key={r.title} className="bg-white rounded-2xl p-5 flex flex-col gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
                   <FileText size={16} style={{ color: GOLD }} />
@@ -1478,7 +1478,7 @@ function ReportsSection() {
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>HR KPIs</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {KPIS.map(k => (
-            <div key={k.label} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${GREEN}08` }}>
+            <div key={k.label} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <p className="text-sm font-medium mb-1" style={{ color: GREEN }}>{k.label}</p>
               <p className="text-xs opacity-40 mb-3" style={{ color: GREEN }}>Target: {k.target}</p>
               <div className="flex items-center gap-2 mb-2">

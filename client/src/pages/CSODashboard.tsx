@@ -494,7 +494,7 @@ export default function CSODashboard() {
                 </div>
 
                 {/* Recent activity preview */}
-                <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+                <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-[13px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: TEAL }}>
                       <Activity size={14} style={{ color: GOLD }} /> Recent Activity
@@ -551,11 +551,11 @@ export default function CSODashboard() {
                   </h2>
                 </div>
                 {pendingQuery.isLoading ? (
-                  <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${TEAL}10` }}>
+                  <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <Loader2 className="animate-spin mx-auto" size={24} style={{ color: GOLD }} />
                   </div>
                 ) : pendingTasks.length === 0 ? (
-                  <div className="bg-white rounded-2xl border p-14 text-center" style={{ borderColor: `${TEAL}10` }}>
+                  <div className="bg-white rounded-2xl p-14 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                     <CheckCircle2 size={44} className="mx-auto mb-4" style={{ color: "#22C55E", opacity: 0.3 }} />
                     <p className="text-[15px] font-medium opacity-50" style={{ color: TEAL }}>No pending reviews</p>
                     <p className="text-[12px] opacity-30 mt-2">Submitted department work will appear here for your approval.</p>
@@ -565,7 +565,7 @@ export default function CSODashboard() {
                     {pendingTasks.map((task: any) => {
                       const dept = DEPARTMENTS.find(d => d.value === task.department);
                       return (
-                        <div key={task.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+                        <div key={task.id} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                           <div className="flex flex-col md:flex-row md:items-start gap-4">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -651,7 +651,7 @@ export default function CSODashboard() {
 
             {/* ── All Tasks ── */}
             {activeSection === "tasks" && (
-              <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+              <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="p-4 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3" style={{ borderColor: `${TEAL}08` }}>
                   <h3 className="text-[13px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: TEAL }}>
                     <Briefcase size={15} style={{ color: GOLD }} /> Task Queue — All Departments
@@ -685,7 +685,7 @@ export default function CSODashboard() {
 
             {/* ── Activity ── */}
             {activeSection === "activity" && (
-              <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+              <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="p-4 border-b" style={{ borderColor: `${TEAL}08` }}>
                   <h3 className="text-[13px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: TEAL }}>
                     <Activity size={15} style={{ color: GOLD }} /> Recent Activity
@@ -886,7 +886,7 @@ function LeadPipeline({ leads }: { leads: any[] }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {Object.entries(groups).map(([status, items]) => (
-        <div key={status} className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+        <div key={status} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: `${TEAL}06` }}>
             <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>
               {status} <span className="opacity-40">({items.length})</span>
@@ -991,7 +991,7 @@ function AssignmentPanel({ leads, selectedDept, setSelectedDept, handleAssign, i
 }) {
   if (leads.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border p-14 text-center" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl p-14 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <CheckCircle2 size={44} className="mx-auto mb-4" style={{ color: "#22C55E", opacity: 0.3 }} />
         <p className="text-[15px] font-medium opacity-50" style={{ color: TEAL }}>All caught up</p>
         <p className="text-[12px] opacity-30 mt-2">New leads from the intake desk will appear here.</p>
@@ -1000,7 +1000,7 @@ function AssignmentPanel({ leads, selectedDept, setSelectedDept, handleAssign, i
   }
 
   return (
-    <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: `${TEAL}08` }}>
         <AlertCircle size={15} style={{ color: "#EF4444" }} />
         <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>
@@ -1093,7 +1093,7 @@ function CommissionsView() {
     <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {SUMMARY.map(({ label, value, color, icon }) => (
-          <div key={label} className="rounded-2xl border p-5 flex flex-col gap-2" style={{ backgroundColor: WHITE, borderColor: `${TEAL}10` }}>
+          <div key={label} className="rounded-2xl p-5 flex flex-col gap-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)]" style={{ backgroundColor: WHITE }}>
             <div style={{ color }}>{icon}</div>
             <p className="text-xl font-semibold leading-none" style={{ color }}>{value}</p>
             <p className="text-[11px] uppercase tracking-wider opacity-40" style={{ color: TEAL }}>{label}</p>
@@ -1103,7 +1103,7 @@ function CommissionsView() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* History */}
-        <div className="md:col-span-2 rounded-2xl border" style={{ backgroundColor: WHITE, borderColor: `${TEAL}10` }}>
+        <div className="md:col-span-2 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]" style={{ backgroundColor: WHITE }}>
           <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: `${TEAL}08` }}>
             <DollarSign size={15} style={{ color: GOLD }} />
             <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>Commission History</h3>
@@ -1129,7 +1129,7 @@ function CommissionsView() {
         </div>
 
         {/* Withdrawal */}
-        <div className="rounded-2xl border p-5 space-y-4" style={{ backgroundColor: WHITE, borderColor: `${TEAL}10` }}>
+        <div className="rounded-2xl p-5 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]" style={{ backgroundColor: WHITE }}>
           <div className="flex items-center gap-2 mb-1">
             <Wallet size={15} style={{ color: GOLD }} />
             <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>Request Withdrawal</h3>
@@ -1191,7 +1191,7 @@ function HelpersView({ staffList }: { staffList: any[] }) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: `${TEAL}08` }}>
           <h3 className="text-[13px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: TEAL }}>
             <Users size={15} style={{ color: GOLD }} /> Helper Directory
@@ -1277,7 +1277,7 @@ function HelpersView({ staffList }: { staffList: any[] }) {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h3 className="text-[13px] font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: TEAL }}>
           <AlertCircle size={14} style={{ color: GOLD }} /> Helper Access Rules
         </h3>
@@ -1366,7 +1366,7 @@ function QuickAccessView() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {QUICK_ACCESS_ITEMS.map(cat => (
-          <div key={cat.category} className="rounded-2xl border" style={{ backgroundColor: WHITE, borderColor: `${TEAL}10` }}>
+          <div key={cat.category} className="rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]" style={{ backgroundColor: WHITE }}>
             <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: `${TEAL}06` }}>
               <span style={{ color: cat.color }}>{cat.icon}</span>
               <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>{cat.category}</h3>
@@ -1388,7 +1388,7 @@ function QuickAccessView() {
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: `${TEAL}08` }}>
           <Link2 size={14} style={{ color: GOLD }} />
           <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>Custom Shortcuts</h3>
@@ -1446,7 +1446,7 @@ function AttendanceView({ attendance, isLoading }: { attendance: any[]; isLoadin
   const today = new Date().toLocaleDateString("en-NG", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
   return (
-    <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: `${TEAL}08` }}>
         <h3 className="text-[13px] font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: TEAL }}>
           <CalendarCheck size={15} style={{ color: GOLD }} /> Today's Attendance
@@ -1561,7 +1561,7 @@ function DeptUpdatesView() {
 
       <div className="space-y-3">
         {visible.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-12 text-center" style={{ borderColor: `${TEAL}10` }}>
+          <div className="bg-white rounded-2xl p-12 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <CheckCircle2 size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#22C55E" }} />
             <p className="text-[14px] opacity-40" style={{ color: TEAL }}>All updates acknowledged</p>
           </div>
@@ -1677,7 +1677,7 @@ function CalendarView({ realAppointments }: { realAppointments: any[] }) {
       </div>
 
       {/* Today strip */}
-      <div className="bg-white rounded-2xl border p-4" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <p className="text-[11px] font-bold uppercase tracking-wider mb-3 opacity-40" style={{ color: TEAL }}>
           Today — {today.length} appointment{today.length !== 1 ? "s" : ""}
         </p>
@@ -1700,7 +1700,7 @@ function CalendarView({ realAppointments }: { realAppointments: any[] }) {
       </div>
 
       {/* All appointments */}
-      <div className="bg-white rounded-2xl border" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="p-4 border-b flex items-center gap-2" style={{ borderColor: `${TEAL}08` }}>
           <CalendarDays size={14} style={{ color: GOLD }} />
           <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: TEAL }}>Upcoming Appointments</h3>
@@ -1842,7 +1842,7 @@ function DiscoveryView() {
   return (
     <div className="space-y-5 max-w-3xl mx-auto">
       {/* Header */}
-      <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+      <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GOLD}18` }}>
             <Target size={18} style={{ color: GOLD }} />

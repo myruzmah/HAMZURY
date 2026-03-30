@@ -57,13 +57,12 @@ export default function FounderPage() {
                 <MessageSquare size={16} />
                 <span className="text-[13px] font-medium">Chat with us</span>
               </button>
-              <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${CHARCOAL}40` }}>Departments</p>
+              <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${CHARCOAL}40` }}>Related</p>
               {[
-                { label: "Home",           href: "/" },
+                { label: "Team",           href: "/team" },
                 { label: "BizDoc Consult", href: "/bizdoc" },
                 { label: "Systemise",      href: "/systemise" },
                 { label: "Hamzury Skills", href: "/skills" },
-                { label: "RIDI",           href: "/ridi" },
               ].map(item => (
                 <Link key={item.href} href={item.href}>
                   <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: CHARCOAL }}>
@@ -72,11 +71,12 @@ export default function FounderPage() {
                 </Link>
               ))}
               <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${CHARCOAL}0C` }} />
-              <p className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${CHARCOAL}40` }}>More</p>
+              <p className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${CHARCOAL}40` }}>Explore</p>
               {[
+                { label: "Home",       href: "/" },
+                { label: "RIDI",       href: "/ridi" },
                 { label: "Pricing",    href: "/pricing" },
                 { label: "Affiliate",  href: "/affiliate" },
-                { label: "Team",       href: "/team" },
                 { label: "Training",   href: "/training" },
                 { label: "Alumni",     href: "/alumni" },
                 { label: "Consultant", href: "/consultant" },
@@ -87,12 +87,6 @@ export default function FounderPage() {
                   </span>
                 </Link>
               ))}
-              <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${CHARCOAL}0C` }} />
-              <Link href="/login">
-                <span className="block px-5 py-2.5 text-[12px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: `${CHARCOAL}50` }}>
-                  Staff Login
-                </span>
-              </Link>
             </div>
           )}
         </div>

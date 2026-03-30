@@ -304,7 +304,7 @@ function OverviewSection({ stats, leads, commissions, activity }: {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {STAT_CARDS.map(({ label, value, icon: Icon, color, isText }) => (
-          <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${CHOCO}08` }}>
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Icon size={16} className="mx-auto mb-2" style={{ color }} />
             <p className="text-xl font-medium leading-none mb-1" style={{ color: isText ? color : color }}>{value}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: CHOCO }}>{label}</p>
@@ -317,7 +317,7 @@ function OverviewSection({ stats, leads, commissions, activity }: {
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: CHOCO }}>Department Status</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {MOCK_DEPT_PERFORMANCE.map(d => (
-            <div key={d.dept} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${CHOCO}08` }}>
+            <div key={d.dept} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
                 <p className="text-sm font-medium" style={{ color: CHOCO }}>{d.dept}</p>
@@ -336,7 +336,7 @@ function OverviewSection({ stats, leads, commissions, activity }: {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${CHOCO}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: CHOCO }}>Recent Activity</h2>
         {activity.length === 0 ? (
           <div className="space-y-3">
@@ -425,7 +425,7 @@ function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingCom
           Escalations ({active.length})
         </p>
         {active.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${CHOCO}08` }}>
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <CheckCircle2 size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#22C55E" }} />
             <p className="text-sm opacity-40" style={{ color: CHOCO }}>No pending escalations</p>
           </div>
@@ -496,7 +496,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: {
       </div>
 
       {/* Revenue chart */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${CHOCO}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <p className="text-sm font-normal mb-6 opacity-60" style={{ color: CHOCO }}>Monthly Revenue — Last 6 Months</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={revenueData} barSize={28}>
@@ -517,7 +517,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: {
 
       {/* Lead sources + Department performance */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${CHOCO}08` }}>
+        <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-normal mb-5 opacity-60" style={{ color: CHOCO }}>Lead Sources — This Month</p>
           <div className="space-y-4">
             {MOCK_LEAD_SOURCES.map(({ source, count }) => {
@@ -535,7 +535,7 @@ function AnalyticsSection({ revenueStats, deptStats, leads }: {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${CHOCO}08` }}>
+        <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-normal mb-5 opacity-60" style={{ color: CHOCO }}>Department Task Performance</p>
           <div className="space-y-4">
             {deptPerfData.map(({ dept, completed, active, color }) => {
@@ -589,12 +589,12 @@ function CommissionsSection({ commissions }: { commissions: any[] }) {
       </div>
 
       {displayList.length === 0 ? (
-        <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${CHOCO}08` }}>
+        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <DollarSign size={36} className="mx-auto mb-3 opacity-20" style={{ color: CHOCO }} />
           <p className="text-sm opacity-40" style={{ color: CHOCO }}>No commissions on record</p>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-5 gap-4 px-5 py-3 border-b text-[10px] uppercase tracking-wider opacity-40 font-normal" style={{ borderColor: `${CHOCO}08`, color: CHOCO }}>
             <span>Staff Name</span>
@@ -662,7 +662,7 @@ function CommissionsSection({ commissions }: { commissions: any[] }) {
       )}
 
       {pendingCount === 0 && (
-        <div className="bg-white rounded-2xl border p-6 text-center" style={{ borderColor: `${CHOCO}08` }}>
+        <div className="bg-white rounded-2xl p-6 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <CheckCircle2 size={28} className="mx-auto mb-2 opacity-20" style={{ color: "#22C55E" }} />
           <p className="text-sm opacity-40" style={{ color: CHOCO }}>All commissions have been processed</p>
         </div>
@@ -683,8 +683,7 @@ function StaffSection() {
         {STAFF.map(member => (
           <div
             key={member.name}
-            className="bg-white rounded-2xl border p-5 space-y-3"
-            style={{ borderColor: `${CHOCO}08` }}
+            className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
           >
             <div className="flex items-center gap-3">
               <div
@@ -729,7 +728,7 @@ function CalendarSection() {
       </div>
 
       {/* Week strip */}
-      <div className="bg-white rounded-2xl border p-4" style={{ borderColor: `${CHOCO}08` }}>
+      <div className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="flex justify-between mb-4 gap-1">
           {days.map((d, i) => {
             const hasEvent = MOCK_EVENTS.some(e => e.day === d);
@@ -752,7 +751,7 @@ function CalendarSection() {
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: CHOCO }}>This Week's Events</p>
         {MOCK_EVENTS.map((e, i) => (
-          <div key={i} className="bg-white rounded-2xl border p-4 flex items-center gap-4" style={{ borderColor: `${CHOCO}08` }}>
+          <div key={i} className="bg-white rounded-2xl p-4 flex items-center gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
               <CalendarDays size={16} style={{ color: GOLD }} />
             </div>
@@ -820,7 +819,7 @@ function AssignSection() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">
       {/* Form */}
-      <div className="bg-white rounded-2xl border p-6 space-y-4" style={{ borderColor: `${CHOCO}08` }}>
+      <div className="bg-white rounded-2xl p-6 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal mb-2" style={{ color: CHOCO }}>Assign Task</h2>
         <Input
           placeholder="Task title *"
@@ -876,7 +875,7 @@ function AssignSection() {
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-4" style={{ color: CHOCO }}>Recently Assigned</p>
         <div className="space-y-3">
           {RECENT_ASSIGNED.map(t => (
-            <div key={t.id} className="bg-white rounded-2xl border p-4" style={{ borderColor: `${CHOCO}08` }}>
+            <div key={t.id} className="bg-white rounded-2xl p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-[10px] font-mono opacity-30 mr-1" style={{ color: CHOCO }}>{t.id}</span>
                 <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>{t.dept}</span>
@@ -1160,7 +1159,7 @@ function PasswordsTab({ passwords, onChange }: { passwords: PasswordEntry[]; onC
         const entries = passwords.filter(p => p.category === cat);
         const expanded = expandedCats.includes(cat);
         return (
-          <div key={cat} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+          <div key={cat} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
             <button onClick={() => toggleCat(cat)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors">
               {expanded ? <ChevronDown size={14} style={{ color: CHOCO, opacity: 0.4 }} /> : <ChevronRight size={14} style={{ color: CHOCO, opacity: 0.4 }} />}
               <p className="text-sm font-medium flex-1" style={{ color: CHOCO }}>{CATEGORY_LABELS[cat]}</p>
@@ -1312,7 +1311,7 @@ function DocumentsTab({ documents, onChange }: { documents: VaultDocumentV2[]; o
         const items = documents.filter(d => d.category === cat);
         const expanded = expandedCats.includes(cat);
         return (
-          <div key={cat} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+          <div key={cat} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
             <button onClick={() => toggleCat(cat)} className="w-full flex items-center gap-3 p-4 text-left hover:bg-gray-50 transition-colors">
               {expanded ? <ChevronDown size={14} style={{ color: CHOCO, opacity: 0.4 }} /> : <ChevronRight size={14} style={{ color: CHOCO, opacity: 0.4 }} />}
               <p className="text-sm font-medium flex-1" style={{ color: CHOCO }}>{DOC_CATEGORY_LABELS[cat]}</p>
@@ -1383,7 +1382,7 @@ function AccessTab({ access, onChange }: { access: AccessRow[]; onChange: (a: Ac
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${CHOCO}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="grid grid-cols-5 gap-2 px-5 py-3 border-b text-[10px] uppercase tracking-wider opacity-40 font-normal" style={{ borderColor: `${CHOCO}08`, color: CHOCO }}>
           <span>Staff Name</span>
           <span className="text-center">Dashboard</span>
@@ -1431,7 +1430,7 @@ function EmergencyTab({ contacts, onChange }: { contacts: EmergencyContact[]; on
       {contacts.map(c => {
         const Icon = roleIcon(c.role);
         return (
-          <div key={c.id} className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${CHOCO}08` }}>
+          <div key={c.id} className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${GOLD}15` }}>
                 <Icon size={14} style={{ color: GOLD }} />
@@ -1475,7 +1474,7 @@ function GrowthTab({ goals, onChange }: { goals: VaultGoal[]; onChange: (g: Vaul
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>Weekly Goals</p>
         <div className="space-y-2">
           {goals.map(g => (
-            <div key={g.id} className="bg-white rounded-2xl border p-3 flex items-center gap-3" style={{ borderColor: `${CHOCO}08` }}>
+            <div key={g.id} className="bg-white rounded-2xl p-3 flex items-center gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <button onClick={() => toggleGoal(g.id)} className="w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all" style={{ borderColor: g.done ? GOLD : `${CHOCO}25`, backgroundColor: g.done ? GOLD : "transparent" }}>
                 {g.done && <CheckCircle2 size={10} color="white" />}
               </button>
@@ -1498,7 +1497,7 @@ function GrowthTab({ goals, onChange }: { goals: VaultGoal[]; onChange: (g: Vaul
         <p className="text-xs uppercase tracking-wider opacity-40 font-normal mb-3" style={{ color: CHOCO }}>5-Day Schedule</p>
         <div className="grid grid-cols-5 gap-2">
           {SCHEDULE_DAYS.map(({ day, blocks }) => (
-            <div key={day} className="bg-white rounded-2xl border p-3 space-y-2" style={{ borderColor: `${CHOCO}08` }}>
+            <div key={day} className="bg-white rounded-2xl p-3 space-y-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <p className="text-xs font-medium text-center uppercase tracking-wider" style={{ color: GOLD }}>{day}</p>
               {blocks.map(b => (
                 <div key={b.label} className="rounded-xl p-2 text-center" style={{ backgroundColor: `${CHOCO}06` }}>
@@ -1521,7 +1520,7 @@ function FilesSection() {
       <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: CHOCO }}>Files & Resources</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {FILES.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="bg-white rounded-2xl border p-5 flex flex-col gap-3" style={{ borderColor: `${CHOCO}08` }}>
+          <div key={title} className="bg-white rounded-2xl p-5 flex flex-col gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${GOLD}15` }}>
               <Icon size={16} style={{ color: GOLD }} />
             </div>
@@ -1691,8 +1690,7 @@ function AIOperationsSection() {
         {agents.map(agent => (
           <div
             key={agent.id}
-            className="bg-white rounded-2xl border p-5 flex flex-col gap-4"
-            style={{ borderColor: `${DARK}08` }}
+            className="bg-white rounded-2xl p-5 flex flex-col gap-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]"
           >
             {/* Agent header */}
             <div className="flex items-center justify-between">
@@ -1767,7 +1765,7 @@ function AIOperationsSection() {
       </div>
 
       {/* Recent Agent Activity */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${DARK}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <h3 className="text-sm uppercase tracking-wider opacity-40 font-normal mb-4" style={{ color: DARK }}>Recent Agent Activity</h3>
 
         {rawLogs.length === 0 ? (

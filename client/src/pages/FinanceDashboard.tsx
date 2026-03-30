@@ -59,7 +59,7 @@ export default function FinanceDashboard() {
   const paidCount = commissions.filter(c => c.status === "paid").length;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FAFAFA" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FFFAF6" }}>
       <PageMeta title="Finance Dashboard — HAMZURY" description="Commissions and finance overview for HAMZURY staff." />
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#2D2D2D] z-50 flex justify-between items-center shadow-lg">
@@ -95,7 +95,7 @@ export default function FinanceDashboard() {
         </div>
 
         <Tabs defaultValue="calculator" className="w-full">
-          <TabsList className="mb-6 bg-white border border-[#2D2D2D]/10">
+          <TabsList className="mb-6 bg-white rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <TabsTrigger value="calculator" className="gap-1.5"><Calculator size={14} /> Calculator</TabsTrigger>
             <TabsTrigger value="commissions" className="gap-1.5"><DollarSign size={14} /> Commissions ({commissions.length})</TabsTrigger>
             <TabsTrigger value="payouts" className="gap-1.5"><Wallet size={14} /> Payout Queue</TabsTrigger>
@@ -311,7 +311,7 @@ function AllocationsTab() {
   return (
     <div className="space-y-6">
       {/* ── Revenue Allocations Table ── */}
-      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <div className="p-4 border-b border-[#2D2D2D]/5 flex items-center gap-2">
           <BarChart3 size={16} style={{ color: GOLD }} />
           <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>Revenue Allocations</h3>
@@ -399,7 +399,7 @@ function AllocationsTab() {
       {/* ── AI Fund Card + Affiliate League Table ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* AI Fund Card */}
-        <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="p-4 border-b border-[#2D2D2D]/5 flex items-center gap-2">
             <Bot size={16} style={{ color: "#8B5CF6" }} />
             <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>AI Fund</h3>
@@ -439,7 +439,7 @@ function AllocationsTab() {
         </div>
 
         {/* Affiliate League Table */}
-        <div className="lg:col-span-2 bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="p-4 border-b border-[#2D2D2D]/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy size={16} style={{ color: GOLD }} />
@@ -591,7 +591,7 @@ function InvoiceTab() {
       </div>
 
       {/* Invoice table */}
-      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         {invoicesQuery.isLoading ? (
           <div className="p-12 text-center">
             <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: "#B48C4C" }} />
@@ -902,7 +902,7 @@ function CommissionCalculator() {
   return (
     <div className="max-w-3xl space-y-6">
       {/* Input */}
-      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm p-6">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-6">
         <h3 className="text-base font-medium mb-1" style={{ color: G }}>Commission Calculator</h3>
         <p className="text-xs opacity-40 mb-6">Enter the quoted deal price to see the full 40/60 split and 5-tier breakdown.</p>
         <div className="flex items-center gap-3">
@@ -933,7 +933,7 @@ function CommissionCalculator() {
           </div>
 
           {/* Staff Pool Tier Breakdown */}
-          <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
             <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: "#FFFAF6" }}>
               <p className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Staff Pool — 5-Tier Breakdown</p>
             </div>
@@ -951,7 +951,7 @@ function CommissionCalculator() {
           </div>
 
           {/* Institutional Breakdown */}
-          <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
             <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: "#FFFAF6" }}>
               <p className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Institutional Allocation (60%)</p>
             </div>
@@ -1042,7 +1042,7 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="p-4 border-b border-[#2D2D2D]/5">
         <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#2D2D2D" }}>All Commissions</h3>
       </div>
@@ -1175,7 +1175,7 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
 
   if (commissions.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 p-12 text-center">
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] p-12 text-center">
         <CheckCircle2 size={48} className="mx-auto mb-4 opacity-20" />
         <p className="text-lg font-medium opacity-60">No pending payouts</p>
         <p className="text-sm opacity-40 mt-2">Approved commissions will appear here for payout processing.</p>
@@ -1184,7 +1184,7 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-[#2D2D2D]/10 shadow-sm">
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="p-4 border-b border-[#2D2D2D]/5">
         <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#2D2D2D" }}>Approved — Ready for Payout</h3>
       </div>

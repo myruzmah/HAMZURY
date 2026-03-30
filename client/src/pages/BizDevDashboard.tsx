@@ -241,7 +241,7 @@ function OverviewSection({ leadsList, affiliatesList }: { leadsList: LeadRow[]; 
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {KPI_CARDS.map(({ label, value, unit, target, color }) => (
-          <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${DARK}08` }}>
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <p className="text-xl font-medium leading-none mb-1" style={{ color }}>{value}{unit}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40 mb-1" style={{ color: DARK }}>{label}</p>
             <p className="text-[10px] opacity-25" style={{ color: DARK }}>{target}</p>
@@ -250,7 +250,7 @@ function OverviewSection({ leadsList, affiliatesList }: { leadsList: LeadRow[]; 
       </div>
 
       {/* Weekly rhythm */}
-      <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${DARK}08` }}>
+      <div className="bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         <p className="text-sm font-normal opacity-40 mb-5" style={{ color: DARK }}>Weekly Operational Rhythm</p>
         <div className="space-y-3">
           {WEEKLY.map(({ day, focus, deliverable }) => {
@@ -319,7 +319,7 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
 
       {/* Log Lead form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border p-6 space-y-4" style={{ borderColor: `${GREEN}20` }}>
+        <div className="bg-white rounded-2xl p-6 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <p className="text-sm font-normal opacity-60" style={{ color: DARK }}>Log New Lead</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input placeholder="Business name" className="bg-gray-50 border-gray-200" />
@@ -378,7 +378,7 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
       )}
 
       {/* Leads table */}
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${DARK}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -522,7 +522,7 @@ function PartnershipsSection() {
           { label: "Approved / Agreed", value: REAL_PARTNERSHIPS.filter(p => p.stage === "Agreed").length },
           { label: "Pending Deals", value: PENDING_DEALS.length },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${DARK}08` }}>
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <p className="text-2xl font-normal" style={{ color: GREEN }}>{value}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40 mt-1" style={{ color: DARK }}>{label}</p>
           </div>
@@ -534,7 +534,7 @@ function PartnershipsSection() {
         <p className="text-[11px] uppercase tracking-widest opacity-40 mb-3" style={{ color: DARK }}>Institutional Partnerships</p>
         <div className="space-y-3">
           {REAL_PARTNERSHIPS.map(p => (
-            <div key={p.id} className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${DARK}08` }}>
+            <div key={p.id} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
               <button
                 className="w-full flex items-center justify-between p-4 text-left"
                 onClick={() => setExpanded(expanded === p.id ? null : p.id)}
@@ -625,7 +625,7 @@ function BrandQASection() {
       </div>
 
       {/* QA Queue */}
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${DARK}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="p-4 border-b" style={{ borderColor: `${DARK}06` }}>
           <p className="text-xs uppercase tracking-wider opacity-40 font-normal" style={{ color: DARK }}>QA Queue ({qaItems.filter(q => q.status === "pending").length} pending)</p>
         </div>
@@ -660,7 +660,7 @@ function BrandQASection() {
       </div>
 
       {/* Brand checklist */}
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${DARK}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <button
           className="w-full p-4 flex items-center justify-between"
           onClick={() => setExpanded(v => !v)}
@@ -713,14 +713,14 @@ function AffiliatesSection({ affiliatesList }: { affiliatesList: AffRow[] }) {
           { label: "Pending Approval", value: pending },
           { label: "Total Earnings", value: totalEarnings, isText: true },
         ].map(({ label, value, isText }) => (
-          <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${DARK}08` }}>
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <p className="text-xl font-normal" style={{ color: GREEN }}>{value}</p>
             <p className="text-[10px] uppercase tracking-wider opacity-40 mt-1" style={{ color: DARK }}>{label}</p>
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${DARK}08` }}>
+      <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -772,7 +772,7 @@ function FilesSection() {
       <p className="text-sm font-normal opacity-40" style={{ color: DARK }}>Files & Resources</p>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {FILES_LIST.map(({ icon: Icon, title, desc }) => (
-          <div key={title} className="bg-white rounded-2xl border p-5 flex flex-col gap-3" style={{ borderColor: `${DARK}08` }}>
+          <div key={title} className="bg-white rounded-2xl p-5 flex flex-col gap-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${GREEN}15` }}>
               <Icon size={16} style={{ color: GREEN }} />
             </div>

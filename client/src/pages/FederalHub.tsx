@@ -232,7 +232,7 @@ function StaffSection({ userRole }: { userRole?: string }) {
 
       {/* Add Staff Form */}
       {showForm && (
-        <div className="rounded-2xl border bg-white p-5 space-y-4" style={{ borderColor: `${GREEN}12` }}>
+        <div className="rounded-2xl bg-white p-5 space-y-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: GREEN }}>
             <Plus size={16} /> New Staff Account
           </h3>
@@ -319,7 +319,7 @@ function StaffSection({ userRole }: { userRole?: string }) {
           <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
         </div>
       ) : (
-        <div className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor: `${GREEN}10` }}>
+        <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -432,7 +432,7 @@ function AuditSection() {
           <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
         </div>
       ) : (
-        <div className="rounded-2xl border bg-white overflow-hidden" style={{ borderColor: `${GREEN}10` }}>
+        <div className="rounded-2xl bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

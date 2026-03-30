@@ -103,7 +103,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FAFAFA" }}>
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FFFAF6" }}>
       <PageMeta title="BizDoc Staff Dashboard — HAMZURY" description="Task management dashboard for HAMZURY BizDoc compliance staff." />
       {/* Dashboard Nav */}
       <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#1B4D3E] z-50 flex justify-between items-center shadow-lg">
@@ -226,7 +226,7 @@ export default function Dashboard() {
         </div>
 
         {/* MAIN AREA - Task Detail */}
-        <div className={`${mobileShowDetail || !selectedTaskId ? "" : "hidden md:flex"} flex-1 flex-col overflow-y-auto ${mobileShowDetail ? "flex" : "hidden md:flex"}`} style={{ backgroundColor: "#FAFAFA" }}>
+        <div className={`${mobileShowDetail || !selectedTaskId ? "" : "hidden md:flex"} flex-1 flex-col overflow-y-auto ${mobileShowDetail ? "flex" : "hidden md:flex"}`} style={{ backgroundColor: "#FFFAF6" }}>
           {selectedTask ? (
             <TaskDetail
               task={selectedTask}
@@ -332,7 +332,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
 
       {/* Tabs */}
       <Tabs defaultValue="checklist" className="w-full">
-        <TabsList className="mb-6 bg-white border border-[#1B4D3E]/10">
+        <TabsList className="mb-6 bg-white rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
           <TabsTrigger value="checklist" className="gap-1.5"><CheckSquare size={14} /> SOP Checklist</TabsTrigger>
           <TabsTrigger value="notes" className="gap-1.5"><FileText size={14} /> Notes</TabsTrigger>
           <TabsTrigger value="documents" className="gap-1.5"><FileUp size={14} /> Documents</TabsTrigger>
@@ -361,7 +361,7 @@ function TaskDetail({ task, onBack, onRefresh }: { task: any; onBack: () => void
           <AIAssistantPanel task={task} />
         </TabsContent>
         <TabsContent value="credentials">
-          <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+          <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between mb-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider opacity-40" style={{ color: "#1B4D3E" }}>
                 Client Credentials
@@ -530,7 +530,7 @@ function ChecklistPanel({ taskId }: { taskId: number }) {
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+    <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#1B4D3E" }}>
           <CheckSquare size={16} style={{ color: "#B48C4C" }} /> SOP Execution Checklist
@@ -590,7 +590,7 @@ function NotesPanel({ taskId, currentNotes, onRefresh }: { taskId: number; curre
   });
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+    <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#1B4D3E" }}>
         <User size={16} style={{ color: "#B48C4C" }} /> Client Brief & Notes
       </h3>
@@ -652,7 +652,7 @@ function DocumentsPanel({ taskId }: { taskId: number }) {
   const docs = docsQuery.data || [];
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+    <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-sm font-bold uppercase tracking-wider flex items-center gap-2" style={{ color: "#1B4D3E" }}>
           <FileUp size={16} style={{ color: "#B48C4C" }} /> Documents
@@ -751,7 +751,7 @@ function WhatsAppPanel({ taskId, phone }: { taskId: number; phone: string }) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm">
+    <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <h3 className="text-sm font-bold uppercase tracking-wider mb-4 flex items-center gap-2" style={{ color: "#1B4D3E" }}>
         <MessageSquare size={16} style={{ color: "#22C55E" }} /> WhatsApp Messaging
       </h3>
@@ -903,7 +903,7 @@ function ClientChatPanel({ task }: { task: any }) {
   // Loading state
   if (chatsQuery.isLoading) {
     return (
-      <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm flex items-center justify-center" style={{ height: "400px" }}>
+      <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex items-center justify-center" style={{ height: "400px" }}>
         <Loader2 className="animate-spin" size={24} style={{ color: "#B48C4C" }} />
       </div>
     );
@@ -912,7 +912,7 @@ function ClientChatPanel({ task }: { task: any }) {
   // No chat exists yet — show create prompt
   if (!activeChat) {
     return (
-      <div className="bg-white p-6 rounded-2xl border border-[#1B4D3E]/10 shadow-sm flex flex-col items-center justify-center gap-4" style={{ height: "400px" }}>
+      <div className="bg-white p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col items-center justify-center gap-4" style={{ height: "400px" }}>
         <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: "#1B4D3E10" }}>
           <MessageSquare size={28} style={{ color: "#1B4D3E" }} />
         </div>
@@ -944,7 +944,7 @@ function ClientChatPanel({ task }: { task: any }) {
 
   // Chat exists — show the interface
   return (
-    <div className="bg-white rounded-2xl border border-[#1B4D3E]/10 shadow-sm flex flex-col" style={{ height: "520px" }}>
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col" style={{ height: "520px" }}>
       {/* Header */}
       <div className="p-4 border-b border-[#1B4D3E]/5 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -1073,7 +1073,7 @@ function AIAssistantPanel({ task }: { task: any }) {
   ];
 
   return (
-    <div className="bg-white rounded-2xl border border-[#1B4D3E]/10 shadow-sm flex flex-col" style={{ height: "500px" }}>
+    <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] flex flex-col" style={{ height: "500px" }}>
       <div className="p-4 border-b border-[#1B4D3E]/5 flex items-center gap-2">
         <Sparkles size={16} style={{ color: "#B48C4C" }} />
         <h3 className="text-sm font-bold" style={{ color: "#1B4D3E" }}>BizDoc AI — Compliance Assistant</h3>

@@ -6,7 +6,7 @@ import {
   ShieldCheck, Cpu, GraduationCap,
   ArrowRight, LogOut,
   Menu, X, ChevronDown, CheckCircle,
-  TrendingUp, MessageSquare,
+  TrendingUp, MessageSquare, Eye, EyeOff, Loader2,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
@@ -88,6 +88,26 @@ export default function Home() {
   const [trackResult, setTrackResult] = useState<null | { ref: string; clientName: string | null; businessName: string | null; service: string | null; status: string; progress: number }>(null);
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [partnershipOpen, setPartnershipOpen] = useState(false);
+
+  // Staff login (inline)
+  const [staffMode, setStaffMode] = useState(false);
+  const [staffIdVal, setStaffIdVal] = useState("");
+  const [staffPw, setStaffPw] = useState("");
+  const [showStaffPw, setShowStaffPw] = useState(false);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffError, setStaffError] = useState("");
+  async function handleStaffLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!staffIdVal.trim() || !staffPw) return;
+    setStaffLoading(true); setStaffError("");
+    try {
+      const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ staffId: staffIdVal.trim().toUpperCase(), password: staffPw }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
+      window.location.href = data.dashboard;
+    } catch (err: unknown) { setStaffError(err instanceof Error ? err.message : String(err)); }
+    finally { setStaffLoading(false); }
+  }
 
   const trackQuery = trpc.tracking.lookup.useQuery(
     { ref: trackRef },
@@ -282,14 +302,6 @@ export default function Home() {
                 ))}
               </div>
 
-              <div className="mt-2 pt-2 pb-1" style={{ borderTop: "1px solid rgba(0,0,0,0.04)" }}>
-                <Link href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-black/[0.03] transition-colors duration-200">
-                  <LogOut size={14} style={{ color: CHARCOAL, opacity: 0.3 }} />
-                  <span className="text-[13px] font-medium" style={{ color: CHARCOAL, opacity: 0.35 }}>Staff Login</span>
-                </Link>
-              </div>
             </div>
           </div>
         )}
@@ -460,6 +472,26 @@ export default function Home() {
               </a>
             </div>
           )}
+
+          {/* Staff login toggle */}
+          <div className="mt-12">
+            <button onClick={() => setStaffMode(s => !s)} className="text-[11px] tracking-[0.15em] uppercase transition-opacity hover:opacity-70" style={{ color: CHARCOAL, opacity: 0.2 }}>
+              {staffMode ? "Back to Track" : "Staff?"}
+            </button>
+            {staffMode && (
+              <form onSubmit={handleStaffLogin} className="mt-4 space-y-3 max-w-xs mx-auto">
+                <input type="text" value={staffIdVal} onChange={e => setStaffIdVal(e.target.value)} placeholder="Staff ID" className="w-full px-4 py-3 rounded-full text-[13px] outline-none" style={{ backgroundColor: `${CHARCOAL}06`, color: CHARCOAL }} />
+                <div className="relative">
+                  <input type={showStaffPw ? "text" : "password"} value={staffPw} onChange={e => setStaffPw(e.target.value)} placeholder="Password" className="w-full px-4 py-3 rounded-full text-[13px] outline-none pr-10" style={{ backgroundColor: `${CHARCOAL}06`, color: CHARCOAL }} />
+                  <button type="button" onClick={() => setShowStaffPw(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-60" style={{ color: CHARCOAL }}>{showStaffPw ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                </div>
+                {staffError && <p className="text-[12px] text-red-500">{staffError}</p>}
+                <button type="submit" disabled={staffLoading || !staffIdVal.trim() || !staffPw} className="w-full py-3 rounded-full text-[13px] font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2" style={{ backgroundColor: CHARCOAL, color: WHITE }}>
+                  {staffLoading ? <Loader2 size={14} className="animate-spin" /> : null}{staffLoading ? "Signing in..." : "Sign In"}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
 

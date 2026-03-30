@@ -6,7 +6,7 @@ import {
   ArrowRight,
   Users, GraduationCap, Star, Target,
   Lightbulb, BookOpen, X, Loader2, Menu,
-  Calendar, Clock, CheckCircle, MessageSquare,
+  Calendar, Clock, CheckCircle, MessageSquare, Eye, EyeOff,
 } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 
@@ -164,6 +164,26 @@ export default function SkillsPortal() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Staff login (inline)
+  const [staffMode, setStaffMode] = useState(false);
+  const [staffId, setStaffId] = useState("");
+  const [staffPw, setStaffPw] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffError, setStaffError] = useState("");
+  async function handleStaffLogin(e: React.FormEvent) {
+    e.preventDefault();
+    if (!staffId.trim() || !staffPw) return;
+    setStaffLoading(true); setStaffError("");
+    try {
+      const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ staffId: staffId.trim().toUpperCase(), password: staffPw }) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Login failed");
+      window.location.href = data.dashboard;
+    } catch (err: unknown) { setStaffError(err instanceof Error ? err.message : String(err)); }
+    finally { setStaffLoading(false); }
+  }
+
   // Track
   const myUpdateRef = useRef<HTMLElement>(null);
   const [trackRef, setTrackRef] = useState("");
@@ -247,12 +267,12 @@ export default function SkillsPortal() {
                 <MessageSquare size={16} />
                 <span className="text-[13px] font-medium">Chat with us</span>
               </button>
-              <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${TEXT}40` }}>Departments</p>
+              <p className="px-5 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${TEXT}40` }}>Related</p>
               {[
-                { label: "Home",           href: "/" },
-                { label: "BizDoc Consult", href: "/bizdoc" },
-                { label: "Systemise",      href: "/systemise" },
-                { label: "RIDI",           href: "/ridi" },
+                { label: "RIDI Initiative", href: "/ridi" },
+                { label: "Alumni",          href: "/alumni" },
+                { label: "Training",        href: "/training" },
+                { label: "Skills CEO",      href: "/skills/ceo" },
               ].map(item => (
                 <Link key={item.href} href={item.href}>
                   <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>
@@ -261,14 +281,15 @@ export default function SkillsPortal() {
                 </Link>
               ))}
               <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${TEXT}0C` }} />
-              <p className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${TEXT}40` }}>More</p>
+              <p className="px-5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.15em]" style={{ color: `${TEXT}40` }}>Explore</p>
               {[
-                { label: "Pricing",    href: "/pricing" },
-                { label: "Affiliate",  href: "/affiliate" },
-                { label: "Team",       href: "/team" },
-                { label: "Training",   href: "/training" },
-                { label: "Alumni",     href: "/alumni" },
-                { label: "Consultant", href: "/consultant" },
+                { label: "Home",           href: "/" },
+                { label: "BizDoc Consult", href: "/bizdoc" },
+                { label: "Systemise",      href: "/systemise" },
+                { label: "Pricing",        href: "/pricing" },
+                { label: "Affiliate",      href: "/affiliate" },
+                { label: "Team",           href: "/team" },
+                { label: "Consultant",     href: "/consultant" },
               ].map(item => (
                 <Link key={item.href} href={item.href}>
                   <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT, opacity: 0.7 }}>
@@ -276,12 +297,6 @@ export default function SkillsPortal() {
                   </span>
                 </Link>
               ))}
-              <div className="mx-4 my-1.5" style={{ height: 1, backgroundColor: `${TEXT}0C` }} />
-              <Link href="/login">
-                <span className="block px-5 py-2.5 text-[12px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: `${TEXT}50` }}>
-                  Staff Login
-                </span>
-              </Link>
             </div>
           )}
         </div>
@@ -496,6 +511,26 @@ export default function SkillsPortal() {
               )}
             </div>
           )}
+
+          {/* Staff login toggle */}
+          <div className="mt-12">
+            <button onClick={() => setStaffMode(s => !s)} className="text-[11px] tracking-[0.15em] uppercase transition-opacity hover:opacity-70" style={{ color: TEXT, opacity: 0.25 }}>
+              {staffMode ? "Back to Track" : "Staff?"}
+            </button>
+            {staffMode && (
+              <form onSubmit={handleStaffLogin} className="mt-4 space-y-3 max-w-xs mx-auto">
+                <input type="text" value={staffId} onChange={e => setStaffId(e.target.value)} placeholder="Staff ID" className="w-full px-4 py-3 rounded-full text-[13px] outline-none" style={{ backgroundColor: `${TEXT}06`, color: TEXT }} />
+                <div className="relative">
+                  <input type={showPw ? "text" : "password"} value={staffPw} onChange={e => setStaffPw(e.target.value)} placeholder="Password" className="w-full px-4 py-3 rounded-full text-[13px] outline-none pr-10" style={{ backgroundColor: `${TEXT}06`, color: TEXT }} />
+                  <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-60" style={{ color: TEXT }}>{showPw ? <EyeOff size={14} /> : <Eye size={14} />}</button>
+                </div>
+                {staffError && <p className="text-[12px] text-red-500">{staffError}</p>}
+                <button type="submit" disabled={staffLoading || !staffId.trim() || !staffPw} className="w-full py-3 rounded-full text-[13px] font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2" style={{ backgroundColor: TEXT, color: GOLD }}>
+                  {staffLoading ? <Loader2 size={14} className="animate-spin" /> : null}{staffLoading ? "Signing in..." : "Sign In"}
+                </button>
+              </form>
+            )}
+          </div>
         </div>
       </section>
 

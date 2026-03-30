@@ -243,7 +243,7 @@ export default function MediaDashboard() {
             { label: "Total Views (month)",  value: totalViews.toLocaleString(), icon: <Eye size={18} />, color: GOLD },
           ].map(card => (
             <div key={card.label} className="rounded-2xl p-5 space-y-2"
-              style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
               <div className="flex items-center gap-2">
                 <span style={{ color: card.color }}>{card.icon}</span>
                 <span className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: "#9CA3AF" }}>{card.label}</span>
@@ -259,7 +259,7 @@ export default function MediaDashboard() {
           <div className="space-y-2">
             {MOCK_CONTENT.slice(0, 5).map(item => (
               <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl"
-                style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                   style={{ background: `${GOLD}18` }}>
                   {item.type === "Video" || item.type === "Short" || item.type === "Reel"
@@ -287,7 +287,7 @@ export default function MediaDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {SOCIAL_STATS.slice(0, 3).map(s => (
               <div key={s.platform} className="rounded-2xl p-4 space-y-1"
-                style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
                   <span className="text-xs font-bold" style={{ color: DARK }}>{s.platform}</span>
@@ -486,7 +486,7 @@ export default function MediaDashboard() {
 
         {/* Day detail panel */}
         {calSelectedDay && (
-          <div className="rounded-2xl p-5 space-y-4" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+          <div className="rounded-2xl p-5 space-y-4" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
             <div className="flex items-center justify-between">
               <p className="text-sm font-bold" style={{ color: DARK }}>{selectedLabel}</p>
               <div className="flex items-center gap-2">
@@ -554,7 +554,7 @@ export default function MediaDashboard() {
         )}
 
         {/* AI Generate section */}
-        <div className="rounded-2xl p-5" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+        <div className="rounded-2xl p-5" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
           <div className="flex items-center gap-2 mb-4">
             <Sparkles size={16} style={{ color: GOLD }} />
             <p className="text-sm font-bold" style={{ color: DARK }}>Generate AI Content</p>
@@ -680,7 +680,7 @@ export default function MediaDashboard() {
         </div>
 
         {/* Quick generate */}
-        <div className="rounded-2xl p-5" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+        <div className="rounded-2xl p-5" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
           <p className="text-sm font-bold mb-4" style={{ color: DARK }}>Generate New Content</p>
           <div className="flex gap-3 flex-wrap">
             <input
@@ -716,7 +716,7 @@ export default function MediaDashboard() {
         <div className="space-y-3">
           {AI_TWIN_TASKS.map(task => (
             <div key={task.id} className="rounded-2xl overflow-hidden"
-              style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
               <button
                 className="w-full flex items-center gap-4 p-4 text-left"
                 onClick={() => setExpandedAI(expandedAI === task.id ? null : task.id)}>
@@ -774,7 +774,7 @@ export default function MediaDashboard() {
   function renderPodcast() {
     return (
       <div className="space-y-6">
-        <div className="rounded-2xl p-5" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+        <div className="rounded-2xl p-5" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: `${GOLD}18` }}>
@@ -802,7 +802,7 @@ export default function MediaDashboard() {
         <div className="space-y-3">
           {PODCAST_EPISODES.map(ep => (
             <div key={ep.ep} className="flex items-center gap-4 p-4 rounded-xl"
-              style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
               <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                 style={{ background: ep.status === "Published" ? `${GOLD}18` : `${TEAL}08` }}>
                 <span className="text-xs font-bold" style={{ color: ep.status === "Published" ? GOLD : TEAL }}>
@@ -863,7 +863,7 @@ export default function MediaDashboard() {
         <div className="space-y-2">
           {ASSETS.map(asset => (
             <div key={asset.id} className="flex items-center gap-4 p-4 rounded-xl"
-              style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
               <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
                 style={{ background: MILK }}>
                 {typeIcon(asset.type)}
@@ -902,7 +902,7 @@ export default function MediaDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {SOCIAL_STATS.map(s => (
             <div key={s.platform} className="rounded-2xl p-5"
-              style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: `${s.color}18` }}>
@@ -932,7 +932,7 @@ export default function MediaDashboard() {
             </div>
           ))}
         </div>
-        <div className="rounded-2xl p-5" style={{ background: WHITE, border: "1px solid #E8E3DC" }}>
+        <div className="rounded-2xl p-5" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
           <p className="text-sm font-bold mb-3" style={{ color: DARK }}>Content Goals — Q2 2026</p>
           {[
             { label: "YouTube Subscribers",      current: 2340,  target: 5000,  unit: "" },
@@ -982,11 +982,11 @@ export default function MediaDashboard() {
         </div>
 
         {clientTasksQuery.isLoading ? (
-          <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${TEAL}10` }}>
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Loader2 className="animate-spin mx-auto" size={24} style={{ color: GOLD }} />
           </div>
         ) : filteredClientTasks.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-14 text-center" style={{ borderColor: `${TEAL}10` }}>
+          <div className="bg-white rounded-2xl p-14 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Briefcase size={40} className="mx-auto mb-4 opacity-20" style={{ color: TEAL }} />
             <p className="text-[14px] opacity-40" style={{ color: TEAL }}>
               {inboxFilter === "all"
@@ -1129,7 +1129,7 @@ export default function MediaDashboard() {
             { label: "Monthly Value", value: `₦${mediaSubs.reduce((sum, s) => sum + Number(s.monthlyFee), 0).toLocaleString()}` },
             { label: "Platforms Managed", value: "5+" },
           ].map(({ label, value }) => (
-            <div key={label} className="bg-white rounded-2xl border p-4 text-center" style={{ borderColor: `${TEAL}10` }}>
+            <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <p className="text-[18px] font-light" style={{ color: TEAL }}>{value}</p>
               <p className="text-[10px] uppercase tracking-wider opacity-40 mt-1" style={{ color: TEAL }}>{label}</p>
             </div>
@@ -1137,11 +1137,11 @@ export default function MediaDashboard() {
         </div>
 
         {subsQuery.isLoading ? (
-          <div className="bg-white rounded-2xl border p-10 text-center" style={{ borderColor: `${TEAL}10` }}>
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Loader2 className="animate-spin mx-auto" size={24} style={{ color: GOLD }} />
           </div>
         ) : mediaSubs.length === 0 ? (
-          <div className="bg-white rounded-2xl border p-14 text-center" style={{ borderColor: `${TEAL}10` }}>
+          <div className="bg-white rounded-2xl p-14 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <Users size={40} className="mx-auto mb-4 opacity-20" style={{ color: TEAL }} />
             <p className="text-[14px] opacity-40" style={{ color: TEAL }}>No social media clients yet</p>
           </div>
@@ -1151,7 +1151,7 @@ export default function MediaDashboard() {
               const tags = getPlatformTags(sub.service);
               const fee = Number(sub.monthlyFee);
               return (
-                <div key={sub.id} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+                <div key={sub.id} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="text-[15px] font-semibold" style={{ color: TEAL }}>{sub.clientName}</p>

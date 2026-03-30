@@ -55,7 +55,7 @@ function CalendarView({ tasks }: { tasks: Array<{ deadline?: string | null; clie
   const todayDay = today.getFullYear() === year && today.getMonth() === month ? today.getDate() : -1;
 
   return (
-    <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center justify-between mb-4">
         <span className="text-sm font-semibold" style={{ color: TEAL }}>{monthName}</span>
         <div className="flex gap-2">
@@ -118,7 +118,7 @@ function CompliancePanel() {
     { label: "SCUML Registration", desc: "AML/CFT compliance filings", color: "#2D4A7A" },
   ];
   return (
-    <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2 mb-4">
         <Shield size={16} style={{ color: "#2D4A7A" }} />
         <h3 className="text-xs font-bold uppercase tracking-wider opacity-50" style={{ color: DARK }}>Compliance Quick Access</h3>
@@ -147,7 +147,7 @@ function SecurityPanel() {
     "Lock-up & alarm confirmation",
   ];
   return (
-    <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2 mb-4">
         <Shield size={16} style={{ color: "#4A2D2D" }} />
         <h3 className="text-xs font-bold uppercase tracking-wider opacity-50" style={{ color: DARK }}>Daily Security Checklist</h3>
@@ -172,7 +172,7 @@ function BizDevStaffPanel() {
     { label: "Outreach Tracker", desc: "Prospects contacted, follow-ups due", icon: Send },
   ];
   return (
-    <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2 mb-4">
         <Layers size={16} style={{ color: "#1B4D3E" }} />
         <h3 className="text-xs font-bold uppercase tracking-wider opacity-50" style={{ color: DARK }}>BizDev Quick Access</h3>
@@ -200,7 +200,7 @@ function MediaStaffPanel() {
     { label: "Social Reports", desc: "Engagement metrics & growth tracking", icon: Code },
   ];
   return (
-    <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+    <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="flex items-center gap-2 mb-4">
         <Mic size={16} style={{ color: "#7C3AED" }} />
         <h3 className="text-xs font-bold uppercase tracking-wider opacity-50" style={{ color: DARK }}>Media Quick Access</h3>
@@ -390,7 +390,7 @@ export default function StaffWorkspace() {
             { icon: CheckSquare,label: "Completed",    value: done.length,    color: "#22C55E" },
             { icon: Star,      label: "Smooth Tasks",  value: kpi.smooth,     color: "#F59E0B" },
           ].map(({ icon: Icon, label, value, color }) => (
-            <div key={label} className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+            <div key={label} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2 mb-2">
                 <Icon size={16} style={{ color }} />
                 <span className="text-[11px] font-bold uppercase tracking-wider opacity-50" style={{ color: DARK }}>{label}</span>
@@ -402,7 +402,7 @@ export default function StaffWorkspace() {
 
         {/* KPI progress bar */}
         {kpi.total > 0 && (
-          <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+          <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Star size={15} style={{ color: "#F59E0B" }} />
@@ -431,11 +431,11 @@ export default function StaffWorkspace() {
               My Tasks ({active.length})
             </h2>
             {tasksQuery.isLoading ? (
-              <div className="bg-white rounded-2xl border p-8 text-center" style={{ borderColor: `${TEAL}10` }}>
+              <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <p className="text-sm opacity-40" style={{ color: DARK }}>Loading tasks...</p>
               </div>
             ) : active.length === 0 ? (
-              <div className="bg-white rounded-2xl border p-8 text-center" style={{ borderColor: `${TEAL}10` }}>
+              <div className="bg-white rounded-2xl p-8 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <CheckSquare size={28} className="mx-auto mb-2 opacity-20" style={{ color: TEAL }} />
                 <p className="text-sm opacity-40" style={{ color: DARK }}>No active tasks assigned to you</p>
               </div>
@@ -457,7 +457,7 @@ export default function StaffWorkspace() {
                 </summary>
                 <div className="mt-2 space-y-2">
                   {done.slice(0, 5).map(t => (
-                    <div key={t.id} className="bg-white rounded-2xl border p-3 opacity-50" style={{ borderColor: `${TEAL}10` }}>
+                    <div key={t.id} className="bg-white rounded-2xl p-3 opacity-50 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                       <div className="flex items-center justify-between">
                         <p className="text-xs font-medium truncate" style={{ color: TEAL }}>{t.clientName} — {t.service}</p>
                         {t.kpiApproved && <Star size={12} style={{ color: "#F59E0B" }} />}
@@ -477,7 +477,7 @@ export default function StaffWorkspace() {
             <CalendarView tasks={tasks} />
 
             {/* Role card */}
-            <div className="bg-white rounded-2xl border p-5" style={{ borderColor: `${TEAL}10` }}>
+            <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-3 mb-3">
                 <User size={16} style={{ color: meta.color }} />
                 <span className="text-xs font-bold uppercase tracking-wider opacity-50" style={{ color: DARK }}>My Role</span>
