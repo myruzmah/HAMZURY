@@ -1011,17 +1011,18 @@ export default function ClientDashboard() {
 
       {/* ═══ HEADER NAV ═══ */}
       <nav
-        className="sticky top-0 z-30 px-5 md:px-8 h-14 flex items-center justify-between"
+        className="sticky top-0 z-30 px-4 md:px-8 h-12 flex items-center justify-between"
         style={{
-          backgroundColor: `${CREAM}f0`,
-          backdropFilter: "blur(12px)",
+          backgroundColor: `${CREAM}e8`,
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           borderBottom: `1px solid ${BORDER}`,
         }}
       >
         <a
           href="/"
-          className="text-[15px] font-light tracking-tight"
-          style={{ color: DARK, letterSpacing: "-0.03em" }}
+          className="text-[13px] font-semibold tracking-tight"
+          style={{ color: DARK, letterSpacing: "0.04em" }}
         >
           HAMZURY
         </a>
@@ -1035,24 +1036,26 @@ export default function ClientDashboard() {
         </button>
       </nav>
 
-      {/* ═══ TWO-COLUMN LAYOUT ═══ */}
-      <div className="flex h-[calc(100vh-56px)]">
+      {/* ═══ MAIN SCROLL CONTAINER ═══ */}
+      <div className="flex" style={{ height: "calc(100vh - 48px)" }}>
 
-        {/* ─── LEFT SIDE: Business Health (scrollable) ─── */}
-        <div className="flex-1 w-full overflow-y-auto px-4 md:px-6 pb-12 max-w-4xl mx-auto">
+        {/* ─── Business Health (scrollable) ─── */}
+        <div
+          className="flex-1 w-full overflow-y-auto max-w-4xl mx-auto px-4 md:px-6"
+          style={{ paddingBottom: 100, scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
+        >
 
           {/* Welcome header */}
-          <div className="pt-8 pb-2">
-            <p className="text-[13px] font-light mb-1" style={{ color: MUTED }}>
+          <div style={{ paddingTop: 24, paddingBottom: 8 }}>
+            <p style={{ fontSize: 14, fontWeight: 400, color: LABEL, marginBottom: 2 }}>
               Welcome back, {(task.clientName || "").split(" ")[0]}
             </p>
             <h1
-              className="text-[22px] md:text-[28px] font-light tracking-tight leading-tight"
-              style={{ color: DARK, letterSpacing: "-0.025em" }}
+              style={{ fontSize: 22, fontWeight: 600, color: DARK, letterSpacing: "-0.02em", lineHeight: 1.2 }}
             >
               {task.businessName || task.clientName}
             </h1>
-            <p className="text-[12px] font-light mt-1" style={{ color: LABEL }}>
+            <p style={{ fontSize: 11, fontWeight: 400, color: LABEL, marginTop: 4, letterSpacing: "0.02em" }}>
               {task.department || "HAMZURY"} &middot; Ref: {task.ref}
             </p>
           </div>
@@ -1253,6 +1256,110 @@ export default function ClientDashboard() {
 
             return (
               <>
+                {/* ═══ ACTIVE SERVICE CARD (primary) ═══ */}
+                <div style={{ marginBottom: 16, marginTop: 8 }}>
+                  <p
+                    style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}
+                  >
+                    Active Service
+                  </p>
+
+                  <div
+                    style={{
+                      backgroundColor: WHITE,
+                      border: `1px solid ${BORDER}`,
+                      borderLeft: `3px solid ${GOLD}`,
+                      borderRadius: 20,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div style={{ padding: "16px 20px" }}>
+                      <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
+                        <p style={{ fontSize: 17, fontWeight: 600, color: DARK, letterSpacing: "-0.01em", lineHeight: 1.3 }}>{task.service?.split(",")[0]?.trim()}</p>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 700,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.08em",
+                            padding: "4px 12px",
+                            borderRadius: 20,
+                            backgroundColor: isCompleted ? `${GREEN}12` : `${GOLD}12`,
+                            color: isCompleted ? GREEN : GOLD,
+                          }}
+                        >
+                          {task.status}
+                        </span>
+                      </div>
+
+                      {/* Service items grid */}
+                      {task.service && task.service.includes(",") && (
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6, marginBottom: 12 }}>
+                          {task.service.split(",").map((s: string, i: number) => (
+                            <div key={i} style={{
+                              fontSize: 12, padding: "6px 10px", borderRadius: 10,
+                              background: "#FFFAF6", border: "1px solid #E5E5E5",
+                              color: "#1A1A1A", fontWeight: 500, textAlign: "center"
+                            }}>
+                              {s.trim()}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Dates row */}
+                      <div className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 8 }}>
+                        {task.createdAt && (
+                          <span className="flex items-center gap-1" style={{ fontSize: 11, color: LABEL }}>
+                            <Calendar size={10} /> Started: {formatDate(task.createdAt)}
+                          </span>
+                        )}
+                        {task.deadline && !isCompleted && (
+                          <span className="flex items-center gap-1" style={{ fontSize: 11, color: LABEL }}>
+                            <Clock size={10} /> Due: {formatDate(task.deadline)}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Payment two-column */}
+                      {invoiceSummary && invoiceSummary.paid > 0 && (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8, padding: "10px 0", borderTop: `1px solid ${BORDER}` }}>
+                          <div>
+                            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginBottom: 2 }}>Paid</p>
+                            <p style={{ fontSize: 16, fontWeight: 700, color: DARK }}>{formatNaira(invoiceSummary.paid)}</p>
+                          </div>
+                          {invoiceSummary.total - invoiceSummary.paid > 0 && (
+                            <div>
+                              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginBottom: 2 }}>Balance</p>
+                              <p style={{ fontSize: 16, fontWeight: 700, color: ORANGE }}>{formatNaira(invoiceSummary.total - invoiceSummary.paid)}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Progress bar */}
+                    {!isCompleted && (task.progress || 0) > 0 && (
+                      <div style={{ padding: "0 20px 16px" }}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <div className="w-full rounded-full overflow-hidden" style={{ height: 8, backgroundColor: `${DARK}08` }}>
+                              <div
+                                className="h-full rounded-full transition-all duration-700 ease-out"
+                                style={{ width: `${Math.min(100, Math.max(0, task.progress || 0))}%`, backgroundColor: deptAccent }}
+                              />
+                            </div>
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: deptAccent }} className="tabular-nums">
+                            {task.progress}%
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* ═══ YOUR PLAN — paid services pipeline ═══ */}
                 {(() => {
                   const paidItems = PILLARS.flatMap(p =>
@@ -1265,9 +1372,9 @@ export default function ClientDashboard() {
                   );
                   if (paidItems.length === 0) return null;
                   return (
-                    <div className="mt-6 mb-4">
-                      <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: GOLD, marginBottom: 12 }}>My Active Services</p>
-                      <div className="rounded-2xl p-4" style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, overflow: "hidden" }}>
+                    <div style={{ marginTop: 16, marginBottom: 16 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}>My Active Services</p>
+                      <div style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }}>
                         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
                           {paidItems.map((item, i) => (
                             <React.Fragment key={item.id}>
@@ -1312,56 +1419,57 @@ export default function ClientDashboard() {
 
                 {/* ═══ BUSINESS STRENGTH METER ═══ */}
                 <div
-                  className="mt-6 mb-2 rounded-2xl p-5 md:p-6 flex items-center gap-5 cursor-pointer"
-                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, transition: "box-shadow 0.2s ease" }}
+                  className="flex items-center gap-4 cursor-pointer"
+                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: "16px 20px", marginTop: 16, marginBottom: 4, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", transition: "box-shadow 0.2s ease" }}
                   onClick={() => setShowStrengthDetail(prev => !prev)}
                   onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 0 0 rgba(0,0,0,0)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; }}
                 >
                   {/* Circular gauge */}
-                  <div className="relative shrink-0" style={{ width: 80, height: 80 }}>
-                    <svg width="80" height="80" viewBox="0 0 80 80">
-                      <circle cx="40" cy="40" r="34" fill="none" stroke={`${GREY}30`} strokeWidth="6" />
+                  <div className="relative shrink-0" style={{ width: 72, height: 72 }}>
+                    <svg width="72" height="72" viewBox="0 0 72 72">
+                      <circle cx="36" cy="36" r="30" fill="none" stroke={`${GREY}30`} strokeWidth="5" />
                       <circle
-                        cx="40" cy="40" r="34" fill="none"
+                        cx="36" cy="36" r="30" fill="none"
                         stroke={strengthPct >= 60 ? GREEN : strengthPct >= 20 ? GOLD : GREY}
-                        strokeWidth="6"
+                        strokeWidth="5"
                         strokeLinecap="round"
-                        strokeDasharray={`${(strengthPct / 100) * 213.6} 213.6`}
-                        transform="rotate(-90 40 40)"
+                        strokeDasharray={`${(strengthPct / 100) * 188.5} 188.5`}
+                        transform="rotate(-90 36 36)"
                         style={{ transition: "stroke-dashoffset 1s ease-out, stroke-dasharray 0.7s ease-out" }}
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[20px] font-semibold tabular-nums" style={{ color: DARK }}>{strengthPct}%</span>
+                      <span style={{ fontSize: 18, fontWeight: 600, color: DARK }} className="tabular-nums">{strengthPct}%</span>
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div style={{ width: 40, height: 2, backgroundColor: GOLD, marginBottom: 8, borderRadius: 1 }} />
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-1" style={{ color: LABEL }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 4 }}>
                       Business Strength
                     </p>
-                    <p className="text-[13px] font-light leading-relaxed" style={{ color: MUTED }}>
+                    <p style={{ fontSize: 13, fontWeight: 400, color: MUTED, lineHeight: 1.5 }}>
                       {strengthMessage}
                     </p>
                   </div>
+                  <ChevronDown
+                    size={16}
+                    style={{ color: LABEL, transform: showStrengthDetail ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
+                  />
                 </div>
                 {showStrengthDetail && (
-                  <div className="mt-3 mb-4 rounded-xl p-4" style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20`, animation: "fadeIn 0.2s ease-out" }}>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: DARK, marginBottom: 8 }}>We are building this with you.</p>
-                    <p style={{ fontSize: 13, color: "#666", lineHeight: 1.6 }}>
-                      Every service we deliver strengthens your business. Your goal is to reach 100% --
-                      a fully structured, protected, visible, and capable business. We are here every step
-                      of the way. You are not doing this alone.
-                    </p>
-                    <p style={{ fontSize: 12, color: GOLD, marginTop: 8, fontStyle: "italic" }}>
-                      "{FOUNDER_QUOTES[Math.floor(Math.random() * FOUNDER_QUOTES.length)]}"
+                  <div style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20`, borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 8, animation: "fadeIn 0.2s ease-out" }}>
+                    <p style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 4 }}>We are building this with you.</p>
+                    <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
+                      Every service strengthens your business. Your goal is 100% -- fully structured, protected, and capable.
                     </p>
                   </div>
                 )}
 
                 {/* ═══ PILLAR CARDS ═══ */}
-                <div className="space-y-3 mb-8">
+                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10, marginTop: 16 }}>
+                  Business Pillars
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
                   {PILLARS.map((pillar) => {
                     const PillarIcon = pillar.icon;
                     const activeCount = pillar.items.filter(it => activeItems[it.id]).length;
@@ -1372,32 +1480,32 @@ export default function ClientDashboard() {
                     return (
                       <div
                         key={pillar.id}
-                        className="rounded-2xl overflow-hidden transition-all duration-200"
+                        className="overflow-hidden transition-all duration-200"
                         style={{
                           backgroundColor: WHITE,
                           border: `1px solid ${BORDER}`,
                           borderLeftWidth: 3,
                           borderLeftColor: pillarColor,
-                          boxShadow: "0 0 0 0 rgba(0,0,0,0)",
+                          borderRadius: 20,
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
                         }}
-                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)"; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 0 0 0 rgba(0,0,0,0)"; }}
                       >
                         {/* Collapsed header */}
                         <button
                           onClick={() => { setExpandedArea(isExpanded ? null : pillar.id); setSelectedItem(null); }}
-                          className="w-full px-5 py-5 flex items-center justify-between text-left"
+                          className="w-full flex items-center justify-between text-left"
+                          style={{ padding: "14px 16px" }}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
+                          <div className="flex items-center gap-2.5 min-w-0">
                             <div
                               className="shrink-0 flex items-center justify-center"
-                              style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${pillarColor}10` }}
+                              style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${pillarColor}10` }}
                             >
-                              <PillarIcon size={20} style={{ color: pillarColor }} />
+                              <PillarIcon size={16} style={{ color: pillarColor }} />
                             </div>
                             <div className="min-w-0">
-                              <p className="text-[15px] font-medium truncate" style={{ color: DARK }}>{pillar.label}</p>
-                              <p className="text-[11px] font-light truncate" style={{ color: MUTED }}>{pillar.desc}</p>
+                              <p style={{ fontSize: 14, fontWeight: 500, color: DARK }} className="truncate">{pillar.label}</p>
+                              <p style={{ fontSize: 11, fontWeight: 400, color: MUTED }} className="truncate">{pillar.desc}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -1428,8 +1536,8 @@ export default function ClientDashboard() {
 
                         {/* Pitch for inactive pillars */}
                         {!isExpanded && activeCount === 0 && (
-                          <div className="px-5 pb-4 -mt-1">
-                            <p className="text-[11px] font-light italic" style={{ color: LABEL }}>{pillar.pitch}</p>
+                          <div style={{ padding: "0 16px 12px 51px", marginTop: -4 }}>
+                            <p style={{ fontSize: 11, fontWeight: 400, fontStyle: "italic", color: LABEL }}>{pillar.pitch}</p>
                           </div>
                         )}
 
@@ -1745,10 +1853,9 @@ export default function ClientDashboard() {
 
                 {/* ═══ DOCUMENTS SECTION ═══ */}
                 <div
-                  className="rounded-2xl p-4 mb-8"
-                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
                 >
-                  <p className="text-[11px] font-bold uppercase tracking-[0.1em] mb-3" style={{ color: GOLD }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}>
                     Documents
                   </p>
 
@@ -1815,8 +1922,8 @@ export default function ClientDashboard() {
                 </div>
 
                 {/* ═══ DOWNLOADS ═══ */}
-                <div className="mt-4 rounded-2xl p-5" style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: GOLD, marginBottom: 12 }}>
+                <div style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}>
                     Downloads
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1834,86 +1941,16 @@ export default function ClientDashboard() {
                 </div>
 
 
-                {/* ═══ ACTIVE SERVICE CARD ═══ */}
-                <div className="mb-8">
-                  <p
-                    className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-4"
-                    style={{ color: LABEL }}
-                  >
-                    Active Service
-                  </p>
-
-                  <div
-                    className="rounded-2xl overflow-hidden"
-                    style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
-                  >
-                    <div className="px-5 py-4">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="text-[13px] font-medium" style={{ color: DARK }}>{task.service}</p>
-                        <span
-                          className="text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
-                          style={{
-                            backgroundColor: isCompleted ? `${GREEN}12` : `${GOLD}12`,
-                            color: isCompleted ? GREEN : GOLD,
-                          }}
-                        >
-                          {task.status}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 mt-2 flex-wrap">
-                        {task.createdAt && (
-                          <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
-                            <Calendar size={10} /> Started: {formatDate(task.createdAt)}
-                          </span>
-                        )}
-                        {task.deadline && !isCompleted && (
-                          <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
-                            <Clock size={10} /> Due: {formatDate(task.deadline)}
-                          </span>
-                        )}
-                      </div>
-
-                      {invoiceSummary && invoiceSummary.paid > 0 && (
-                        <div className="flex items-center gap-3 mt-2 flex-wrap">
-                          <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
-                            <CreditCard size={10} /> Paid: {formatNaira(invoiceSummary.paid)}
-                          </span>
-                          {invoiceSummary.total - invoiceSummary.paid > 0 && (
-                            <span className="text-[11px] font-medium" style={{ color: ORANGE }}>
-                              Balance: {formatNaira(invoiceSummary.total - invoiceSummary.paid)}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Progress bar */}
-                    {!isCompleted && (task.progress || 0) > 0 && (
-                      <div className="px-5 pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <ProgressBar pct={task.progress || 0} color={deptAccent} />
-                          </div>
-                          <span className="text-[11px] font-medium tabular-nums" style={{ color: deptAccent }}>
-                            {task.progress}%
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-
                 {/* ═══ INVOICES (collapsible) ═══ */}
                 {hasInvoices && (
-                  <div className="mb-8">
+                  <div style={{ marginBottom: 16 }}>
                     <button
                       onClick={() => setInvoicesOpen(!invoicesOpen)}
-                      className="flex items-center gap-2 mb-4 group"
+                      className="flex items-center gap-2"
+                      style={{ marginBottom: 10 }}
                     >
-                      <CreditCard size={14} style={{ color: LABEL }} />
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: LABEL }}>
+                      <CreditCard size={12} style={{ color: GOLD }} />
+                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD }}>
                         Invoices
                       </p>
                       <ChevronDown
@@ -1930,26 +1967,26 @@ export default function ClientDashboard() {
                     {invoicesOpen && (
                       <>
                         <div
-                          className="grid grid-cols-3 gap-4 rounded-2xl p-5 mb-4"
-                          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                          className="grid grid-cols-3 gap-4"
+                          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
                         >
                           <div className="text-center">
-                            <p className="text-[16px] font-semibold" style={{ color: DARK }}>{formatNaira(invoiceSummary!.total)}</p>
-                            <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Total</p>
+                            <p style={{ fontSize: 16, fontWeight: 700, color: DARK }}>{formatNaira(invoiceSummary!.total)}</p>
+                            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginTop: 2 }}>Total</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-[16px] font-semibold" style={{ color: GREEN }}>{formatNaira(invoiceSummary!.paid)}</p>
-                            <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Paid</p>
+                            <p style={{ fontSize: 16, fontWeight: 700, color: GREEN }}>{formatNaira(invoiceSummary!.paid)}</p>
+                            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginTop: 2 }}>Paid</p>
                           </div>
                           <div className="text-center">
-                            <p className="text-[16px] font-semibold" style={{ color: invoiceSummary!.total - invoiceSummary!.paid > 0 ? "#DC2626" : GREEN }}>
+                            <p style={{ fontSize: 16, fontWeight: 700, color: invoiceSummary!.total - invoiceSummary!.paid > 0 ? "#DC2626" : GREEN }}>
                               {formatNaira(invoiceSummary!.total - invoiceSummary!.paid)}
                             </p>
-                            <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Balance</p>
+                            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginTop: 2 }}>Balance</p>
                           </div>
                         </div>
 
-                        <div className="space-y-3">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {invoiceSummary!.invoices.map((inv) => {
                             const balance = inv.total - inv.paid;
                             const isPaid = inv.status === "paid";
@@ -1963,8 +2000,8 @@ export default function ClientDashboard() {
                             return (
                               <div
                                 key={inv.number}
-                                className="rounded-2xl overflow-hidden"
-                                style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                                className="overflow-hidden"
+                                style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
                               >
                                 <div className="px-5 py-4">
                                   <div className="flex items-center justify-between mb-2">
@@ -2062,34 +2099,25 @@ export default function ClientDashboard() {
                 )}
 
 
-                {/* Cart removed — chat handles checkout */}
-
                 {/* ═══ FOUNDER QUOTE ═══ */}
                 <div
-                  className="rounded-2xl p-6 mb-8 relative overflow-hidden"
-                  style={{ backgroundColor: WHITE, border: `1px solid ${GOLD}15` }}
+                  style={{ borderRadius: 16, padding: "14px 16px", marginBottom: 16, backgroundColor: `${GOLD}06`, border: `1px solid ${GOLD}10`, position: "relative", overflow: "hidden" }}
                 >
-                  <Quote size={60} className="absolute top-3 right-4" style={{ color: GOLD, opacity: 0.06 }} />
-                  <div className="relative flex items-start gap-3">
-                    <div
-                      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                      style={{ backgroundColor: `${GOLD}10` }}
-                    >
-                      <Quote size={16} style={{ color: GOLD }} />
-                    </div>
+                  <div className="flex items-start gap-2.5">
+                    <Quote size={14} style={{ color: GOLD, opacity: 0.4, flexShrink: 0, marginTop: 2 }} />
                     <div>
-                      <p className="text-[13px] font-light leading-relaxed italic mb-2" style={{ color: DARK }}>
+                      <p style={{ fontSize: 12, fontWeight: 400, fontStyle: "italic", color: MUTED, lineHeight: 1.5 }}>
                         "{founderQuote}"
                       </p>
-                      <p className="text-[11px] font-medium" style={{ color: GOLD }}>-- Muhammad Hamzury</p>
+                      <p style={{ fontSize: 10, fontWeight: 500, color: GOLD, marginTop: 4 }}>-- Muhammad Hamzury</p>
                     </div>
                   </div>
                 </div>
 
 
                 {/* ═══ FOOTER ═══ */}
-                <div className="text-center pt-4 pb-6" style={{ borderTop: `1px solid ${DARK}06` }}>
-                  <p className="text-[10px]" style={{ color: `${DARK}30` }}>
+                <div className="text-center" style={{ paddingTop: 12, paddingBottom: 16, borderTop: `1px solid ${DARK}06` }}>
+                  <p style={{ fontSize: 10, color: `${DARK}25` }}>
                     Ref: {task.ref} &middot; Last updated: {formatDate(task.updatedAt)}
                   </p>
                 </div>
@@ -2105,10 +2133,10 @@ export default function ClientDashboard() {
       {!mobileChatOpen && (
         <button
           onClick={() => setMobileChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
-          style={{ backgroundColor: GOLD, color: WHITE }}
+          className="fixed z-40 flex items-center justify-center shadow-lg transition-all hover:scale-105"
+          style={{ bottom: "env(safe-area-inset-bottom, 24px)", right: 24, width: 52, height: 52, borderRadius: "50%", backgroundColor: GOLD, color: WHITE }}
         >
-          <MessageSquare size={24} />
+          <MessageSquare size={22} />
         </button>
       )}
 
