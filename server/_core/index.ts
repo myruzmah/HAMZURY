@@ -531,13 +531,30 @@ async function startServer() {
 
     const reader = stream.getReader();
     const decoder = new TextDecoder();
+    let sseBuffer = "";
+    let doneSent = false;
 
     req.on("close", () => { reader.cancel().catch(() => {}); });
 
     while (true) {
       const { done, value } = await reader.read();
-      if (done) { res.write("data: [DONE]\n\n"); res.end(); return; }
-      res.write(decoder.decode(value, { stream: true }));
+      if (done) { if (!doneSent) res.write("data: [DONE]\n\n"); res.end(); return; }
+      sseBuffer += decoder.decode(value, { stream: true });
+      const lines = sseBuffer.split("\n");
+      sseBuffer = lines.pop() || "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data: ")) continue;
+        const payload = trimmed.slice(6).trim();
+        if (payload === "[DONE]") { if (!doneSent) { res.write("data: [DONE]\n\n"); doneSent = true; } continue; }
+        try {
+          const parsed = JSON.parse(payload);
+          const delta = parsed.choices?.[0]?.delta;
+          // Qwen 3.5+ sends reasoning_content (thinking) before content — skip those
+          if (delta && delta.content === null && delta.reasoning_content) continue;
+        } catch { /* forward unparseable as-is */ }
+        res.write(trimmed + "\n\n");
+      }
     }
   }
 

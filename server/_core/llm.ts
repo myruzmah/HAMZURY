@@ -415,6 +415,7 @@ async function streamQwen(
         max_tokens: params.maxTokens || 1024,
         messages: normalised,
         stream: true,
+        enable_thinking: false,
       }),
     },
   );
