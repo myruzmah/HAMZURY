@@ -709,7 +709,7 @@ export default function ClientDashboard() {
       <div className="flex h-[calc(100vh-56px)]">
 
         {/* ─── LEFT SIDE: Business Health (scrollable) ─── */}
-        <div className="flex-1 md:w-[60%] overflow-y-auto px-5 md:px-8 pb-12">
+        <div className="flex-1 w-full overflow-y-auto px-5 md:px-8 pb-12 max-w-4xl mx-auto">
 
           {/* Welcome header */}
           <div className="pt-8 pb-2">
@@ -1420,50 +1420,38 @@ export default function ClientDashboard() {
         </div>
 
 
-        {/* ─── RIGHT SIDE: Persistent AI Chat (desktop only) ─── */}
-        <div
-          className="hidden md:flex w-[40%] flex-col border-l"
-          style={{ borderColor: BORDER, backgroundColor: WHITE }}
+      </div>
+
+      {/* ═══ CHAT: Floating button + slide panel (all screens) ═══ */}
+      {!mobileChatOpen && (
+        <button
+          onClick={() => setMobileChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
+          style={{ backgroundColor: GOLD, color: WHITE }}
         >
-          <ChatPanel />
-        </div>
-      </div>
+          <MessageSquare size={24} />
+        </button>
+      )}
 
-
-      {/* ═══ MOBILE: Chat button + bottom sheet ═══ */}
-      <div className="md:hidden">
-        {/* Floating chat button */}
-        {!mobileChatOpen && (
-          <button
-            onClick={() => setMobileChatOpen(true)}
-            className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full flex items-center justify-center shadow-lg transition-all hover:scale-105"
-            style={{ backgroundColor: GOLD, color: WHITE }}
+      {mobileChatOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
+            onClick={() => setMobileChatOpen(false)}
+          />
+          <div
+            className="fixed bottom-0 right-0 z-50 rounded-t-2xl md:rounded-2xl overflow-hidden md:bottom-6 md:right-6 md:w-[420px]"
+            style={{
+              backgroundColor: WHITE,
+              maxHeight: "70vh",
+              boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
+            }}
           >
-            <MessageSquare size={24} />
-          </button>
-        )}
-
-        {/* Bottom sheet overlay */}
-        {mobileChatOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-40"
-              style={{ backgroundColor: "rgba(0,0,0,0.3)" }}
-              onClick={() => setMobileChatOpen(false)}
-            />
-            <div
-              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl overflow-hidden"
-              style={{
-                backgroundColor: WHITE,
-                animation: "slideUp 0.3s ease-out",
-                boxShadow: "0 -4px 20px rgba(0,0,0,0.1)",
-              }}
-            >
-              <ChatPanel isMobile />
-            </div>
-          </>
-        )}
-      </div>
+            <ChatPanel isMobile />
+          </div>
+        </>
+      )}
     </div>
   );
 }
