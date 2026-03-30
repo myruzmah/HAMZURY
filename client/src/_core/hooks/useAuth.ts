@@ -22,9 +22,9 @@ export function useAuth(options?: UseAuthOptions) {
         if (parsed.expiresAt && Date.now() > parsed.expiresAt) {
           localStorage.removeItem("manus-runtime-user-info");
           localStorage.removeItem("hamzury-affiliate-session");
-          // Force redirect to login if on a protected page
-          if (typeof window !== "undefined" && window.location.pathname !== "/" && window.location.pathname !== "/login") {
-            window.location.href = "/login";
+          // Force redirect to home if on a protected page
+          if (typeof window !== "undefined" && window.location.pathname !== "/") {
+            window.location.href = "/";
           }
         }
       }

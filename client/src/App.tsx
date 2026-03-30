@@ -84,14 +84,14 @@ function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; childre
   }
 
   if (!me.data) {
-    // Not authenticated — redirect to login
-    window.location.href = "/login";
+    // Not authenticated — redirect to home (staff login is in Track section)
+    window.location.href = "/";
     return null;
   }
 
   const role = me.data.hamzuryRole || "";
   if (!allowedRoles.includes(role)) {
-    window.location.href = "/login";
+    window.location.href = "/";
     return null;
   }
 
@@ -218,7 +218,7 @@ function Router() {
       <Route path={"/templates"} component={SocialTemplates} />
       <Route path={"/training/:dept"} component={TrainingPage} />
       <Route path={"/training"} component={TrainingPage} />
-      <Route path={"/login"} component={LoginPage} />
+      <Route path={"/login"}>{() => { window.location.href = "/"; return null; }}</Route>
 
       {/* Fallback */}
       <Route path={"/404"} component={NotFound} />
