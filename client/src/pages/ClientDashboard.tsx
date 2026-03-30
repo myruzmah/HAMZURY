@@ -11,24 +11,25 @@ import {
 import PageMeta from "../components/PageMeta";
 import { trpc } from "@/lib/trpc";
 
-/* ── Brand constants ── */
+/* ── HAMZURY Brand + Apple Layout ── */
 const CREAM = "#FFFAF6";
 const WHITE = "#FFFFFF";
+const BG = "#FFFAF6";
 const DARK = "#1A1A1A";
 const MUTED = "#666666";
-const LABEL = "#999999";
+const LABEL = "#B48C4C";
 const GOLD = "#B48C4C";
 const GREEN = "#22C55E";
 const ORANGE = "#F59E0B";
 const GREY = "#D1D5DB";
-const BORDER = "rgba(45,45,45,0.024)";
-const CHAT_USER_BG = "#2D2D2D";
-const CHAT_BOT_BG = "#F5F5F5";
+const BORDER = "transparent";
+const CHAT_USER_BG = "#000000";
+const CHAT_BOT_BG = "#F5F5F7";
 
 const DEPT_ACCENT: Record<string, string> = {
-  bizdoc: "#1B4D3E",
-  systemise: "#2563EB",
-  skills: "#1E3A5F",
+  bizdoc: "#B48C4C",
+  systemise: "#B48C4C",
+  skills: "#B48C4C",
 };
 
 /* ── Service detail type ── */
@@ -578,9 +579,13 @@ const cssAnimations = `
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 @keyframes stagePulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-  50% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52,199,89,0.3); }
+  50% { box-shadow: 0 0 0 6px rgba(52,199,89,0); }
 }
 @keyframes expandDown {
   from { opacity: 0; max-height: 0; }
@@ -590,6 +595,12 @@ const cssAnimations = `
   from { opacity: 0; max-height: 0; overflow: hidden; }
   to { opacity: 1; max-height: 600px; overflow: visible; }
 }
+@keyframes progressFill {
+  from { width: 0; }
+  to { width: var(--progress); }
+}
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 `;
 
 /* ── Chat message type ── */
@@ -615,9 +626,9 @@ function saveChatMessages(ref: string, msgs: ChatMsg[]) {
 /* ── Progress Bar Component ── */
 function ProgressBar({ pct, color, height = 6 }: { pct: number; color: string; height?: number }) {
   return (
-    <div className="w-full rounded-full overflow-hidden" style={{ height, backgroundColor: `${DARK}08` }}>
+    <div className="w-full rounded-full overflow-hidden" style={{ height, backgroundColor: `${MUTED}20` }}>
       <div
-        className="h-full rounded-full transition-all duration-700 ease-out"
+        className="h-full rounded-full transition-all duration-1000 ease-out"
         style={{ width: `${Math.min(100, Math.max(0, pct))}%`, backgroundColor: color }}
       />
     </div>
@@ -833,18 +844,18 @@ export default function ClientDashboard() {
   /* ── Loading / error — NO early returns to preserve hook order ── */
   if (!sessionLoaded || !session || isLoading || isError || !data || !data.found) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ backgroundColor: CREAM }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6" style={{ backgroundColor: WHITE }}>
         {(!sessionLoaded || isLoading) ? (
           <>
-            <Loader2 className="animate-spin" size={24} style={{ color: DARK }} />
-            <p className="text-[13px] font-light" style={{ color: DARK, opacity: 0.5 }}>Loading your business health...</p>
+            <Loader2 className="animate-spin" size={20} style={{ color: DARK }} />
+            <p className="text-[13px]" style={{ color: MUTED, fontWeight: 400 }}>Loading...</p>
           </>
         ) : (isError || !data || (data && !data.found)) ? (
           <>
-            <AlertCircle size={32} style={{ color: "#DC2626" }} />
-            <p className="text-[15px] font-light mb-1" style={{ color: DARK }}>File not found</p>
-            <p className="text-[12px] opacity-40" style={{ color: DARK }}>Reference: {session?.ref}</p>
-            <button onClick={handleLogout} className="text-[12px] font-medium px-4 py-2 rounded-lg" style={{ backgroundColor: DARK, color: GOLD }}>Try a different reference</button>
+            <AlertCircle size={28} style={{ color: MUTED }} />
+            <p className="text-[15px]" style={{ color: DARK, fontWeight: 500 }}>File not found</p>
+            <p className="text-[13px]" style={{ color: MUTED }}>{session?.ref}</p>
+            <button onClick={handleLogout} className="text-[13px] px-6 py-3 rounded-full" style={{ backgroundColor: DARK, color: WHITE, fontWeight: 500, minHeight: 44 }}>Try again</button>
           </>
         ) : null}
       </div>
@@ -915,55 +926,52 @@ export default function ClientDashboard() {
       {/* Chat header */}
       <div
         className="flex items-center justify-between px-5 py-4 shrink-0"
-        style={{ borderBottom: `1px solid ${BORDER}` }}
+        style={{ boxShadow: "0 1px 0 rgba(0,0,0,0.04)" }}
       >
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3">
           <div
             className="w-8 h-8 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: `${GOLD}15` }}
+            style={{ backgroundColor: BG }}
           >
-            <Sparkles size={16} style={{ color: GOLD }} />
+            <Sparkles size={14} style={{ color: GOLD }} />
           </div>
-          <div>
-            <p className="text-[14px] font-medium" style={{ color: DARK }}>Your Advisor</p>
-            <p className="text-[10px]" style={{ color: MUTED }}>Ask anything about your business</p>
-          </div>
+          <p className="text-[14px]" style={{ color: DARK, fontWeight: 500 }}>Advisor</p>
         </div>
         {isMobile && (
-          <button onClick={() => setMobileChatOpen(false)} className="p-1.5 rounded-lg hover:bg-gray-100">
+          <button onClick={() => setMobileChatOpen(false)} className="p-2 rounded-full" style={{ minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <X size={18} style={{ color: MUTED }} />
           </button>
         )}
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3" style={{ minHeight: 0 }}>
+      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3" style={{ minHeight: 0 }}>
         {chatMessages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center px-4 opacity-60">
-            <Sparkles size={32} style={{ color: `${GOLD}40` }} className="mb-3" />
-            <p className="text-[13px] font-light" style={{ color: MUTED }}>
-              Ask about compliance, tax, branding, or any business question.
+          <div className="flex flex-col items-center justify-center h-full text-center px-4">
+            <Sparkles size={24} style={{ color: MUTED, opacity: 0.3 }} className="mb-3" />
+            <p className="text-[13px]" style={{ color: MUTED }}>
+              Ask anything about your business.
             </p>
           </div>
         )}
         {chatMessages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className="max-w-[85%] rounded-2xl px-4 py-2.5"
+              className="max-w-[85%] rounded-2xl px-4 py-3"
               style={{
                 backgroundColor: msg.role === "user" ? CHAT_USER_BG : CHAT_BOT_BG,
                 color: msg.role === "user" ? WHITE : DARK,
-                borderBottomRightRadius: msg.role === "user" ? 4 : 16,
-                borderBottomLeftRadius: msg.role === "user" ? 16 : 4,
+                borderBottomRightRadius: msg.role === "user" ? 6 : 18,
+                borderBottomLeftRadius: msg.role === "user" ? 18 : 6,
               }}
             >
               {msg.content ? (
-                <p className="text-[13px] font-light leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ fontWeight: 400 }}>{msg.content}</p>
               ) : (
                 <div className="flex items-center gap-1.5 py-1">
-                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: `${DARK}40`, animationDelay: "0ms" }} />
-                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: `${DARK}40`, animationDelay: "150ms" }} />
-                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: `${DARK}40`, animationDelay: "300ms" }} />
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: MUTED, animationDelay: "0ms" }} />
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: MUTED, animationDelay: "150ms" }} />
+                  <div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: MUTED, animationDelay: "300ms" }} />
                 </div>
               )}
             </div>
@@ -975,7 +983,7 @@ export default function ClientDashboard() {
       {/* Input */}
       <div
         className="shrink-0 px-4 py-3 flex items-center gap-2"
-        style={{ borderTop: `1px solid ${BORDER}` }}
+        style={{ boxShadow: "0 -1px 0 rgba(0,0,0,0.04)" }}
       >
         <input
           ref={chatInputRef}
@@ -984,15 +992,15 @@ export default function ClientDashboard() {
           onChange={(e) => setChatInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
           placeholder="Type a message..."
-          className="flex-1 text-[13px] font-light bg-transparent focus:outline-none py-2 px-3 rounded-xl"
-          style={{ color: DARK, backgroundColor: CREAM, border: `1px solid ${BORDER}` }}
+          className="flex-1 text-[13px] bg-transparent focus:outline-none py-3 px-4 rounded-full"
+          style={{ color: DARK, backgroundColor: BG, fontWeight: 400, minHeight: 44 }}
           disabled={chatLoading}
         />
         <button
           onClick={() => handleChatSend()}
           disabled={!chatInput.trim() || chatLoading}
-          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all hover:opacity-80 disabled:opacity-30"
-          style={{ backgroundColor: GOLD, color: WHITE }}
+          className="flex items-center justify-center shrink-0 transition-all hover:opacity-80 disabled:opacity-30 rounded-full"
+          style={{ backgroundColor: GOLD, color: WHITE, width: 44, height: 44 }}
         >
           {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
         </button>
@@ -1002,66 +1010,46 @@ export default function ClientDashboard() {
 
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: CREAM }}>
+    <div className="min-h-screen" style={{ backgroundColor: BG }}>
       <style>{cssAnimations}</style>
       <PageMeta
-        title={`${task.businessName || task.clientName} - Business Health | HAMZURY`}
-        description="Your business health dashboard. See your strengths, gaps, and next steps."
+        title={`${task.businessName || task.clientName} | HAMZURY`}
+        description="Your business dashboard."
       />
 
-      {/* ═══ HEADER NAV ═══ */}
+      {/* ═══ HEADER — minimal, sticky, Apple-style ═══ */}
       <nav
-        className="sticky top-0 z-30 px-4 md:px-8 h-12 flex items-center justify-between"
+        className="sticky top-0 z-30 flex items-center justify-between"
         style={{
-          backgroundColor: `${CREAM}e8`,
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderBottom: `1px solid ${BORDER}`,
+          height: 48,
+          padding: "0 20px",
+          backgroundColor: `${WHITE}f2`,
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          boxShadow: "0 0.5px 0 rgba(0,0,0,0.06)",
         }}
       >
         <a
           href="/"
-          className="text-[13px] font-semibold tracking-tight"
-          style={{ color: DARK, letterSpacing: "0.04em" }}
+          className="text-[13px] tracking-tight"
+          style={{ color: DARK, fontWeight: 600, letterSpacing: "0.02em" }}
         >
           HAMZURY
         </a>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 text-[11px] font-medium opacity-40 hover:opacity-70 transition-opacity px-3 py-1.5 rounded-lg"
-          style={{ color: DARK, backgroundColor: `${DARK}06` }}
+          className="text-[13px] transition-opacity hover:opacity-60"
+          style={{ color: MUTED, fontWeight: 400, minHeight: 44, display: "flex", alignItems: "center" }}
         >
-          <LogOut size={12} />
           Exit
         </button>
       </nav>
 
       {/* ═══ MAIN SCROLL CONTAINER ═══ */}
-      <div className="flex" style={{ height: "calc(100vh - 48px)" }}>
+      <div style={{ height: "calc(100vh - 48px)", overflowY: "auto", WebkitOverflowScrolling: "touch" as any }}>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 20px", paddingBottom: 120 }}>
 
-        {/* ─── Business Health (scrollable) ─── */}
-        <div
-          className="flex-1 w-full overflow-y-auto max-w-4xl mx-auto px-4 md:px-6"
-          style={{ paddingBottom: 100, scrollBehavior: "smooth", WebkitOverflowScrolling: "touch" }}
-        >
-
-          {/* Welcome header */}
-          <div style={{ paddingTop: 24, paddingBottom: 8 }}>
-            <p style={{ fontSize: 14, fontWeight: 400, color: LABEL, marginBottom: 2 }}>
-              Welcome back, {(task.clientName || "").split(" ")[0]}
-            </p>
-            <h1
-              style={{ fontSize: 22, fontWeight: 600, color: DARK, letterSpacing: "-0.02em", lineHeight: 1.2 }}
-            >
-              {task.businessName || task.clientName}
-            </h1>
-            <p style={{ fontSize: 11, fontWeight: 400, color: LABEL, marginTop: 4, letterSpacing: "0.02em" }}>
-              {task.department || "HAMZURY"} &middot; Ref: {task.ref}
-            </p>
-          </div>
-
-
-          {/* ═══ 5 VERTICAL BUSINESS PILLARS ═══ */}
+          {/* ═══ 5 VERTICAL BUSINESS PILLARS (logic preserved inside IIFE) ═══ */}
           {(() => {
             /* ── Pillar definitions ── */
             const PILLARS = [
@@ -1185,18 +1173,16 @@ export default function ClientDashboard() {
               const active: Record<string, ItemState> = {};
 
               if (s.includes("full business") || s.includes("architecture")) {
-                // Tilz Spa actual paid services
                 active.tin = "paid";
-                active.brand_id = "in_progress"; // delivering tomorrow
+                active.brand_id = "in_progress";
                 active.website = "paid";
                 active.social_setup = "paid";
                 active.social_mgmt = "paid";
                 active.dashboard = "paid";
-                active.crm = "paid"; // lead generation
-                active.automation = "paid"; // whatsapp automation
-                active.workspace = "paid"; // digital workspace
+                active.crm = "paid";
+                active.automation = "paid";
+                active.workspace = "paid";
               }
-              // Individual service detection
               if (s.includes("scuml")) active.scuml = done ? "delivered" : "in_progress";
               if (s.includes("tin")) active.tin = done ? "delivered" : "in_progress";
               if (s.includes("branding") || s.includes("brand")) active.brand_id = done ? "delivered" : "in_progress";
@@ -1254,887 +1240,433 @@ export default function ClientDashboard() {
               return `${GREY}40`;
             }
 
+            /* ── Compute paid items for chip row ── */
+            const paidItems = PILLARS.flatMap(p =>
+              p.items.filter(item => activeItems[item.id]).map(item => ({
+                ...item,
+                state: activeItems[item.id],
+                pillarColor: p.color,
+                pillarLabel: p.label,
+              }))
+            );
+
+            /* ── Find the current in-progress service for hero ── */
+            const inProgressItem = paidItems.find(it => it.state === "in_progress");
+            const currentDeliveryLabel = inProgressItem
+              ? SERVICE_FOLDERS[inProgressItem.id]?.label || inProgressItem.label
+              : task.service?.split(",")[0]?.trim() || "";
+            const currentDeliverySubtitle = inProgressItem
+              ? (task.deadline ? `Delivering ${formatDate(task.deadline)}` : "In progress")
+              : (isCompleted ? "All services delivered" : task.status || "");
+
             return (
               <>
-                {/* ═══ ACTIVE SERVICE CARD (primary) ═══ */}
-                <div style={{ marginBottom: 16, marginTop: 8 }}>
-                  <p
-                    style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}
-                  >
-                    Active Service
+                {/* ═══ SECTION 1: HERO — the ONE thing that matters ═══ */}
+                <div style={{ paddingTop: 48, paddingBottom: 40, animation: "fadeUp 0.6s ease-out" }}>
+                  <h1 style={{ fontSize: 28, fontWeight: 600, color: DARK, letterSpacing: "-0.02em", lineHeight: 1.15, marginBottom: 24 }}>
+                    {task.businessName || task.clientName}
+                  </h1>
+
+                  {/* Progress bar */}
+                  <div style={{ marginBottom: 20 }}>
+                    <ProgressBar pct={task.progress || strengthPct || 0} color={GOLD} height={6} />
+                    <p className="tabular-nums" style={{ fontSize: 13, color: MUTED, marginTop: 8, fontWeight: 400 }}>
+                      {task.progress || strengthPct}%
+                    </p>
+                  </div>
+
+                  {/* Current delivery */}
+                  <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 4 }}>
+                    {currentDeliveryLabel}
                   </p>
-
-                  <div
-                    style={{
-                      backgroundColor: WHITE,
-                      border: `1px solid ${BORDER}`,
-                      borderLeft: `3px solid ${GOLD}`,
-                      borderRadius: 20,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                      overflow: "hidden",
-                    }}
-                  >
-                    <div style={{ padding: "16px 20px" }}>
-                      <div className="flex items-center justify-between" style={{ marginBottom: 8 }}>
-                        <p style={{ fontSize: 17, fontWeight: 600, color: DARK, letterSpacing: "-0.01em", lineHeight: 1.3 }}>{task.service?.split(",")[0]?.trim()}</p>
-                        <span
-                          style={{
-                            fontSize: 10,
-                            fontWeight: 700,
-                            textTransform: "uppercase",
-                            letterSpacing: "0.08em",
-                            padding: "4px 12px",
-                            borderRadius: 20,
-                            backgroundColor: isCompleted ? `${GREEN}12` : `${GOLD}12`,
-                            color: isCompleted ? GREEN : GOLD,
-                          }}
-                        >
-                          {task.status}
-                        </span>
-                      </div>
-
-                      {/* Service items grid */}
-                      {task.service && task.service.includes(",") && (
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 6, marginBottom: 12 }}>
-                          {task.service.split(",").map((s: string, i: number) => (
-                            <div key={i} style={{
-                              fontSize: 12, padding: "6px 10px", borderRadius: 10,
-                              background: "#FFFAF6", border: "1px solid #E5E5E5",
-                              color: "#1A1A1A", fontWeight: 500, textAlign: "center"
-                            }}>
-                              {s.trim()}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Dates row */}
-                      <div className="flex items-center gap-3 flex-wrap" style={{ marginBottom: 8 }}>
-                        {task.createdAt && (
-                          <span className="flex items-center gap-1" style={{ fontSize: 11, color: LABEL }}>
-                            <Calendar size={10} /> Started: {formatDate(task.createdAt)}
-                          </span>
-                        )}
-                        {task.deadline && !isCompleted && (
-                          <span className="flex items-center gap-1" style={{ fontSize: 11, color: LABEL }}>
-                            <Clock size={10} /> Due: {formatDate(task.deadline)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Payment two-column */}
-                      {invoiceSummary && invoiceSummary.paid > 0 && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8, padding: "10px 0", borderTop: `1px solid ${BORDER}` }}>
-                          <div>
-                            <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginBottom: 2 }}>Paid</p>
-                            <p style={{ fontSize: 16, fontWeight: 700, color: DARK }}>{formatNaira(invoiceSummary.paid)}</p>
-                          </div>
-                          {invoiceSummary.total - invoiceSummary.paid > 0 && (
-                            <div>
-                              <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginBottom: 2 }}>Balance</p>
-                              <p style={{ fontSize: 16, fontWeight: 700, color: ORANGE }}>{formatNaira(invoiceSummary.total - invoiceSummary.paid)}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Progress bar */}
-                    {!isCompleted && (task.progress || 0) > 0 && (
-                      <div style={{ padding: "0 20px 16px" }}>
-                        <div className="flex items-center gap-3">
-                          <div className="flex-1">
-                            <div className="w-full rounded-full overflow-hidden" style={{ height: 8, backgroundColor: `${DARK}08` }}>
-                              <div
-                                className="h-full rounded-full transition-all duration-700 ease-out"
-                                style={{ width: `${Math.min(100, Math.max(0, task.progress || 0))}%`, backgroundColor: deptAccent }}
-                              />
-                            </div>
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: deptAccent }} className="tabular-nums">
-                            {task.progress}%
-                          </span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  <p style={{ fontSize: 14, color: MUTED, fontWeight: 400, marginBottom: 4 }}>
+                    {currentDeliverySubtitle}
+                  </p>
+                  <p style={{ fontSize: 13, color: MUTED, fontWeight: 400 }}>
+                    {paidItems.length} of {PILLARS.reduce((n, p) => n + p.items.length, 0)} services active
+                  </p>
                 </div>
 
-                {/* ═══ YOUR PLAN — paid services pipeline ═══ */}
-                {(() => {
-                  const paidItems = PILLARS.flatMap(p =>
-                    p.items.filter(item => activeItems[item.id]).map(item => ({
-                      ...item,
-                      state: activeItems[item.id],
-                      pillarColor: p.color,
-                      pillarLabel: p.label,
-                    }))
-                  );
-                  if (paidItems.length === 0) return null;
-                  return (
-                    <div style={{ marginTop: 16, marginBottom: 16 }}>
-                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}>My Active Services</p>
-                      <div style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden" }}>
-                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
-                          {paidItems.map((item, i) => (
-                            <React.Fragment key={item.id}>
-                              {i > 0 && <ArrowRight size={14} style={{ color: "#D1D5DB", flexShrink: 0 }} />}
-                              <div
-                                onClick={() => setSelectedItem(selectedItem === item.id ? null : item.id)}
-                                style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px", borderRadius: 20, cursor: "pointer", background: selectedItem === item.id ? `${GOLD}20` : item.state === "delivered" ? "#22C55E10" : item.state === "in_progress" ? "#22C55E10" : "#B48C4C10", transition: "background 0.15s ease", boxShadow: selectedItem === item.id ? `0 0 0 2px ${GOLD}40` : "none" }}
-                              >
-                                <div style={{ width: 24, height: 24, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: item.state === "delivered" ? "#22C55E" : item.state === "in_progress" ? "#22C55E" : "#B48C4C", animation: item.state === "in_progress" ? "stagePulse 2s infinite" : "none" }}>
-                                  {item.state === "delivered" ? <CheckCircle size={12} color="white" /> : item.state === "in_progress" ? <Clock size={12} color="white" /> : <span style={{fontSize:8, color:"white"}}>N</span>}
-                                </div>
-                                <div>
-                                  <p style={{ fontSize: 12, fontWeight: 500, color: "#1A1A1A" }}>{item.short}</p>
-                                  <p style={{ fontSize: 10, color: "#999" }}>{item.state === "delivered" ? "Delivered" : item.state === "in_progress" ? "In Progress" : "Queued"}</p>
-                                </div>
-                              </div>
-                            </React.Fragment>
-                          ))}
-                        </div>
-                        {/* Folder breakdown for selected active service */}
-                        {selectedItem && SERVICE_FOLDERS[selectedItem] && activeItems[selectedItem] && (
-                          <div className="mt-3 rounded-xl p-3 md:p-4" style={{ backgroundColor: "#FFFAF6", border: `1px solid ${BORDER}`, animation: "fadeIn 0.2s ease-out" }}>
-                            <p style={{ fontSize: 13, fontWeight: 600, color: DARK, marginBottom: 8 }}>
-                              {SERVICE_FOLDERS[selectedItem].label}
-                            </p>
-                            {SERVICE_FOLDERS[selectedItem].items.map((fi, fIdx) => (
-                              <div key={fIdx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: fIdx < SERVICE_FOLDERS[selectedItem].items.length - 1 ? "1px solid #f0f0f0" : "none" }}>
-                                {activeItems[selectedItem] === "delivered" ? (
-                                  <CheckCircle size={14} color="#22C55E" />
-                                ) : (
-                                  <Circle size={14} color="#D1D5DB" />
-                                )}
-                                <span style={{ fontSize: 12, color: activeItems[selectedItem] === "delivered" ? DARK : "#999" }}>{fi}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })()}
 
-                {/* ═══ BUSINESS STRENGTH METER ═══ */}
-                <div
-                  className="flex items-center gap-4 cursor-pointer"
-                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: "16px 20px", marginTop: 16, marginBottom: 4, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", transition: "box-shadow 0.2s ease" }}
-                  onClick={() => setShowStrengthDetail(prev => !prev)}
-                  onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.04)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; }}
-                >
-                  {/* Circular gauge */}
-                  <div className="relative shrink-0" style={{ width: 72, height: 72 }}>
-                    <svg width="72" height="72" viewBox="0 0 72 72">
-                      <circle cx="36" cy="36" r="30" fill="none" stroke={`${GREY}30`} strokeWidth="5" />
-                      <circle
-                        cx="36" cy="36" r="30" fill="none"
-                        stroke={strengthPct >= 60 ? GREEN : strengthPct >= 20 ? GOLD : GREY}
-                        strokeWidth="5"
-                        strokeLinecap="round"
-                        strokeDasharray={`${(strengthPct / 100) * 188.5} 188.5`}
-                        transform="rotate(-90 36 36)"
-                        style={{ transition: "stroke-dashoffset 1s ease-out, stroke-dasharray 0.7s ease-out" }}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span style={{ fontSize: 18, fontWeight: 600, color: DARK }} className="tabular-nums">{strengthPct}%</span>
+                {/* ═══ SECTION 2: SERVICE CHIPS — horizontal scroll ═══ */}
+                {paidItems.length > 0 && (
+                  <div style={{ marginBottom: 40, marginLeft: -20, marginRight: -20, animation: "fadeUp 0.6s ease-out 0.1s both" }}>
+                    <div
+                      className="hide-scrollbar"
+                      style={{ overflowX: "auto", display: "flex", gap: 8, padding: "0 20px" }}
+                    >
+                      {paidItems.map((item) => {
+                        const isSelected = selectedItem === item.id;
+                        const isDelivered = item.state === "delivered";
+                        const isInProgress = item.state === "in_progress";
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedItem(isSelected ? null : item.id)}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 6,
+                              padding: "8px 16px",
+                              borderRadius: 100,
+                              backgroundColor: isSelected ? `${GOLD}15` : isDelivered ? `${GREEN}10` : BG,
+                              fontSize: 13,
+                              fontWeight: 400,
+                              color: DARK,
+                              whiteSpace: "nowrap",
+                              flexShrink: 0,
+                              border: "none",
+                              cursor: "pointer",
+                              minHeight: 44,
+                              transition: "background-color 0.2s ease",
+                            }}
+                          >
+                            {item.short}
+                            {isInProgress && (
+                              <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: GREEN, display: "inline-block", animation: "stagePulse 2s infinite" }} />
+                            )}
+                            {isDelivered && (
+                              <CheckCircle size={12} style={{ color: GREEN }} />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 4 }}>
-                      Business Strength
-                    </p>
-                    <p style={{ fontSize: 13, fontWeight: 400, color: MUTED, lineHeight: 1.5 }}>
-                      {strengthMessage}
-                    </p>
-                  </div>
-                  <ChevronDown
-                    size={16}
-                    style={{ color: LABEL, transform: showStrengthDetail ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}
-                  />
-                </div>
-                {showStrengthDetail && (
-                  <div style={{ backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20`, borderRadius: 16, padding: 16, marginTop: 8, marginBottom: 8, animation: "fadeIn 0.2s ease-out" }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 4 }}>We are building this with you.</p>
-                    <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.5 }}>
-                      Every service strengthens your business. Your goal is 100% -- fully structured, protected, and capable.
-                    </p>
                   </div>
                 )}
 
-                {/* ═══ PILLAR CARDS ═══ */}
-                <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10, marginTop: 16 }}>
-                  Business Pillars
-                </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                  {PILLARS.map((pillar) => {
-                    const PillarIcon = pillar.icon;
-                    const activeCount = pillar.items.filter(it => activeItems[it.id]).length;
-                    const totalCount = pillar.items.length;
-                    const isExpanded = expandedArea === pillar.id;
-                    const pillarColor = activeCount > 0 ? pillar.color : GREY;
 
+                {/* ═══ SECTION 3: CHIP DETAIL — slide down when tapped ═══ */}
+                {selectedItem && (() => {
+                  const detail = SERVICE_DETAILS[selectedItem];
+                  const folder = SERVICE_FOLDERS[selectedItem];
+                  const state: ItemState = activeItems[selectedItem] || "inactive";
+                  const isMonthly = MONTHLY_SERVICE_IDS.has(selectedItem);
+
+                  /* ── Tax Management pipeline (special case) ── */
+                  if (selectedItem === "monthly_filing" && state !== "inactive") {
                     return (
-                      <div
-                        key={pillar.id}
-                        className="overflow-hidden transition-all duration-200"
-                        style={{
-                          backgroundColor: WHITE,
-                          border: `1px solid ${BORDER}`,
-                          borderLeftWidth: 3,
-                          borderLeftColor: pillarColor,
-                          borderRadius: 20,
-                          boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
-                        }}
-                      >
-                        {/* Collapsed header */}
-                        <button
-                          onClick={() => { setExpandedArea(isExpanded ? null : pillar.id); setSelectedItem(null); }}
-                          className="w-full flex items-center justify-between text-left"
-                          style={{ padding: "14px 16px" }}
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <div
-                              className="shrink-0 flex items-center justify-center"
-                              style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: `${pillarColor}10` }}
-                            >
-                              <PillarIcon size={16} style={{ color: pillarColor }} />
-                            </div>
-                            <div className="min-w-0">
-                              <p style={{ fontSize: 14, fontWeight: 500, color: DARK }} className="truncate">{pillar.label}</p>
-                              <p style={{ fontSize: 11, fontWeight: 400, color: MUTED }} className="truncate">{pillar.desc}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 ml-2">
-                            {pillar.items.some(it => MONTHLY_SERVICE_IDS.has(it.id) && activeItems[it.id]) && (
-                              <span
-                                className="text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5"
-                                style={{ backgroundColor: `${GOLD}12`, color: GOLD, borderRadius: 12 }}
-                              >
-                                Monthly
-                              </span>
-                            )}
-                            {activeCount > 0 ? (
-                              <span
-                                className="text-[11px] font-medium px-2 py-0.5"
-                                style={{ backgroundColor: `${GREEN}20`, color: GREEN, borderRadius: 12 }}
-                              >
-                                {activeCount}/{totalCount}
-                              </span>
-                            ) : (
-                              <Lock size={14} style={{ color: GREY }} />
-                            )}
-                            <ChevronDown
-                              size={16}
-                              style={{ color: LABEL, transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-                            />
-                          </div>
-                        </button>
-
-                        {/* Pitch for inactive pillars */}
-                        {!isExpanded && activeCount === 0 && (
-                          <div style={{ padding: "0 16px 12px 51px", marginTop: -4 }}>
-                            <p style={{ fontSize: 11, fontWeight: 400, fontStyle: "italic", color: LABEL }}>{pillar.pitch}</p>
-                          </div>
+                      <div style={{ marginBottom: 40, animation: "fadeUp 0.3s ease-out", backgroundColor: WHITE, borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                        <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 16 }}>Tax Management</p>
+                        {detail?.value && (
+                          <p style={{ fontSize: 13, color: MUTED, marginBottom: 16, lineHeight: 1.6 }}>{detail.value}</p>
                         )}
-
-                        {/* Expanded: horizontal timeline + item detail */}
-                        {isExpanded && (
-                          <div style={{ animation: "expandDown 0.3s ease-out both" }}>
-                            {/* Horizontal scrollable items */}
-                            <div className="px-5 pb-2" style={{ overflow: "hidden" }}>
-                              <div className="flex items-center gap-1 py-4 flex-wrap">
-                                {pillar.items.map((item, i) => {
-                                  const state: ItemState = activeItems[item.id] || "inactive";
-                                  const isSelected = selectedItem === item.id;
-                                  const bgColor = state === "delivered" ? GREEN
-                                    : state === "in_progress" ? GREEN
-                                    : state === "paid" ? GOLD
-                                    : `${GREY}40`;
-
-                                  return (
-                                    <div key={item.id} className="flex items-center">
-                                      {i > 0 && (
-                                        <div
-                                          className="shrink-0"
-                                          style={{
-                                            width: 24,
-                                            height: 1,
-                                            backgroundColor: lineColor(
-                                              activeItems[pillar.items[i - 1].id] || "inactive",
-                                              state
-                                            ),
-                                          }}
-                                        />
-                                      )}
-                                      <div
-                                        className="shrink-0 text-center cursor-pointer"
-                                        onClick={() => setSelectedItem(isSelected ? null : item.id)}
-                                      >
-                                        <div
-                                          className="flex items-center justify-center mx-auto hover:scale-110"
-                                          style={{
-                                            width: 42,
-                                            height: 42,
-                                            borderRadius: "50%",
-                                            backgroundColor: bgColor,
-                                            animation: state === "in_progress" ? "stagePulse 2s infinite" : "none",
-                                            boxShadow: isSelected ? `0 0 0 3px ${bgColor}40` : "none",
-                                            transition: "box-shadow 0.2s, transform 0.15s ease",
-                                          }}
-                                        >
-                                          {state === "delivered" ? (
-                                            <CheckCircle size={20} color="white" />
-                                          ) : state === "in_progress" ? (
-                                            <Clock size={20} color="white" />
-                                          ) : state === "paid" ? (
-                                            <span style={{ color: "white", fontSize: 11, fontWeight: 700 }}>N</span>
-                                          ) : (
-                                            <Lock size={16} color="#999" />
-                                          )}
-                                        </div>
-                                        <p className="text-[10px] mt-1 leading-tight" style={{ color: state === "inactive" ? LABEL : MUTED }}>
-                                          {item.short}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Item detail panel */}
-                            {selectedItem && (() => {
-                              const item = pillar.items.find(it => it.id === selectedItem);
-                              if (!item) return null;
-                              const state: ItemState = activeItems[item.id] || "inactive";
-                              const detail = SERVICE_DETAILS[item.id];
-                              const isMonthly = MONTHLY_SERVICE_IDS.has(item.id);
-
-                              /* ── Tax Management: 12-month pipeline ── */
-                              if (selectedItem === "monthly_filing" && pillar.id === "compliance_mgmt" && state !== "inactive") {
-                                return (
-                                  <div
-                                    className="mx-4 mb-4 rounded-xl p-5"
-                                    style={{ backgroundColor: CREAM, border: `1px solid ${BORDER}`, animation: "fadeIn 0.2s ease-out", maxHeight: 600, overflowY: "auto", transition: "max-height 0.3s ease-out" }}
-                                  >
-                                    <div className="flex items-center justify-between mb-3">
-                                      <div className="flex items-center gap-2">
-                                        <p className="text-[13px] font-medium" style={{ color: DARK }}>Tax Management Pipeline</p>
-                                        <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}12`, color: GOLD }}>Monthly</span>
-                                      </div>
-                                      <CheckCircle size={16} style={{ color: GREEN }} />
-                                    </div>
-                                    {detail && (
-                                      <p className="text-[12px] font-light leading-relaxed italic mb-1" style={{ color: MUTED }}>
-                                        "{detail.pitch}"
-                                      </p>
-                                    )}
-                                    {detail?.value && (
-                                      <p className="text-[12px] font-light leading-relaxed italic mb-3" style={{ color: GOLD }}>
-                                        {detail.value}
-                                      </p>
-                                    )}
-                                    {/* Month pipeline row */}
-                                    <div className="pb-2 mb-3" style={{ overflow: "hidden" }}>
-                                      <div style={{ display: "flex", alignItems: "center", gap: 0, flexWrap: "wrap" }}>
-                                        {TAX_MONTHS.map((m, mi) => {
-                                          const isDone = mi < currentTaxMonth;
-                                          const isCurrent = mi === currentTaxMonth;
-                                          const icon = isDone ? "\u2705" : isCurrent ? "\u23f3" : "\u2b1c";
-                                          const isExp = expandedTaxMonth === mi;
-                                          return (
-                                            <div key={m} style={{ display: "flex", alignItems: "center" }}>
-                                              {mi > 0 && <div style={{ width: 8, height: 1, background: isDone ? GREEN : isCurrent ? GOLD : `${GREY}40`, flexShrink: 0 }} />}
-                                              <div
-                                                style={{ textAlign: "center", cursor: "pointer", padding: "2px 4px", borderRadius: 8, backgroundColor: isExp ? `${GOLD}10` : "transparent", transition: "background-color 0.15s ease" }}
-                                                onClick={() => setExpandedTaxMonth(isExp ? null : mi)}
-                                              >
-                                                <p style={{ fontSize: 14, lineHeight: 1 }}>{icon}</p>
-                                                <p style={{ fontSize: 9, color: isDone ? GREEN : isCurrent ? GOLD : LABEL, fontWeight: isCurrent ? 700 : 400, marginTop: 2 }}>{m}</p>
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                    {/* Expanded month checklist */}
-                                    {expandedTaxMonth !== null && (() => {
-                                      const mi = expandedTaxMonth;
-                                      const isDone = mi < currentTaxMonth;
-                                      const isCurrent = mi === currentTaxMonth;
-                                      const yr = new Date().getFullYear();
-                                      const checklistItems = [...TAX_CHECKLIST];
-                                      if (mi === 11) {
-                                        checklistItems.push("Annual TCC Filing");
-                                        checklistItems.push("TCC Certificate Delivery");
-                                      }
-                                      return (
-                                        <div className="rounded-lg p-3 mt-1" style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, animation: "fadeIn 0.2s ease-out", transition: "max-height 0.3s ease-out" }}>
-                                          <p className="text-[12px] font-medium mb-2" style={{ color: DARK }}>
-                                            {TAX_MONTH_FULL[mi]} {yr} {isDone ? "\u2705" : isCurrent ? "\u23f3" : "\u2b1c"}
-                                          </p>
-                                          <div className="space-y-1.5">
-                                            {checklistItems.map((cl, ci) => {
-                                              const clDone = isDone || (isCurrent && ci === 0);
-                                              const clInProgress = isCurrent && ci === 1;
-                                              const clPending = isCurrent && ci > 1;
-                                              const isPastAll = !isDone && !isCurrent;
-                                              return (
-                                                <div key={ci} className="flex items-center gap-2">
-                                                  <span style={{ fontSize: 12 }}>
-                                                    {clDone ? "\u2713" : clInProgress ? "\u23f3" : "\u2b1c"}
-                                                  </span>
-                                                  <span style={{
-                                                    fontSize: 11,
-                                                    color: clDone ? GREEN : clInProgress ? GOLD : isPastAll ? LABEL : MUTED,
-                                                    fontWeight: clInProgress ? 500 : 400,
-                                                  }}>
-                                                    {cl}{clInProgress ? " -- collecting" : ""}
-                                                  </span>
-                                                </div>
-                                              );
-                                            })}
-                                          </div>
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
-                                );
-                              }
-
-                              return (
-                                <div
-                                  className="mx-4 mb-4 rounded-xl p-5"
-                                  style={{ backgroundColor: CREAM, border: `1px solid ${BORDER}`, animation: "fadeIn 0.2s ease-out", maxHeight: 600, overflowY: "auto", transition: "max-height 0.3s ease-out" }}
-                                >
-                                  {/* Header row */}
-                                  <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                      <p className="text-[13px] font-medium" style={{ color: DARK }}>{item.label}</p>
-                                      {isMonthly && (
-                                        <span className="text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}12`, color: GOLD }}>Monthly</span>
-                                      )}
-                                    </div>
-                                    {(state === "delivered" || state === "in_progress") ? (
-                                      <CheckCircle size={16} style={{ color: GREEN }} />
-                                    ) : state === "paid" ? (
-                                      <Clock size={16} style={{ color: GOLD }} />
-                                    ) : (
-                                      <Lock size={16} style={{ color: GREY }} />
-                                    )}
-                                  </div>
-
-                                  {/* Pitch line */}
-                                  {detail && (
-                                    <p className="text-[12px] font-light leading-relaxed italic mb-1" style={{ color: MUTED }}>
-                                      "{detail.pitch}"
-                                    </p>
-                                  )}
-
-                                  {/* Value description */}
-                                  {detail?.value && (
-                                    <p className="text-[12px] font-light leading-relaxed italic mb-3" style={{ color: GOLD }}>
-                                      {detail.value}
-                                    </p>
-                                  )}
-
-                                  {/* Pitch margin if no value */}
-                                  {detail && !detail.value && <div style={{ marginBottom: 8 }} />}
-
-                                  {/* Active states: show delivery info */}
-                                  {(state === "delivered" || state === "in_progress") && (
-                                    <p className="text-[11px] font-light" style={{ color: LABEL }}>
-                                      {state === "delivered"
-                                        ? `Delivered${task.createdAt ? ` \u00b7 ${formatDate(task.createdAt)}` : ""}`
-                                        : `In progress${task.deadline ? ` \u00b7 Expected: ${formatDate(task.deadline)}` : ""}`}
-                                    </p>
-                                  )}
-
-                                  {state === "paid" && (
-                                    <p className="text-[11px] font-light" style={{ color: LABEL }}>
-                                      Paid and queued. Starts once current work completes.
-                                    </p>
-                                  )}
-
-                                  {/* Folder breakdown for active/paid services */}
-                                  {state !== "inactive" && SERVICE_FOLDERS[item.id] && (
-                                    <div className="mt-3 rounded-xl p-3 md:p-4" style={{ backgroundColor: "#FFFAF6", border: `1px solid ${BORDER}` }}>
-                                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK, marginBottom: 8 }}>
-                                        {SERVICE_FOLDERS[item.id].label}
-                                      </p>
-                                      {SERVICE_FOLDERS[item.id].items.map((fi, fIdx) => (
-                                        <div key={fIdx} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 0", borderBottom: fIdx < SERVICE_FOLDERS[item.id].items.length - 1 ? "1px solid #f0f0f0" : "none" }}>
-                                          {state === "delivered" ? (
-                                            <CheckCircle size={14} color="#22C55E" />
-                                          ) : (
-                                            <Circle size={14} color="#D1D5DB" />
-                                          )}
-                                          <span style={{ fontSize: 12, color: state === "delivered" ? DARK : "#999" }}>{fi}</span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-
-                                  {/* Inactive: Sinek Why/How/What card */}
-                                  {state === "inactive" && detail && (
-                                    <div className="rounded-xl p-4" style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}>
-                                      <p style={{ fontSize: 14, fontWeight: 600, color: DARK, marginBottom: 12 }}>{item.label}</p>
-
-                                      <div style={{ marginBottom: 12 }}>
-                                        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: GOLD, marginBottom: 4 }}>Why</p>
-                                        <p style={{ fontSize: 13, color: DARK, lineHeight: 1.5 }}>{detail.why}</p>
-                                      </div>
-
-                                      <div style={{ marginBottom: 12 }}>
-                                        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#666", marginBottom: 4 }}>How</p>
-                                        <p style={{ fontSize: 13, color: "#666", lineHeight: 1.5 }}>{detail.how}</p>
-                                      </div>
-
-                                      <div style={{ marginBottom: 12 }}>
-                                        <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: "#1B4D3E", marginBottom: 4 }}>What you get</p>
-                                        <p style={{ fontSize: 13, color: DARK, lineHeight: 1.5 }}>{detail.what}</p>
-                                      </div>
-
-                                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
-                                        <span style={{ fontSize: 14, fontWeight: 600, color: DARK }}>{detail.price}</span>
-                                        <button
-                                          onClick={() => addToCart(item.id, detail)}
-                                          style={{ padding: "8px 20px", borderRadius: 20, background: GOLD, color: "white", border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                                        >
-                                          Activate
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Inactive but no detail data -- fallback */}
-                                  {state === "inactive" && !detail && (
-                                    <button
-                                      onClick={() => {
-                                        setMobileChatOpen(true);
-                                        setTimeout(() => handleChatSend(`I want to activate ${item.label}. What does it include and how do I get started?`), 100);
-                                      }}
-                                      className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold transition-all hover:opacity-90"
-                                      style={{ backgroundColor: GOLD, color: WHITE }}
-                                    >
-                                      Activate <ArrowRight size={13} />
-                                    </button>
-                                  )}
-                                </div>
-                              );
-                            })()}
-
-                            {/* If no item selected and pillar is inactive, show activate CTA */}
-                            {!selectedItem && activeCount === 0 && (
-                              <div className="mx-5 mb-4">
-                                <button
-                                  onClick={() => {
-                                    setMobileChatOpen(true);
-                                    setTimeout(() => handleChatSend(`I want to build my ${pillar.label.toLowerCase()}. What's included?`), 100);
-                                  }}
-                                  className="flex items-center gap-2 px-5 py-2.5 rounded-full text-[11px] font-semibold transition-all hover:opacity-90"
-                                  style={{ backgroundColor: GOLD, color: WHITE }}
-                                >
-                                  Activate {pillar.label} <ArrowRight size={13} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-
-                {/* ═══ DOCUMENTS SECTION ═══ */}
-                <div
-                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-                >
-                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}>
-                    Documents
-                  </p>
-
-                  {/* Uploaded files */}
-                  {uploads.length > 0 && (
-                    <div style={{marginBottom: 12}}>
-                      {uploads.map((u, i) => (
-                        <div key={i} style={{display:"flex", alignItems:"center", gap:8, padding:"6px 0", borderBottom:"1px solid #f0f0f0"}}>
-                          <CheckCircle size={14} color="#22C55E" />
-                          <span style={{fontSize:13, color:"#1A1A1A"}}>{u.name}</span>
-                          <span style={{fontSize:11, color:"#999", marginLeft:"auto"}}>{u.file} · {u.time}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Checklist items */}
-                  {checklist.map((item, ci) => (
-                    <div key={ci} style={{display:"flex", alignItems:"center", gap:8, padding:"6px 0"}}>
-                      {item.checked ? <CheckCircle size={16} color="#22C55E" /> : <Circle size={16} color="#D1D5DB" />}
-                      <span style={{fontSize:13, color: item.checked ? "#1A1A1A" : "#999"}}>{item.label}</span>
-                    </div>
-                  ))}
-
-                  {/* Upload flow */}
-                  {!showUploadInput ? (
-                    <button onClick={() => setShowUploadInput(true)} style={{marginTop:12, fontSize:12, color:GOLD, background:"none", border:"none", cursor:"pointer", display:"flex", alignItems:"center", gap:4}}>
-                      <Upload size={14} /> Upload a document
-                    </button>
-                  ) : !uploadName ? (
-                    <div style={{marginTop:12}}>
-                      <input
-                        placeholder="Name this file (e.g. NIN Copy)"
-                        onKeyDown={(e) => { if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) setUploadName((e.target as HTMLInputElement).value.trim()); }}
-                        style={{width:"100%", padding:"8px 12px", border:"1px solid #E5E5E5", borderRadius:8, fontSize:13, outline:"none"}}
-                        autoFocus
-                      />
-                      <p style={{fontSize:11, color:"#999", marginTop:4}}>Press Enter to continue</p>
-                    </div>
-                  ) : (
-                    <div style={{marginTop:12}}>
-                      <p style={{fontSize:12, color:"#666", marginBottom:4}}>Uploading: <strong>{uploadName}</strong></p>
-                      <input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 5 * 1024 * 1024) {
-                            setChatMessages(prev => [...prev, { role: "assistant", content: "File must be under 5MB. Please try a smaller file." }]);
-                            setMobileChatOpen(true);
-                            return;
-                          }
-                          setUploads(prev => [...prev, { name: uploadName, file: file.name, time: new Date().toLocaleTimeString() }]);
-                          setUploadName("");
-                          setShowUploadInput(false);
-                          setChatMessages(prev => [...prev, { role: "assistant", content: `${uploadName} uploaded successfully.` }]);
-                        }}
-                        style={{fontSize:13}}
-                      />
-                      <p style={{fontSize:11, color:"#999", marginTop:4}}>PDF, JPG, PNG — max 5MB</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* ═══ DOWNLOADS ═══ */}
-                <div style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, marginBottom: 16, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD, marginBottom: 10 }}>
-                    Downloads
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    <button style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: DARK, background: "none", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: "1px solid #f5f5f5" }}>
-                      <FileText size={16} color={GOLD} /> Full Business Setup Report
-                    </button>
-                    <button style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: DARK, background: "none", border: "none", cursor: "pointer", padding: "8px 0", borderBottom: "1px solid #f5f5f5" }}>
-                      <FileText size={16} color={GOLD} /> Service Proposal
-                    </button>
-                    <button style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: DARK, background: "none", border: "none", cursor: "pointer", padding: "8px 0" }}>
-                      <FileText size={16} color={GOLD} /> Payment Receipts
-                    </button>
-                  </div>
-                  <p style={{ fontSize: 11, color: "#999", marginTop: 8 }}>Documents will be available as your services are delivered.</p>
-                </div>
-
-
-                {/* ═══ INVOICES (collapsible) ═══ */}
-                {hasInvoices && (
-                  <div style={{ marginBottom: 16 }}>
-                    <button
-                      onClick={() => setInvoicesOpen(!invoicesOpen)}
-                      className="flex items-center gap-2"
-                      style={{ marginBottom: 10 }}
-                    >
-                      <CreditCard size={12} style={{ color: GOLD }} />
-                      <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.15em", color: GOLD }}>
-                        Invoices
-                      </p>
-                      <ChevronDown
-                        size={14}
-                        style={{ color: LABEL, transform: invoicesOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-                      />
-                      {invoiceSummary && invoiceSummary.total - invoiceSummary.paid > 0 && (
-                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#FEE2E2", color: "#DC2626" }}>
-                          {formatNaira(invoiceSummary.total - invoiceSummary.paid)} due
-                        </span>
-                      )}
-                    </button>
-
-                    {invoicesOpen && (
-                      <>
-                        <div
-                          className="grid grid-cols-3 gap-4"
-                          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, padding: 16, marginBottom: 12, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-                        >
-                          <div className="text-center">
-                            <p style={{ fontSize: 16, fontWeight: 700, color: DARK }}>{formatNaira(invoiceSummary!.total)}</p>
-                            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginTop: 2 }}>Total</p>
-                          </div>
-                          <div className="text-center">
-                            <p style={{ fontSize: 16, fontWeight: 700, color: GREEN }}>{formatNaira(invoiceSummary!.paid)}</p>
-                            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginTop: 2 }}>Paid</p>
-                          </div>
-                          <div className="text-center">
-                            <p style={{ fontSize: 16, fontWeight: 700, color: invoiceSummary!.total - invoiceSummary!.paid > 0 ? "#DC2626" : GREEN }}>
-                              {formatNaira(invoiceSummary!.total - invoiceSummary!.paid)}
-                            </p>
-                            <p style={{ fontSize: 9, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: LABEL, marginTop: 2 }}>Balance</p>
-                          </div>
-                        </div>
-
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                          {invoiceSummary!.invoices.map((inv) => {
-                            const balance = inv.total - inv.paid;
-                            const isPaid = inv.status === "paid";
-                            const hasClaimed = claimedInvoices.has(inv.number);
-                            const statusColor =
-                              isPaid ? GREEN
-                              : inv.status === "partial" ? GOLD
-                              : inv.status === "overdue" ? "#DC2626"
-                              : inv.status === "sent" ? "#2563EB"
-                              : MUTED;
+                        {/* Month pipeline row */}
+                        <div className="hide-scrollbar" style={{ overflowX: "auto", display: "flex", alignItems: "center", gap: 0, marginBottom: 16, flexWrap: "wrap" }}>
+                          {TAX_MONTHS.map((m, mi) => {
+                            const isDone = mi < currentTaxMonth;
+                            const isCurrent = mi === currentTaxMonth;
+                            const isExp = expandedTaxMonth === mi;
                             return (
-                              <div
-                                key={inv.number}
-                                className="overflow-hidden"
-                                style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}`, borderRadius: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-                              >
-                                <div className="px-5 py-4">
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="text-[11px] font-mono font-medium" style={{ color: DARK }}>{inv.number}</span>
-                                    <span
-                                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                                      style={{ backgroundColor: `${statusColor}12`, color: statusColor }}
-                                    >
-                                      {inv.status}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-[14px] font-semibold" style={{ color: DARK }}>{formatNaira(inv.total)}</span>
-                                    {balance > 0 && (
-                                      <span className="text-[11px] font-light" style={{ color: "#DC2626" }}>Balance: {formatNaira(balance)}</span>
-                                    )}
-                                  </div>
-                                  {inv.dueDate && (
-                                    <div className="flex items-center gap-1 mt-1">
-                                      <Clock size={9} style={{ color: `${DARK}30` }} />
-                                      <p className="text-[10px]" style={{ color: `${DARK}30` }}>Due: {formatDate(inv.dueDate)}</p>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {!isPaid && balance > 0 && activeBankDetails?.configured && (
-                                  <div className="px-5 pb-4">
-                                    <div
-                                      className="rounded-xl p-3 mb-3"
-                                      style={{ backgroundColor: CREAM, border: `1px solid ${DARK}06` }}
-                                    >
-                                      <p className="text-[9px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: DARK }}>
-                                        <CreditCard size={10} /> Bank Transfer Details
-                                      </p>
-                                      <div className="space-y-1.5">
-                                        <div className="flex justify-between items-center">
-                                          <span className="text-[11px]" style={{ color: MUTED }}>Bank</span>
-                                          <span className="text-[11px] font-medium" style={{ color: DARK }}>{activeBankDetails!.bankName}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                          <span className="text-[11px]" style={{ color: MUTED }}>Account Name</span>
-                                          <span className="text-[11px] font-medium" style={{ color: DARK }}>{activeBankDetails!.accountName}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                          <span className="text-[11px]" style={{ color: MUTED }}>Account No.</span>
-                                          <button
-                                            className="flex items-center gap-1 text-[11px] font-mono font-bold transition-opacity hover:opacity-70"
-                                            style={{ color: DARK }}
-                                            onClick={() => {
-                                              navigator.clipboard.writeText(activeBankDetails!.accountNumber);
-                                              setCopiedAcct(true);
-                                              setTimeout(() => setCopiedAcct(false), 2000);
-                                            }}
-                                          >
-                                            {activeBankDetails!.accountNumber}
-                                            <Copy size={10} />
-                                          </button>
-                                        </div>
-                                        {copiedAcct && (
-                                          <p className="text-[10px] text-center" style={{ color: GREEN }}>Copied!</p>
-                                        )}
-                                      </div>
-                                      <p className="text-[10px] mt-2 text-center" style={{ color: MUTED }}>
-                                        Transfer {formatNaira(balance)} then click below
-                                      </p>
-                                    </div>
-
-                                    {hasClaimed ? (
-                                      <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl" style={{ backgroundColor: "#DCFCE7" }}>
-                                        <CheckCircle size={12} style={{ color: GREEN }} />
-                                        <span className="text-[11px] font-medium" style={{ color: "#166534" }}>
-                                          Payment claim received -- we'll confirm shortly
-                                        </span>
-                                      </div>
-                                    ) : (
-                                      <button
-                                        onClick={() => claimMutation.mutate({ invoiceNumber: inv.number, clientName: task.clientName })}
-                                        disabled={claimMutation.isPending}
-                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[12px] font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40"
-                                        style={{ backgroundColor: DARK, color: GOLD }}
-                                      >
-                                        {claimMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                        I've Paid
-                                      </button>
-                                    )}
-                                  </div>
-                                )}
+                              <div key={m} style={{ display: "flex", alignItems: "center" }}>
+                                {mi > 0 && <div style={{ width: 8, height: 1, background: isDone ? GREEN : isCurrent ? GOLD : `${MUTED}30`, flexShrink: 0 }} />}
+                                <button
+                                  onClick={() => setExpandedTaxMonth(isExp ? null : mi)}
+                                  style={{
+                                    textAlign: "center",
+                                    padding: "4px 6px",
+                                    borderRadius: 8,
+                                    backgroundColor: isExp ? `${GOLD}12` : "transparent",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    minHeight: 44,
+                                  }}
+                                >
+                                  <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: isDone ? GREEN : isCurrent ? GOLD : `${MUTED}30`, margin: "0 auto 4px" }} />
+                                  <p style={{ fontSize: 11, color: isDone ? GREEN : isCurrent ? GOLD : MUTED, fontWeight: isCurrent ? 600 : 400 }}>{m}</p>
+                                </button>
                               </div>
                             );
                           })}
                         </div>
-                      </>
-                    )}
+                        {/* Expanded month checklist */}
+                        {expandedTaxMonth !== null && (() => {
+                          const mi = expandedTaxMonth;
+                          const isDone = mi < currentTaxMonth;
+                          const isCurrent = mi === currentTaxMonth;
+                          const yr = new Date().getFullYear();
+                          const checklistItems = [...TAX_CHECKLIST];
+                          if (mi === 11) {
+                            checklistItems.push("Annual TCC Filing");
+                            checklistItems.push("TCC Certificate Delivery");
+                          }
+                          return (
+                            <div style={{ animation: "fadeUp 0.2s ease-out" }}>
+                              <p style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 12 }}>
+                                {TAX_MONTH_FULL[mi]} {yr}
+                              </p>
+                              {checklistItems.map((cl, ci) => {
+                                const clDone = isDone || (isCurrent && ci === 0);
+                                const clInProgress = isCurrent && ci === 1;
+                                const clPending = isCurrent && ci > 1;
+                                const isPastAll = !isDone && !isCurrent;
+                                return (
+                                  <div key={ci} style={{ padding: "8px 0", borderBottom: ci < checklistItems.length - 1 ? `1px solid ${MUTED}10` : "none", display: "flex", alignItems: "center", gap: 10 }}>
+                                    <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: clDone ? GREEN : clInProgress ? GOLD : `${MUTED}30`, flexShrink: 0 }} />
+                                    <span style={{ fontSize: 13, color: clDone ? DARK : MUTED, fontWeight: 400 }}>
+                                      {cl}{clInProgress ? " -- collecting" : ""}
+                                    </span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ marginBottom: 40, animation: "fadeUp 0.3s ease-out", backgroundColor: WHITE, borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                      <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 16 }}>
+                        {folder?.label || SERVICE_DETAILS[selectedItem]?.what?.split(",")[0] || selectedItem}
+                      </p>
+
+                      {/* Deliverables list */}
+                      {folder && folder.items.map((fi, fIdx) => (
+                        <div key={fIdx} style={{ padding: "10px 0", borderBottom: fIdx < folder.items.length - 1 ? `1px solid ${MUTED}10` : "none", display: "flex", alignItems: "center", gap: 10 }}>
+                          {state === "delivered" ? (
+                            <CheckCircle size={14} style={{ color: GREEN, flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: `${MUTED}30`, flexShrink: 0 }} />
+                          )}
+                          <span style={{ fontSize: 13, color: state === "delivered" ? DARK : MUTED, fontWeight: 400 }}>{fi}</span>
+                        </div>
+                      ))}
+
+                      {/* Price for inactive items */}
+                      {detail && state === "inactive" && (
+                        <div style={{ marginTop: 20, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <span style={{ fontSize: 13, color: MUTED }}>{detail.price}</span>
+                          <button
+                            onClick={() => addToCart(selectedItem, detail)}
+                            style={{
+                              padding: "10px 24px",
+                              borderRadius: 100,
+                              backgroundColor: GOLD,
+                              color: WHITE,
+                              border: "none",
+                              fontSize: 13,
+                              fontWeight: 500,
+                              cursor: "pointer",
+                              minHeight: 44,
+                            }}
+                          >
+                            Activate
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Active state info */}
+                      {state !== "inactive" && detail?.price && (
+                        <p style={{ fontSize: 13, color: MUTED, marginTop: 16 }}>{detail.price}</p>
+                      )}
+                    </div>
+                  );
+                })()}
+
+
+                {/* ═══ SECTION 4: PAYMENT SUMMARY — two numbers ═══ */}
+                {invoiceSummary && invoiceSummary.paid > 0 && (
+                  <div
+                    onClick={() => setInvoicesOpen(!invoicesOpen)}
+                    style={{
+                      marginBottom: 16,
+                      cursor: "pointer",
+                      animation: "fadeUp 0.6s ease-out 0.2s both",
+                    }}
+                  >
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, textAlign: "center", padding: "32px 0" }}>
+                      <div>
+                        <p style={{ fontSize: 24, fontWeight: 700, color: DARK, letterSpacing: "-0.02em" }} className="tabular-nums">{formatNaira(invoiceSummary.paid)}</p>
+                        <p style={{ fontSize: 12, color: MUTED, marginTop: 4, fontWeight: 400 }}>paid</p>
+                      </div>
+                      {invoiceSummary.total - invoiceSummary.paid > 0 && (
+                        <div>
+                          <p style={{ fontSize: 24, fontWeight: 700, color: DARK, letterSpacing: "-0.02em" }} className="tabular-nums">{formatNaira(invoiceSummary.total - invoiceSummary.paid)}</p>
+                          <p style={{ fontSize: 12, color: MUTED, marginTop: 4, fontWeight: 400 }}>remaining</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
 
-                {/* ═══ FOUNDER QUOTE ═══ */}
-                <div
-                  style={{ borderRadius: 16, padding: "14px 16px", marginBottom: 16, backgroundColor: `${GOLD}06`, border: `1px solid ${GOLD}10`, position: "relative", overflow: "hidden" }}
-                >
-                  <div className="flex items-start gap-2.5">
-                    <Quote size={14} style={{ color: GOLD, opacity: 0.4, flexShrink: 0, marginTop: 2 }} />
-                    <div>
-                      <p style={{ fontSize: 12, fontWeight: 400, fontStyle: "italic", color: MUTED, lineHeight: 1.5 }}>
-                        "{founderQuote}"
-                      </p>
-                      <p style={{ fontSize: 10, fontWeight: 500, color: GOLD, marginTop: 4 }}>-- Muhammad Hamzury</p>
-                    </div>
+                {/* ═══ INVOICE DETAIL SHEET (behind tap) ═══ */}
+                {invoicesOpen && hasInvoices && (
+                  <div style={{ marginBottom: 40, animation: "fadeUp 0.3s ease-out" }}>
+                    {invoiceSummary!.invoices.map((inv) => {
+                      const balance = inv.total - inv.paid;
+                      const isPaid = inv.status === "paid";
+                      const hasClaimed = claimedInvoices.has(inv.number);
+                      return (
+                        <div
+                          key={inv.number}
+                          style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, marginBottom: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}
+                        >
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                            <span style={{ fontSize: 13, fontFamily: "monospace", color: MUTED }}>{inv.number}</span>
+                            <span style={{ fontSize: 13, color: isPaid ? GREEN : GOLD, fontWeight: 500 }}>
+                              {inv.status}
+                            </span>
+                          </div>
+                          <p style={{ fontSize: 18, fontWeight: 600, color: DARK, marginBottom: 4 }}>{formatNaira(inv.total)}</p>
+                          {balance > 0 && (
+                            <p style={{ fontSize: 13, color: MUTED }}>Balance: {formatNaira(balance)}</p>
+                          )}
+                          {inv.dueDate && (
+                            <p style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>Due {formatDate(inv.dueDate)}</p>
+                          )}
+
+                          {/* Bank details */}
+                          {!isPaid && balance > 0 && activeBankDetails?.configured && (
+                            <div style={{ marginTop: 20 }}>
+                              <div style={{ backgroundColor: BG, borderRadius: 12, padding: 16, marginBottom: 16 }}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                    <span style={{ fontSize: 13, color: MUTED }}>Bank</span>
+                                    <span style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>{activeBankDetails!.bankName}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                    <span style={{ fontSize: 13, color: MUTED }}>Account</span>
+                                    <span style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>{activeBankDetails!.accountName}</span>
+                                  </div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                    <span style={{ fontSize: 13, color: MUTED }}>Number</span>
+                                    <button
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(activeBankDetails!.accountNumber);
+                                        setCopiedAcct(true);
+                                        setTimeout(() => setCopiedAcct(false), 2000);
+                                      }}
+                                      style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: "monospace", fontWeight: 600, color: DARK, background: "none", border: "none", cursor: "pointer", minHeight: 44 }}
+                                    >
+                                      {activeBankDetails!.accountNumber}
+                                      <Copy size={12} style={{ color: MUTED }} />
+                                    </button>
+                                  </div>
+                                  {copiedAcct && (
+                                    <p style={{ fontSize: 13, textAlign: "center", color: GREEN }}>Copied</p>
+                                  )}
+                                </div>
+                              </div>
+
+                              {hasClaimed ? (
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: 16, backgroundColor: `${GREEN}08`, borderRadius: 12 }}>
+                                  <CheckCircle size={14} style={{ color: GREEN }} />
+                                  <span style={{ fontSize: 13, color: DARK }}>Payment claim received</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => claimMutation.mutate({ invoiceNumber: inv.number, clientName: task.clientName })}
+                                  disabled={claimMutation.isPending}
+                                  style={{
+                                    width: "100%",
+                                    padding: "14px 0",
+                                    borderRadius: 12,
+                                    backgroundColor: DARK,
+                                    color: WHITE,
+                                    border: "none",
+                                    fontSize: 13,
+                                    fontWeight: 500,
+                                    cursor: "pointer",
+                                    minHeight: 48,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 8,
+                                    opacity: claimMutation.isPending ? 0.5 : 1,
+                                  }}
+                                >
+                                  {claimMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : null}
+                                  I've Paid
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
+                )}
+
+
+                {/* ═══ SECTION 5: WHITE SPACE ═══ */}
+                <div style={{ height: 40 }} />
+
+
+                {/* ═══ SECTION 6: INACTIVE SUGGESTIONS — 5 dots ═══ */}
+                <div style={{ textAlign: "center", padding: "32px 0", animation: "fadeUp 0.6s ease-out 0.3s both" }}>
+                  <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 24 }}>
+                    Your business could be stronger
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 16, flexWrap: "wrap" }}>
+                    {(["Compliance", "Brand", "Systems", "Team", "Growth"] as const).map((area, i) => {
+                      const areaMap: Record<string, string[]> = {
+                        Compliance: ["compliance", "compliance_mgmt", "legal"],
+                        Brand: ["branding", "visibility"],
+                        Systems: ["tools"],
+                        Team: ["skills"],
+                        Growth: ["skills"],
+                      };
+                      const isActive = areaMap[area]?.some(pid => PILLARS.find(p => p.id === pid)?.items.some(it => activeItems[it.id])) || false;
+                      return (
+                        <button
+                          key={area}
+                          onClick={() => {
+                            setMobileChatOpen(true);
+                            setTimeout(() => handleChatSend(isActive ? `How can I strengthen my ${area.toLowerCase()}?` : `I want to build my ${area.toLowerCase()}`), 200);
+                          }}
+                          style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, background: "none", border: "none", cursor: "pointer", minHeight: 44, padding: "8px 4px" }}
+                        >
+                          <div style={{ width: 12, height: 12, borderRadius: "50%", backgroundColor: isActive ? GREEN : `${MUTED}30`, transition: "background-color 0.3s ease" }} />
+                          <span style={{ fontSize: 11, color: MUTED, fontWeight: 400 }}>{area}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p style={{ fontSize: 13, color: MUTED }}>Tap to explore</p>
                 </div>
 
 
-                {/* ═══ FOOTER ═══ */}
-                <div className="text-center" style={{ paddingTop: 12, paddingBottom: 16, borderTop: `1px solid ${DARK}06` }}>
-                  <p style={{ fontSize: 10, color: `${DARK}25` }}>
-                    Ref: {task.ref} &middot; Last updated: {formatDate(task.updatedAt)}
+                {/* ═══ SECTION 7: QUOTE — tiny, almost invisible ═══ */}
+                <div style={{ textAlign: "center", padding: "48px 24px 24px" }}>
+                  <p style={{ fontSize: 11, color: MUTED, fontStyle: "italic", lineHeight: 1.6, fontWeight: 400 }}>
+                    "{founderQuote}"
                   </p>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 8, fontWeight: 400 }}>
+                    -- Muhammad Hamzury
+                  </p>
+                </div>
+
+
+                {/* ═══ SECTION 8: FOOTER — just the ref ═══ */}
+                <div style={{ textAlign: "center", paddingTop: 24, paddingBottom: 32 }}>
+                  <p style={{ fontSize: 11, color: `${MUTED}60` }}>{task.ref}</p>
                 </div>
               </>
             );
           })()}
         </div>
-
-
       </div>
 
-      {/* ═══ CHAT: Floating button + slide panel (all screens) ═══ */}
+      {/* ═══ CHAT: Floating gold button + slide panel ═══ */}
       {!mobileChatOpen && (
         <button
           onClick={() => setMobileChatOpen(true)}
-          className="fixed z-40 flex items-center justify-center shadow-lg transition-all hover:scale-105"
-          style={{ bottom: "env(safe-area-inset-bottom, 24px)", right: 24, width: 52, height: 52, borderRadius: "50%", backgroundColor: GOLD, color: WHITE }}
+          className="fixed z-40 flex items-center justify-center transition-all hover:scale-105"
+          style={{
+            bottom: 24,
+            right: 24,
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            backgroundColor: GOLD,
+            color: WHITE,
+            boxShadow: "0 4px 16px rgba(180,140,76,0.35)",
+            border: "none",
+            cursor: "pointer",
+          }}
         >
           <MessageSquare size={22} />
         </button>
@@ -2144,15 +1676,18 @@ export default function ClientDashboard() {
         <>
           <div
             className="fixed inset-0 z-40"
-            style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
+            style={{ backgroundColor: "rgba(0,0,0,0.15)" }}
             onClick={() => setMobileChatOpen(false)}
           />
           <div
-            className="fixed bottom-0 right-0 z-50 rounded-t-2xl md:rounded-2xl overflow-hidden md:bottom-6 md:right-6 md:w-[420px]"
+            className="fixed bottom-0 left-0 right-0 z-50 md:left-auto md:bottom-6 md:right-6 md:w-[400px]"
             style={{
               backgroundColor: WHITE,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
               maxHeight: "70vh",
-              boxShadow: "0 -4px 24px rgba(0,0,0,0.12)",
+              boxShadow: "0 -2px 24px rgba(0,0,0,0.1)",
+              overflow: "hidden",
             }}
           >
             <ChatPanel isMobile />
