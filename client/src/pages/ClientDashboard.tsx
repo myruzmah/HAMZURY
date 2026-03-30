@@ -6,7 +6,7 @@ import {
   ArrowRight, Quote,
   Shield, Globe, Zap, TrendingUp, Clock,
   Users, Sparkles,
-  X,
+  X, UserPlus, FileCheck, Award, GraduationCap, Lock, Unlock,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
 import { trpc } from "@/lib/trpc";
@@ -263,6 +263,14 @@ const cssAnimations = `
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes stagePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(34,197,94,0); }
+}
+@keyframes expandDown {
+  from { opacity: 0; max-height: 0; }
+  to { opacity: 1; max-height: 600px; }
 }
 `;
 
@@ -539,11 +547,16 @@ export default function ClientDashboard() {
   /* ── Auto-greeting (safe — after data is available, runs once) ── */
   if (!autoGreeted && chatMessages.length === 0) {
     const fn = (task.clientName || "").split(" ")[0];
-    const g = overallPct <= 20
-      ? `Hi ${fn}. Your business is ${overallPct}% structured. Most areas are still unprotected. Want me to show you what to prioritize?`
-      : overallPct <= 60
-      ? `Welcome back, ${fn}. Your business health is at ${overallPct}%. Let me show you the next area that makes the biggest difference.`
-      : `Great to see you, ${fn}. Your business is ${overallPct}% structured. A few more steps and you're fully protected.`;
+    const svc = task.service || "";
+    const st = task.status || "";
+    // Build context-aware greeting
+    let g = `Hi ${fn}.`;
+    if (svc.toLowerCase().includes("full business") || svc.toLowerCase().includes("architecture")) {
+      g += ` Your ${svc} is ${st.toLowerCase()}. Registration is being handled and tax, brand, and systems are queued. Once registration completes, we'll move to tax compliance next.`;
+    } else if (svc) {
+      g += ` Your ${svc} service is currently ${st.toLowerCase()}.`;
+    }
+    g += ` Anything you'd like to know?`;
     // Use setTimeout to avoid setState during render
     setTimeout(() => { setChatMessages([{ role: "assistant", content: g }]); setAutoGreeted(true); }, 0);
   }
@@ -714,590 +727,700 @@ export default function ClientDashboard() {
           </div>
 
 
-          {/* ═══ OVERALL BUSINESS SCORE ═══ */}
-          <div
-            className="rounded-2xl p-6 mt-6 mb-8"
-            style={{
-              backgroundColor: WHITE,
-              border: `1px solid ${BORDER}`,
-            }}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-1" style={{ color: LABEL }}>
-                  Business Health
-                </p>
-                <p className="text-[32px] font-light tabular-nums leading-none" style={{ color: DARK }}>
-                  {overallPct}<span className="text-[18px]" style={{ color: LABEL }}>%</span>
-                </p>
-              </div>
-              <div
-                className="w-14 h-14 rounded-full flex items-center justify-center"
-                style={{
-                  background: overallPct >= 60
-                    ? `conic-gradient(${GREEN} ${overallPct * 3.6}deg, ${DARK}08 0deg)`
-                    : overallPct > 0
-                    ? `conic-gradient(${GOLD} ${overallPct * 3.6}deg, ${DARK}08 0deg)`
-                    : `${DARK}08`,
-                }}
-              >
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: WHITE }}>
-                  <span className="text-[11px] font-semibold" style={{ color: overallPct >= 60 ? GREEN : overallPct > 0 ? GOLD : LABEL }}>
-                    {overallAreasActive}/5
-                  </span>
-                </div>
-              </div>
-            </div>
+          {/* ═══ CLIENT JOURNEY PIPELINE ═══ */}
+          {(() => {
+            /* ── Stage definitions ── */
+            const STAGES = [
+              { key: "lead", label: "Lead", sub: "Client onboarded", icon: UserPlus },
+              { key: "registration", label: "Registration", sub: "CAC, Business Name", icon: Shield },
+              { key: "tax", label: "Tax & Compliance", sub: "TIN, VAT, TCC", icon: FileCheck },
+              { key: "licences", label: "Licences & Permits", sub: "NAFDAC, SON, sector", icon: Award },
+              { key: "brand", label: "Brand & Website", sub: "Brand, website, social", icon: Globe },
+              { key: "systems", label: "Systems & Automation", sub: "CRM, dashboard, AI", icon: Zap },
+              { key: "team", label: "Team & Training", sub: "Skills, staff training", icon: GraduationCap },
+              { key: "delivery", label: "Delivery & Growth", sub: "Scaling, management", icon: TrendingUp },
+            ] as const;
 
-            <ProgressBar pct={overallPct} color={overallPct >= 60 ? GREEN : overallPct > 0 ? GOLD : GREY} height={8} />
+            type StageState = "delivered" | "in_progress" | "paid" | "next" | "inactive";
 
-            <p className="text-[13px] font-light mt-4 leading-relaxed" style={{ color: MUTED }}>
-              {overallMessage}
-            </p>
+            const STAGE_PITCHES: Record<string, { question: string; includes: string[] }> = {
+              registration: {
+                question: "Is your business legally recognized? Without CAC, you can't open a corporate bank account or bid for contracts.",
+                includes: ["CAC Registration", "Business Name", "Annual Returns", "Amendments"],
+              },
+              tax: {
+                question: "Can you get a Tax Clearance Certificate right now? Without one, government contracts and banking privileges are blocked.",
+                includes: ["TIN Registration", "VAT Setup", "PAYE", "Tax Clearance Certificate"],
+              },
+              licences: {
+                question: "Does your sector require specific permits? Operating without them risks shutdown, fines, or legal action.",
+                includes: ["NAFDAC", "SON Certification", "DPR Licence", "Sector Permits", "Export Documentation"],
+              },
+              brand: {
+                question: "If a premium client finds you online right now, will they trust you enough to pay?",
+                includes: ["Brand Identity", "Professional Website", "Social Media Setup", "Content Strategy"],
+              },
+              systems: {
+                question: "Are you still doing things manually that should already be automated?",
+                includes: ["CRM Setup", "Business Automation", "Internal Dashboard", "AI Agent", "Workflow Systems"],
+              },
+              team: {
+                question: "Can your team run the business properly without you being present every day?",
+                includes: ["Staff Training", "AI Skills Program", "Founder Launchpad", "Operations Training"],
+              },
+              delivery: {
+                question: "Is your business structured to handle 10x more clients without breaking?",
+                includes: ["Growth Strategy", "Management Subscription", "Expansion Planning", "Compliance Calendar"],
+              },
+            };
 
-            <p className="text-[11px] mt-2" style={{ color: LABEL }}>
-              {overallAreasActive} of 5 areas have at least one service active or delivered.
-            </p>
-          </div>
+            /* ── Determine stage states from task data ── */
+            const svc = (task.service || "").toLowerCase();
+            const status = task.status || "";
+            const isDone = status === "Completed";
+            const isActive = status === "In Progress" || status === "Pending";
+            const isFullArch = svc.includes("full business") || svc.includes("architecture");
 
+            function getStageState(key: string): StageState {
+              if (key === "lead") return "delivered";
+              if (isFullArch) {
+                if (key === "registration") return isDone ? "delivered" : "in_progress";
+                if (key === "tax" || key === "brand" || key === "systems") return isDone ? "delivered" : "paid";
+                if (key === "licences" || key === "team") return "next";
+                if (key === "delivery") return "inactive";
+                return "inactive";
+              }
+              // Single-service mapping
+              const svcMap: Record<string, string[]> = {
+                registration: ["cac", "registration", "business name", "foreign", "cerpac"],
+                tax: ["tax", "tin", "tcc", "vat", "paye", "scuml"],
+                licences: ["licence", "permit", "nafdac", "son", "dpr"],
+                brand: ["website", "brand", "social media", "social"],
+                systems: ["automation", "crm", "dashboard", "ai agent", "systemise"],
+                team: ["training", "skill", "cohort"],
+                delivery: ["strategy", "expansion", "management", "growth"],
+              };
+              const keywords = svcMap[key] || [];
+              const matches = keywords.some(k => svc.includes(k));
+              if (matches) return isDone ? "delivered" : isActive ? "in_progress" : "paid";
+              // Check if this should be "next" (adjacent to an active stage)
+              const stageOrder = ["lead", "registration", "tax", "licences", "brand", "systems", "team", "delivery"];
+              const myIdx = stageOrder.indexOf(key);
+              const activeIdx = stageOrder.findIndex(sk => {
+                const kw = svcMap[sk] || [];
+                return kw.some(k => svc.includes(k));
+              });
+              if (activeIdx >= 0 && myIdx === activeIdx + 1) return "next";
+              return "inactive";
+            }
 
-          {/* ═══ 5 HEALTH CARDS ═══ */}
-          <div className="mb-8">
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-4"
-              style={{ color: LABEL }}
-            >
-              Your 5 Business Areas
-            </p>
+            const stageStates: Record<string, StageState> = {};
+            STAGES.forEach(s => { stageStates[s.key] = getStageState(s.key); });
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {healthAreas.map((area) => {
-                const level = getHealthLevel(area.score, area.max);
-                const levelColor = healthLevelColor(level);
-                const pct = area.max > 0 ? Math.round((area.score / area.max) * 100) : 0;
-                const AreaIcon = area.icon;
-                const isExpanded = expandedArea === area.key;
-                const accent = DEPT_ACCENT[area.dept] || DARK;
-                const hasItems = area.items.length > 0;
+            function stageColor(state: StageState): string {
+              if (state === "delivered" || state === "in_progress") return GREEN;
+              if (state === "paid" || state === "next") return GOLD;
+              return GREY;
+            }
 
-                return (
-                  <div
-                    key={area.key}
-                    className="rounded-2xl overflow-hidden transition-all"
-                    style={{
-                      backgroundColor: WHITE,
-                      border: `1px solid ${BORDER}`,
-                      animation: "fadeIn 0.4s ease-out both",
-                    }}
-                  >
-                    {/* Card header */}
-                    <button
-                      onClick={() => setExpandedArea(isExpanded ? null : area.key)}
-                      className="w-full text-left px-5 py-4"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className="w-9 h-9 rounded-xl flex items-center justify-center"
-                            style={{ backgroundColor: `${levelColor}12` }}
-                          >
-                            <AreaIcon size={18} style={{ color: levelColor }} />
-                          </div>
-                          <div>
-                            <p className="text-[13px] font-medium leading-tight" style={{ color: DARK }}>
-                              {area.title}
-                            </p>
-                            <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: levelColor }}>
-                              {healthLevelLabel(level)}
-                            </p>
-                          </div>
-                        </div>
-                        <ChevronDown
-                          size={16}
-                          style={{ color: LABEL, transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-                        />
-                      </div>
+            function lineStyle(fromState: StageState, toState: StageState): { color: string; dash: string } {
+              const fromActive = fromState === "delivered" || fromState === "in_progress";
+              const toActive = toState === "delivered" || toState === "in_progress";
+              if (fromActive && toActive) return { color: GREEN, dash: "none" };
+              const fromGold = fromState === "paid" || fromState === "next";
+              const toGold = toState === "paid" || toState === "next";
+              if (fromActive && toGold) return { color: GOLD, dash: "8 4" };
+              if ((fromGold || fromActive) && (toGold || toActive)) return { color: GOLD, dash: "8 4" };
+              return { color: GREY, dash: "4 4" };
+            }
 
-                      {/* Mini progress bar */}
-                      <ProgressBar pct={pct} color={levelColor} height={4} />
-                      <p className="text-[10px] mt-1.5 tabular-nums" style={{ color: LABEL }}>{pct}%</p>
-                    </button>
+            const stageStatusLabel: Record<StageState, string> = {
+              delivered: "Delivered",
+              in_progress: "In Progress",
+              paid: "Paid, Queued",
+              next: "Recommended Next",
+              inactive: "Not Yet Active",
+            };
 
-                    {/* Expanded content */}
-                    {isExpanded && (
-                      <div className="px-5 pb-5" style={{ borderTop: `1px solid ${DARK}06` }}>
-                        {/* Items if client has services in this area */}
-                        {hasItems && (
-                          <div className="mt-4 space-y-2">
-                            {area.items.map((item, idx) => (
-                              <div key={idx} className="flex items-center gap-2.5">
-                                {item.done ? (
-                                  <CheckCircle size={14} style={{ color: GREEN }} />
-                                ) : item.inProgress ? (
-                                  <Circle size={14} style={{ color: GOLD }} />
-                                ) : (
-                                  <Circle size={14} style={{ color: `${DARK}15` }} />
-                                )}
-                                <span
-                                  className="text-[12px] font-light"
-                                  style={{ color: item.done ? DARK : MUTED }}
-                                >
-                                  {item.name} {item.done ? "-- Done" : item.inProgress ? "-- In Progress" : "-- Needed"}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+            const stageEmoji: Record<StageState, string> = {
+              delivered: "\u2705",
+              in_progress: "\u23F3",
+              paid: "\uD83D\uDCB0",
+              next: "\uD83D\uDD13",
+              inactive: "\uD83D\uDD12",
+            };
 
-                        {/* Pitch / insight */}
-                        <p
-                          className="text-[12px] font-light leading-relaxed mt-4 italic"
-                          style={{ color: MUTED }}
-                        >
-                          "{hasItems ? area.pitch : area.emptyPitch}"
-                        </p>
+            /* ── Build checklist items for expanded view ── */
+            function getStageChecklist(key: string, state: StageState): { label: string; done: boolean; inProgress: boolean }[] {
+              if (key === "lead") return [{ label: "Client onboarded", done: true, inProgress: false }];
+              if (state === "delivered" || state === "in_progress") {
+                // Use actual checklist data when available
+                const items: { label: string; done: boolean; inProgress: boolean }[] = [];
+                if (key === "registration") {
+                  const cacItem = checklist.find(c => c.label.toLowerCase().includes("cac") || c.label.toLowerCase().includes("registration") || c.label.toLowerCase().includes("name"));
+                  const docItem = checklist.find(c => c.label.toLowerCase().includes("document"));
+                  const nameItem = checklist.find(c => c.label.toLowerCase().includes("name search") || c.label.toLowerCase().includes("name"));
+                  if (cacItem) items.push({ label: cacItem.label, done: cacItem.checked, inProgress: !cacItem.checked });
+                  if (docItem) items.push({ label: docItem.label, done: docItem.checked, inProgress: !docItem.checked });
+                  if (nameItem && nameItem !== cacItem) items.push({ label: nameItem.label, done: nameItem.checked, inProgress: !nameItem.checked });
+                  if (items.length === 0) {
+                    items.push({ label: "CAC Filing", done: state === "delivered", inProgress: state === "in_progress" });
+                    items.push({ label: "Document Collection", done: true, inProgress: false });
+                    items.push({ label: "Name Search", done: true, inProgress: false });
+                  }
+                } else if (key === "tax") {
+                  items.push({ label: "TIN Registration", done: state === "delivered", inProgress: false });
+                  items.push({ label: "VAT Setup", done: state === "delivered", inProgress: false });
+                  items.push({ label: "First Tax Filing", done: state === "delivered", inProgress: false });
+                } else if (key === "brand") {
+                  items.push({ label: "Brand Identity", done: state === "delivered", inProgress: false });
+                  items.push({ label: "Website Development", done: state === "delivered", inProgress: false });
+                  items.push({ label: "Social Media Setup", done: state === "delivered", inProgress: false });
+                } else if (key === "systems") {
+                  items.push({ label: "CRM Setup", done: state === "delivered", inProgress: false });
+                  items.push({ label: "Dashboard & AI", done: state === "delivered", inProgress: false });
+                  items.push({ label: "Workflow Automation", done: state === "delivered", inProgress: false });
+                }
+                return items.length > 0 ? items : [{ label: "Service active", done: state === "delivered", inProgress: state === "in_progress" }];
+              }
+              return [];
+            }
 
-                        {/* What this includes (for empty areas) */}
-                        {!hasItems && (
-                          <div className="mt-3">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: LABEL }}>
-                              What this includes
-                            </p>
-                            <div className="space-y-1.5">
-                              {area.includes.map((inc, idx) => (
-                                <div key={idx} className="flex items-center gap-2">
-                                  <div className="w-1 h-1 rounded-full" style={{ backgroundColor: accent }} />
-                                  <span className="text-[11px] font-light" style={{ color: DARK }}>{inc}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+            const selectedStage = expandedArea;
 
-                        {/* CTA button */}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            sendFromHealthCard(area.title, level);
-                          }}
-                          className="w-full flex items-center justify-center gap-2 mt-4 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
-                          style={{ backgroundColor: accent, color: WHITE }}
-                        >
-                          {level === "none" ? (
-                            <>Build my {area.title.toLowerCase().split(" ")[0]} <ArrowRight size={13} /></>
-                          ) : (
-                            <>Strengthen this area <ArrowRight size={13} /></>
-                          )}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-
-          {/* ═══ YOUR ACTIVE SERVICES ═══ */}
-          <div className="mb-8">
-            <p
-              className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-4"
-              style={{ color: LABEL }}
-            >
-              Your Active Services
-            </p>
-
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
-            >
-              <div className="px-5 py-4">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[15px] font-medium" style={{ color: DARK }}>{task.service}</p>
-                  <span
-                    className="text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
-                    style={{
-                      backgroundColor: isCompleted ? `${GREEN}12` : `${GOLD}12`,
-                      color: isCompleted ? GREEN : GOLD,
-                    }}
-                  >
-                    {task.status}
-                  </span>
+            return (
+              <>
+                {/* Pipeline header */}
+                <div className="mt-6 mb-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: LABEL }}>
+                    Your Business Journey
+                  </p>
                 </div>
 
-                <div className="flex items-center gap-3 mt-1 flex-wrap">
-                  {task.createdAt && (
-                    <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
-                      <Calendar size={10} /> Started: {formatDate(task.createdAt)}
-                    </span>
-                  )}
-                  {task.deadline && !isCompleted && (
-                    <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
-                      <Clock size={10} /> Expected: {formatDate(task.deadline)}
-                    </span>
-                  )}
-                  {invoiceSummary && invoiceSummary.paid > 0 && (
-                    <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
-                      <CreditCard size={10} /> Paid: {formatNaira(invoiceSummary.paid)}
-                      {invoiceSummary.total - invoiceSummary.paid > 0 && (
-                        <span style={{ color: ORANGE }}>&middot; Balance: {formatNaira(invoiceSummary.total - invoiceSummary.paid)}</span>
-                      )}
-                    </span>
-                  )}
-                </div>
-              </div>
+                {/* Horizontal scrollable pipeline */}
+                <div
+                  className="rounded-2xl p-5 md:p-6 mb-4 overflow-x-auto"
+                  style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                >
+                  <div className="flex items-start gap-0 min-w-[700px]">
+                    {STAGES.map((stage, idx) => {
+                      const state = stageStates[stage.key];
+                      const color = stageColor(state);
+                      const StageIcon = stage.icon;
+                      const isSelected = selectedStage === stage.key;
+                      const isLast = idx === STAGES.length - 1;
 
-              {/* Checklist progress */}
-              {checklist.length > 0 && (
-                <div className="px-5 pb-4">
-                  {/* Progress bar */}
-                  {!isCompleted && (
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="flex-1">
-                        <ProgressBar pct={task.progress || 0} color={deptAccent} />
-                      </div>
-                      <span className="text-[11px] font-medium tabular-nums" style={{ color: deptAccent }}>
-                        {task.progress}%
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="space-y-2">
-                    {checklist.map((c, ci) => (
-                      <div key={ci} className="flex items-center gap-2.5">
-                        {c.checked ? (
-                          <CheckCircle size={14} style={{ color: GREEN }} />
-                        ) : (
-                          <Circle size={14} style={{ color: `${DARK}18` }} />
-                        )}
-                        <span
-                          className="text-[12px] font-light"
-                          style={{ color: c.checked ? DARK : MUTED }}
-                        >
-                          {c.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-
-          {/* ═══ SUBSCRIPTION MONTHLY TASKS ═══ */}
-          {subHistory && subHistory.monthlyTasks.length > 0 && (
-            <div className="mb-8">
-              <div className="flex items-center gap-2 mb-4">
-                <Calendar size={14} style={{ color: GOLD }} />
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: LABEL }}>
-                  Monthly: {subHistory.service}
-                </p>
-              </div>
-              <div
-                className="rounded-2xl p-5"
-                style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
-              >
-                <div className="space-y-2">
-                  {subHistory.monthlyTasks.map((t: { month: string | null; status: string; kpiApproved: boolean }) => (
-                    <div
-                      key={t.month}
-                      className="flex items-center justify-between rounded-xl px-4 py-2.5"
-                      style={{ backgroundColor: CREAM, border: `1px solid ${DARK}06` }}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        {t.kpiApproved || t.status === "Completed" ? (
-                          <CheckCircle size={14} style={{ color: GREEN }} />
-                        ) : (
-                          <Circle size={14} style={{ color: `${DARK}25` }} />
-                        )}
-                        <span className="text-[13px] font-light" style={{ color: DARK }}>
-                          {t.month}
-                        </span>
-                      </div>
-                      <span
-                        className="text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor: t.kpiApproved ? `${GREEN}12` : t.status === "In Progress" ? `${GOLD}12` : `${DARK}08`,
-                          color: t.kpiApproved ? GREEN : t.status === "In Progress" ? GOLD : MUTED,
-                        }}
-                      >
-                        {t.kpiApproved ? "Filed" : t.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-
-          {/* ═══ INVOICES (collapsible) ═══ */}
-          {hasInvoices && (
-            <div className="mb-8">
-              <button
-                onClick={() => setInvoicesOpen(!invoicesOpen)}
-                className="flex items-center gap-2 mb-4 group"
-              >
-                <CreditCard size={14} style={{ color: LABEL }} />
-                <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: LABEL }}>
-                  Invoices
-                </p>
-                <ChevronDown
-                  size={14}
-                  style={{ color: LABEL, transform: invoicesOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
-                />
-                {invoiceSummary && invoiceSummary.total - invoiceSummary.paid > 0 && (
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#FEE2E2", color: "#DC2626" }}>
-                    {formatNaira(invoiceSummary.total - invoiceSummary.paid)} due
-                  </span>
-                )}
-              </button>
-
-              {invoicesOpen && (
-                <>
-                  {/* Summary row */}
-                  <div
-                    className="grid grid-cols-3 gap-4 rounded-2xl p-5 mb-4"
-                    style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
-                  >
-                    <div className="text-center">
-                      <p className="text-[16px] font-semibold" style={{ color: DARK }}>{formatNaira(invoiceSummary!.total)}</p>
-                      <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Total</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[16px] font-semibold" style={{ color: GREEN }}>{formatNaira(invoiceSummary!.paid)}</p>
-                      <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Paid</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[16px] font-semibold" style={{ color: invoiceSummary!.total - invoiceSummary!.paid > 0 ? "#DC2626" : GREEN }}>
-                        {formatNaira(invoiceSummary!.total - invoiceSummary!.paid)}
-                      </p>
-                      <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Balance</p>
-                    </div>
-                  </div>
-
-                  {/* Individual invoices */}
-                  <div className="space-y-3">
-                    {invoiceSummary!.invoices.map((inv) => {
-                      const balance = inv.total - inv.paid;
-                      const isPaid = inv.status === "paid";
-                      const hasClaimed = claimedInvoices.has(inv.number);
-                      const statusColor =
-                        isPaid ? GREEN
-                        : inv.status === "partial" ? GOLD
-                        : inv.status === "overdue" ? "#DC2626"
-                        : inv.status === "sent" ? "#2563EB"
-                        : MUTED;
                       return (
-                        <div
-                          key={inv.number}
-                          className="rounded-2xl overflow-hidden"
-                          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
-                        >
-                          <div className="px-5 py-4">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[11px] font-mono font-medium" style={{ color: DARK }}>{inv.number}</span>
-                              <span
-                                className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                                style={{ backgroundColor: `${statusColor}12`, color: statusColor }}
-                              >
-                                {inv.status}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-[14px] font-semibold" style={{ color: DARK }}>{formatNaira(inv.total)}</span>
-                              {balance > 0 && (
-                                <span className="text-[11px] font-light" style={{ color: "#DC2626" }}>Balance: {formatNaira(balance)}</span>
+                        <div key={stage.key} className="flex items-start flex-1 min-w-0">
+                          {/* Circle + label column */}
+                          <div className="flex flex-col items-center" style={{ width: 64, flexShrink: 0 }}>
+                            <button
+                              onClick={() => setExpandedArea(isSelected ? null : stage.key)}
+                              className="relative flex items-center justify-center rounded-full transition-all hover:scale-110"
+                              style={{
+                                width: 48, height: 48,
+                                backgroundColor: state === "inactive" ? `${GREY}30` : state === "next" ? "transparent" : `${color}18`,
+                                border: state === "next" ? `2px dashed ${GOLD}` : state === "inactive" ? `1px solid ${GREY}` : `2px solid ${color}`,
+                                animation: state === "in_progress" ? "stagePulse 2s infinite" : "none",
+                                boxShadow: isSelected ? `0 0 0 3px ${color}30` : "none",
+                              }}
+                            >
+                              {state === "delivered" ? (
+                                <CheckCircle size={22} style={{ color: GREEN }} />
+                              ) : state === "inactive" ? (
+                                <Lock size={18} style={{ color: GREY }} />
+                              ) : (
+                                <StageIcon size={20} style={{ color }} />
                               )}
-                            </div>
-                            {inv.dueDate && (
-                              <div className="flex items-center gap-1 mt-1">
-                                <Clock size={9} style={{ color: `${DARK}30` }} />
-                                <p className="text-[10px]" style={{ color: `${DARK}30` }}>Due: {formatDate(inv.dueDate)}</p>
-                              </div>
-                            )}
+                            </button>
+                            <p
+                              className="text-[10px] font-medium text-center mt-2 leading-tight"
+                              style={{ color: state === "inactive" ? GREY : DARK, maxWidth: 64 }}
+                            >
+                              {stage.label}
+                            </p>
+                            <p
+                              className="text-[8px] text-center mt-0.5 leading-tight"
+                              style={{ color: LABEL, maxWidth: 64 }}
+                            >
+                              {stage.sub}
+                            </p>
                           </div>
 
-                          {!isPaid && balance > 0 && activeBankDetails?.configured && (
-                            <div className="px-5 pb-4">
-                              <div
-                                className="rounded-xl p-3 mb-3"
-                                style={{ backgroundColor: CREAM, border: `1px solid ${DARK}06` }}
-                              >
-                                <p className="text-[9px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: DARK }}>
-                                  <CreditCard size={10} /> Bank Transfer Details
-                                </p>
-                                <div className="space-y-1.5">
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[11px]" style={{ color: MUTED }}>Bank</span>
-                                    <span className="text-[11px] font-medium" style={{ color: DARK }}>{activeBankDetails!.bankName}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[11px]" style={{ color: MUTED }}>Account Name</span>
-                                    <span className="text-[11px] font-medium" style={{ color: DARK }}>{activeBankDetails!.accountName}</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[11px]" style={{ color: MUTED }}>Account No.</span>
-                                    <button
-                                      className="flex items-center gap-1 text-[11px] font-mono font-bold transition-opacity hover:opacity-70"
-                                      style={{ color: DARK }}
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(activeBankDetails!.accountNumber);
-                                        setCopiedAcct(true);
-                                        setTimeout(() => setCopiedAcct(false), 2000);
-                                      }}
-                                    >
-                                      {activeBankDetails!.accountNumber}
-                                      <Copy size={10} />
-                                    </button>
-                                  </div>
-                                  {copiedAcct && (
-                                    <p className="text-[10px] text-center" style={{ color: GREEN }}>Copied!</p>
-                                  )}
-                                </div>
-                                <p className="text-[10px] mt-2 text-center" style={{ color: MUTED }}>
-                                  Transfer {formatNaira(balance)} then click below
-                                </p>
-                              </div>
-
-                              {hasClaimed ? (
-                                <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl" style={{ backgroundColor: "#DCFCE7" }}>
-                                  <CheckCircle size={12} style={{ color: GREEN }} />
-                                  <span className="text-[11px] font-medium" style={{ color: "#166534" }}>
-                                    Payment claim received -- we'll confirm shortly
-                                  </span>
-                                </div>
-                              ) : (
-                                <button
-                                  onClick={() => claimMutation.mutate({ invoiceNumber: inv.number, clientName: task.clientName })}
-                                  disabled={claimMutation.isPending}
-                                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[12px] font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40"
-                                  style={{ backgroundColor: DARK, color: GOLD }}
-                                >
-                                  {claimMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
-                                  I've Paid
-                                </button>
-                              )}
+                          {/* Connecting line */}
+                          {!isLast && (
+                            <div className="flex-1 flex items-center" style={{ height: 48, minWidth: 16 }}>
+                              <svg width="100%" height="4" className="overflow-visible">
+                                <line
+                                  x1="0" y1="2" x2="100%" y2="2"
+                                  stroke={lineStyle(stageStates[STAGES[idx].key], stageStates[STAGES[idx + 1].key]).color}
+                                  strokeWidth="2"
+                                  strokeDasharray={lineStyle(stageStates[STAGES[idx].key], stageStates[STAGES[idx + 1].key]).dash}
+                                />
+                              </svg>
                             </div>
                           )}
                         </div>
                       );
                     })}
                   </div>
-                </>
-              )}
-            </div>
-          )}
-
-
-          {/* ═══ SEND MESSAGE TO STAFF ═══ */}
-          <div id="message-section" className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Send size={14} style={{ color: LABEL }} />
-              <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: LABEL }}>
-                Send a message to your team
-              </p>
-            </div>
-
-            <div
-              className="rounded-2xl overflow-hidden"
-              style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
-            >
-              {messageSent && (
-                <div className="flex items-center gap-2 p-3 mx-5 mt-4 rounded-xl" style={{ backgroundColor: "#DCFCE7" }}>
-                  <CheckCircle size={14} style={{ color: GREEN }} />
-                  <p className="text-[12px] font-medium" style={{ color: "#166534" }}>
-                    Message sent. Your team has been notified.
-                  </p>
                 </div>
-              )}
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type your message here..."
-                className="w-full p-5 text-[14px] font-light bg-transparent resize-none focus:outline-none"
-                style={{ color: DARK, minHeight: 80 }}
-                maxLength={1000}
-              />
-              <div className="flex items-center justify-between px-5 pb-4">
-                <span className="text-[10px]" style={{ color: `${DARK}25` }}>{message.length}/1000</span>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!message.trim() || noteMutation.isPending}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-30"
-                  style={{ backgroundColor: DARK, color: GOLD }}
-                >
-                  {noteMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
-                  Send
-                </button>
-              </div>
-            </div>
 
-            {noteMutation.isError && (
-              <div className="flex items-center gap-2 p-3 rounded-xl mt-3" style={{ backgroundColor: "#FEE2E2" }}>
-                <AlertCircle size={14} style={{ color: "#DC2626" }} />
-                <p className="text-[12px]" style={{ color: "#991B1B" }}>Failed to send message. Please try again.</p>
-              </div>
-            )}
+                {/* ── Expanded Stage Detail Panel ── */}
+                {selectedStage && (() => {
+                  const stage = STAGES.find(s => s.key === selectedStage);
+                  if (!stage) return null;
+                  const state = stageStates[stage.key];
+                  const color = stageColor(state);
+                  const pitch = STAGE_PITCHES[stage.key];
+                  const items = getStageChecklist(stage.key, state);
 
-            {/* Recent activity log */}
-            {activity.length > 0 && (
-              <div className="mt-4">
-                <div className="flex items-center gap-1.5 mb-3">
-                  <Clock size={11} style={{ color: `${DARK}35` }} />
-                  <p className="text-[11px] font-medium uppercase tracking-wider" style={{ color: `${DARK}35` }}>
-                    Recent Activity
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  {activity.filter(a => a.action !== "client_note").slice(0, 5).map((a) => (
+                  return (
                     <div
-                      key={a.id}
-                      className="flex items-center justify-between py-2 px-3 rounded-lg"
-                      style={{ backgroundColor: CREAM }}
+                      className="rounded-2xl p-5 md:p-6 mb-6 overflow-hidden"
+                      style={{
+                        backgroundColor: WHITE,
+                        border: `1px solid ${color}25`,
+                        animation: "expandDown 0.3s ease-out both",
+                      }}
                     >
-                      <span className="text-[12px] font-light" style={{ color: DARK }}>
-                        {ACTIVITY_LABELS[a.action] || a.action.replace(/_/g, " ")}
-                      </span>
-                      <span className="text-[10px]" style={{ color: `${DARK}30` }}>{timeAgo(a.createdAt)}</span>
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[18px]">{stageEmoji[state]}</span>
+                          <div>
+                            <p className="text-[15px] font-medium" style={{ color: DARK }}>
+                              {stage.label}
+                            </p>
+                            <p className="text-[11px] font-semibold uppercase tracking-wider" style={{ color }}>
+                              {stageStatusLabel[state]}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setExpandedArea(null)}
+                          className="p-1.5 rounded-lg hover:bg-gray-100"
+                        >
+                          <X size={16} style={{ color: LABEL }} />
+                        </button>
+                      </div>
+
+                      {/* Divider */}
+                      <div className="w-full h-px mb-4" style={{ backgroundColor: `${color}20` }} />
+
+                      {/* DELIVERED state */}
+                      {state === "delivered" && (
+                        <>
+                          <div className="space-y-2 mb-4">
+                            {items.map((item, i) => (
+                              <div key={i} className="flex items-center gap-2.5">
+                                <CheckCircle size={14} style={{ color: GREEN }} />
+                                <span className="text-[12px] font-light" style={{ color: DARK }}>
+                                  {item.label} {task.createdAt ? `-- ${formatDate(task.createdAt)}` : ""}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[12px] font-light leading-relaxed italic" style={{ color: MUTED }}>
+                            {pitch
+                              ? `This area is handled. ${pitch.includes[0]} and related services are in place.`
+                              : "Your business is legally recognized. This unlocks banking, contracts, and tender eligibility."}
+                          </p>
+                        </>
+                      )}
+
+                      {/* IN_PROGRESS state */}
+                      {state === "in_progress" && (
+                        <>
+                          <div className="space-y-2 mb-4">
+                            {items.map((item, i) => (
+                              <div key={i} className="flex items-center gap-2.5">
+                                {item.done ? (
+                                  <CheckCircle size={14} style={{ color: GREEN }} />
+                                ) : (
+                                  <div className="w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: GOLD }}>
+                                    <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GOLD }} />
+                                  </div>
+                                )}
+                                <span className="text-[12px] font-light" style={{ color: item.done ? DARK : MUTED }}>
+                                  {item.label} -- {item.done ? "Done" : task.deadline ? `Expected: ${formatDate(task.deadline)}` : "In progress"}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[12px] font-light leading-relaxed italic" style={{ color: MUTED }}>
+                            We're handling this now. You'll be notified when complete.
+                          </p>
+                        </>
+                      )}
+
+                      {/* PAID state */}
+                      {state === "paid" && (
+                        <>
+                          <div className="space-y-2 mb-4">
+                            {(pitch?.includes || []).map((inc, i) => (
+                              <div key={i} className="flex items-center gap-2.5">
+                                <Circle size={14} style={{ color: `${DARK}18` }} />
+                                <span className="text-[12px] font-light" style={{ color: MUTED }}>{inc}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-[12px] font-light leading-relaxed italic" style={{ color: MUTED }}>
+                            This will start once the current active stage is complete.
+                          </p>
+                        </>
+                      )}
+
+                      {/* NEXT (recommended) state */}
+                      {state === "next" && pitch && (
+                        <>
+                          <p className="text-[13px] font-light leading-relaxed mb-4" style={{ color: DARK }}>
+                            {pitch.question}
+                          </p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: LABEL }}>
+                            What this includes
+                          </p>
+                          <div className="space-y-1.5 mb-5">
+                            {pitch.includes.map((inc, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <div className="w-1 h-1 rounded-full" style={{ backgroundColor: GOLD }} />
+                                <span className="text-[11px] font-light" style={{ color: DARK }}>{inc}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setMobileChatOpen(true);
+                              setTimeout(() => handleChatSend(`I want to activate ${stage.label}. Show me what's included and how to get started.`), 100);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
+                            style={{ backgroundColor: GOLD, color: WHITE }}
+                          >
+                            <Unlock size={13} /> Activate this stage <ArrowRight size={13} />
+                          </button>
+                        </>
+                      )}
+
+                      {/* INACTIVE state */}
+                      {state === "inactive" && pitch && (
+                        <>
+                          <p className="text-[13px] font-light leading-relaxed mb-4" style={{ color: DARK }}>
+                            {pitch.question}
+                          </p>
+                          <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: LABEL }}>
+                            What this includes
+                          </p>
+                          <div className="space-y-1.5 mb-5">
+                            {pitch.includes.map((inc, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <div className="w-1 h-1 rounded-full" style={{ backgroundColor: `${DARK}30` }} />
+                                <span className="text-[11px] font-light" style={{ color: MUTED }}>{inc}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            onClick={() => {
+                              setMobileChatOpen(true);
+                              setTimeout(() => handleChatSend(`I want to activate ${stage.label}. Show me what's included and how to get started.`), 100);
+                            }}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[11px] font-semibold uppercase tracking-wider transition-all hover:opacity-90"
+                            style={{ backgroundColor: DARK, color: GOLD }}
+                          >
+                            <Unlock size={13} /> Activate this stage <ArrowRight size={13} />
+                          </button>
+                        </>
+                      )}
+
+                      {/* INACTIVE with no pitch (lead) */}
+                      {state === "delivered" && stage.key === "lead" && (
+                        <p className="text-[12px] font-light leading-relaxed italic mt-2" style={{ color: MUTED }}>
+                          You're in the system. This is where every successful business journey begins.
+                        </p>
+                      )}
                     </div>
-                  ))}
+                  );
+                })()}
+
+
+                {/* ═══ ACTIVE SERVICE CARD ═══ */}
+                <div className="mb-8">
+                  <p
+                    className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-4"
+                    style={{ color: LABEL }}
+                  >
+                    Active Service
+                  </p>
+
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                  >
+                    <div className="px-5 py-4">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[15px] font-medium" style={{ color: DARK }}>{task.service}</p>
+                        <span
+                          className="text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+                          style={{
+                            backgroundColor: isCompleted ? `${GREEN}12` : `${GOLD}12`,
+                            color: isCompleted ? GREEN : GOLD,
+                          }}
+                        >
+                          {task.status}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-2 flex-wrap">
+                        {task.createdAt && (
+                          <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
+                            <Calendar size={10} /> Started: {formatDate(task.createdAt)}
+                          </span>
+                        )}
+                        {task.deadline && !isCompleted && (
+                          <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
+                            <Clock size={10} /> Due: {formatDate(task.deadline)}
+                          </span>
+                        )}
+                      </div>
+
+                      {invoiceSummary && invoiceSummary.paid > 0 && (
+                        <div className="flex items-center gap-3 mt-2 flex-wrap">
+                          <span className="flex items-center gap-1 text-[11px]" style={{ color: LABEL }}>
+                            <CreditCard size={10} /> Paid: {formatNaira(invoiceSummary.paid)}
+                          </span>
+                          {invoiceSummary.total - invoiceSummary.paid > 0 && (
+                            <span className="text-[11px] font-medium" style={{ color: ORANGE }}>
+                              Balance: {formatNaira(invoiceSummary.total - invoiceSummary.paid)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Checklist progress */}
+                    {checklist.length > 0 && (
+                      <div className="px-5 pb-4">
+                        {!isCompleted && (
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="flex-1">
+                              <ProgressBar pct={task.progress || 0} color={deptAccent} />
+                            </div>
+                            <span className="text-[11px] font-medium tabular-nums" style={{ color: deptAccent }}>
+                              {task.progress}%
+                            </span>
+                          </div>
+                        )}
+                        <div className="space-y-2">
+                          {checklist.map((c, ci) => (
+                            <div key={ci} className="flex items-center gap-2.5">
+                              {c.checked ? (
+                                <CheckCircle size={14} style={{ color: GREEN }} />
+                              ) : (
+                                <Circle size={14} style={{ color: `${DARK}18` }} />
+                              )}
+                              <span
+                                className="text-[12px] font-light"
+                                style={{ color: c.checked ? DARK : MUTED }}
+                              >
+                                {c.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
 
 
-          {/* ═══ FOUNDER QUOTE ═══ */}
-          <div
-            className="rounded-2xl p-6 mb-8 relative overflow-hidden"
-            style={{ backgroundColor: WHITE, border: `1px solid ${GOLD}15` }}
-          >
-            <Quote size={60} className="absolute top-3 right-4" style={{ color: GOLD, opacity: 0.06 }} />
-            <div className="relative flex items-start gap-3">
-              <div
-                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                style={{ backgroundColor: `${GOLD}10` }}
-              >
-                <Quote size={16} style={{ color: GOLD }} />
-              </div>
-              <div>
-                <p className="text-[13px] font-light leading-relaxed italic mb-2" style={{ color: DARK }}>
-                  "{founderQuote}"
-                </p>
-                <p className="text-[11px] font-medium" style={{ color: GOLD }}>-- Muhammad Hamzury</p>
-              </div>
-            </div>
-          </div>
+                {/* ═══ INVOICES (collapsible) ═══ */}
+                {hasInvoices && (
+                  <div className="mb-8">
+                    <button
+                      onClick={() => setInvoicesOpen(!invoicesOpen)}
+                      className="flex items-center gap-2 mb-4 group"
+                    >
+                      <CreditCard size={14} style={{ color: LABEL }} />
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: LABEL }}>
+                        Invoices
+                      </p>
+                      <ChevronDown
+                        size={14}
+                        style={{ color: LABEL, transform: invoicesOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                      />
+                      {invoiceSummary && invoiceSummary.total - invoiceSummary.paid > 0 && (
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#FEE2E2", color: "#DC2626" }}>
+                          {formatNaira(invoiceSummary.total - invoiceSummary.paid)} due
+                        </span>
+                      )}
+                    </button>
+
+                    {invoicesOpen && (
+                      <>
+                        <div
+                          className="grid grid-cols-3 gap-4 rounded-2xl p-5 mb-4"
+                          style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                        >
+                          <div className="text-center">
+                            <p className="text-[16px] font-semibold" style={{ color: DARK }}>{formatNaira(invoiceSummary!.total)}</p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Total</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[16px] font-semibold" style={{ color: GREEN }}>{formatNaira(invoiceSummary!.paid)}</p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Paid</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-[16px] font-semibold" style={{ color: invoiceSummary!.total - invoiceSummary!.paid > 0 ? "#DC2626" : GREEN }}>
+                              {formatNaira(invoiceSummary!.total - invoiceSummary!.paid)}
+                            </p>
+                            <p className="text-[9px] font-medium uppercase tracking-wider mt-0.5" style={{ color: LABEL }}>Balance</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          {invoiceSummary!.invoices.map((inv) => {
+                            const balance = inv.total - inv.paid;
+                            const isPaid = inv.status === "paid";
+                            const hasClaimed = claimedInvoices.has(inv.number);
+                            const statusColor =
+                              isPaid ? GREEN
+                              : inv.status === "partial" ? GOLD
+                              : inv.status === "overdue" ? "#DC2626"
+                              : inv.status === "sent" ? "#2563EB"
+                              : MUTED;
+                            return (
+                              <div
+                                key={inv.number}
+                                className="rounded-2xl overflow-hidden"
+                                style={{ backgroundColor: WHITE, border: `1px solid ${BORDER}` }}
+                              >
+                                <div className="px-5 py-4">
+                                  <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[11px] font-mono font-medium" style={{ color: DARK }}>{inv.number}</span>
+                                    <span
+                                      className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                                      style={{ backgroundColor: `${statusColor}12`, color: statusColor }}
+                                    >
+                                      {inv.status}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[14px] font-semibold" style={{ color: DARK }}>{formatNaira(inv.total)}</span>
+                                    {balance > 0 && (
+                                      <span className="text-[11px] font-light" style={{ color: "#DC2626" }}>Balance: {formatNaira(balance)}</span>
+                                    )}
+                                  </div>
+                                  {inv.dueDate && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Clock size={9} style={{ color: `${DARK}30` }} />
+                                      <p className="text-[10px]" style={{ color: `${DARK}30` }}>Due: {formatDate(inv.dueDate)}</p>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {!isPaid && balance > 0 && activeBankDetails?.configured && (
+                                  <div className="px-5 pb-4">
+                                    <div
+                                      className="rounded-xl p-3 mb-3"
+                                      style={{ backgroundColor: CREAM, border: `1px solid ${DARK}06` }}
+                                    >
+                                      <p className="text-[9px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: DARK }}>
+                                        <CreditCard size={10} /> Bank Transfer Details
+                                      </p>
+                                      <div className="space-y-1.5">
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-[11px]" style={{ color: MUTED }}>Bank</span>
+                                          <span className="text-[11px] font-medium" style={{ color: DARK }}>{activeBankDetails!.bankName}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-[11px]" style={{ color: MUTED }}>Account Name</span>
+                                          <span className="text-[11px] font-medium" style={{ color: DARK }}>{activeBankDetails!.accountName}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                          <span className="text-[11px]" style={{ color: MUTED }}>Account No.</span>
+                                          <button
+                                            className="flex items-center gap-1 text-[11px] font-mono font-bold transition-opacity hover:opacity-70"
+                                            style={{ color: DARK }}
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(activeBankDetails!.accountNumber);
+                                              setCopiedAcct(true);
+                                              setTimeout(() => setCopiedAcct(false), 2000);
+                                            }}
+                                          >
+                                            {activeBankDetails!.accountNumber}
+                                            <Copy size={10} />
+                                          </button>
+                                        </div>
+                                        {copiedAcct && (
+                                          <p className="text-[10px] text-center" style={{ color: GREEN }}>Copied!</p>
+                                        )}
+                                      </div>
+                                      <p className="text-[10px] mt-2 text-center" style={{ color: MUTED }}>
+                                        Transfer {formatNaira(balance)} then click below
+                                      </p>
+                                    </div>
+
+                                    {hasClaimed ? (
+                                      <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl" style={{ backgroundColor: "#DCFCE7" }}>
+                                        <CheckCircle size={12} style={{ color: GREEN }} />
+                                        <span className="text-[11px] font-medium" style={{ color: "#166534" }}>
+                                          Payment claim received -- we'll confirm shortly
+                                        </span>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => claimMutation.mutate({ invoiceNumber: inv.number, clientName: task.clientName })}
+                                        disabled={claimMutation.isPending}
+                                        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-[12px] font-semibold uppercase tracking-wider transition-all hover:opacity-90 disabled:opacity-40"
+                                        style={{ backgroundColor: DARK, color: GOLD }}
+                                      >
+                                        {claimMutation.isPending ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                                        I've Paid
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
 
 
-          {/* ═══ FOOTER ═══ */}
-          <div className="text-center pt-4 pb-6" style={{ borderTop: `1px solid ${DARK}06` }}>
-            <p className="text-[10px]" style={{ color: `${DARK}30` }}>
-              Ref: {task.ref} &middot; Last updated: {formatDate(task.updatedAt)}
-            </p>
-          </div>
+                {/* ═══ FOUNDER QUOTE ═══ */}
+                <div
+                  className="rounded-2xl p-6 mb-8 relative overflow-hidden"
+                  style={{ backgroundColor: WHITE, border: `1px solid ${GOLD}15` }}
+                >
+                  <Quote size={60} className="absolute top-3 right-4" style={{ color: GOLD, opacity: 0.06 }} />
+                  <div className="relative flex items-start gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                      style={{ backgroundColor: `${GOLD}10` }}
+                    >
+                      <Quote size={16} style={{ color: GOLD }} />
+                    </div>
+                    <div>
+                      <p className="text-[13px] font-light leading-relaxed italic mb-2" style={{ color: DARK }}>
+                        "{founderQuote}"
+                      </p>
+                      <p className="text-[11px] font-medium" style={{ color: GOLD }}>-- Muhammad Hamzury</p>
+                    </div>
+                  </div>
+                </div>
+
+
+                {/* ═══ FOOTER ═══ */}
+                <div className="text-center pt-4 pb-6" style={{ borderTop: `1px solid ${DARK}06` }}>
+                  <p className="text-[10px]" style={{ color: `${DARK}30` }}>
+                    Ref: {task.ref} &middot; Last updated: {formatDate(task.updatedAt)}
+                  </p>
+                </div>
+              </>
+            );
+          })()}
         </div>
 
 
