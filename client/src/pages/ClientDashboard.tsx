@@ -377,16 +377,17 @@ export default function ClientDashboard() {
     noteMutation.mutate({ ref: session.ref, message: message.trim() });
   }
 
-  /* ── Load persisted chat on session ready ── */
+  /* ── Load persisted chat on session ready + auto-greet ── */
   useEffect(() => {
-    if (session?.ref) {
-      const saved = loadChatMessages(session.ref);
-      if (saved.length > 0) {
-        setChatMessages(saved);
-        setAutoGreeted(true);
-      }
+    if (!session?.ref) return;
+    const saved = loadChatMessages(session.ref);
+    if (saved.length > 0) {
+      setChatMessages(saved);
+      setAutoGreeted(true);
     }
   }, [session?.ref]);
+
+  /* Auto-greeting handled inline after data check below */
 
   /* ── Persist chat messages ── */
   useEffect(() => {
@@ -485,38 +486,23 @@ export default function ClientDashboard() {
     setTimeout(() => handleChatSend(msg), 100);
   }, [handleChatSend]);
 
-  /* ── Loading / error states ── */
-  if (!sessionLoaded) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: CREAM }}>
-        <Loader2 className="animate-spin" size={24} style={{ color: DARK }} />
-      </div>
-    );
-  }
-  if (!session) return null;
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3" style={{ backgroundColor: CREAM }}>
-        <Loader2 className="animate-spin" size={24} style={{ color: DARK }} />
-        <p className="text-[13px] font-light" style={{ color: DARK, opacity: 0.5 }}>Loading your business health...</p>
-      </div>
-    );
-  }
-  if (isError || !data || !data.found) {
+  /* ── Loading / error — NO early returns to preserve hook order ── */
+  if (!sessionLoaded || !session || isLoading || isError || !data || !data.found) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6" style={{ backgroundColor: CREAM }}>
-        <AlertCircle size={32} style={{ color: "#DC2626" }} />
-        <div className="text-center">
-          <p className="text-[15px] font-light mb-1" style={{ color: DARK }}>File not found</p>
-          <p className="text-[12px] opacity-40" style={{ color: DARK }}>Reference: {session.ref}</p>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="text-[12px] font-medium px-4 py-2 rounded-lg transition-opacity hover:opacity-70"
-          style={{ backgroundColor: DARK, color: GOLD }}
-        >
-          Try a different reference
-        </button>
+        {(!sessionLoaded || isLoading) ? (
+          <>
+            <Loader2 className="animate-spin" size={24} style={{ color: DARK }} />
+            <p className="text-[13px] font-light" style={{ color: DARK, opacity: 0.5 }}>Loading your business health...</p>
+          </>
+        ) : (isError || !data || (data && !data.found)) ? (
+          <>
+            <AlertCircle size={32} style={{ color: "#DC2626" }} />
+            <p className="text-[15px] font-light mb-1" style={{ color: DARK }}>File not found</p>
+            <p className="text-[12px] opacity-40" style={{ color: DARK }}>Reference: {session?.ref}</p>
+            <button onClick={handleLogout} className="text-[12px] font-medium px-4 py-2 rounded-lg" style={{ backgroundColor: DARK, color: GOLD }}>Try a different reference</button>
+          </>
+        ) : null}
       </div>
     );
   }
@@ -550,22 +536,17 @@ export default function ClientDashboard() {
   };
   const overallMessage = overallMessages[overallPct] || overallMessages[0];
 
-  /* ── Auto-greeting ── */
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  useEffect(() => {
-    if (!task || autoGreeted || chatMessages.length > 0) return;
-    const firstName = (task.clientName || "").split(" ")[0];
-    let greeting = "";
-    if (overallPct <= 20) {
-      greeting = `Hi ${firstName}. Your business is ${overallPct}% structured right now. That means most areas are still unprotected. The good news is we can fix the most critical gap first. Want me to show you what to prioritize?`;
-    } else if (overallPct <= 60) {
-      greeting = `Welcome back, ${firstName}. Your business health is at ${overallPct}%. You've made real progress. Let me show you the next area that would make the biggest difference.`;
-    } else {
-      greeting = `Great to see you, ${firstName}. Your business is ${overallPct}% structured -- that's strong. A few more steps and you're fully protected. Want to see what's left?`;
-    }
-    setChatMessages([{ role: "assistant", content: greeting }]);
-    setAutoGreeted(true);
-  }, [task, autoGreeted, chatMessages.length, overallPct]);
+  /* ── Auto-greeting (safe — after data is available, runs once) ── */
+  if (!autoGreeted && chatMessages.length === 0) {
+    const fn = (task.clientName || "").split(" ")[0];
+    const g = overallPct <= 20
+      ? `Hi ${fn}. Your business is ${overallPct}% structured. Most areas are still unprotected. Want me to show you what to prioritize?`
+      : overallPct <= 60
+      ? `Welcome back, ${fn}. Your business health is at ${overallPct}%. Let me show you the next area that makes the biggest difference.`
+      : `Great to see you, ${fn}. Your business is ${overallPct}% structured. A few more steps and you're fully protected.`;
+    // Use setTimeout to avoid setState during render
+    setTimeout(() => { setChatMessages([{ role: "assistant", content: g }]); setAutoGreeted(true); }, 0);
+  }
 
   const hasInvoices = invoiceSummary && invoiceSummary.invoices.length > 0;
   const isCompleted = task.status === "Completed";
