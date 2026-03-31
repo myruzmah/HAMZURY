@@ -78,7 +78,7 @@ export default function TrackingDialog({ open, onOpenChange }: TrackingDialogPro
             value={ref}
             onChange={(e) => { setRef(e.target.value); setSearched(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-            placeholder="HAM-XXXX-1234"
+            placeholder="HMZ-26/3-XXXX"
             className="flex-1 bg-white border-[#2D2D2D]/10 focus:border-[#B48C4C]"
             style={{ color: "#2D2D2D" }}
           />

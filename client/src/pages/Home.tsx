@@ -3,7 +3,7 @@ import PageMeta from "@/components/PageMeta";
 
 import {
   ShieldCheck, Cpu, GraduationCap,
-  ArrowRight, LogOut,
+  ArrowRight,
   Menu, X, ChevronDown, CheckCircle,
   TrendingUp, MessageSquare, Eye, EyeOff, Loader2,
 } from "lucide-react";

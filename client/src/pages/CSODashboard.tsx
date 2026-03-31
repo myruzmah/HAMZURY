@@ -1624,10 +1624,10 @@ const APPOINTMENT_TYPES = [
 ];
 
 const MOCK_APPOINTMENTS = [
-  { id: 1, client: "Kemi Adeyemi Properties", ref: "HAM-AB12-1234", type: "discovery", date: "2026-03-23", time: "10:00 AM", duration: 30, notes: "Interested in CAC + trademark",      status: "confirmed" },
-  { id: 2, client: "NorthStar Trading Co",    ref: "HAM-CD56-5678", type: "follow_up", date: "2026-03-23", time: "2:00 PM",  duration: 20, notes: "Check on document upload",          status: "pending" },
-  { id: 3, client: "Abuja Digital Ventures",  ref: "HAM-EF90-9012", type: "delivery",  date: "2026-03-25", time: "11:00 AM", duration: 45, notes: "Final handover — Systemise website", status: "confirmed" },
-  { id: 4, client: "Lagos Fashion House",     ref: "HAM-GH34-3456", type: "retention", date: "2026-03-27", time: "3:00 PM",  duration: 15, notes: "30-day retention check",             status: "confirmed" },
+  { id: 1, client: "Kemi Adeyemi Properties", ref: "HMZ-26/3-1234", type: "discovery", date: "2026-03-23", time: "10:00 AM", duration: 30, notes: "Interested in CAC + trademark",      status: "confirmed" },
+  { id: 2, client: "NorthStar Trading Co",    ref: "HMZ-26/3-5678", type: "follow_up", date: "2026-03-23", time: "2:00 PM",  duration: 20, notes: "Check on document upload",          status: "pending" },
+  { id: 3, client: "Abuja Digital Ventures",  ref: "HMZ-26/2-9012", type: "delivery",  date: "2026-03-25", time: "11:00 AM", duration: 45, notes: "Final handover — Systemise website", status: "confirmed" },
+  { id: 4, client: "Lagos Fashion House",     ref: "HMZ-26/3-3456", type: "retention", date: "2026-03-27", time: "3:00 PM",  duration: 15, notes: "30-day retention check",             status: "confirmed" },
 ];
 
 const STATUS_C: Record<string, { bg: string; text: string }> = {

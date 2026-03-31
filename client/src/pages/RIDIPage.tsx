@@ -79,7 +79,7 @@ export default function RIDIPage() {
 
   const applyMutation = trpc.skills.submitApplication.useMutation({
     onSuccess: (data: any) => {
-      setReference(data?.ref ?? "HAM-0000-0000");
+      setReference(data?.ref ?? "HMZ-00/0-0000");
       setSubmitted(true);
       setSubmitError("");
     },

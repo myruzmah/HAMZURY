@@ -27,7 +27,6 @@ import ConsultantPage from "./pages/ConsultantPage";
 import AffiliatePage from "./pages/AffiliatePage";
 import AffiliateDashboard from "./pages/AffiliateDashboard";
 import PricingPage from "./pages/PricingPage";
-import LoginPage from "./pages/LoginPage";
 import StaffWorkspace from "./pages/StaffWorkspace";
 import SkillsCEOPage from "./pages/SkillsCEOPage";
 import CTOPage from "./pages/CTOPage";
@@ -47,7 +46,6 @@ import TrainingPage from "./pages/TrainingPage";
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
-import { getLoginUrl } from "./const";
 
 // Strict role access — each person only sees their own dashboard
 // Only the founder has cross-dashboard visibility

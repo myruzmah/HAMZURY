@@ -38,11 +38,11 @@ const MOCK_KPI = {
 };
 
 const MOCK_LEADS: LeadRow[] = [
-  { id: 1, ref: "HAM-KX41-0041", name: "Chukwuemeka Foods Ltd", contact: "CEO — Chukwuemeka Obi", source: "Referral", score: 5, budget: "₦1.2M", timeline: "4 weeks", service: "BizDoc + Systemise", status: "handoff_ready" },
-  { id: 2, ref: "HAM-PA40-0040", name: "Kemi Adeyemi Properties", contact: "Director — Kemi Adeyemi", source: "Content", score: 4, budget: "₦750K", timeline: "6 weeks", service: "BizDoc", status: "qualifying" },
-  { id: 3, ref: "HAM-QD39-0039", name: "Abuja Digital Ventures", contact: "Co-founder — Tunde Salami", source: "Events", score: 3, budget: "₦500K", timeline: "8 weeks", service: "Systemise", status: "qualifying" },
-  { id: 4, ref: "HAM-TF38-0038", name: "NorthStar Trading Co", contact: "GM — Fatima Yusuf", source: "Partnership", score: 5, budget: "₦2.1M", timeline: "2 weeks", service: "BizDoc + Skills", status: "handed_off" },
-  { id: 5, ref: "HAM-AC37-0037", name: "Lagos Fashion House", contact: "Owner — Amaka Chidi", source: "Content", score: 2, budget: "₦300K", timeline: "Unclear", service: "TBD", status: "nurturing" },
+  { id: 1, ref: "HMZ-26/3-0041", name: "Chukwuemeka Foods Ltd", contact: "CEO — Chukwuemeka Obi", source: "Referral", score: 5, budget: "₦1.2M", timeline: "4 weeks", service: "BizDoc + Systemise", status: "handoff_ready" },
+  { id: 2, ref: "HMZ-26/3-0040", name: "Kemi Adeyemi Properties", contact: "Director — Kemi Adeyemi", source: "Content", score: 4, budget: "₦750K", timeline: "6 weeks", service: "BizDoc", status: "qualifying" },
+  { id: 3, ref: "HMZ-26/2-0039", name: "Abuja Digital Ventures", contact: "Co-founder — Tunde Salami", source: "Events", score: 3, budget: "₦500K", timeline: "8 weeks", service: "Systemise", status: "qualifying" },
+  { id: 4, ref: "HMZ-26/2-0038", name: "NorthStar Trading Co", contact: "GM — Fatima Yusuf", source: "Partnership", score: 5, budget: "₦2.1M", timeline: "2 weeks", service: "BizDoc + Skills", status: "handed_off" },
+  { id: 5, ref: "HMZ-26/1-0037", name: "Lagos Fashion House", contact: "Owner — Amaka Chidi", source: "Content", score: 2, budget: "₦300K", timeline: "Unclear", service: "TBD", status: "nurturing" },
 ];
 
 const KANBAN_STAGES = ["Researching", "Outreach", "Agreed", "Active", "Paused"] as const;
