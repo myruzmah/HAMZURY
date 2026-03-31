@@ -32,7 +32,6 @@ import StaffWorkspace from "./pages/StaffWorkspace";
 import SkillsCEOPage from "./pages/SkillsCEOPage";
 import CTOPage from "./pages/CTOPage";
 import CTOPublicPage from "./pages/CTOPublicPage";
-import ClientPage from "./pages/ClientPage";
 import ClientDashboard from "./pages/ClientDashboard";
 import AlumniPage from "./pages/AlumniPage";
 import RIDIPage from "./pages/RIDIPage";
@@ -168,9 +167,9 @@ function Router() {
         </RoleGuard>
       </Route>
 
-      {/* Client Portal — dashboard first, then /client entry page */}
+      {/* Client Portal — dashboard only, clients enter ref via Track section */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />
-      <Route path={"/client"} component={ClientPage} />
+      <Route path={"/client"}>{() => { window.location.href = "/"; return null; }}</Route>
 
       {/* Affiliate Portal */}
       <Route path={"/affiliate"} component={AffiliatePage} />
