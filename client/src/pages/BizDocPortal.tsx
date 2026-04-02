@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
-import { ArrowRight, ChevronDown, ChevronLeft, ChevronRight, X, Menu, FileText, Shield, Scale, Award, Briefcase, MessageSquare, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, X, Menu, FileText, Shield, Scale, Award, Briefcase, MessageSquare, Loader2, ClipboardList, Search, PenTool, Send, CheckCircle, Handshake } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import { trpc } from "@/lib/trpc";
 
@@ -9,68 +9,43 @@ const G  = "#1B4D3E";
 const Au = "#B48C4C";
 const Cr = "#FFFAF6";
 const W  = "#FFFFFF";
-const Milk = "#FFFAF6";
 
-// ── SERVICE CARDS (simplified from pillars) ─────────────────────────────────
+// ── SERVICE CARDS ────────────────────────────────────────────────────────────
 const SERVICE_CARDS = [
-  // Packages first — higher ticket, recommended
-  {
-    icon: Award,
-    title: "⭐ Starter Pack",
-    line: "CAC Ltd + TIN + Bank Account + Seal — everything to start legally. ₦250K",
-    context: "BizDoc Packages",
-  },
-  {
-    icon: Shield,
-    title: "⭐ Pro Pack",
-    line: "Starter + Tax Filing + Compliance Management — stay protected. ₦400K",
-    context: "BizDoc Packages",
-  },
-  {
-    icon: Briefcase,
-    title: "⭐ Complete Pack",
-    line: "Pro + Legal Pack + Sector Licence — fully covered. ₦600K",
-    context: "BizDoc Packages",
-  },
-  // Individual services
-  {
-    icon: Briefcase,
-    title: "Business Registration",
-    line: "CAC, foreign company setup, and all entity formation.",
-    context: "Business Registration",
-  },
-  {
-    icon: FileText,
-    title: "Foreign Business",
-    line: "Expatriate quota, CERPAC, business permit — full foreign setup.",
-    context: "Foreign Business",
-  },
-  {
-    icon: Shield,
-    title: "Tax Compliance",
-    line: "TIN, annual returns, FIRS clearance, and ongoing monitoring.",
-    context: "Tax Compliance",
-  },
-  {
-    icon: Scale,
-    title: "Legal Documents",
-    line: "Contracts, NDAs, document packs, and custom legal drafting.",
-    context: "Legal Documents",
-  },
-  {
-    icon: Award,
-    title: "Sector Licences",
-    line: "NAFDAC, NMDPRA, CBN, NEPC, and every industry permit.",
-    context: "Sector Licences",
-  },
+  { icon: Award,     title: "Starter Pack",          tag: "RECOMMENDED", line: "CAC Ltd + TIN + Bank Account + Seal — everything to start legally.", price: "₦250K", context: "BizDoc Packages" },
+  { icon: Shield,    title: "Pro Pack",              tag: "POPULAR",     line: "Starter + Tax Filing + Compliance Management — stay protected.",     price: "₦400K", context: "BizDoc Packages" },
+  { icon: Briefcase, title: "Complete Pack",         tag: "BEST VALUE",  line: "Pro + Legal Pack + Sector Licence — fully covered.",                 price: "₦600K", context: "BizDoc Packages" },
+  { icon: Briefcase, title: "Business Registration", tag: null,          line: "CAC, foreign company setup, and all entity formation.",              price: null,    context: "Business Registration" },
+  { icon: FileText,  title: "Foreign Business",      tag: null,          line: "Expatriate quota, CERPAC, business permit — full foreign setup.",    price: null,    context: "Foreign Business" },
+  { icon: Shield,    title: "Tax Compliance",        tag: null,          line: "TIN, annual returns, FIRS clearance, and ongoing monitoring.",       price: null,    context: "Tax Compliance" },
+  { icon: Scale,     title: "Legal Documents",       tag: null,          line: "Contracts, NDAs, document packs, and custom legal drafting.",        price: null,    context: "Legal Documents" },
+  { icon: Award,     title: "Sector Licences",       tag: null,          line: "NAFDAC, NMDPRA, CBN, NEPC, and every industry permit.",             price: null,    context: "Sector Licences" },
+];
+
+const STEPS = [
+  { icon: ClipboardList, label: "Tell us" },
+  { icon: Search,        label: "We assess" },
+  { icon: PenTool,       label: "We file" },
+  { icon: Send,          label: "Delivered" },
+  { icon: CheckCircle,   label: "Covered" },
+  { icon: Handshake,     label: "Done" },
+];
+
+const BLUEPRINTS = [
+  { id: "restaurant",    label: "Restaurant & Food",        badge: "FOOD",     emoji: "🍽" },
+  { id: "import-export", label: "Import / Export",           badge: "TRADE",    emoji: "🚢" },
+  { id: "tech-startup",  label: "Tech Startup",              badge: "TECH",     emoji: "💻" },
+  { id: "fashion",       label: "Fashion & Clothing",        badge: "FASHION",  emoji: "✂️" },
+  { id: "construction",  label: "Construction & Property",   badge: "PROPERTY", emoji: "🏗" },
+  { id: "consulting",    label: "Consulting & Services",     badge: "SERVICES", emoji: "📋" },
 ];
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 export default function BizDocPortal() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const blueprintRef = useRef<HTMLElement>(null);
-
+  const svcScrollRef = useRef<HTMLDivElement>(null);
+  const bpScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -109,12 +84,33 @@ export default function BizDocPortal() {
     if (btn) btn.click();
   };
 
+  const scroll = (ref: React.RefObject<HTMLDivElement | null>, dir: "left" | "right") => {
+    if (!ref.current) return;
+    const w = ref.current.offsetWidth * 0.8;
+    ref.current.scrollBy({ left: dir === "left" ? -w : w, behavior: "smooth" });
+  };
+
   return (
     <>
       <PageMeta
         title="BizDoc Consult. Business Compliance, Legal & Growth"
         description="CAC registration, tax compliance, sector licences, legal documents, and managed business compliance for Nigerian businesses."
       />
+
+      {/* ── GLOBAL STYLES ── */}
+      <style>{`
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        @keyframes flow-pulse {
+          0%   { width: 0%; }
+          60%  { width: 100%; }
+          100% { width: 100%; opacity: 0.2; }
+        }
+        @keyframes dot-glow {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(180,140,76,0); }
+          50%      { box-shadow: 0 0 0 8px rgba(180,140,76,0.12); }
+        }
+      `}</style>
 
       {/* ── NAV ── */}
       <nav
@@ -177,7 +173,7 @@ export default function BizDocPortal() {
         </div>
       </nav>
 
-      {/* ── HERO ── full viewport, one focal point */}
+      {/* ── HERO ── */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ backgroundColor: G }}>
         <div className="max-w-3xl mx-auto px-6 text-center">
           <h1
@@ -209,86 +205,211 @@ export default function BizDocPortal() {
         </div>
       </section>
 
-      {/* ── SERVICES ── clean grid, no accordions */}
-      <section id="services" className="py-24 md:py-32" style={{ backgroundColor: Milk }}>
-        <div className="max-w-5xl mx-auto px-6">
-          <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4 text-center" style={{ color: Au }}>
-            OUR SERVICES
+      {/* ═══════════════════════════════════════════════════════════════════════
+         HOW WE WORK — premium horizontal flow
+         ═══════════════════════════════════════════════════════════════════════ */}
+      <section className="py-14 md:py-20 overflow-hidden" style={{ backgroundColor: W }}>
+        <div className="max-w-3xl mx-auto px-6">
+          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-10 md:mb-14 text-center" style={{ color: Au }}>
+            HOW WE WORK
           </p>
-          <h2
-            className="text-[clamp(28px,4vw,42px)] font-light mb-20 text-center leading-tight tracking-tight"
-            style={{ color: G }}
-          >
-            Every layer your business needs.
-          </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SERVICE_CARDS.map((svc) => {
-              const Icon = svc.icon;
-              return (
-                <div
-                  key={svc.title}
-                  className="rounded-[20px] p-8 transition-all duration-300 hover:-translate-y-1"
-                  style={{
-                    backgroundColor: W,
-                    boxShadow: "0 2px 20px rgba(0,0,0,0.04)",
-                  }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-6"
-                    style={{ backgroundColor: `${G}08` }}
-                  >
-                    <Icon size={18} style={{ color: G }} strokeWidth={1.5} />
-                  </div>
-                  <h3 className="text-[16px] font-semibold mb-2" style={{ color: G }}>
-                    {svc.title}
-                  </h3>
-                  <p className="text-[13px] leading-relaxed mb-6" style={{ color: G, opacity: 0.55 }}>
-                    {svc.line}
-                  </p>
-                  <button
-                    onClick={() => openChat(svc.context)}
-                    className="text-[13px] font-medium flex items-center gap-1.5 transition-opacity hover:opacity-70"
-                    style={{ color: Au }}
-                  >
-                    Get Started <ArrowRight size={13} />
-                  </button>
-                </div>
-              );
-            })}
-
-            {/* View Blueprints card */}
+          <div className="relative">
+            {/* Background track line */}
             <div
-              className="rounded-[20px] p-8 flex flex-col justify-center items-center text-center transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-              style={{
-                backgroundColor: `${G}06`,
-                boxShadow: "0 2px 20px rgba(0,0,0,0.02)",
-              }}
-              onClick={() => openChat("I want to see the Business Blueprint for my industry. What sectors do you cover?")}
+              className="absolute left-[28px] right-[28px] md:left-[36px] md:right-[36px] top-[20px] md:top-[24px] h-[1.5px]"
+              style={{ backgroundColor: `${G}10` }}
+            />
+            {/* Animated gold pulse line */}
+            <div
+              className="absolute left-[28px] right-[28px] md:left-[36px] md:right-[36px] top-[20px] md:top-[24px] h-[1.5px] overflow-hidden"
             >
-              <p className="text-[13px] font-medium mb-2" style={{ color: G }}>
-                View Blueprints
-              </p>
-              <p className="text-[12px] leading-relaxed mb-4" style={{ color: G, opacity: 0.45 }}>
-                Industry-specific roadmaps for legal, financial, marketing, sales, operations, and team.
-              </p>
-              <ArrowRight size={16} style={{ color: Au }} />
+              <div
+                className="h-full rounded-full"
+                style={{ backgroundColor: Au, animation: "flow-pulse 4s ease-in-out infinite" }}
+              />
+            </div>
+
+            {/* Steps */}
+            <div className="relative z-10 flex items-start justify-between">
+              {STEPS.map((step, i) => {
+                const Icon = step.icon;
+                const isLast = i === STEPS.length - 1;
+                return (
+                  <div key={i} className="flex flex-col items-center" style={{ width: `${100 / STEPS.length}%` }}>
+                    <div
+                      className="w-[40px] h-[40px] md:w-[48px] md:h-[48px] rounded-full flex items-center justify-center transition-all duration-500"
+                      style={{
+                        backgroundColor: isLast ? Au : W,
+                        border: isLast ? "none" : `1.5px solid ${G}18`,
+                        boxShadow: isLast ? "0 4px 20px rgba(180,140,76,0.25)" : "0 2px 12px rgba(0,0,0,0.04)",
+                        animation: isLast ? "dot-glow 3s ease-in-out infinite" : "none",
+                      }}
+                    >
+                      <Icon size={16} style={{ color: isLast ? W : G, opacity: isLast ? 1 : 0.7 }} strokeWidth={1.5} />
+                    </div>
+                    <span
+                      className="mt-2.5 text-[9px] md:text-[10px] font-medium text-center leading-tight"
+                      style={{ color: G, opacity: isLast ? 0.85 : 0.45 }}
+                    >
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── TRACK ── */}
-      <section id="track" className="py-24 md:py-32" style={{ backgroundColor: W }}>
-        <div className="max-w-xl mx-auto px-6 text-center">
-          <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4" style={{ color: Au }}>
+      {/* ═══════════════════════════════════════════════════════════════════════
+         BLUEPRINTS — horizontal scroll with arrows
+         ═══════════════════════════════════════════════════════════════════════ */}
+      <section className="py-16 md:py-24" style={{ backgroundColor: Cr }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-end justify-between px-6 mb-8 md:mb-12">
+            <div>
+              <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: Au }}>
+                POSITIONING BLUEPRINTS
+              </p>
+              <h2 className="text-[clamp(22px,3vw,32px)] font-light tracking-tight leading-tight" style={{ color: G }}>
+                Your industry roadmap.
+              </h2>
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              <button onClick={() => scroll(bpScrollRef, "left")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ border: `1.5px solid ${G}18` }}>
+                <ArrowRight size={14} style={{ color: G, transform: "rotate(180deg)" }} />
+              </button>
+              <button onClick={() => scroll(bpScrollRef, "right")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ backgroundColor: G }}>
+                <ArrowRight size={14} style={{ color: Au }} />
+              </button>
+            </div>
+          </div>
+
+          <div ref={bpScrollRef} className="flex gap-4 overflow-x-auto pl-6 pr-6 pb-2 snap-x snap-mandatory hide-scroll">
+            {BLUEPRINTS.map((bp) => (
+              <Link key={bp.id} href="/bizdoc/blueprint">
+                <div className="snap-start shrink-0 w-[200px] md:w-[220px] group cursor-pointer">
+                  {/* Card */}
+                  <div
+                    className="rounded-2xl p-5 md:p-6 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg mb-3"
+                    style={{ backgroundColor: W, boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}
+                  >
+                    <span className="text-[22px] mb-3 block">{bp.emoji}</span>
+                    <span className="text-[8px] md:text-[9px] font-bold tracking-[0.2em] uppercase block mb-2" style={{ color: Au }}>
+                      {bp.badge}
+                    </span>
+                    <h3 className="text-[13px] md:text-[14px] font-semibold leading-snug" style={{ color: G }}>
+                      {bp.label}
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-medium flex items-center gap-1 pl-1 transition-all group-hover:gap-2" style={{ color: Au }}>
+                    View Roadmap <ArrowRight size={11} />
+                  </span>
+                </div>
+              </Link>
+            ))}
+            {/* Spacer for edge scroll */}
+            <div className="shrink-0 w-1" />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+         SERVICES — horizontal scroll with arrows
+         ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="services" className="py-20 md:py-28" style={{ backgroundColor: W }}>
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-end justify-between px-6 mb-8 md:mb-12">
+            <div>
+              <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: Au }}>
+                OUR SERVICES
+              </p>
+              <h2 className="text-[clamp(22px,3.5vw,36px)] font-light tracking-tight leading-tight" style={{ color: G }}>
+                Every layer your business needs.
+              </h2>
+            </div>
+            <div className="hidden md:flex items-center gap-2">
+              <button onClick={() => scroll(svcScrollRef, "left")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ border: `1.5px solid ${G}18` }}>
+                <ArrowRight size={14} style={{ color: G, transform: "rotate(180deg)" }} />
+              </button>
+              <button onClick={() => scroll(svcScrollRef, "right")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ backgroundColor: G }}>
+                <ArrowRight size={14} style={{ color: Au }} />
+              </button>
+            </div>
+          </div>
+
+          <div ref={svcScrollRef} className="flex gap-4 overflow-x-auto pl-6 pr-6 pb-2 snap-x snap-mandatory hide-scroll">
+            {SERVICE_CARDS.map((svc) => {
+              const Icon = svc.icon;
+              return (
+                <div
+                  key={svc.title}
+                  className="snap-start shrink-0 w-[260px] md:w-[280px] rounded-2xl p-6 md:p-7 transition-all duration-300 hover:-translate-y-1 flex flex-col"
+                  style={{
+                    backgroundColor: Cr,
+                    border: svc.tag ? `1.5px solid ${Au}30` : `1px solid ${G}08`,
+                  }}
+                >
+                  {/* Tag badge */}
+                  {svc.tag && (
+                    <span
+                      className="self-start text-[8px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-full mb-4"
+                      style={{ backgroundColor: `${Au}15`, color: Au }}
+                    >
+                      {svc.tag}
+                    </span>
+                  )}
+
+                  <div
+                    className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
+                    style={{ backgroundColor: `${G}06` }}
+                  >
+                    <Icon size={16} style={{ color: G }} strokeWidth={1.5} />
+                  </div>
+
+                  <h3 className="text-[14px] md:text-[15px] font-semibold mb-1.5" style={{ color: G }}>
+                    {svc.title}
+                  </h3>
+
+                  {svc.price && (
+                    <span className="text-[12px] font-semibold mb-2 block" style={{ color: Au }}>
+                      {svc.price}
+                    </span>
+                  )}
+
+                  <p className="text-[12px] leading-relaxed mb-auto pb-4" style={{ color: G, opacity: 0.5 }}>
+                    {svc.line}
+                  </p>
+
+                  <button
+                    onClick={() => openChat(svc.context)}
+                    className="text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:gap-2.5"
+                    style={{ color: Au }}
+                  >
+                    Get Started <ArrowRight size={12} />
+                  </button>
+                </div>
+              );
+            })}
+            <div className="shrink-0 w-1" />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+         TRACK
+         ═══════════════════════════════════════════════════════════════════════ */}
+      <section id="track" className="py-24 md:py-32" style={{ backgroundColor: Cr }}>
+        <div className="max-w-lg mx-auto px-6 text-center">
+          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-4" style={{ color: Au }}>
             TRACK
           </p>
-          <h2 className="text-[clamp(24px,3.5vw,36px)] font-light tracking-tight mb-3" style={{ color: G }}>
+          <h2 className="text-[clamp(24px,3.5vw,32px)] font-light tracking-tight mb-3" style={{ color: G }}>
             Track Your File
           </h2>
-          <p className="text-[13px] mb-10" style={{ color: G, opacity: 0.5 }}>
-            Enter your tracking reference to access your file status.
+          <p className="text-[13px] mb-8" style={{ color: G, opacity: 0.45 }}>
+            Enter your reference to check status.
           </p>
 
           <div className="flex gap-2 mb-6">
@@ -299,38 +420,38 @@ export default function BizDocPortal() {
               onKeyDown={(e) => e.key === "Enter" && handleTrack()}
               placeholder="HMZ-26/3-XXXX"
               maxLength={17}
-              className="flex-1 rounded-full px-5 py-3.5 text-[14px] outline-none font-mono"
-              style={{ backgroundColor: `${G}06`, color: G }}
+              className="flex-1 rounded-full px-5 py-3.5 text-[14px] outline-none font-mono transition-all focus:ring-1"
+              style={{ backgroundColor: W, color: G, border: `1px solid ${G}12`, boxShadow: "0 1px 4px rgba(0,0,0,0.02)" }}
             />
             <button
               onClick={handleTrack}
               disabled={trackQuery.isFetching}
-              className="px-6 py-3.5 rounded-full text-[13px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50 shrink-0"
+              className="px-6 py-3.5 rounded-full text-[13px] font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 shrink-0"
               style={{ backgroundColor: G, color: Au }}
             >
-              {trackQuery.isFetching ? "..." : "Access"}
+              {trackQuery.isFetching ? <Loader2 size={14} className="animate-spin" /> : "Access"}
             </button>
           </div>
 
           {/* Result: found */}
           {trackSubmitted && !trackQuery.isFetching && trackQuery.data?.found && (
-            <div className="rounded-[20px] p-6 text-left" style={{ backgroundColor: Milk }}>
-              <p className="text-[11px] font-medium tracking-wider uppercase mb-1" style={{ color: Au }}>
+            <div className="rounded-2xl p-6 text-left" style={{ backgroundColor: W, boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}>
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1" style={{ color: Au }}>
                 {trackQuery.data.ref}
               </p>
-              <p className="text-[17px] font-medium mb-0.5" style={{ color: G }}>
+              <p className="text-[16px] font-semibold mb-0.5" style={{ color: G }}>
                 {trackQuery.data.clientName}
               </p>
-              <p className="text-[13px] mb-5" style={{ color: G, opacity: 0.5 }}>
+              <p className="text-[12px] mb-5" style={{ color: G, opacity: 0.45 }}>
                 {trackQuery.data.service}
               </p>
               <div className="flex items-center gap-1.5 mb-2">
                 {Array.from({ length: trackQuery.data.statusTotal }).map((_, i) => (
-                  <div key={i} className="h-1.5 flex-1 rounded-full"
-                    style={{ backgroundColor: i <= (trackQuery.data.statusIndex ?? -1) ? G : `${G}18` }} />
+                  <div key={i} className="h-1 flex-1 rounded-full transition-all"
+                    style={{ backgroundColor: i <= (trackQuery.data.statusIndex ?? -1) ? G : `${G}12` }} />
                 ))}
               </div>
-              <p className="text-[12px] font-medium mb-5" style={{ color: G }}>{trackQuery.data.status}</p>
+              <p className="text-[11px] font-semibold mb-5" style={{ color: G }}>{trackQuery.data.status}</p>
               <a
                 href="/client/dashboard"
                 onClick={e => {
@@ -341,30 +462,28 @@ export default function BizDocPortal() {
                   }));
                   window.location.href = "/client/dashboard";
                 }}
-                className="block w-full py-3 rounded-full text-[13px] font-medium text-center transition-opacity hover:opacity-90"
+                className="block w-full py-3 rounded-full text-[13px] font-semibold text-center transition-all hover:scale-[1.01]"
                 style={{ backgroundColor: G, color: Au }}
               >
-                Open Full Dashboard
+                Open Dashboard
               </a>
             </div>
           )}
 
-          {/* Result: not found */}
           {trackSubmitted && !trackQuery.isFetching && trackQuery.data && !trackQuery.data.found && (
-            <p className="text-[13px]" style={{ color: G, opacity: 0.45 }}>
-              Reference not found. You will receive your reference after payment. Use our chat to get started.
+            <p className="text-[12px]" style={{ color: G, opacity: 0.4 }}>
+              Reference not found. You'll receive yours after payment.
             </p>
           )}
-
         </div>
       </section>
 
-      {/* ── FOOTER ── minimal */}
-      <footer className="py-10 px-6" style={{ backgroundColor: Milk }}>
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[12px]" style={{ color: G, opacity: 0.4 }}>
-          <p>BizDoc Consult</p>
+      {/* ── FOOTER ── */}
+      <footer className="py-8 px-6" style={{ backgroundColor: W, borderTop: `1px solid ${G}06` }}>
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-[11px]" style={{ color: G, opacity: 0.35 }}>
+          <p className="font-medium tracking-wider">BIZDOC CONSULT</p>
           <p>© {new Date().getFullYear()} HAMZURY</p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-5">
             <Link href="/privacy"><span className="hover:opacity-80 transition-opacity cursor-pointer">Privacy</span></Link>
             <Link href="/terms"><span className="hover:opacity-80 transition-opacity cursor-pointer">Terms</span></Link>
           </div>
