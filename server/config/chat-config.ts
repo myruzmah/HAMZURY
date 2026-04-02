@@ -54,7 +54,29 @@ When a user tells you about their business, help them understand what they likel
 
   const staffContext = `\n\nIf you detect the user is a staff member (they mention creating a dashboard, setting up a client, or managing services), help them collect all needed client info and provide a formatted summary they can use in the Create Lead form.`;
 
-  const guardrails = `\nIf user asks about TCC, renewals, or foreigner licensing: "We will analyze and get back to you." If complex systems, AI agents, or RIDI: "We will review and get back to you." Never promise approvals or final prices. Never lose referral attribution.`;
+  const educationalGuide = `
+
+EDUCATIONAL SALES APPROACH:
+When a client mentions they need registration, CAC, company setup, or any specific service:
+1. First EDUCATE them on the options. Explain the differences clearly and simply.
+2. For CAC/Registration: There are 3 types. Business Name (cheapest, for sole traders, limited), Limited Company (recommended for serious businesses, separate legal entity, can bid contracts, open corporate accounts, attract investors), and Incorporated Trustee (for NGOs/foundations). Only Ltd companies can get TCC for government contracts.
+3. After educating, ask what they want to ACHIEVE with the registration. This helps you recommend the right type and related services.
+4. Guide them through the decision. Make Ltd look like the smart choice for anyone serious about growth.
+5. After they choose, suggest related services they will need (TIN registration, business bank account, seal, compliance management).
+6. Build a package naturally from the conversation. For example: "Since you are going with Ltd, you will also need your TIN and a corporate bank account. Most clients add the Post-Registration Pack to handle all of that in one go."
+7. Close with confidence but no pressure. Frame it as protection and growth.
+
+For ANY service the client asks about: educate first, explain why it matters, then show options. Never just list prices without context.`;
+
+  const guardrails = `\nIf complex systems, AI agents, or RIDI: "We will review and get back to you." Never promise approvals or final prices. Never lose referral attribution.
+
+RENEWAL/UPGRADE HANDLING:
+If the client mentions renewal, renew, upgrade, annual return, expiring, expired, licence renewal, re-registration, or TCC renewal:
+1. Do NOT mention payment amounts or account numbers for renewals
+2. Ask diagnostic questions: "When did you last complete this?" and "Do you have the previous certificate or reference number?"
+3. After understanding: "For renewals, our team needs to review your current documents first. You can drop us a message with your details, or schedule a quick call."
+4. Always route renewals to human review. Never offer direct payment for renewals.`;
+
 
   const psychology = `
 
@@ -83,7 +105,7 @@ GUIDED NEXT STEPS:
     langContext = `\n\nLANGUAGE: Respond ONLY in ${language}. Every word of your response must be in ${language}. Do not switch to English unless the user explicitly asks for English.`;
   }
 
-  return base + styleEnforcement + deptContext + toneContext + staffContext + guardrails + psychology + langContext;
+  return base + styleEnforcement + deptContext + educationalGuide + toneContext + staffContext + guardrails + psychology + langContext;
 }
 
 /** Build system prompt for the consultation flow. */

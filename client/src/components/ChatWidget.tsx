@@ -285,8 +285,8 @@ function t(lang: string, key: string, vars?: Record<string, string>): string {
 type PitchItem = { name: string; price: string; amount: number };
 const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items: PitchItem[] }> = {
   // BizDoc
-  "Business Registration": { dept: "bizdoc", pitch: "Business Registration covers everything to get you legally operational. Without this, your business doesn't exist in the eyes of the law.", items: [
-    { name: "CAC Limited Company", price: "₦150,000", amount: 150000 }, { name: "CAC Business Name", price: "₦50,000", amount: 50000 }, { name: "CAC Incorporated Trustee", price: "₦200,000", amount: 200000 }, { name: "Post-Registration Pack", price: "₦80,000", amount: 80000 }] },
+  "Business Registration": { dept: "bizdoc", pitch: "There are 3 types of CAC registration. Each serves a different purpose:\n\nBusiness Name — For sole traders and small operations. Cheapest but limited. Cannot bid for contracts or open a corporate account.\n\nLimited Company (Ltd) — For serious businesses. Separate legal entity, can bid for contracts, open corporate accounts, attract investors, and protect your personal assets. Most businesses choose this.\n\nIncorporated Trustee (NGO) — For non-profits, foundations, and community organizations.\n\nTax note: Only Ltd companies can get Tax Clearance Certificates (TCC) needed for government contracts. Business Names pay personal income tax, not corporate tax.\n\nChoose your type:", items: [
+    { name: "CAC Business Name", price: "₦50,000", amount: 50000 }, { name: "CAC Limited Company (Recommended)", price: "₦150,000", amount: 150000 }, { name: "CAC Incorporated Trustee (NGO)", price: "₦200,000", amount: 200000 }, { name: "Post-Registration Pack (TIN + Bank + Seal)", price: "₦80,000", amount: 80000 }] },
   "Tax Compliance": { dept: "bizdoc", pitch: "Tax Compliance keeps your business penalty-free and contract-ready. Without it, you risk fines and cannot bid for tenders.", items: [
     { name: "TIN Registration", price: "₦30,000", amount: 30000 }, { name: "Annual Tax Filing", price: "₦80,000", amount: 80000 }, { name: "Tax Clearance Certificate", price: "₦100,000", amount: 100000 }, { name: "Tax Pro Max (Annual)", price: "₦150,000/yr", amount: 150000 }] },
   "Sector Licences": { dept: "bizdoc", pitch: "Sector Licences ensure you can legally operate in your industry. Operating without the right permit risks shutdown.", items: [
@@ -1052,6 +1052,11 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         setChatState("SERVICES_LIST");
         return;
       }
+      if (val === "PITCH_BACK_TO_CHAT") {
+        setTimeout(() => addBotMsg("No problem. What else would you like to know?"), 400);
+        setChatState("AI_CHAT");
+        return;
+      }
       setChatState("AI_CHAT");
       handleAIChat(val);
       return;
@@ -1129,19 +1134,39 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     // Track by reference only (v7 rule: no phone tracking)
     if (chatState === "TRACK_REF") {
       const trimmed = val.trim();
-      if (trimmed.length < 4) { addBotMsg("Please enter a valid reference number. Example: HMZ-26/3-1042"); return; }
-      localStorage.setItem("hamzury-client-session", JSON.stringify({ ref: trimmed, name: "Client", expiresAt: Date.now() + 86400000 }));
-      setTimeout(() => {
-        addBotMsg("Looking up your reference...");
-        setTimeout(() => {
-          addBotMsg("Found your records. For full details and real-time updates, visit your dashboard.");
-          addBotButtons([
-            { label: "View My Dashboard", value: "VIEW_DASHBOARD" },
-            { label: "Back to Menu", value: "RESTART" },
-          ]);
-        }, 800);
-      }, 500);
+      if (trimmed.length < 4) { addBotMsg("Please enter a valid reference number. Example: HAM-XXXX-1234"); return; }
+      addBotMsg("Looking up your reference...");
+      // Verify ref exists before redirecting
+      fetch(`/api/trpc/tracking.lookup?input=${encodeURIComponent(JSON.stringify({ json: { ref: trimmed } }))}`)
+        .then(r => r.json())
+        .then(res => {
+          const data = res?.result?.data?.json;
+          if (data?.found) {
+            localStorage.setItem("hamzury-client-session", JSON.stringify({
+              ref: data.ref, phone: "", name: data.clientName,
+              businessName: data.businessName, service: data.service,
+              status: data.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
+            }));
+            addBotMsg("Found. Opening your dashboard...");
+            setTimeout(() => { window.location.href = "/client/dashboard"; }, 600);
+          } else {
+            addBotMsg("That reference was not found. Please check and try again, or explore our services.");
+            addBotButtons([
+              { label: "Try again", value: "RETRY_TRACK" },
+              { label: "Our Services", value: "OUR_SERVICES" },
+            ]);
+          }
+        })
+        .catch(() => {
+          addBotMsg("Could not verify your reference right now. Please try again.");
+          addBotButtons([{ label: "Try again", value: "RETRY_TRACK" }]);
+        });
       setChatState("SUCCESS");
+      return;
+    }
+    if (val === "RETRY_TRACK") {
+      setTimeout(() => addBotMsg("Enter your reference number."), 300);
+      setChatState("TRACK_REF");
       return;
     }
 
@@ -1209,6 +1234,54 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         }
         return;
       }
+    }
+
+    // ── AI → Show relevant service checklist
+    if (val === "AI_SHOW_SERVICES") {
+      const fullConversation = aiMessages.map(m => m.content).join(" ");
+      const pitchKey = detectPitchFromResponse(fullConversation);
+      if (pitchKey) {
+        // Found specific service match → show checklist
+        const pitch = SERVICE_PITCH_MAP[pitchKey];
+        setLeadData(prev => ({ ...prev, service: pitchKey, department: pitch.dept, selectedServices: [] }));
+        setCurrentPitchKey(pitchKey);
+        setCheckedPitchItems(new Set());
+        checkedPitchRef.current = new Set();
+        setTimeout(() => {
+          addBotMsg(pitch.pitch + "\n\nSelect what you need:");
+          addBotButtons([
+            ...pitch.items.map(pi => ({ label: `☐ ${pi.name} — ${pi.price}`, value: `CHECK_${pi.name}` })),
+            { label: "✓ Proceed to Pay", value: "PITCH_CHECKOUT" },
+            { label: "← Back", value: "PITCH_BACK_TO_CHAT" },
+          ]);
+        }, 400);
+        setChatState("SERVICE_PITCH");
+      } else {
+        // No specific match → show department services list
+        const dept = department !== "general" ? department : "bizdoc";
+        setLeadData(prev => ({ ...prev, department: dept, selectedServices: [] }));
+        const catalog = SERVICES[dept] || [];
+        setTimeout(() => {
+          addBotMsg("Here is what we offer. Tap any service to learn more.");
+          addBotButtons(catalog.map(s => ({ label: s.label, value: `SVC_${s.value}` })));
+        }, 400);
+        setChatState("SERVICES_LIST");
+      }
+      return;
+    }
+
+    // ── AI → Renewal detected — route to team, no payment
+    if (val === "AI_RENEWAL") {
+      setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [RENEWAL]" }));
+      setTimeout(() => {
+        addBotMsg("For renewals and upgrades, our team needs to review your current documents first. How would you like to connect?");
+        addBotButtons([
+          { label: "Drop a message with my details", value: "DROP_MESSAGE" },
+          { label: "Schedule a call", value: "SCHEDULE" },
+        ]);
+      }, 400);
+      setChatState("TALK_OPTIONS");
+      return;
     }
 
     // AI close actions — NEW FLOW: price → pay → upsell → THEN details

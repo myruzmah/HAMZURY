@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Building2, LogOut, ArrowLeft, Users, ShieldCheck, FileText,
   Plus, UserPlus, Loader2, Search, ChevronLeft, ChevronRight,
-  AlertTriangle, CheckCircle2, XCircle,
+  AlertTriangle, CheckCircle2, XCircle, Trash2,
 } from "lucide-react";
 
 // ─── Brand (Federal Hub = general → Apple grey) ─────────────────────────────
@@ -169,6 +169,11 @@ function StaffSection({ userRole }: { userRole?: string }) {
     onError: (err) => toast.error(err.message),
   });
 
+  const clearClientMutation = (trpc.staff as any).clearClientData?.useMutation?.({
+    onSuccess: () => toast.success("All client data cleared. Start fresh from CSO dashboard."),
+    onError: (err: any) => toast.error(err?.message || "Failed to clear"),
+  });
+
   const allStaff = staffQuery.data || [];
   const filtered = allStaff.filter(s =>
     s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -216,6 +221,17 @@ function StaffSection({ userRole }: { userRole?: string }) {
             >
               {seedMutation.isPending ? <Loader2 className="animate-spin mr-1.5" size={14} /> : <Users size={14} className="mr-1.5" />}
               Seed All Staff
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              style={{ borderColor: "#EF444440", color: "#EF4444" }}
+              onClick={() => { if (confirm("Clear ALL client data? This removes all leads, tasks, invoices, and activity logs.")) clearClientMutation?.mutate?.(); }}
+              disabled={clearClientMutation?.isPending}
+            >
+              {clearClientMutation?.isPending ? <Loader2 className="animate-spin mr-1.5" size={14} /> : <Trash2 size={14} className="mr-1.5" />}
+              Clear Client Data
             </Button>
           )}
           <Button

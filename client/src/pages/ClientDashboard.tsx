@@ -873,9 +873,10 @@ export default function ClientDashboard() {
         ) : (isError || !data || (data && !data.found)) ? (
           <>
             <AlertCircle size={28} style={{ color: MUTED }} />
-            <p className="text-[15px]" style={{ color: DARK, fontWeight: 500 }}>File not found</p>
-            <p className="text-[13px]" style={{ color: MUTED }}>{session?.ref}</p>
-            <button onClick={handleLogout} className="text-[13px] px-6 py-3 rounded-full" style={{ backgroundColor: DARK, color: WHITE, fontWeight: 500, minHeight: 44 }}>Try again</button>
+            <p className="text-[15px]" style={{ color: DARK, fontWeight: 500 }}>We could not find this reference</p>
+            <p className="text-[13px] font-mono" style={{ color: MUTED }}>{session?.ref}</p>
+            <p className="text-[12px] text-center max-w-xs" style={{ color: MUTED }}>Please check the reference number from your confirmation message. If you just submitted, it may take a moment to appear.</p>
+            <button onClick={handleLogout} className="text-[13px] px-6 py-3 rounded-full" style={{ backgroundColor: DARK, color: WHITE, fontWeight: 500, minHeight: 44 }}>Try another reference</button>
           </>
         ) : null}
       </div>

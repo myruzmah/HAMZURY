@@ -1448,6 +1448,22 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         const result = await seedAll();
         return { success: true, ...result };
       }),
+
+    /** Clear all client data (leads, tasks, invoices, activity logs) — founder only */
+    clearClientData: founderCEOProcedure
+      .mutation(async () => {
+        const { getDb } = await import("./db");
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+        const { leads, tasks, activityLogs, invoices, subscriptions, subscriptionPayments } = await import("../drizzle/schema");
+        await db.delete(subscriptionPayments);
+        await db.delete(subscriptions);
+        await db.delete(activityLogs);
+        await db.delete(invoices);
+        await db.delete(tasks);
+        await db.delete(leads);
+        return { success: true, message: "All client data cleared" };
+      }),
   }),
 
   // ─── Commissions ──────────────────────────────────────────────────────────
