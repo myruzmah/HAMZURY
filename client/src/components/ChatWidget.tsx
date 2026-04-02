@@ -284,29 +284,56 @@ function t(lang: string, key: string, vars?: Record<string, string>): string {
 /* ── Service Pitch Data with amounts for checklist pricing ── */
 type PitchItem = { name: string; price: string; amount: number };
 const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items: PitchItem[] }> = {
-  // BizDoc
-  "Business Registration": { dept: "bizdoc", pitch: "There are 3 types of CAC registration. Each serves a different purpose:\n\nBusiness Name — For sole traders and small operations. Cheapest but limited. Cannot bid for contracts or open a corporate account.\n\nLimited Company (Ltd) — For serious businesses. Separate legal entity, can bid for contracts, open corporate accounts, attract investors, and protect your personal assets. Most businesses choose this.\n\nIncorporated Trustee (NGO) — For non-profits, foundations, and community organizations.\n\nTax note: Only Ltd companies can get Tax Clearance Certificates (TCC) needed for government contracts. Business Names pay personal income tax, not corporate tax.\n\nChoose your type:", items: [
+  /* ═══════════════════════════════════════════════════════════
+     PACKAGES — shown first, higher ticket, less decision fatigue
+     ═══════════════════════════════════════════════════════════ */
+  "BizDoc Packages": { dept: "bizdoc", pitch: "Most serious businesses need more than one thing. Our packs save you money and get everything done at once. Pick the level that fits where you are:", items: [
+    { name: "BizDoc Starter (CAC Ltd + TIN + Bank + Seal)", price: "₦250,000", amount: 250000 },
+    { name: "BizDoc Pro (Starter + Tax Filing + Compliance Mgmt)", price: "₦400,000", amount: 400000 },
+    { name: "BizDoc Complete (Pro + Legal Pack + Sector Licence)", price: "₦600,000", amount: 600000 },
+    { name: "I just need one service", price: "See individual", amount: 0 },
+  ] },
+  "Systemise Packages": { dept: "systemise", pitch: "Building a brand without systems is like opening a shop with no signboard. Our packs give you the full digital foundation:", items: [
+    { name: "Digital Starter (Brand Identity + Landing Page)", price: "₦350,000", amount: 350000 },
+    { name: "Business Launch (Brand + Website + Social Setup)", price: "₦500,000", amount: 500000 },
+    { name: "Full Business Architecture (Brand + Web + Social + CRM + AI)", price: "From ₦1,200,000", amount: 1200000 },
+    { name: "I just need one service", price: "See individual", amount: 0 },
+  ] },
+  "Skills Packages": { dept: "skills", pitch: "Learn the skills that make your business run smarter. Pick a program or bundle for your whole team:", items: [
+    { name: "Founder Fast Track (AI Launchpad + Vibe Coding)", price: "₦120,000", amount: 120000 },
+    { name: "Full Founder Bundle (All 3 programs + Mentorship)", price: "₦200,000", amount: 200000 },
+    { name: "Corporate Team Package (Staff Training + Curriculum)", price: "From ₦350,000", amount: 350000 },
+    { name: "I want a single program", price: "See programs", amount: 0 },
+  ] },
+  /* ═══════════════════════════════════════════════════════════
+     INDIVIDUAL SERVICES — BizDoc
+     ═══════════════════════════════════════════════════════════ */
+  "Business Registration": { dept: "bizdoc", pitch: "There are 3 types of CAC registration. Each serves a different purpose:\n\nBusiness Name — For sole traders and small operations. Cheapest but limited. Cannot bid for contracts or open a corporate account.\n\nLimited Company (Ltd) — For serious businesses. Separate legal entity, can bid for contracts, open corporate accounts, attract investors, and protect your personal assets. Most businesses choose this.\n\nIncorporated Trustee (NGO) — For non-profits, foundations, and community organizations.\n\nTax note: Only Ltd companies can get Tax Clearance Certificates (TCC) needed for government contracts.\n\nChoose your type:", items: [
     { name: "CAC Business Name", price: "₦50,000", amount: 50000 }, { name: "CAC Limited Company (Recommended)", price: "₦150,000", amount: 150000 }, { name: "CAC Incorporated Trustee (NGO)", price: "₦200,000", amount: 200000 }, { name: "Post-Registration Pack (TIN + Bank + Seal)", price: "₦80,000", amount: 80000 }] },
   "Tax Compliance": { dept: "bizdoc", pitch: "Tax Compliance keeps your business penalty-free and contract-ready. Without it, you risk fines and cannot bid for tenders.", items: [
-    { name: "TIN Registration", price: "₦30,000", amount: 30000 }, { name: "Annual Tax Filing", price: "₦80,000", amount: 80000 }, { name: "Tax Clearance Certificate", price: "₦100,000", amount: 100000 }, { name: "Tax Pro Max (Annual)", price: "₦150,000/yr", amount: 150000 }] },
+    { name: "TIN Registration", price: "₦30,000", amount: 30000 }, { name: "Annual Tax Filing", price: "₦80,000", amount: 80000 }, { name: "Tax Clearance Certificate", price: "₦100,000", amount: 100000 }, { name: "Tax Pro Max (Annual Subscription)", price: "₦150,000/yr", amount: 150000 }] },
   "Sector Licences": { dept: "bizdoc", pitch: "Sector Licences ensure you can legally operate in your industry. Operating without the right permit risks shutdown.", items: [
     { name: "NAFDAC Registration", price: "₦250,000+", amount: 250000 }, { name: "SCUML Certificate", price: "₦50,000", amount: 50000 }, { name: "NEPC Export Licence", price: "₦120,000", amount: 120000 }, { name: "Other Sector Permits", price: "From ₦60,000", amount: 60000 }] },
   "Foreign Business": { dept: "bizdoc", pitch: "Foreign Business services help non-Nigerians set up legally in Nigeria. CAMA 2020 compliance, residence permits, and business permits.", items: [
-    { name: "Expatriate Quota", price: "₦350,000+", amount: 350000 }, { name: "CERPAC Residence Permit", price: "₦200,000+", amount: 200000 }, { name: "Business Permit", price: "₦250,000+", amount: 250000 }, { name: "Full Foreign Setup", price: "₦800,000+", amount: 800000 }] },
+    { name: "Expatriate Quota", price: "₦350,000+", amount: 350000 }, { name: "CERPAC Residence Permit", price: "₦200,000+", amount: 200000 }, { name: "Business Permit", price: "₦250,000+", amount: 250000 }, { name: "Full Foreign Setup Pack", price: "₦800,000+", amount: 800000 }] },
   "Legal Documents": { dept: "bizdoc", pitch: "Legal Documents protect your business relationships and operations. Without proper contracts, you have no legal recourse.", items: [
     { name: "Contract Templates", price: "₦40,000", amount: 40000 }, { name: "Custom Legal Drafting", price: "₦80,000+", amount: 80000 }, { name: "NDA Pack", price: "₦35,000", amount: 35000 }, { name: "Full Document Pack", price: "₦60,000", amount: 60000 }] },
-  // Systemise
+  /* ═══════════════════════════════════════════════════════════
+     INDIVIDUAL SERVICES — Systemise
+     ═══════════════════════════════════════════════════════════ */
   "Brand Identity": { dept: "systemise", pitch: "Brand Identity builds the visual foundation that makes clients trust you before they even speak to you. Every touchpoint matters.", items: [
-    { name: "Logo Design", price: "₦80,000", amount: 80000 }, { name: "Color Palette & Typography", price: "₦30,000", amount: 30000 }, { name: "Brand Guidelines Document", price: "₦50,000", amount: 50000 }, { name: "Business Card & Letterhead", price: "₦40,000", amount: 40000 }, { name: "Social Media Brand Kit", price: "₦60,000", amount: 60000 }, { name: "Full Brand System", price: "₦350,000", amount: 350000 }] },
+    { name: "Logo Design", price: "₦80,000", amount: 80000 }, { name: "Full Brand System (Logo + Colors + Guidelines + Stationery)", price: "₦350,000", amount: 350000 }, { name: "Social Media Brand Kit", price: "₦60,000", amount: 60000 }] },
   "Website Design": { dept: "systemise", pitch: "Your website is your 24/7 salesperson. It should convert visitors into clients, not just look pretty.", items: [
-    { name: "Landing Page (1 page)", price: "₦200,000", amount: 200000 }, { name: "Business Website (5-8 pages)", price: "₦400,000", amount: 400000 }, { name: "E-commerce Store", price: "₦500,000+", amount: 500000 }, { name: "Portal / Dashboard", price: "₦600,000+", amount: 600000 }, { name: "SEO Setup", price: "₦80,000", amount: 80000 }, { name: "Monthly Maintenance", price: "₦50,000/mo", amount: 50000 }] },
+    { name: "Landing Page (1 page)", price: "₦200,000", amount: 200000 }, { name: "Business Website (5-8 pages)", price: "₦400,000", amount: 400000 }, { name: "E-commerce Store", price: "₦500,000+", amount: 500000 }, { name: "Portal / Dashboard", price: "₦600,000+", amount: 600000 }] },
   "Social Media": { dept: "systemise", pitch: "Social Media Management builds your audience and turns followers into paying clients. Consistency wins.", items: [
-    { name: "2 Platforms (IG + FB)", price: "₦200,000/mo", amount: 200000 }, { name: "Full Management (All Platforms)", price: "₦400,000/mo", amount: 400000 }, { name: "Content Only (Posts + Reels)", price: "₦120,000/mo", amount: 120000 }, { name: "Influencer Campaign", price: "₦150,000+", amount: 150000 }] },
+    { name: "2 Platforms (IG + FB)", price: "₦200,000/mo", amount: 200000 }, { name: "Full Management (All Platforms)", price: "₦400,000/mo", amount: 400000 }, { name: "Content Only (Posts + Reels)", price: "₦120,000/mo", amount: 120000 }] },
   "CRM & Automation": { dept: "systemise", pitch: "CRM & Automation eliminates repeated manual work so you can focus on growing.", items: [
-    { name: "CRM Setup (HubSpot/Notion)", price: "₦200,000", amount: 200000 }, { name: "Workflow Automation", price: "₦150,000+", amount: 150000 }, { name: "AI Agent Build", price: "₦300,000+", amount: 300000 }, { name: "Lead Generation Pipeline", price: "₦180,000", amount: 180000 }] },
+    { name: "CRM Setup", price: "₦200,000", amount: 200000 }, { name: "Workflow Automation", price: "₦150,000+", amount: 150000 }, { name: "AI Agent Build", price: "₦300,000+", amount: 300000 }, { name: "Lead Generation Pipeline", price: "₦180,000", amount: 180000 }] },
   "AI & Automation": { dept: "systemise", pitch: "AI & Automation lets your business run smarter with less manual work. Pick what fits your operation.", items: [
-    { name: "AI Customer Support Agent", price: "₦250,000", amount: 250000 }, { name: "AI Lead Qualifier Bot", price: "₦200,000", amount: 200000 }, { name: "Invoice & Payment Automation", price: "₦150,000", amount: 150000 }, { name: "AI Content Generator", price: "₦180,000", amount: 180000 }, { name: "Smart Appointment Scheduler", price: "₦120,000", amount: 120000 }, { name: "Workflow Automation Suite", price: "₦300,000+", amount: 300000 }, { name: "Custom AI Agent (Bespoke)", price: "₦400,000+", amount: 400000 }] },
-  // Skills
+    { name: "AI Customer Support Agent", price: "₦250,000", amount: 250000 }, { name: "AI Lead Qualifier Bot", price: "₦200,000", amount: 200000 }, { name: "Invoice & Payment Automation", price: "₦150,000", amount: 150000 }, { name: "Workflow Automation Suite", price: "₦300,000+", amount: 300000 }, { name: "Custom AI Agent (Bespoke)", price: "₦400,000+", amount: 400000 }] },
+  /* ═══════════════════════════════════════════════════════════
+     INDIVIDUAL SERVICES — Skills
+     ═══════════════════════════════════════════════════════════ */
   "AI Founder Launchpad": { dept: "skills", pitch: "AI Founder Launchpad teaches you to build, launch, and grow a business using AI tools. 6-week intensive program.", items: [
     { name: "Full Program (6 weeks)", price: "₦75,000", amount: 75000 }, { name: "Mentorship Add-on", price: "₦30,000", amount: 30000 }, { name: "Certificate + Portfolio", price: "₦15,000", amount: 15000 }] },
   "Vibe Coding": { dept: "skills", pitch: "Vibe Coding for Founders teaches you to build apps and websites without a traditional coding background. Build real products.", items: [
@@ -378,11 +405,18 @@ function getSuggestedSteps(aiResponse: string, dept: Department, exchangeCount: 
   if (lower.includes("tax") || lower.includes("tin") || lower.includes("tcc"))
     suggestions.push({ label: "Am I owing penalties?", value: "How do I know if my business has tax penalties?" });
 
+  // Package suggestions — always try to upsell to a package
+  if (suggestions.length < 2 && !lower.includes("pack") && !lower.includes("bundle")) {
+    if (dept === "bizdoc") suggestions.push({ label: "See BizDoc Packages", value: "What packages do you have for BizDoc? I want to save money by bundling." });
+    else if (dept === "systemise") suggestions.push({ label: "See Systemise Packages", value: "What packages do you have for digital services? I want to save money by bundling." });
+    else if (dept === "skills") suggestions.push({ label: "See Skills Bundles", value: "What program bundles do you have? I want to save money." });
+  }
+
   // General fallbacks if no specific match
   if (suggestions.length === 0) {
-    if (dept === "bizdoc") suggestions.push({ label: "What does my business need?", value: "Based on my business type, what compliance do I need?" });
-    else if (dept === "systemise") suggestions.push({ label: "What systems do I need?", value: "What digital systems would benefit my business most?" });
-    else if (dept === "skills") suggestions.push({ label: "Which program fits me?", value: "Based on my goals, which program should I join?" });
+    if (dept === "bizdoc") suggestions.push({ label: "What does my business need?", value: "Based on my business type, what compliance package do I need?" });
+    else if (dept === "systemise") suggestions.push({ label: "What systems do I need?", value: "What digital package would benefit my business most?" });
+    else if (dept === "skills") suggestions.push({ label: "Which program fits me?", value: "Based on my goals, which program bundle should I join?" });
     else suggestions.push({ label: "Tell me more", value: "Can you explain that in more detail?" });
   }
 
@@ -391,7 +425,7 @@ function getSuggestedSteps(aiResponse: string, dept: Department, exchangeCount: 
     if (isRenewalContext(aiResponse)) {
       suggestions.push({ label: "Talk to team about renewal", value: "AI_RENEWAL" });
     } else {
-      suggestions.push({ label: "See what we offer", value: "AI_SHOW_SERVICES" });
+      suggestions.push({ label: "Let's get started", value: "AI_CLOSE_YES" });
     }
   }
 
@@ -469,40 +503,47 @@ const DEPT_BRAND: Record<Department, { header: string; accent: string; name: str
   skills:    { header: "#1B2A4A", accent: "#C9A97E", name: "Skills" },
 };
 
-/* ── Service catalog with pricing ── */
+/* ── Service catalog with pricing (Packages first, then individual) ── */
 const SERVICES: Record<string, { label: string; value: string; price: string; amount: number }[]> = {
   bizdoc: [
-    { label: "CAC Registration", value: "CAC", price: "₦50,000", amount: 50000 },
-    { label: "Industry License or Permit", value: "License", price: "₦80,000", amount: 80000 },
-    { label: "Tax Compliance (TIN/TCC)", value: "Tax", price: "₦60,000", amount: 60000 },
+    // Packages — shown first
+    { label: "⭐ BizDoc Starter Pack (CAC Ltd + TIN + Bank + Seal)", value: "BizDocStarter", price: "₦250,000", amount: 250000 },
+    { label: "⭐ BizDoc Pro Pack (Starter + Tax + Compliance)", value: "BizDocPro", price: "₦400,000", amount: 400000 },
+    { label: "⭐ BizDoc Complete (Pro + Legal + Licence)", value: "BizDocComplete", price: "₦600,000", amount: 600000 },
+    // Individual
+    { label: "CAC Registration", value: "CAC", price: "from ₦50,000", amount: 50000 },
+    { label: "Tax Compliance (TIN/TCC)", value: "Tax", price: "from ₦30,000", amount: 30000 },
+    { label: "Tax Pro Max (Annual)", value: "TaxProMax", price: "₦150,000/yr", amount: 150000 },
+    { label: "Industry License or Permit", value: "License", price: "from ₦60,000", amount: 60000 },
     { label: "Legal Documentation", value: "Legal", price: "from ₦40,000", amount: 40000 },
-    { label: "Annual Returns", value: "AnnualReturns", price: "₦30,000", amount: 30000 },
-    { label: "Trademark & IP", value: "Trademark", price: "₦75,000", amount: 75000 },
-    { label: "Foreign Business Registration", value: "Foreign", price: "₦150,000", amount: 150000 },
-    { label: "SCUML Registration", value: "SCUML", price: "₦45,000", amount: 45000 },
-    { label: "Contract/Document Templates", value: "Templates", price: "from ₦15,000", amount: 15000 },
+    { label: "Foreign Business Setup", value: "Foreign", price: "from ₦350,000", amount: 350000 },
     { label: "Compliance Management Sub", value: "ComplianceMgmt", price: "₦50,000/mo", amount: 50000 },
-    { label: "Sector Compliance Roadmap", value: "SectorRoadmap", price: "₦30,000", amount: 30000 },
   ],
   systemise: [
-    { label: "Website Design & Development", value: "Website", price: "from ₦200,000", amount: 200000 },
-    { label: "Social Media Management", value: "SocialMedia", price: "₦100,000/mo", amount: 100000 },
-    { label: "Brand Identity", value: "Branding", price: "from ₦150,000", amount: 150000 },
-    { label: "Business Automation", value: "Automation", price: "from ₦120,000", amount: 120000 },
-    { label: "AI Agent (Custom)", value: "AIAgent", price: "from ₦150,000", amount: 150000 },
+    // Packages — shown first
+    { label: "⭐ Digital Starter (Brand + Landing Page)", value: "DigitalStarter", price: "₦350,000", amount: 350000 },
+    { label: "⭐ Business Launch (Brand + Website + Social)", value: "BusinessLaunch", price: "₦500,000", amount: 500000 },
+    { label: "⭐ Full Architecture (Brand + Web + Social + CRM + AI)", value: "FullArchitecture", price: "From ₦1,200,000", amount: 1200000 },
+    // Individual
+    { label: "Brand Identity", value: "Branding", price: "from ₦80,000", amount: 80000 },
+    { label: "Website Design", value: "Website", price: "from ₦200,000", amount: 200000 },
+    { label: "Social Media Management", value: "SocialMedia", price: "from ₦120,000/mo", amount: 120000 },
     { label: "CRM & Lead Generation", value: "CRM", price: "from ₦180,000", amount: 180000 },
-    { label: "Dashboard Build", value: "Dashboard", price: "from ₦200,000", amount: 200000 },
-    { label: "Support Retainer", value: "Retainer", price: "from ₦80,000/mo", amount: 80000 },
+    { label: "AI Agent (Custom)", value: "AIAgent", price: "from ₦200,000", amount: 200000 },
+    { label: "Workflow Automation", value: "Automation", price: "from ₦150,000", amount: 150000 },
   ],
   skills: [
+    // Packages — shown first
+    { label: "⭐ Founder Fast Track (AI Launchpad + Vibe Coding)", value: "FounderFastTrack", price: "₦120,000", amount: 120000 },
+    { label: "⭐ Full Founder Bundle (3 Programs + Mentorship)", value: "FullFounderBundle", price: "₦200,000", amount: 200000 },
+    { label: "⭐ Corporate Team Package (Training + Curriculum)", value: "CorporateTeam", price: "From ₦350,000", amount: 350000 },
+    // Individual
     { label: "AI Founder Launchpad", value: "AIFounder", price: "₦75,000", amount: 75000 },
     { label: "Vibe Coding for Founders", value: "VibeCoding", price: "₦65,000", amount: 65000 },
     { label: "AI Sales Operator", value: "AISales", price: "₦55,000", amount: 55000 },
     { label: "Service Business in 21 Days", value: "ServiceBiz21", price: "₦45,000", amount: 45000 },
     { label: "Operations Automation Sprint", value: "OpsSprint", price: "₦60,000", amount: 60000 },
-    { label: "AI Marketing Engine", value: "AIMarketing", price: "₦55,000", amount: 55000 },
     { label: "Corporate Staff Training", value: "CorporateTraining", price: "Contact us", amount: 0 },
-    { label: "Robotics & Creative Tech", value: "RoboticsLab", price: "₦45,000", amount: 45000 },
     { label: "RIDI Sponsorship", value: "RIDI", price: "Sponsored", amount: 0 },
   ],
 };

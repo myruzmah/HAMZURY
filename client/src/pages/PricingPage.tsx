@@ -10,40 +10,48 @@ const WHITE   = "#FFFFFF";
 
 /* ── Service data ──────────────────────────────────────────────────────── */
 
-type Service = { name: string; price: string; includes: string[] };
+type Service = { name: string; price: string; includes: string[]; isPackage?: boolean };
 
 const BIZDOC: Service[] = [
+  // Packages first
+  { name: "⭐ BizDoc Starter Pack", price: "\u20A6250,000", isPackage: true, includes: ["CAC Limited Company registration", "TIN registration (FIRS)", "Corporate bank account opening", "Company seal", "Save \u20A660,000 vs buying separately"] },
+  { name: "⭐ BizDoc Pro Pack", price: "\u20A6400,000", isPackage: true, includes: ["Everything in Starter Pack", "Annual tax filing", "Compliance management (6 months)", "Deadline tracking & reminders", "Save \u20A6110,000 vs buying separately"] },
+  { name: "⭐ BizDoc Complete Pack", price: "\u20A6600,000", isPackage: true, includes: ["Everything in Pro Pack", "Full legal document pack (contracts, NDA, T&C)", "One sector licence or permit", "Quarterly compliance review", "Save \u20A6180,000+ vs buying separately"] },
+  // Individual
   { name: "CAC Registration", price: "From \u20A650,000", includes: ["Business Name, Ltd, or Trustees", "Name availability search", "Full CAC documentation", "Certificate of registration"] },
-  { name: "Industry Licences & Permits", price: "From \u20A680,000", includes: ["NAFDAC, SON, DPR, Export", "Application preparation", "Agency liaison & follow-up", "Certificate delivery"] },
-  { name: "Tax Compliance", price: "From \u20A660,000", includes: ["TIN registration (FIRS)", "Tax Clearance Certificate (TCC)", "VAT setup & filing", "PAYE registration"] },
-  { name: "Legal Documentation", price: "From \u20A640,000", includes: ["Contract drafting & review", "Legal agreements", "Terms & conditions", "Compliance documentation"] },
-  { name: "Trademark & IP", price: "\u20A675,000", includes: ["Trademark search & clearance", "Registration application", "IPO liaison & follow-up", "Certificate delivery"] },
-  { name: "Foreign Business Registration", price: "From \u20A6150,000", includes: ["CERPAC application", "Expatriate Quota (EQ)", "Business Permit", "Apostille & legalisation"] },
-  { name: "SCUML Registration", price: "\u20A645,000", includes: ["SCUML certificate application", "Documentation preparation", "Agency liaison", "Certificate delivery"] },
-  { name: "Annual Returns Filing", price: "\u20A630,000", includes: ["CAC annual returns", "Document preparation", "Filing & submission", "Confirmation of filing"] },
+  { name: "Tax Compliance", price: "From \u20A630,000", includes: ["TIN registration (FIRS)", "Tax Clearance Certificate (TCC)", "VAT setup & filing", "PAYE registration"] },
+  { name: "Tax Pro Max (Annual)", price: "\u20A6150,000/yr", includes: ["Annual tax filing & returns", "TIN & TCC management", "Penalty prevention monitoring", "Quarterly compliance reports"] },
+  { name: "Industry Licences & Permits", price: "From \u20A660,000", includes: ["NAFDAC, SON, NEPC, SCUML", "Application preparation", "Agency liaison & follow-up", "Certificate delivery"] },
+  { name: "Legal Documentation", price: "From \u20A640,000", includes: ["Contract drafting & review", "Legal agreements & NDAs", "Terms & conditions", "Full document pack available"] },
+  { name: "Foreign Business Setup", price: "From \u20A6350,000", includes: ["CERPAC residence permit", "Expatriate Quota (EQ)", "Business Permit", "Full foreign setup pack available"] },
   { name: "Compliance Subscription", price: "\u20A650,000/mo", includes: ["Monthly compliance monitoring", "Deadline tracking & reminders", "Priority response", "Quarterly status reports"] },
 ];
 
 const SYSTEMISE: Service[] = [
-  { name: "Brand Identity & Positioning", price: "From \u20A6150,000", includes: ["Logo design & visual identity", "Color palette & typography", "Brand voice & positioning guide", "Brand guidelines document"] },
-  { name: "Corporate Website", price: "From \u20A6200,000", includes: ["Custom design & development", "Mobile responsive", "SEO foundation & analytics", "1 month post-launch support"] },
-  { name: "Social Media Management", price: "\u20A6100,000/mo", includes: ["Content creation & scheduling", "Community management", "Monthly performance reports", "Platform strategy"] },
-  { name: "Business Process Automation", price: "From \u20A6120,000", includes: ["Workflow mapping & design", "Tool integration & setup", "SOP documentation", "Team training session"] },
-  { name: "AI Agent Development", price: "From \u20A6150,000", includes: ["Custom AI agent build", "Business-specific training", "Integration with your systems", "Ongoing support & tuning"] },
-  { name: "CRM & Lead Management", price: "From \u20A6180,000", includes: ["CRM selection & configuration", "Lead pipeline design", "Automation & notifications", "Team onboarding & training"] },
-  { name: "Internal Dashboard Build", price: "From \u20A6200,000", includes: ["Custom dashboard design", "Real-time data integration", "Role-based access", "Mobile-friendly interface"] },
-  { name: "Content Strategy", price: "From \u20A6100,000", includes: ["Content calendar planning", "Copywriting & design", "Multi-platform distribution", "Performance tracking"] },
-  { name: "Support Retainer", price: "From \u20A680,000/mo", includes: ["Dedicated support hours", "Priority bug fixes & updates", "Monthly review calls", "System health monitoring"] },
+  // Packages first
+  { name: "⭐ Digital Starter Pack", price: "\u20A6350,000", isPackage: true, includes: ["Full brand identity (logo, colors, guidelines)", "One-page landing website", "Social media brand kit", "Save \u20A680,000 vs buying separately"] },
+  { name: "⭐ Business Launch Pack", price: "\u20A6500,000", isPackage: true, includes: ["Full brand identity system", "Business website (5-8 pages)", "Social media setup & first month content", "SEO foundation", "Save \u20A6150,000+ vs buying separately"] },
+  { name: "⭐ Full Business Architecture", price: "From \u20A61,200,000", isPackage: true, includes: ["Complete brand system", "Full website with dashboard", "Social media management (3 months)", "CRM & lead pipeline setup", "AI automation integration", "Save \u20A6300,000+ vs buying separately"] },
+  // Individual
+  { name: "Brand Identity", price: "From \u20A680,000", includes: ["Logo design & visual identity", "Color palette & typography", "Brand guidelines document", "Full brand system: \u20A6350,000"] },
+  { name: "Website Design", price: "From \u20A6200,000", includes: ["Custom design & development", "Mobile responsive", "SEO foundation & analytics", "E-commerce from \u20A6500,000"] },
+  { name: "Social Media Management", price: "From \u20A6120,000/mo", includes: ["Content creation & scheduling", "Community management", "Monthly performance reports", "Full management: \u20A6400,000/mo"] },
+  { name: "CRM & Lead Generation", price: "From \u20A6180,000", includes: ["CRM setup & configuration", "Lead pipeline design", "Automation & notifications", "Team onboarding"] },
+  { name: "AI & Automation", price: "From \u20A6200,000", includes: ["AI customer support agent", "Workflow automation", "Invoice & payment automation", "Custom AI agent from \u20A6400,000"] },
+  { name: "Workflow Automation", price: "From \u20A6150,000", includes: ["Workflow mapping & design", "Tool integration & setup", "SOP documentation", "Team training session"] },
 ];
 
 const SKILLS: Service[] = [
+  // Packages first
+  { name: "⭐ Founder Fast Track", price: "\u20A6120,000", isPackage: true, includes: ["AI Founder Launchpad program", "Vibe Coding for Founders program", "Combined 6-week intensive", "Save \u20A620,000 vs buying separately"] },
+  { name: "⭐ Full Founder Bundle", price: "\u20A6200,000", isPackage: true, includes: ["All 3 core programs", "1-on-1 mentorship sessions", "Certificate & portfolio", "Priority community access", "Save \u20A655,000+ vs buying separately"] },
+  { name: "⭐ Corporate Team Package", price: "From \u20A6350,000", isPackage: true, includes: ["Staff training (up to 20 people)", "Custom curriculum design", "On-site or virtual delivery", "Post-training assessment", "Save \u20A6150,000+ vs buying separately"] },
+  // Individual
   { name: "AI Founder Launchpad", price: "\u20A675,000", includes: ["Build & launch with AI tools", "Live coaching sessions", "Business model validation", "Certificate of completion"] },
-  { name: "Vibe Coding for Founders", price: "\u20A665,000", includes: ["No-code & low-code development", "Build your own MVP", "AI-assisted coding workflow", "Certificate of completion"] },
+  { name: "Vibe Coding for Founders", price: "\u20A665,000", includes: ["AI-assisted coding workflow", "Build your own MVP", "Real product deployment", "Certificate of completion"] },
   { name: "AI Sales Operator", price: "\u20A655,000", includes: ["AI-powered sales systems", "Lead generation automation", "CRM & pipeline setup", "Certificate of completion"] },
   { name: "Service Business in 21 Days", price: "\u20A645,000", includes: ["Service business blueprint", "Client acquisition strategy", "Pricing & packaging", "Certificate of completion"] },
   { name: "Operations Automation Sprint", price: "\u20A660,000", includes: ["Automate repetitive tasks", "Tool selection & setup", "Workflow design", "Certificate of completion"] },
-  { name: "AI Marketing & Content Engine", price: "\u20A655,000", includes: ["AI content creation systems", "Social media automation", "Content calendar setup", "Certificate of completion"] },
-  { name: "Digital Product Builder", price: "\u20A665,000", includes: ["Build a digital product", "Launch strategy & pricing", "Sales funnel setup", "Certificate of completion"] },
   { name: "Corporate Staff Training", price: "Custom pricing", includes: ["Tailored to your organisation", "On-site or virtual delivery", "Custom curriculum design", "Post-training assessment"] },
   { name: "RIDI Sponsorship", price: "Sponsored", includes: ["Fully sponsored training", "For underserved communities", "Application-based selection", "Mentorship included"] },
 ];
@@ -64,7 +72,8 @@ function ServiceCard({ service }: { service: Service }) {
       className="rounded-[20px] overflow-hidden transition-all duration-300"
       style={{
         backgroundColor: WHITE,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+        boxShadow: service.isPackage ? `0 2px 12px ${GOLD}20` : "0 1px 3px rgba(0,0,0,0.04)",
+        border: service.isPackage ? `1.5px solid ${GOLD}40` : "1px solid transparent",
       }}
     >
       <button
@@ -195,7 +204,7 @@ export default function PricingPage() {
             Transparent pricing<br />for serious businesses.
           </h1>
           <p className="text-[15px] font-light leading-relaxed" style={{ color: `${CHARCOAL}60` }}>
-            All services quoted before work begins. 70% deposit, 30% on delivery.
+            Packages save you money. Individual services available too. 70% deposit, 30% on delivery.
           </p>
         </div>
       </section>

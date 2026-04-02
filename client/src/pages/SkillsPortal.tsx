@@ -317,6 +317,36 @@ export default function SkillsPortal() {
         </div>
       </section>
 
+      {/* ── PACKAGES ── recommended bundles */}
+      <section className="py-16 md:py-20" style={{ backgroundColor: BG }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4 text-center" style={{ color: GOLD }}>
+            RECOMMENDED PACKAGES
+          </p>
+          <h2 className="text-[28px] md:text-[36px] font-semibold text-center mb-12" style={{ color: TEXT }}>
+            Save more. Learn more.
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { title: "⭐ Founder Fast Track", desc: "AI Founder Launchpad + Vibe Coding — learn to build and sell with AI.", price: "₦120,000", context: "Skills Packages" },
+              { title: "⭐ Full Founder Bundle", desc: "All 3 core programs + Mentorship — complete founder education.", price: "₦200,000", context: "Skills Packages" },
+              { title: "⭐ Corporate Team", desc: "Staff Training + Custom Curriculum — upskill your whole team.", price: "From ₦350,000", context: "Skills Packages" },
+            ].map(pkg => (
+              <div
+                key={pkg.title}
+                className="rounded-[20px] p-7 transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                style={{ backgroundColor: W, boxShadow: "0 2px 20px rgba(0,0,0,0.04)", border: `1px solid ${GOLD}30` }}
+                onClick={() => openChat(pkg.context)}
+              >
+                <h3 className="text-[15px] font-semibold mb-2" style={{ color: TEXT }}>{pkg.title}</h3>
+                <p className="text-[13px] leading-relaxed mb-4" style={{ color: TEXT, opacity: 0.55 }}>{pkg.desc}</p>
+                <span className="text-[14px] font-semibold" style={{ color: GOLD }}>{pkg.price}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── PROGRAMS ── clean grid cards */}
       <section id="programs" className="py-24 md:py-32" style={{ backgroundColor: BG }}>
         <div className="max-w-5xl mx-auto px-6">

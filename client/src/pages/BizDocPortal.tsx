@@ -13,6 +13,26 @@ const Milk = "#FFFAF6";
 
 // ── SERVICE CARDS (simplified from pillars) ─────────────────────────────────
 const SERVICE_CARDS = [
+  // Packages first — higher ticket, recommended
+  {
+    icon: Award,
+    title: "⭐ Starter Pack",
+    line: "CAC Ltd + TIN + Bank Account + Seal — everything to start legally. ₦250K",
+    context: "BizDoc Packages",
+  },
+  {
+    icon: Shield,
+    title: "⭐ Pro Pack",
+    line: "Starter + Tax Filing + Compliance Management — stay protected. ₦400K",
+    context: "BizDoc Packages",
+  },
+  {
+    icon: Briefcase,
+    title: "⭐ Complete Pack",
+    line: "Pro + Legal Pack + Sector Licence — fully covered. ₦600K",
+    context: "BizDoc Packages",
+  },
+  // Individual services
   {
     icon: Briefcase,
     title: "Business Registration",

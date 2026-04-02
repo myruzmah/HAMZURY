@@ -20,6 +20,26 @@ const W  = "#FFFFFF";
 
 // ── SERVICE CARDS (simplified) ──────────────────────────────────────────────
 const SERVICE_CARDS = [
+  // Packages first — higher ticket, recommended
+  {
+    icon: Layers,
+    title: "⭐ Digital Starter",
+    line: "Brand Identity + Landing Page — look professional online. ₦350K",
+    context: "Systemise Packages",
+  },
+  {
+    icon: Monitor,
+    title: "⭐ Business Launch",
+    line: "Brand + Full Website + Social Media Setup — ready for clients. ₦500K",
+    context: "Systemise Packages",
+  },
+  {
+    icon: Zap,
+    title: "⭐ Full Architecture",
+    line: "Brand + Web + Social + CRM + AI — complete digital business. From ₦1.2M",
+    context: "Systemise Packages",
+  },
+  // Individual services
   {
     icon: Layers,
     title: "Branding",
@@ -31,12 +51,6 @@ const SERVICE_CARDS = [
     title: "Website",
     line: "Fast, mobile-first website designed around your buyer's journey.",
     context: "Website Design",
-  },
-  {
-    icon: Search,
-    title: "Visibility",
-    line: "SEO, Google Business, and directory listings so you get found first.",
-    context: "I need SEO and digital visibility for my business. Tell me more.",
   },
   {
     icon: Instagram,
