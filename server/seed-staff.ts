@@ -12,6 +12,7 @@ import {
   seedDefaultPricing,
   getStaffUserByEmail,
   seedContentPosts,
+  generateStaffRef,
   getDb,
 } from "./db";
 import { staffUsers } from "../drizzle/schema";
@@ -78,7 +79,9 @@ export async function seedStaffUsers(): Promise<number> {
     }
 
     const { hash, salt } = await hashPassword(DEFAULT_PASSWORD);
+    const staffRef = await generateStaffRef(staff.hamzuryRole);
     await createStaffUser({
+      staffRef,
       email: staff.email,
       passwordHash: hash,
       passwordSalt: salt,
@@ -90,7 +93,7 @@ export async function seedStaffUsers(): Promise<number> {
       failedAttempts: 0,
     });
     created++;
-    console.log(`[seed]   OK   ${staff.name} (${staff.email}) — ${staff.hamzuryRole}`);
+    console.log(`[seed]   OK   ${staff.name} (${staffRef}) — ${staff.hamzuryRole}`);
   }
 
   console.log(`[seed] Staff seeding complete: ${created} users created.`);

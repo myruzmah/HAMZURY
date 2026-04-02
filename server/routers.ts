@@ -4,11 +4,11 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
-  createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead,
+  createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead, updateLead,
   generateHZRefNumber, createSystemiseLead, getSystemiseLeads, getSystemiseLeadByRef,
   createAppointment, getAppointments,
   createJoinApplication, getJoinApplications,
-  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore,
+  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore, getTasksByLeadId, getTasksByClientPhone,
   getChecklistItemsByTaskId, toggleChecklistItem, getChecklistTemplates,
   createDocument, getDocumentsByTaskId, deleteDocument,
   createActivityLog, getActivityLogsByTaskId, getRecentActivityLogs,
@@ -301,6 +301,34 @@ export const appRouter = router({
           details: `Lead score set to ${input.score}/10 by ${ctx.user.name ?? ctx.user.openId}`,
         });
         return { success: true };
+      }),
+
+    /** CSO can update any lead fields */
+    update: csoProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1).optional(),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        service: z.string().optional(),
+        context: z.string().optional(),
+        assignedDepartment: z.string().optional(),
+        leadScore: z.number().min(0).max(10).optional(),
+        status: z.enum(["new", "contacted", "converted", "archived"]).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...data } = input;
+        // Remove undefined values
+        const cleanData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+        const lead = await updateLead(id, cleanData);
+        await createActivityLog({
+          leadId: id,
+          userId: ctx.user.id,
+          action: "lead_updated",
+          details: `Lead updated by ${ctx.user.name ?? ctx.user.email}: ${Object.keys(cleanData).join(", ")}`,
+        });
+        return lead;
       }),
 
     /** Client portal lookup — phone-based, rate limited, no auth needed */

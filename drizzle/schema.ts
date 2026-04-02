@@ -31,6 +31,7 @@ export type InsertUser = typeof users.$inferInsert;
  */
 export const staffUsers = mysqlTable("staffUsers", {
   id: int("id").autoincrement().primaryKey(),
+  staffRef: varchar("staffRef", { length: 20 }).unique(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   passwordSalt: varchar("passwordSalt", { length: 128 }).notNull(),

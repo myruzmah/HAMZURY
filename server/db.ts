@@ -312,6 +312,20 @@ export async function getTaskByRef(ref: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+export async function getTasksByLeadId(leadId: number): Promise<Task[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tasks).where(eq(tasks.leadId, leadId)).orderBy(desc(tasks.createdAt));
+}
+
+export async function getTasksByClientPhone(phone: string): Promise<Task[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const last6 = phone.replace(/\D/g, "").slice(-6);
+  if (!last6) return [];
+  return db.select().from(tasks).where(like(tasks.phone, `%${last6}`)).orderBy(desc(tasks.createdAt));
+}
+
 export async function getTaskByPhone(phoneDigits: string) {
   const db = await getDb();
   if (!db) return undefined;
@@ -369,6 +383,15 @@ export async function getCommissionByTaskRef(taskRef: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select().from(commissions).where(eq(commissions.taskRef, taskRef)).limit(1);
+  return result[0];
+}
+
+/** Update lead — partial update of any lead fields */
+export async function updateLead(leadId: number, data: Partial<Omit<InsertLead, "id" | "createdAt" | "updatedAt" | "ref">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(leads).set(data).where(eq(leads.id, leadId));
+  const result = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
   return result[0];
 }
 
@@ -880,6 +903,36 @@ export async function getAffiliateStats(affiliateId: number) {
 }
 
 // ─── Staff Users ─────────────────────────────────────────────────────────────
+
+/** Department codes for staff ref generation */
+const DEPT_CODES: Record<string, string> = {
+  founder: "01", ceo: "02", cso: "03", finance: "04", hr: "05",
+  bizdev: "06", media: "07", skills_staff: "08", systemise_head: "09",
+  tech_lead: "10", compliance_staff: "11", security_staff: "12",
+  department_staff: "13", bizdev_staff: "06",
+};
+
+/** Generate a staff reference: HMZ-0001-01 */
+export async function generateStaffRef(role: string): Promise<string> {
+  const db = await getDb();
+  const deptCode = DEPT_CODES[role] || "00";
+  const count = db ? (await db.select().from(staffUsers)).length : 0;
+  const seq = String(count + 1).padStart(4, "0");
+  return `HMZ-${seq}-${deptCode}`;
+}
+
+/** Look up staff by their staff ref (HMZ-0001-01) */
+export async function getStaffUserByRef(ref: string): Promise<StaffUser | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const results = await db.select().from(staffUsers).where(eq(staffUsers.staffRef, ref.toUpperCase().trim())).limit(1);
+    return results[0] ?? null;
+  } catch {
+    // staffRef column may not exist yet — return null so login falls back to email
+    return null;
+  }
+}
 
 export async function getStaffUserByEmail(email: string): Promise<StaffUser | null> {
   const db = await getDb();

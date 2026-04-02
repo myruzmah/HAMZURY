@@ -39,7 +39,6 @@ import BizDocLeadDashboard from "./pages/BizDocLeadDashboard";
 import SystemiseLeadDashboard from "./pages/SystemiseLeadDashboard";
 import TeamPage from "./pages/TeamPage";
 import MetFixPage from "./pages/MetFixPage";
-import FederalHub from "./pages/FederalHub";
 import SocialTemplates from "./pages/SocialTemplates";
 import TrainingPage from "./pages/TrainingPage";
 import CookieBanner from "./components/CookieBanner";
@@ -63,7 +62,6 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "/skills/ceo":        ["founder", "ceo"],
   "/systemise/cto":     ["founder", "ceo", "systemise_head", "tech_lead", "media"],
   "/systemise/dashboard": ["founder", "ceo", "systemise_head", "tech_lead"],
-  "/hub/federal":         ["founder", "ceo"],
 };
 
 /** Wrapper that enforces hamzuryRole-based access on /hub/* and sensitive routes */
@@ -158,12 +156,6 @@ function Router() {
           <StaffWorkspace />
         </RoleGuard>
       </Route>
-      <Route path={"/hub/federal"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/hub/federal"]}>
-          <FederalHub />
-        </RoleGuard>
-      </Route>
-
       {/* Client Portal — dashboard only, clients enter ref via Track section */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />
       <Route path={"/client"}>{() => { window.location.href = "/"; return null; }}</Route>

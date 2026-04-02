@@ -38,6 +38,7 @@ import {
 const CHOCO = "#2C1A0E";
 const GOLD  = "#B48C4C";
 const MILK  = "#FFFAF6";   // Milk white
+const DARK  = "#1D1D1F";
 
 type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files" | "vault" | "aiops";
 
@@ -222,7 +223,6 @@ export default function FounderDashboard() {
             <Link href="/hub/ceo" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>CEO Hub</Link>
             <Link href="/hub/cso" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>CSO</Link>
             <Link href="/hub/finance" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>Finance</Link>
-            <Link href="/hub/federal" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>Federal</Link>
             <Link href="/hub/bizdev" className="text-xs px-3 py-1.5 rounded-lg border transition-all hover:opacity-80" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>BizDev</Link>
           </div>
         </div>
@@ -231,7 +231,10 @@ export default function FounderDashboard() {
         <ScrollArea className="flex-1">
           <div className="p-6 md:p-8">
             {activeSection === "overview" && (
-              <OverviewSection stats={stats} leads={leads} commissions={commissions} activity={activity} />
+              <>
+                <OverviewSection stats={stats} leads={leads} commissions={commissions} activity={activity} />
+                <AdminTools />
+              </>
             )}
             {activeSection === "command" && (
               <CommandSection
@@ -252,6 +255,36 @@ export default function FounderDashboard() {
             {activeSection === "aiops" && <AIOperationsSection />}
           </div>
         </ScrollArea>
+      </div>
+    </div>
+  );
+}
+
+// ─── Admin Tools (Founder Only) ─────────────────────────────────────────────
+function AdminTools() {
+  const seedMutation = trpc.staff.seed.useMutation({
+    onSuccess: (d: any) => alert(`Seed complete: ${d.staffCreated} staff created`),
+    onError: (e: any) => alert(e.message),
+  });
+  const clearMutation = (trpc.staff as any).clearClientData?.useMutation?.({
+    onSuccess: () => alert("All client data cleared."),
+    onError: (e: any) => alert(e?.message || "Failed"),
+  });
+  return (
+    <div className="mt-10 pt-6" style={{ borderTop: `1px solid ${CHOCO}10` }}>
+      <p className="text-[11px] font-medium tracking-widest uppercase mb-4" style={{ color: `${DARK}40` }}>Admin</p>
+      <div className="flex flex-wrap gap-3">
+        <button onClick={() => seedMutation.mutate()} disabled={seedMutation.isPending}
+          className="text-xs px-4 py-2 rounded-lg border transition-opacity disabled:opacity-50"
+          style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>
+          {seedMutation.isPending ? "Seeding..." : "Seed Staff + Pricing"}
+        </button>
+        <button onClick={() => { if (confirm("Clear ALL client data? Leads, tasks, invoices, activity logs.")) clearMutation?.mutate?.(); }}
+          disabled={clearMutation?.isPending}
+          className="text-xs px-4 py-2 rounded-lg border transition-opacity disabled:opacity-50"
+          style={{ borderColor: "#EF444440", color: "#EF4444" }}>
+          {clearMutation?.isPending ? "Clearing..." : "Clear Client Data"}
+        </button>
       </div>
     </div>
   );
@@ -405,11 +438,6 @@ function CommandSection({ escalations, resolvedRefs, setResolvedRefs, pendingCom
         <Link href="/hub/ceo">
           <Button size="sm" variant="outline" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>
             CEO Hub
-          </Button>
-        </Link>
-        <Link href="/hub/federal">
-          <Button size="sm" variant="outline" style={{ borderColor: `${CHOCO}20`, color: CHOCO }}>
-            Federal Hub
           </Button>
         </Link>
         <Link href="/hub/bizdev">

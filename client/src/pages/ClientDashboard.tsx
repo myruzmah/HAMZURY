@@ -862,23 +862,22 @@ export default function ClientDashboard() {
   }, [handleChatSend]);
 
   /* ── Loading / error — NO early returns to preserve hook order ── */
-  if (!sessionLoaded || !session || isLoading || isError || !data || !data.found) {
+  // No session or ref not found → go back to home silently
+  if (sessionLoaded && !session) {
+    window.location.href = "/";
+    return null;
+  }
+  if (sessionLoaded && session && !isLoading && (isError || !data || !data.found)) {
+    // Clear invalid session and go home
+    localStorage.removeItem("hamzury-client-session");
+    window.location.href = "/";
+    return null;
+  }
+  if (!sessionLoaded || !session || isLoading || !data || !data.found) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-6" style={{ backgroundColor: WHITE }}>
-        {(!sessionLoaded || isLoading) ? (
-          <>
-            <Loader2 className="animate-spin" size={20} style={{ color: DARK }} />
-            <p className="text-[13px]" style={{ color: MUTED, fontWeight: 400 }}>Loading...</p>
-          </>
-        ) : (isError || !data || (data && !data.found)) ? (
-          <>
-            <AlertCircle size={28} style={{ color: MUTED }} />
-            <p className="text-[15px]" style={{ color: DARK, fontWeight: 500 }}>We could not find this reference</p>
-            <p className="text-[13px] font-mono" style={{ color: MUTED }}>{session?.ref}</p>
-            <p className="text-[12px] text-center max-w-xs" style={{ color: MUTED }}>Please check the reference number from your confirmation message. If you just submitted, it may take a moment to appear.</p>
-            <button onClick={handleLogout} className="text-[13px] px-6 py-3 rounded-full" style={{ backgroundColor: DARK, color: WHITE, fontWeight: 500, minHeight: 44 }}>Try another reference</button>
-          </>
-        ) : null}
+      <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: WHITE }}>
+        <Loader2 className="animate-spin" size={20} style={{ color: DARK }} />
+        <p className="text-[13px] mt-3" style={{ color: MUTED }}>Loading...</p>
       </div>
     );
   }

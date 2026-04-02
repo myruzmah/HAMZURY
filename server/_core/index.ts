@@ -121,27 +121,7 @@ async function startServer() {
     }
   });
 
-  // ─── Staff ID → email mapping (HZ-XXX → email) ──────────────────────────
-  const STAFF_ID_MAP: Record<string, string> = {
-    "HMZ000-26/3": "founder@hamzury.com",
-    "HMZ001-26/3": "idris@hamzury.com",
-    "HMZ002-26/3": "abdullahi@hamzury.com",
-    "HMZ003-26/3": "yusuf@hamzury.com",
-    "HMZ004-26/3": "khadija@hamzury.com",
-    "HMZ005-26/3": "faree@hamzury.com",
-    "HMZ006-26/3": "tabitha@hamzury.com",
-    "HMZ007-26/3": "maryam@hamzury.com",
-    "HMZ008-26/3": "abubakar@hamzury.com",
-    "HMZ009-26/3": "hikma@hamzury.com",
-    "HMZ010-26/3": "salis@hamzury.com",
-    "HMZ011-26/3": "abdulmalik@hamzury.com",
-    "HMZ012-26/3": "dajot@hamzury.com",
-    "HMZ013-26/3": "lalo@hamzury.com",
-    "HMZ014-26/3": "rabilu@hamzury.com",
-    "HMZ015-26/3": "habeeba@hamzury.com",
-    "HMZ016-26/3": "pius@hamzury.com",
-    "HMZ017-26/3": "abdulwafeed@hamzury.com",
-  };
+  // ─── Staff ID lookup — uses staffRef from database ──────────────────────
 
   // ─── Login rate limiter (10 attempts per 15 minutes per IP) ──────────────
   const loginRateMap = new Map<string, number[]>();
@@ -166,10 +146,9 @@ async function startServer() {
       if (!staffId || !password) return res.status(400).json({ error: "Staff ID and password are required." });
 
       const normalised = String(staffId).trim().toUpperCase();
-      const email = STAFF_ID_MAP[normalised];
-      if (!email) return res.status(401).json({ error: "Invalid Staff ID or password." });
-
-      const user = await db.getStaffUserByEmail(email);
+      // Try lookup by staffRef first, then by email as fallback
+      let user = await db.getStaffUserByRef(normalised);
+      if (!user) user = await db.getStaffUserByEmail(normalised.toLowerCase());
       if (!user) {
         return res.status(401).json({ error: "Invalid Staff ID or password." });
       }

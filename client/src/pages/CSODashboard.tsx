@@ -66,6 +66,22 @@ const DEPARTMENTS = [
   { value: "skills",    label: "Skills — Talent",        color: BRAND.skills },
 ];
 
+const SERVICE_OPTIONS = [
+  { value: "CAC Registration", dept: "bizdoc" },
+  { value: "Tax Compliance", dept: "bizdoc" },
+  { value: "Sector Licence", dept: "bizdoc" },
+  { value: "Legal Documents", dept: "bizdoc" },
+  { value: "Foreign Business", dept: "bizdoc" },
+  { value: "Brand Identity", dept: "systemise" },
+  { value: "Website", dept: "systemise" },
+  { value: "Social Media", dept: "systemise" },
+  { value: "CRM", dept: "systemise" },
+  { value: "AI Agent", dept: "systemise" },
+  { value: "Training", dept: "skills" },
+  { value: "Full Business Setup", dept: "bizdoc" },
+  { value: "Other", dept: "bizdoc" },
+];
+
 const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   "Not Started":      { bg: "rgba(107,114,128,0.08)", text: "#6B7280" },
   "In Progress":      { bg: "rgba(59,130,246,0.10)",  text: "#3B82F6" },
@@ -126,6 +142,20 @@ export default function CSODashboard() {
     onError: () => toast.error("Failed to flag task"),
   });
   const [reworkNotes, setReworkNotes] = useState<Record<number, string>>({});
+
+  // Quick entry form
+  const [showQuickEntry, setShowQuickEntry] = useState(false);
+  const [quickEntry, setQuickEntry] = useState({ name: "", phone: "", service: "", department: "bizdoc", notes: "" });
+  const quickEntryMutation = trpc.leads.createManual.useMutation({
+    onSuccess: (result) => {
+      toast.success(`Client created — Ref: ${result.ref}`);
+      setShowQuickEntry(false);
+      setQuickEntry({ name: "", phone: "", service: "", department: "bizdoc", notes: "" });
+      leadsQuery.refetch();
+      unassignedQuery.refetch();
+    },
+    onError: () => toast.error("Failed to create client"),
+  });
 
   const utils = trpc.useUtils();
   const subsQuery = trpc.subscriptions.list.useQuery(undefined, { refetchInterval: 30000 });
@@ -375,6 +405,18 @@ export default function CSODashboard() {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowQuickEntry(!showQuickEntry)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
+              style={{
+                backgroundColor: showQuickEntry ? `${TEAL}12` : TEAL,
+                color: showQuickEntry ? TEAL : WHITE,
+                border: showQuickEntry ? `1px solid ${TEAL}30` : "1px solid transparent",
+              }}
+            >
+              <UserPlus size={13} />
+              <span className="hidden sm:inline">{showQuickEntry ? "Close" : "New Client"}</span>
+            </button>
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[13px]"
               style={{ backgroundColor: `${TEAL}10`, color: TEAL }}
@@ -391,6 +433,97 @@ export default function CSODashboard() {
             </div>
           </div>
         </div>
+
+        {/* Quick Entry Form */}
+        {showQuickEntry && (
+          <div className="px-6 py-3 border-b shrink-0" style={{ backgroundColor: `${TEAL}04`, borderColor: `${TEAL}10` }}>
+            <div className="max-w-7xl mx-auto">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="flex-1 min-w-[140px]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: `${TEAL}60` }}>Name *</label>
+                  <input
+                    placeholder="Client name"
+                    value={quickEntry.name}
+                    onChange={e => setQuickEntry(p => ({ ...p, name: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                    style={{ borderColor: `${TEAL}20` }}
+                  />
+                </div>
+                <div className="flex-1 min-w-[120px]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: `${TEAL}60` }}>Phone *</label>
+                  <input
+                    placeholder="080..."
+                    value={quickEntry.phone}
+                    onChange={e => setQuickEntry(p => ({ ...p, phone: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                    style={{ borderColor: `${TEAL}20` }}
+                  />
+                </div>
+                <div className="flex-1 min-w-[160px]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: `${TEAL}60` }}>Service *</label>
+                  <select
+                    value={quickEntry.service}
+                    onChange={e => {
+                      const svc = e.target.value;
+                      const match = SERVICE_OPTIONS.find(s => s.value === svc);
+                      setQuickEntry(p => ({ ...p, service: svc, department: match?.dept || p.department }));
+                    }}
+                    className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none bg-white"
+                    style={{ borderColor: `${TEAL}20` }}
+                  >
+                    <option value="">Select service...</option>
+                    {SERVICE_OPTIONS.map(s => (
+                      <option key={s.value} value={s.value}>{s.value}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="min-w-[110px]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: `${TEAL}60` }}>Dept</label>
+                  <select
+                    value={quickEntry.department}
+                    onChange={e => setQuickEntry(p => ({ ...p, department: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none bg-white"
+                    style={{ borderColor: `${TEAL}20` }}
+                  >
+                    <option value="bizdoc">BizDoc</option>
+                    <option value="systemise">Systemise</option>
+                    <option value="skills">Skills</option>
+                  </select>
+                </div>
+                <div className="flex-1 min-w-[140px]">
+                  <label className="text-[10px] font-bold uppercase tracking-wider mb-1 block" style={{ color: `${TEAL}60` }}>Notes</label>
+                  <input
+                    placeholder="Optional notes"
+                    value={quickEntry.notes}
+                    onChange={e => setQuickEntry(p => ({ ...p, notes: e.target.value }))}
+                    className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                    style={{ borderColor: `${TEAL}20` }}
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    if (!quickEntry.name || !quickEntry.phone || !quickEntry.service) {
+                      toast.error("Name, Phone, and Service are required");
+                      return;
+                    }
+                    quickEntryMutation.mutate({
+                      name: quickEntry.name,
+                      phone: quickEntry.phone,
+                      service: quickEntry.service,
+                      department: quickEntry.department,
+                      notes: quickEntry.notes || undefined,
+                    });
+                  }}
+                  disabled={quickEntryMutation.isPending}
+                  className="px-4 py-2 rounded-lg text-[13px] font-semibold shrink-0 transition-opacity"
+                  style={{ backgroundColor: TEAL, color: GOLD, opacity: quickEntryMutation.isPending ? 0.6 : 1 }}
+                >
+                  {quickEntryMutation.isPending ? "Saving..." : "Add Client"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <ScrollArea className="flex-1">
