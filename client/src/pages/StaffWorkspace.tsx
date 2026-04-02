@@ -2,6 +2,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import PageMeta from "@/components/PageMeta";
+import { toast } from "sonner";
 import {
   LogOut, CheckSquare, Calendar, Clock, User, Briefcase,
   Send, AlertTriangle, Star, Shield, Mic, Code, Layers,
@@ -303,6 +304,15 @@ export default function StaffWorkspace() {
   });
 
   const [submittingId, setSubmittingId] = useState<number | null>(null);
+  const [clockedIn, setClockedIn] = useState(false);
+  const clockInMut = trpc.attendance.checkIn.useMutation({
+    onSuccess: () => { setClockedIn(true); toast.success("Clocked in"); },
+    onError: (err) => toast.error(err.message),
+  });
+  const clockOutMut = trpc.attendance.checkOut.useMutation({
+    onSuccess: () => { setClockedIn(false); toast.success("Clocked out"); },
+    onError: (err) => toast.error(err.message),
+  });
 
   const tasks   = tasksQuery.data ?? [];
   const kpi     = kpiQuery.data ?? { smooth: 0, total: 0, rework: 0, completed: 0 };
@@ -368,6 +378,15 @@ export default function StaffWorkspace() {
               {reworkTasks.length} Rework
             </div>
           )}
+          <button
+            onClick={() => clockedIn ? clockOutMut.mutate() : clockInMut.mutate()}
+            disabled={clockInMut.isPending || clockOutMut.isPending}
+            className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all disabled:opacity-40"
+            style={{ backgroundColor: clockedIn ? "#22C55E18" : `${TEAL}10`, color: clockedIn ? "#22C55E" : TEAL }}
+          >
+            <Clock size={12} />
+            {clockedIn ? "Clock Out" : "Clock In"}
+          </button>
           <span className="hidden md:block text-xs font-medium px-3 py-1 rounded-full"
             style={{ backgroundColor: `${meta.color}12`, color: meta.color }}>
             {meta.dept}

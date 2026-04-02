@@ -164,26 +164,6 @@ export default function SkillsPortal() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Staff login (inline)
-  const [staffMode, setStaffMode] = useState(false);
-  const [staffId, setStaffId] = useState("");
-  const [staffPw, setStaffPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [staffLoading, setStaffLoading] = useState(false);
-  const [staffError, setStaffError] = useState("");
-  async function handleStaffLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!staffId.trim() || !staffPw) return;
-    setStaffLoading(true); setStaffError("");
-    try {
-      const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ staffId: staffId.trim().toUpperCase(), password: staffPw }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
-      window.location.href = data.dashboard;
-    } catch (err: unknown) { setStaffError(err instanceof Error ? err.message : String(err)); }
-    finally { setStaffLoading(false); }
-  }
-
   // Apply form
   const [applyName, setApplyName] = useState("");
   const [applyPhone, setApplyPhone] = useState("");
@@ -602,26 +582,6 @@ export default function SkillsPortal() {
               )}
             </div>
           )}
-
-          {/* Staff login toggle */}
-          <div className="mt-12">
-            <button onClick={() => setStaffMode(s => !s)} className="text-[11px] tracking-[0.15em] uppercase transition-opacity hover:opacity-70" style={{ color: TEXT, opacity: 0.25 }}>
-              {staffMode ? "Back to Track" : "Staff?"}
-            </button>
-            {staffMode && (
-              <form onSubmit={handleStaffLogin} className="mt-4 space-y-3 max-w-xs mx-auto">
-                <input type="text" value={staffId} onChange={e => setStaffId(e.target.value)} placeholder="Staff ID" className="w-full px-4 py-3 rounded-full text-[13px] outline-none" style={{ backgroundColor: `${TEXT}06`, color: TEXT }} />
-                <div className="relative">
-                  <input type={showPw ? "text" : "password"} value={staffPw} onChange={e => setStaffPw(e.target.value)} placeholder="Password" className="w-full px-4 py-3 rounded-full text-[13px] outline-none pr-10" style={{ backgroundColor: `${TEXT}06`, color: TEXT }} />
-                  <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-60" style={{ color: TEXT }}>{showPw ? <EyeOff size={14} /> : <Eye size={14} />}</button>
-                </div>
-                {staffError && <p className="text-[12px] text-red-500">{staffError}</p>}
-                <button type="submit" disabled={staffLoading || !staffId.trim() || !staffPw} className="w-full py-3 rounded-full text-[13px] font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2" style={{ backgroundColor: TEXT, color: GOLD }}>
-                  {staffLoading ? <Loader2 size={14} className="animate-spin" /> : null}{staffLoading ? "Signing in..." : "Sign In"}
-                </button>
-              </form>
-            )}
-          </div>
         </div>
       </section>
 

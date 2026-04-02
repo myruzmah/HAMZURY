@@ -549,6 +549,17 @@ async function startServer() {
         if (payload === "[DONE]") { if (!doneSent) { res.write("data: [DONE]\n\n"); doneSent = true; } continue; }
         try {
           const parsed = JSON.parse(payload);
+          // Anthropic format: transform to OpenAI-compatible format
+          if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+            const reformatted = JSON.stringify({ choices: [{ index: 0, delta: { content: parsed.delta.text } }] });
+            res.write(`data: ${reformatted}\n\n`);
+            continue;
+          }
+          if (parsed.type === "message_stop") {
+            if (!doneSent) { res.write("data: [DONE]\n\n"); doneSent = true; }
+            continue;
+          }
+          if (parsed.type === "message_start" || parsed.type === "content_block_start" || parsed.type === "ping") continue;
           const delta = parsed.choices?.[0]?.delta;
           // Qwen 3.5+ sends reasoning_content (thinking) before content — skip those
           if (delta && delta.content === null && delta.reasoning_content) continue;
@@ -562,11 +573,17 @@ async function startServer() {
   app.post("/api/chat/message", async (req, res) => {
     try {
       if (!chatRateLimit(req, res)) return;
-      const { message, history, department, language, selected_mode, session_id, url_referral } = req.body ?? {};
+      const { message, history, department, language, selected_mode, session_id, url_referral, context } = req.body ?? {};
       if (!message || typeof message !== "string" || message.length > 1000) {
         return res.status(400).json({ error: "Invalid message." });
       }
-      const systemPrompt = buildSystemPrompt(department as string);
+      let systemPrompt: string;
+      if (context === "consultation") {
+        const { buildConsultationPrompt } = await import("../config/chat-config");
+        systemPrompt = buildConsultationPrompt(language as string);
+      } else {
+        systemPrompt = buildSystemPrompt(department as string, undefined, language as string);
+      }
       await streamChatResponse(req, res, systemPrompt, message, history || []);
     } catch (err) {
       console.error("[chat/message] error:", err);
@@ -579,11 +596,24 @@ async function startServer() {
   app.post("/api/chat/dashboard-message", async (req, res) => {
     try {
       if (!chatRateLimit(req, res)) return;
-      const { message, history, tone_preference, session_id } = req.body ?? {};
+      const { message, history, tone_preference, task_context, chat_memory, session_id } = req.body ?? {};
       if (!message || typeof message !== "string" || message.length > 1000) {
         return res.status(400).json({ error: "Invalid message." });
       }
-      const systemPrompt = buildSystemPrompt(undefined, tone_preference as string);
+      // Sanitize task_context if provided
+      const safeContext = task_context ? {
+        clientName: String(task_context.clientName || "").slice(0, 100),
+        businessName: String(task_context.businessName || "").slice(0, 100),
+        service: String(task_context.service || "").slice(0, 200),
+        department: String(task_context.department || "").slice(0, 30),
+        status: String(task_context.status || "").slice(0, 50),
+        progress: typeof task_context.progress === "number" ? task_context.progress : 0,
+        checklist: Array.isArray(task_context.checklist) ? task_context.checklist.slice(0, 15).map((c: any) => ({ label: String(c.label || "").slice(0, 100), completed: !!c.completed })) : undefined,
+        recentActivity: Array.isArray(task_context.recentActivity) ? task_context.recentActivity.slice(0, 5).map((a: any) => String(a).slice(0, 100)) : undefined,
+        chatMemory: typeof chat_memory === "string" ? chat_memory.slice(0, 2000) : undefined,
+      } : undefined;
+      const { buildDashboardSystemPrompt } = await import("../config/chat-config");
+      const systemPrompt = buildDashboardSystemPrompt(safeContext, tone_preference as string);
       await streamChatResponse(req, res, systemPrompt, message, history || []);
     } catch (err) {
       console.error("[chat/dashboard-message] error:", err);

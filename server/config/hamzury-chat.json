@@ -161,6 +161,109 @@
       "tracking_statuses": ["Enrolled", "Active", "Assignments Submitted", "Assessment Passed", "Certified", "Alumni"]
     }
   },
+  "service_pitches": {
+    "bizdoc": {
+      "Business Registration": {
+        "pitch": "Business Registration covers everything to get you legally operational.",
+        "items": [
+          { "name": "CAC Limited Company", "price": "₦150K", "timeline": "7-14 days", "includes": "Name reservation, MEMART, CAC certificate, TIN, BN" },
+          { "name": "CAC Business Name", "price": "₦50K", "timeline": "5-7 days", "includes": "Name search, registration, certificate" },
+          { "name": "CAC Incorporated Trustee", "price": "₦200K", "timeline": "14-21 days", "includes": "NGO/foundation registration, constitution, certificate" },
+          { "name": "Post-Registration Pack", "price": "₦80K", "timeline": "5 days", "includes": "TIN registration, BN, SCUML, company seal" }
+        ]
+      },
+      "Tax Compliance": {
+        "pitch": "Tax Compliance keeps your business penalty-free and contract-ready.",
+        "items": [
+          { "name": "TIN Registration", "price": "₦30K", "timeline": "3-5 days", "includes": "FIRS TIN certificate" },
+          { "name": "Annual Tax Filing", "price": "₦80K", "timeline": "7-10 days", "includes": "CIT, VAT returns, withholding tax" },
+          { "name": "Tax Clearance Certificate", "price": "₦100K", "timeline": "14-21 days", "includes": "3-year TCC for contracts and tenders" },
+          { "name": "Tax Pro Max (Annual)", "price": "₦150K/year", "timeline": "Ongoing", "includes": "Monthly filing, TCC renewal, audit prep, advisory" }
+        ]
+      },
+      "Sector Licences": {
+        "pitch": "Sector Licences ensure you can legally operate in your industry.",
+        "items": [
+          { "name": "NAFDAC Registration", "price": "₦250K+", "timeline": "30-90 days", "includes": "Product registration, facility inspection, certification" },
+          { "name": "SCUML Certificate", "price": "₦50K", "timeline": "5-7 days", "includes": "Anti-money laundering compliance certificate" },
+          { "name": "NEPC Export Licence", "price": "₦120K", "timeline": "14-21 days", "includes": "Export licence, EEG registration" },
+          { "name": "Other Sector Permits", "price": "From ₦60K", "timeline": "Varies", "includes": "CBN, NMDPRA, NCC, SON, and industry-specific permits" }
+        ]
+      },
+      "Foreign Business": {
+        "pitch": "Foreign Business services help non-Nigerians set up and operate legally in Nigeria.",
+        "items": [
+          { "name": "Expatriate Quota (EQ)", "price": "₦350K+", "timeline": "30-60 days", "includes": "Work permit allocation for foreign staff" },
+          { "name": "CERPAC Residence Permit", "price": "₦200K+", "timeline": "21-30 days", "includes": "Combined residence and work permit" },
+          { "name": "Business Permit", "price": "₦250K+", "timeline": "30-45 days", "includes": "Permission to operate foreign-owned business" },
+          { "name": "Full Foreign Setup", "price": "₦800K+", "timeline": "60-90 days", "includes": "CAC + EQ + CERPAC + Business Permit + Tax" }
+        ]
+      },
+      "Legal Documents": {
+        "pitch": "Legal Documents protect your business relationships and operations.",
+        "items": [
+          { "name": "Contract Templates", "price": "₦40K", "timeline": "3 days", "includes": "Service agreements, NDAs, partnership deeds" },
+          { "name": "Custom Legal Drafting", "price": "₦80K+", "timeline": "5-7 days", "includes": "Bespoke contracts, MOUs, legal opinions" },
+          { "name": "Document Pack", "price": "₦60K", "timeline": "3-5 days", "includes": "Company profile, letterhead, policies, HR pack" }
+        ]
+      }
+    },
+    "systemise": {
+      "Brand Identity": {
+        "pitch": "Brand Identity builds the visual foundation that makes clients trust you instantly.",
+        "items": [
+          { "name": "Logo + Brand Guide", "price": "₦150K", "timeline": "7-10 days", "includes": "Logo, color palette, typography, usage guide" },
+          { "name": "Full Brand System", "price": "₦350K", "timeline": "14-21 days", "includes": "Logo, stationery, social templates, brand book" },
+          { "name": "Brand Refresh", "price": "₦200K", "timeline": "10-14 days", "includes": "Modernize existing identity, new collateral" }
+        ]
+      },
+      "Website Design": {
+        "pitch": "Website Design builds a sales tool, not just a brochure.",
+        "items": [
+          { "name": "Landing Page", "price": "₦200K", "timeline": "5-7 days", "includes": "Single-page site, mobile-optimized, SEO basics" },
+          { "name": "Business Website", "price": "₦400K", "timeline": "14-21 days", "includes": "5-8 pages, contact forms, analytics, SEO" },
+          { "name": "Portal / Dashboard", "price": "₦600K+", "timeline": "21-30 days", "includes": "Login system, client portal, custom features" },
+          { "name": "E-commerce", "price": "₦500K+", "timeline": "21-30 days", "includes": "Product catalog, cart, payment integration" }
+        ]
+      },
+      "Social Media": {
+        "pitch": "Social Media Management builds your audience and generates leads consistently.",
+        "items": [
+          { "name": "2 Platforms", "price": "₦200K/month", "timeline": "Ongoing", "includes": "Content creation, posting, engagement (2 platforms)" },
+          { "name": "Full Management", "price": "₦400K/month", "timeline": "Ongoing", "includes": "All platforms, content, ads, analytics, reporting" },
+          { "name": "Content Only", "price": "₦120K/month", "timeline": "Ongoing", "includes": "30 posts/month, graphics, captions, scheduling" }
+        ]
+      },
+      "CRM & Automation": {
+        "pitch": "CRM & Automation eliminates repeated manual work and organizes your pipeline.",
+        "items": [
+          { "name": "CRM Setup", "price": "₦200K", "timeline": "7-14 days", "includes": "Lead tracking, pipeline, follow-up automation" },
+          { "name": "Workflow Automation", "price": "₦150K+", "timeline": "7-14 days", "includes": "Invoice, onboarding, follow-up automations" },
+          { "name": "AI Agent Build", "price": "₦300K+", "timeline": "14-21 days", "includes": "Custom AI assistant for your specific business process" }
+        ]
+      },
+      "AI & Automation": {
+        "pitch": "AI & Automation lets your business run smarter with less manual work.",
+        "items": [
+          { "name": "AI Customer Support Agent", "price": "₦250K", "timeline": "14 days", "includes": "24/7 AI chatbot that answers customer questions, handles complaints, and escalates when needed — so your team sleeps while customers get help" },
+          { "name": "AI Lead Qualifier Bot", "price": "₦200K", "timeline": "10 days", "includes": "Automatically scores and qualifies incoming leads, asks the right questions, and routes hot leads to your sales team instantly" },
+          { "name": "Invoice & Payment Automation", "price": "₦150K", "timeline": "7 days", "includes": "Auto-generates invoices, sends payment reminders, tracks who paid, and reconciles — no more chasing clients for money" },
+          { "name": "AI Content Generator", "price": "₦180K", "timeline": "10 days", "includes": "Creates social media posts, captions, blog drafts, and marketing copy in your brand voice — content on autopilot" },
+          { "name": "Smart Appointment Scheduler", "price": "₦120K", "timeline": "5 days", "includes": "Clients book themselves, get reminders, reschedule without calling — your calendar manages itself" },
+          { "name": "AI Document Processor", "price": "₦200K", "timeline": "14 days", "includes": "Extracts data from documents, fills forms, organizes files — turns hours of paperwork into minutes" },
+          { "name": "Workflow Automation Suite", "price": "₦300K+", "timeline": "14-21 days", "includes": "Connects your tools (email, WhatsApp, CRM, spreadsheets) so data flows automatically — no copy-pasting between systems" },
+          { "name": "Custom AI Agent (Bespoke)", "price": "₦400K+", "timeline": "21-30 days", "includes": "We build a custom AI that solves your specific business problem — trained on your data, your process, your rules" }
+        ]
+      }
+    },
+    "skills": {
+      "AI Founder Launchpad": { "pitch": "Build your idea, offer, brand, and first revenue path using AI tools.", "price": "₦75K", "duration": "3 weeks", "includes": "Idea validation, AI-powered branding, landing page, first client strategy" },
+      "Vibe Coding for Founders": { "pitch": "Build MVPs and internal tools with AI-assisted coding.", "price": "₦75K", "duration": "3 weeks", "includes": "AI coding tools, MVP build, deployment, internal tools" },
+      "AI Sales Operator": { "pitch": "Lead generation, follow-up systems, and AI-powered sales.", "price": "₦75K", "duration": "3 weeks", "includes": "Sales funnel, CRM setup, AI follow-up, closing scripts" },
+      "Service Business in 21 Days": { "pitch": "Launch a real service business from scratch in 3 weeks.", "price": "₦75K", "duration": "3 weeks", "includes": "Business model, pricing, first clients, delivery system" },
+      "IT Internship": { "pitch": "Hands-on learning under real staff across HAMZURY departments.", "price": "Free", "duration": "3-6 months", "includes": "Department placement, mentorship, real project work, certificate" }
+    }
+  },
   "cross_sell": {
     "rule": "Recommend one main solution first and at most one supporting upsell."
   },

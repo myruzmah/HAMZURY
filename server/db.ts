@@ -379,14 +379,6 @@ export async function updateLeadScore(leadId: number, score: number) {
   await db.update(leads).set({ leadScore: score }).where(eq(leads.id, leadId));
 }
 
-export async function getCompletedTasksWithPrice() {
-  const db = await getDb();
-  if (!db) return [];
-  return db.select().from(tasks)
-    .where(and(eq(tasks.status, "Completed"), sql`${tasks.quotedPrice} IS NOT NULL AND ${tasks.quotedPrice} > 0`))
-    .orderBy(desc(tasks.completedAt));
-}
-
 // ─── Checklist Items ─────────────────────────────────────────────────────────
 
 export async function getChecklistItemsByTaskId(taskId: number): Promise<TaskChecklistItem[]> {

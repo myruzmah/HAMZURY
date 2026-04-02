@@ -773,14 +773,31 @@ export default function ClientDashboard() {
     setChatMessages(prev => [...prev, { role: "assistant", content: "" }]);
 
     try {
-      const history = [...chatMessages, userMsg].slice(-10).map(h => ({ role: h.role, content: h.content }));
-      const response = await fetch("/api/chat/stream", {
+      const allMsgs = [...chatMessages, userMsg];
+      const history = allMsgs.slice(-10).map(h => ({ role: h.role, content: h.content }));
+      // Build summary of older messages so AI remembers full conversation
+      const olderMsgs = allMsgs.slice(0, -10);
+      const chatMemory = olderMsgs.length > 0
+        ? olderMsgs.map(m => `${m.role === "user" ? "Client" : "Advisor"}: ${m.content.slice(0, 100)}`).join(" | ")
+        : undefined;
+      const response = await fetch("/api/chat/dashboard-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          question: msg,
+          message: msg,
           history,
-          department: "general",
+          tone_preference: "Friendly",
+          chat_memory: chatMemory,
+          task_context: data ? {
+            clientName: data.task?.clientName,
+            businessName: data.task?.businessName,
+            service: data.task?.service,
+            department: data.task?.department,
+            status: data.task?.status,
+            progress: data.task?.progress,
+            checklist: data.checklist?.slice(0, 15).map((c: any) => ({ label: c.label, completed: !!c.checked })),
+            recentActivity: data.activity?.slice(0, 5).map((a: any) => a.action),
+          } : undefined,
         }),
       });
 

@@ -7,7 +7,6 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import BizDocPortal from "./pages/BizDocPortal";
-import Dashboard from "./pages/Dashboard";
 import CSODashboard from "./pages/CSODashboard";
 import FinanceDashboard from "./pages/FinanceDashboard";
 import CEODashboard from "./pages/CEODashboard";
@@ -227,21 +226,27 @@ function ScrollToTop() {
   return null;
 }
 
-/** Detect department from current route for floating chat */
+/** Show chat on public pages, department portals, client dashboard, and staff dashboards */
 function FloatingChat() {
   const [location] = useLocation();
 
-  // Don't show on dashboards, login, admin, or affiliate pages
-  const hiddenPaths = ["/hub/", "/bizdoc/dashboard", "/skills/admin", "/founder/dashboard", "/ridi/dashboard", "/ridi", "/media/dashboard", "/affiliate/dashboard", "/login", "/client"];
-  if (hiddenPaths.some(p => location.startsWith(p))) return null;
+  // Exclude legal pages
+  if (location === "/privacy" || location === "/terms") return null;
 
-  // Detect department from route
-  let dept: "general" | "bizdoc" | "systemise" | "skills" = "general";
-  if (location.startsWith("/bizdoc") || location === "/bizdoc") dept = "bizdoc";
-  else if (location.startsWith("/systemise") || location === "/systemise") dept = "systemise";
-  else if (location.startsWith("/skills") || location === "/skills") dept = "skills";
+  // Chat only on department portals + CSO dashboard
+  const chatRoutes: { prefix: string; dept: "bizdoc" | "systemise" | "skills" | "general"; exact?: boolean }[] = [
+    { prefix: "/bizdoc",    dept: "bizdoc" },
+    { prefix: "/systemise", dept: "systemise" },
+    { prefix: "/skills",    dept: "skills" },
+    { prefix: "/hub/cso",   dept: "bizdoc" },
+  ];
 
-  return <ChatWidget department={dept} />;
+  const match = chatRoutes.find(r =>
+    r.exact ? location === r.prefix : (location === r.prefix || location.startsWith(r.prefix + "/"))
+  );
+  if (!match) return null;
+
+  return <ChatWidget department={match.dept} />;
 }
 
 function App() {

@@ -4,7 +4,7 @@ import PageMeta from "@/components/PageMeta";
 import { trpc } from "@/lib/trpc";
 import {
   ArrowRight, Layers, Monitor, Search, Instagram,
-  PieChart, Menu, X, Loader2, MessageSquare, Eye, EyeOff,
+  PieChart, Menu, X, Loader2, MessageSquare, Eye, EyeOff, Zap,
 } from "lucide-react";
 
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
@@ -24,31 +24,37 @@ const SERVICE_CARDS = [
     icon: Layers,
     title: "Branding",
     line: "Logo, identity system, and brand guide for premium positioning.",
-    context: "I am interested in Brand Identity. Full visual system for premium positioning. Tell me more.",
+    context: "Brand Identity",
   },
   {
     icon: Monitor,
     title: "Website",
     line: "Fast, mobile-first website designed around your buyer's journey.",
-    context: "I am interested in Website Design. A sales tool, not a brochure. Tell me more.",
+    context: "Website Design",
   },
   {
     icon: Search,
     title: "Visibility",
     line: "SEO, Google Business, and directory listings so you get found first.",
-    context: "I am interested in SEO & Digital Visibility. Tell me more.",
+    context: "I need SEO and digital visibility for my business. Tell me more.",
   },
   {
     icon: Instagram,
     title: "Social Media",
     line: "Content created, scheduled, managed. Your audience grows hands-off.",
-    context: "I am interested in Social Media Management. Tell me more.",
+    context: "Social Media",
   },
   {
     icon: PieChart,
     title: "CRM & Sales",
     line: "Pipeline dashboard so you never lose track of a lead again.",
-    context: "I am interested in CRM & Sales Dashboard. Tell me more.",
+    context: "CRM & Automation",
+  },
+  {
+    icon: Zap,
+    title: "AI & Automation",
+    line: "AI agents, workflow bots, and smart automations that work while you sleep.",
+    context: "AI & Automation",
   },
 ];
 
@@ -57,25 +63,6 @@ export default function SystemizePortal() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Staff login (inline)
-  const [staffMode, setStaffMode] = useState(false);
-  const [staffId, setStaffId] = useState("");
-  const [staffPw, setStaffPw] = useState("");
-  const [showPw, setShowPw] = useState(false);
-  const [staffLoading, setStaffLoading] = useState(false);
-  const [staffError, setStaffError] = useState("");
-  async function handleStaffLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!staffId.trim() || !staffPw) return;
-    setStaffLoading(true); setStaffError("");
-    try {
-      const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ staffId: staffId.trim().toUpperCase(), password: staffPw }) });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Login failed");
-      window.location.href = data.dashboard;
-    } catch (err: unknown) { setStaffError(err instanceof Error ? err.message : String(err)); }
-    finally { setStaffLoading(false); }
-  }
 
   // Track
   const myUpdateRef = useRef<HTMLElement>(null);
@@ -347,51 +334,6 @@ export default function SystemizePortal() {
             </div>
           )}
 
-          {/* Staff login toggle */}
-          <div className="mt-12">
-            <button
-              onClick={() => setStaffMode(s => !s)}
-              className="text-[11px] tracking-[0.15em] uppercase transition-opacity hover:opacity-70"
-              style={{ color: G, opacity: 0.25 }}
-            >
-              {staffMode ? "Back to Track" : "Staff?"}
-            </button>
-            {staffMode && (
-              <form onSubmit={handleStaffLogin} className="mt-4 space-y-3 max-w-xs mx-auto">
-                <input
-                  type="text"
-                  value={staffId}
-                  onChange={e => setStaffId(e.target.value)}
-                  placeholder="Staff ID"
-                  className="w-full px-4 py-3 rounded-full text-[13px] outline-none"
-                  style={{ backgroundColor: `${G}06`, color: G }}
-                />
-                <div className="relative">
-                  <input
-                    type={showPw ? "text" : "password"}
-                    value={staffPw}
-                    onChange={e => setStaffPw(e.target.value)}
-                    placeholder="Password"
-                    className="w-full px-4 py-3 rounded-full text-[13px] outline-none pr-10"
-                    style={{ backgroundColor: `${G}06`, color: G }}
-                  />
-                  <button type="button" onClick={() => setShowPw(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-60" style={{ color: G }}>
-                    {showPw ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                </div>
-                {staffError && <p className="text-[12px] text-red-500">{staffError}</p>}
-                <button
-                  type="submit"
-                  disabled={staffLoading || !staffId.trim() || !staffPw}
-                  className="w-full py-3 rounded-full text-[13px] font-medium transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: G, color: Au }}
-                >
-                  {staffLoading ? <Loader2 size={14} className="animate-spin" /> : null}
-                  {staffLoading ? "Signing in..." : "Sign In"}
-                </button>
-              </form>
-            )}
-          </div>
         </div>
       </section>
 

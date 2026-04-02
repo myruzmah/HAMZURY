@@ -10,6 +10,394 @@ import { toast } from "sonner";
 
 type Department = "general" | "bizdoc" | "systemise" | "skills";
 
+/* ── Translations for all static chat text ── */
+const TRANSLATIONS: Record<string, Record<string, string>> = {
+  English: {
+    welcome: "Welcome to HAMZURY. Tell me what you need help with, and I will guide you to the right next step.",
+    welcomeBack: "Welcome back, {name}. How can I help you today?",
+    startRequest: "Start a request",
+    trackWork: "Track my work",
+    helpChoose: "Help me choose",
+    positioning: "Positioning Guide",
+    cantExplain: "I can't explain my problem",
+    specificService: "I came for a specific service",
+    viewUpdates: "View updates",
+    continueRequest: "Continue my request",
+    uploadNeeded: "Upload what you need",
+    askAboutCase: "Ask about this case",
+    recommendedService: "See recommended next service",
+    talkSupport: "Talk to support",
+    letsStart: "Yes, let's start",
+    tellMore: "Tell me more first",
+    bookCall: "Book a call instead",
+    startMyRequest: "Start my request",
+    keepChatting: "Keep chatting",
+    howToPay: "How do I pay?",
+    canBeFaster: "Can it be faster?",
+    whatDoINeed: "What do I need to start?",
+    seeExamples: "Can I see examples?",
+    whenStart: "When does it start?",
+    taxPenalties: "Am I owing penalties?",
+    whatBusinessNeeds: "What does my business need?",
+    whatSystems: "What systems do I need?",
+    whichProgram: "Which program fits me?",
+    tellMeMore: "Tell me more",
+    letsGetStarted: "Let's get started",
+    newChat: "Welcome to HAMZURY. Tell me what you need help with.",
+    ourServices: "Our Services",
+    talkToUs: "Talk to Us",
+    trackProject: "Track My Project",
+    completeCheckup: "Complete Checkup",
+  },
+  Hausa: {
+    welcome: "Barka da zuwa HAMZURY. Gaya mani abin da kake bukata, zan jagorance ka zuwa matakin da ya dace.",
+    welcomeBack: "Barka da dawowa, {name}. Ta yaya zan taimaka maka yau?",
+    startRequest: "Fara bukata",
+    trackWork: "Bi sawun aikina",
+    helpChoose: "Taimaka ni zabar",
+    positioning: "Jagorar Matsayi",
+    cantExplain: "Ba zan iya bayyana matsalata ba",
+    specificService: "Na zo domin wani sabis na musamman",
+    viewUpdates: "Duba sabuntawa",
+    continueRequest: "Ci gaba da bukata",
+    uploadNeeded: "Aika abin da ake bukata",
+    askAboutCase: "Tambaya game da wannan",
+    recommendedService: "Duba sabis na gaba",
+    talkSupport: "Yi magana da taimako",
+    letsStart: "Ee, mu fara",
+    tellMore: "Gaya mani karin bayani",
+    bookCall: "Yi booking na kira",
+    startMyRequest: "Fara bukata ta",
+    keepChatting: "Ci gaba da magana",
+    howToPay: "Ta yaya zan biya?",
+    canBeFaster: "Za a iya yi da sauri?",
+    whatDoINeed: "Me nake bukata don farawa?",
+    seeExamples: "Zan iya ganin misali?",
+    whenStart: "Yaushe zai fara?",
+    taxPenalties: "Ina da tara?",
+    whatBusinessNeeds: "Me kasuwancina yake bukata?",
+    whatSystems: "Wane tsari nake bukata?",
+    whichProgram: "Wane shiri ya dace da ni?",
+    tellMeMore: "Gaya mani kari",
+    letsGetStarted: "Mu fara",
+    newChat: "Barka da zuwa HAMZURY. Gaya mani abin da kake bukata.",
+    ourServices: "Sabis Dinmu",
+    talkToUs: "Yi Magana Da Mu",
+    trackProject: "Bi Sawun Aikina",
+    completeCheckup: "Duba Kasuwanci",
+  },
+  Yoruba: {
+    welcome: "Kaabo si HAMZURY. So fun mi ohun ti o nilo iranlowo pelu, emi yoo to o si igbesẹ to dara.",
+    welcomeBack: "Kaabo pada, {name}. Bawo ni mo ṣe le ran ọ lọwọ loni?",
+    startRequest: "Bẹrẹ ibeere",
+    trackWork: "Tọpa iṣẹ mi",
+    helpChoose: "Ran mi lọwọ lati yan",
+    positioning: "Itọsọna Ipo",
+    cantExplain: "Mi o le ṣalaye iṣoro mi",
+    specificService: "Mo wa fun iṣẹ kan pato",
+    viewUpdates: "Wo awọn imudojuiwọn",
+    continueRequest: "Tẹsiwaju ibeere mi",
+    uploadNeeded: "Fi ohun ti o nilo ranṣẹ",
+    askAboutCase: "Beere nipa eyi",
+    recommendedService: "Wo iṣẹ to tẹle",
+    talkSupport: "Ba atilẹyin sọrọ",
+    letsStart: "Bẹẹni, jẹ ka bẹrẹ",
+    tellMore: "Sọ fun mi diẹ sii",
+    bookCall: "Ṣe ipade ipe kan",
+    startMyRequest: "Bẹrẹ ibeere mi",
+    keepChatting: "Tẹsiwaju sisọrọ",
+    howToPay: "Bawo ni mo ṣe le san?",
+    canBeFaster: "Ṣe o le yara ju?",
+    whatDoINeed: "Kini mo nilo lati bẹrẹ?",
+    seeExamples: "Ṣe mo le ri apẹẹrẹ?",
+    whenStart: "Nigbawo ni yoo bẹrẹ?",
+    taxPenalties: "Ṣe mo jẹ owo iya?",
+    whatBusinessNeeds: "Kini iṣowo mi nilo?",
+    whatSystems: "Awọn eto wo ni mo nilo?",
+    whichProgram: "Eto wo ni o dara fun mi?",
+    tellMeMore: "Sọ fun mi sii",
+    letsGetStarted: "Jẹ ka bẹrẹ",
+    newChat: "Kaabo si HAMZURY. So fun mi ohun ti o nilo.",
+    ourServices: "Awọn Iṣẹ Wa",
+    talkToUs: "Ba Wa Sọrọ",
+    trackProject: "Tẹle Iṣẹ Mi",
+    completeCheckup: "Ayẹwo Iṣowo",
+  },
+  Igbo: {
+    welcome: "Nnọọ na HAMZURY. Gwa m ihe ị chọrọ enyemaka, m ga-eduzi gị na nzọụkwụ ziri ezi.",
+    welcomeBack: "Nnọọ azụ, {name}. Kedu ka m ga-esi nyere gị aka taa?",
+    startRequest: "Malite arịrịọ",
+    trackWork: "Soro ọrụ m",
+    helpChoose: "Nyere m aka ịhọrọ",
+    positioning: "Ntuziaka Ọnọdụ",
+    cantExplain: "Enweghị m ike ịkọwa nsogbu m",
+    specificService: "Abịara m maka otu ọrụ",
+    viewUpdates: "Lee mmelite",
+    continueRequest: "Gaa n'ihu",
+    uploadNeeded: "Zipu ihe achọrọ",
+    askAboutCase: "Jụọ banyere nke a",
+    recommendedService: "Lee ọrụ na-esote",
+    talkSupport: "Kpọọ ndị nkwado",
+    letsStart: "Ee, ka anyị malite",
+    tellMore: "Gwa m karịa",
+    bookCall: "Debe oku",
+    startMyRequest: "Malite arịrịọ m",
+    keepChatting: "Gaa n'ihu ikwu okwu",
+    howToPay: "Kedu ka m ga-esi kwụọ ụgwọ?",
+    canBeFaster: "Ọ nwere ike ịdị ọsọ?",
+    whatDoINeed: "Gịnị ka m chọrọ iji malite?",
+    seeExamples: "Enwere m ike ịhụ ọmụmaatụ?",
+    whenStart: "Kedu mgbe ọ ga-amalite?",
+    taxPenalties: "A na m eji ụtụ isi?",
+    whatBusinessNeeds: "Gịnị ka azụmaahịa m chọrọ?",
+    whatSystems: "Kedu usoro m chọrọ?",
+    whichProgram: "Kedu mmemme dabara m?",
+    tellMeMore: "Gwa m karịa",
+    letsGetStarted: "Ka anyị malite",
+    newChat: "Nnọọ na HAMZURY. Gwa m ihe ị chọrọ.",
+    ourServices: "Ọrụ Anyị",
+    talkToUs: "Kpọtụrụ Anyị",
+    trackProject: "Soro Ọrụ M",
+    completeCheckup: "Nyocha Azụmaahịa",
+  },
+  Arabic: {
+    welcome: "مرحباً بك في HAMZURY. أخبرني بما تحتاج مساعدة فيه، وسأرشدك إلى الخطوة الصحيحة.",
+    welcomeBack: "مرحباً بعودتك، {name}. كيف يمكنني مساعدتك اليوم؟",
+    startRequest: "ابدأ طلب",
+    trackWork: "تتبع عملي",
+    helpChoose: "ساعدني في الاختيار",
+    positioning: "دليل التمركز",
+    cantExplain: "لا أستطيع شرح مشكلتي",
+    specificService: "جئت لخدمة محددة",
+    viewUpdates: "عرض التحديثات",
+    continueRequest: "متابعة طلبي",
+    uploadNeeded: "ارفع ما تحتاجه",
+    askAboutCase: "اسأل عن هذه الحالة",
+    recommendedService: "الخدمة الموصى بها",
+    talkSupport: "تحدث مع الدعم",
+    letsStart: "نعم، لنبدأ",
+    tellMore: "أخبرني المزيد",
+    bookCall: "احجز مكالمة",
+    startMyRequest: "ابدأ طلبي",
+    keepChatting: "تابع المحادثة",
+    howToPay: "كيف أدفع؟",
+    canBeFaster: "هل يمكن أسرع؟",
+    whatDoINeed: "ماذا أحتاج للبدء؟",
+    seeExamples: "هل يمكنني رؤية أمثلة؟",
+    whenStart: "متى يبدأ؟",
+    taxPenalties: "هل علي غرامات؟",
+    whatBusinessNeeds: "ماذا يحتاج عملي؟",
+    whatSystems: "ما الأنظمة التي أحتاجها؟",
+    whichProgram: "أي برنامج يناسبني؟",
+    tellMeMore: "أخبرني المزيد",
+    letsGetStarted: "لنبدأ",
+    newChat: "مرحباً بك في HAMZURY. أخبرني بما تحتاج.",
+    ourServices: "خدماتنا",
+    talkToUs: "تحدث معنا",
+    trackProject: "تتبع مشروعي",
+    completeCheckup: "فحص شامل",
+  },
+  French: {
+    welcome: "Bienvenue chez HAMZURY. Dites-moi ce dont vous avez besoin, et je vous guiderai vers la bonne étape.",
+    welcomeBack: "Bon retour, {name}. Comment puis-je vous aider aujourd'hui?",
+    startRequest: "Commencer une demande",
+    trackWork: "Suivre mon dossier",
+    helpChoose: "Aidez-moi à choisir",
+    positioning: "Guide de positionnement",
+    cantExplain: "Je ne sais pas expliquer mon problème",
+    specificService: "Je viens pour un service précis",
+    viewUpdates: "Voir les mises à jour",
+    continueRequest: "Continuer ma demande",
+    uploadNeeded: "Envoyer les documents",
+    askAboutCase: "Poser une question",
+    recommendedService: "Service recommandé",
+    talkSupport: "Parler au support",
+    letsStart: "Oui, commençons",
+    tellMore: "Dites-moi en plus",
+    bookCall: "Réserver un appel",
+    startMyRequest: "Lancer ma demande",
+    keepChatting: "Continuer à discuter",
+    howToPay: "Comment payer?",
+    canBeFaster: "Peut-on aller plus vite?",
+    whatDoINeed: "De quoi ai-je besoin?",
+    seeExamples: "Puis-je voir des exemples?",
+    whenStart: "Quand ça commence?",
+    taxPenalties: "Ai-je des pénalités?",
+    whatBusinessNeeds: "De quoi mon entreprise a besoin?",
+    whatSystems: "Quels systèmes me faut-il?",
+    whichProgram: "Quel programme me convient?",
+    tellMeMore: "En savoir plus",
+    letsGetStarted: "Commençons",
+    newChat: "Bienvenue chez HAMZURY. Dites-moi ce dont vous avez besoin.",
+    ourServices: "Nos Services",
+    talkToUs: "Contactez-nous",
+    trackProject: "Suivre Mon Projet",
+    completeCheckup: "Bilan Complet",
+  },
+  Chinese: {
+    welcome: "欢迎来到HAMZURY。告诉我您需要什么帮助，我将引导您到正确的下一步。",
+    welcomeBack: "欢迎回来，{name}。今天我能帮您什么？",
+    startRequest: "开始请求",
+    trackWork: "跟踪我的工作",
+    helpChoose: "帮我选择",
+    positioning: "定位指南",
+    cantExplain: "我无法解释我的问题",
+    specificService: "我来找特定服务",
+    viewUpdates: "查看更新",
+    continueRequest: "继续我的请求",
+    uploadNeeded: "上传所需文件",
+    askAboutCase: "询问此案例",
+    recommendedService: "推荐的下一个服务",
+    talkSupport: "联系支持",
+    letsStart: "好的，开始吧",
+    tellMore: "告诉我更多",
+    bookCall: "预约电话",
+    startMyRequest: "开始我的请求",
+    keepChatting: "继续聊天",
+    howToPay: "如何付款？",
+    canBeFaster: "能更快吗？",
+    whatDoINeed: "我需要什么才能开始？",
+    seeExamples: "能看看例子吗？",
+    whenStart: "什么时候开始？",
+    taxPenalties: "我有罚款吗？",
+    whatBusinessNeeds: "我的业务需要什么？",
+    whatSystems: "我需要什么系统？",
+    whichProgram: "哪个项目适合我？",
+    tellMeMore: "告诉我更多",
+    letsGetStarted: "开始吧",
+    newChat: "欢迎来到HAMZURY。告诉我您需要什么。",
+    ourServices: "我们的服务",
+    talkToUs: "联系我们",
+    trackProject: "跟踪我的项目",
+    completeCheckup: "全面诊断",
+  },
+};
+
+/** Get translated text for current language */
+function t(lang: string, key: string, vars?: Record<string, string>): string {
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.English;
+  let text = dict[key] || TRANSLATIONS.English[key] || key;
+  if (vars) { for (const [k, v] of Object.entries(vars)) text = text.replace(`{${k}}`, v); }
+  return text;
+}
+
+/* ── Service Pitch Data with amounts for checklist pricing ── */
+type PitchItem = { name: string; price: string; amount: number };
+const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items: PitchItem[] }> = {
+  // BizDoc
+  "Business Registration": { dept: "bizdoc", pitch: "Business Registration covers everything to get you legally operational. Without this, your business doesn't exist in the eyes of the law.", items: [
+    { name: "CAC Limited Company", price: "₦150,000", amount: 150000 }, { name: "CAC Business Name", price: "₦50,000", amount: 50000 }, { name: "CAC Incorporated Trustee", price: "₦200,000", amount: 200000 }, { name: "Post-Registration Pack", price: "₦80,000", amount: 80000 }] },
+  "Tax Compliance": { dept: "bizdoc", pitch: "Tax Compliance keeps your business penalty-free and contract-ready. Without it, you risk fines and cannot bid for tenders.", items: [
+    { name: "TIN Registration", price: "₦30,000", amount: 30000 }, { name: "Annual Tax Filing", price: "₦80,000", amount: 80000 }, { name: "Tax Clearance Certificate", price: "₦100,000", amount: 100000 }, { name: "Tax Pro Max (Annual)", price: "₦150,000/yr", amount: 150000 }] },
+  "Sector Licences": { dept: "bizdoc", pitch: "Sector Licences ensure you can legally operate in your industry. Operating without the right permit risks shutdown.", items: [
+    { name: "NAFDAC Registration", price: "₦250,000+", amount: 250000 }, { name: "SCUML Certificate", price: "₦50,000", amount: 50000 }, { name: "NEPC Export Licence", price: "₦120,000", amount: 120000 }, { name: "Other Sector Permits", price: "From ₦60,000", amount: 60000 }] },
+  "Foreign Business": { dept: "bizdoc", pitch: "Foreign Business services help non-Nigerians set up legally in Nigeria. CAMA 2020 compliance, residence permits, and business permits.", items: [
+    { name: "Expatriate Quota", price: "₦350,000+", amount: 350000 }, { name: "CERPAC Residence Permit", price: "₦200,000+", amount: 200000 }, { name: "Business Permit", price: "₦250,000+", amount: 250000 }, { name: "Full Foreign Setup", price: "₦800,000+", amount: 800000 }] },
+  "Legal Documents": { dept: "bizdoc", pitch: "Legal Documents protect your business relationships and operations. Without proper contracts, you have no legal recourse.", items: [
+    { name: "Contract Templates", price: "₦40,000", amount: 40000 }, { name: "Custom Legal Drafting", price: "₦80,000+", amount: 80000 }, { name: "NDA Pack", price: "₦35,000", amount: 35000 }, { name: "Full Document Pack", price: "₦60,000", amount: 60000 }] },
+  // Systemise
+  "Brand Identity": { dept: "systemise", pitch: "Brand Identity builds the visual foundation that makes clients trust you before they even speak to you. Every touchpoint matters.", items: [
+    { name: "Logo Design", price: "₦80,000", amount: 80000 }, { name: "Color Palette & Typography", price: "₦30,000", amount: 30000 }, { name: "Brand Guidelines Document", price: "₦50,000", amount: 50000 }, { name: "Business Card & Letterhead", price: "₦40,000", amount: 40000 }, { name: "Social Media Brand Kit", price: "₦60,000", amount: 60000 }, { name: "Full Brand System", price: "₦350,000", amount: 350000 }] },
+  "Website Design": { dept: "systemise", pitch: "Your website is your 24/7 salesperson. It should convert visitors into clients, not just look pretty.", items: [
+    { name: "Landing Page (1 page)", price: "₦200,000", amount: 200000 }, { name: "Business Website (5-8 pages)", price: "₦400,000", amount: 400000 }, { name: "E-commerce Store", price: "₦500,000+", amount: 500000 }, { name: "Portal / Dashboard", price: "₦600,000+", amount: 600000 }, { name: "SEO Setup", price: "₦80,000", amount: 80000 }, { name: "Monthly Maintenance", price: "₦50,000/mo", amount: 50000 }] },
+  "Social Media": { dept: "systemise", pitch: "Social Media Management builds your audience and turns followers into paying clients. Consistency wins.", items: [
+    { name: "2 Platforms (IG + FB)", price: "₦200,000/mo", amount: 200000 }, { name: "Full Management (All Platforms)", price: "₦400,000/mo", amount: 400000 }, { name: "Content Only (Posts + Reels)", price: "₦120,000/mo", amount: 120000 }, { name: "Influencer Campaign", price: "₦150,000+", amount: 150000 }] },
+  "CRM & Automation": { dept: "systemise", pitch: "CRM & Automation eliminates repeated manual work so you can focus on growing.", items: [
+    { name: "CRM Setup (HubSpot/Notion)", price: "₦200,000", amount: 200000 }, { name: "Workflow Automation", price: "₦150,000+", amount: 150000 }, { name: "AI Agent Build", price: "₦300,000+", amount: 300000 }, { name: "Lead Generation Pipeline", price: "₦180,000", amount: 180000 }] },
+  "AI & Automation": { dept: "systemise", pitch: "AI & Automation lets your business run smarter with less manual work. Pick what fits your operation.", items: [
+    { name: "AI Customer Support Agent", price: "₦250,000", amount: 250000 }, { name: "AI Lead Qualifier Bot", price: "₦200,000", amount: 200000 }, { name: "Invoice & Payment Automation", price: "₦150,000", amount: 150000 }, { name: "AI Content Generator", price: "₦180,000", amount: 180000 }, { name: "Smart Appointment Scheduler", price: "₦120,000", amount: 120000 }, { name: "Workflow Automation Suite", price: "₦300,000+", amount: 300000 }, { name: "Custom AI Agent (Bespoke)", price: "₦400,000+", amount: 400000 }] },
+  // Skills
+  "AI Founder Launchpad": { dept: "skills", pitch: "AI Founder Launchpad teaches you to build, launch, and grow a business using AI tools. 6-week intensive program.", items: [
+    { name: "Full Program (6 weeks)", price: "₦75,000", amount: 75000 }, { name: "Mentorship Add-on", price: "₦30,000", amount: 30000 }, { name: "Certificate + Portfolio", price: "₦15,000", amount: 15000 }] },
+  "Vibe Coding": { dept: "skills", pitch: "Vibe Coding for Founders teaches you to build apps and websites without a traditional coding background. Build real products.", items: [
+    { name: "Full Program (6 weeks)", price: "₦65,000", amount: 65000 }, { name: "Project Review Add-on", price: "₦20,000", amount: 20000 }] },
+  "Corporate Training": { dept: "skills", pitch: "Corporate Staff Training upskills your entire team on AI tools, automation, and digital operations. Customized for your business.", items: [
+    { name: "Half-Day Workshop (up to 20)", price: "₦200,000", amount: 200000 }, { name: "Full-Day Workshop (up to 20)", price: "₦350,000", amount: 350000 }, { name: "2-Week Staff Program", price: "₦500,000+", amount: 500000 }, { name: "Custom Curriculum Design", price: "₦150,000", amount: 150000 }] },
+};
+
+/** Match a chat context string to a known service */
+function matchServicePitch(context: string): typeof SERVICE_PITCH_MAP[string] | null {
+  const lower = context.toLowerCase();
+  for (const [key, val] of Object.entries(SERVICE_PITCH_MAP)) {
+    if (lower.includes(key.toLowerCase())) return val;
+  }
+  return null;
+}
+
+/** Generate contextual suggestion buttons based on AI response */
+/** Map keywords in AI response to SERVICE_PITCH_MAP keys */
+function detectPitchFromResponse(text: string): string | null {
+  const lower = text.toLowerCase();
+  const map: [string[], string][] = [
+    [["registration", "cac", "incorporate"], "Business Registration"],
+    [["tax", "tin", "tcc", "firs", "annual return"], "Tax Compliance"],
+    [["licence", "permit", "nafdac", "scuml", "nepc", "son"], "Sector Licences"],
+    [["foreign", "expatriate", "cerpac", "expat"], "Foreign Business"],
+    [["contract", "legal", "nda", "agreement", "document"], "Legal Documents"],
+    [["brand", "logo", "identity", "visual"], "Brand Identity"],
+    [["website", "landing page", "web design", "web dev"], "Website Design"],
+    [["social media", "instagram", "tiktok", "content", "posting"], "Social Media"],
+    [["crm", "lead generation", "pipeline"], "CRM & Automation"],
+    [["ai agent", "bot", "chatbot", "automation", "workflow"], "AI & Automation"],
+    [["training", "course", "program", "cohort", "launchpad"], "AI Founder Launchpad"],
+    [["corporate training", "staff training", "team training"], "Corporate Training"],
+    [["coding", "vibe coding", "app building"], "Vibe Coding"],
+  ];
+  for (const [keywords, pitchKey] of map) {
+    if (keywords.some(k => lower.includes(k)) && SERVICE_PITCH_MAP[pitchKey]) return pitchKey;
+  }
+  return null;
+}
+
+/** Detect if conversation involves renewal/upgrade */
+function isRenewalContext(text: string): boolean {
+  const lower = text.toLowerCase();
+  return ["renewal", "renew", "upgrade", "annual return", "expiring", "expired", "re-registration", "reregist"].some(k => lower.includes(k));
+}
+
+function getSuggestedSteps(aiResponse: string, dept: Department, exchangeCount: number): { label: string; value: string }[] {
+  const lower = aiResponse.toLowerCase();
+  const suggestions: { label: string; value: string }[] = [];
+
+  // Price-related
+  if (lower.includes("₦") || lower.includes("price") || lower.includes("cost") || lower.includes("from"))
+    suggestions.push({ label: "How do I pay?", value: "How do I make payment?" });
+  // Timeline
+  if (lower.includes("days") || lower.includes("week") || lower.includes("timeline"))
+    suggestions.push({ label: "Can it be faster?", value: "Can the timeline be shorter if I pay now?" });
+  // Documents
+  if (lower.includes("document") || lower.includes("registration") || lower.includes("cac"))
+    suggestions.push({ label: "What do I need to start?", value: "What documents or info do I need to get started?" });
+  // Website/brand
+  if (lower.includes("website") || lower.includes("brand") || lower.includes("design"))
+    suggestions.push({ label: "Can I see examples?", value: "Can you show me examples of your work?" });
+  // Programs
+  if (lower.includes("program") || lower.includes("cohort") || lower.includes("training"))
+    suggestions.push({ label: "When does it start?", value: "When does the next cohort start and how do I apply?" });
+  // Tax
+  if (lower.includes("tax") || lower.includes("tin") || lower.includes("tcc"))
+    suggestions.push({ label: "Am I owing penalties?", value: "How do I know if my business has tax penalties?" });
+
+  // General fallbacks if no specific match
+  if (suggestions.length === 0) {
+    if (dept === "bizdoc") suggestions.push({ label: "What does my business need?", value: "Based on my business type, what compliance do I need?" });
+    else if (dept === "systemise") suggestions.push({ label: "What systems do I need?", value: "What digital systems would benefit my business most?" });
+    else if (dept === "skills") suggestions.push({ label: "Which program fits me?", value: "Based on my goals, which program should I join?" });
+    else suggestions.push({ label: "Tell me more", value: "Can you explain that in more detail?" });
+  }
+
+  // After 2+ exchanges: show service checklist button OR renewal route
+  if (exchangeCount >= 2) {
+    if (isRenewalContext(aiResponse)) {
+      suggestions.push({ label: "Talk to team about renewal", value: "AI_RENEWAL" });
+    } else {
+      suggestions.push({ label: "See what we offer", value: "AI_SHOW_SERVICES" });
+    }
+  }
+
+  return suggestions.slice(0, 3);
+}
+
 type ChatMessage = {
   sender: "bot" | "user";
   text?: string;
@@ -21,18 +409,20 @@ type ChatState =
   | "LANG_SELECT"
   | "MAIN_MENU"
   | "AI_CHAT"
-  | "START_REQUEST"
+  | "SERVICES_DEPT"
+  | "SERVICES_LIST"
+  | "SERVICE_PITCH"
+  | "SERVICE_CHECKOUT"
+  | "TALK_OPTIONS"
+  | "TALK_MESSAGE"
+  | "CONSULTATION"
   | "TRACK_REF"
-  | "HELP_CHOOSE"
-  | "POSITIONING"
-  | "CANT_EXPLAIN"
-  | "SPECIFIC_SERVICE"
-  | "SPECIFIC_DEPT"
-  | "SPECIFIC_SELECT"
   | "LEAD_NAME"
   | "LEAD_BIZ"
   | "LEAD_PHONE"
+  | "LEAD_EMAIL"
   | "PAYMENT_STAGE"
+  | "UPSELL_STAGE"
   | "SCHEDULE_NAME"
   | "SCHEDULE_DATE"
   | "SCHEDULE_TIME"
@@ -45,6 +435,7 @@ type LeadData = {
   name?: string;
   businessName?: string;
   phone?: string;
+  email?: string;
   schedDate?: string;
   schedTime?: string;
   selectedServices?: string[];
@@ -69,6 +460,14 @@ const CHARCOAL = "#2D2D2D";
 const GOLD = "#B48C4C";
 const CREAM = "#FFFAF6";
 const DARK = "#1A1A1A";
+
+/** Department brand colors — header bg + accent per department */
+const DEPT_BRAND: Record<Department, { header: string; accent: string; name: string }> = {
+  general:   { header: "#0A1F1C", accent: "#C9A97E", name: "HAMZURY" },
+  bizdoc:    { header: "#1B4D3E", accent: "#C9A97E", name: "BizDoc" },
+  systemise: { header: "#0A1F1C", accent: "#C9A97E", name: "Systemise" },
+  skills:    { header: "#1B2A4A", accent: "#C9A97E", name: "Skills" },
+};
 
 /* ── Service catalog with pricing ── */
 const SERVICES: Record<string, { label: string; value: string; price: string; amount: number }[]> = {
@@ -152,6 +551,9 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   const [leadData, setLeadData] = useState<LeadData>({});
   const [aiMessages, setAiMessages] = useState<{ role: string; content: string }[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
+  const [checkedPitchItems, setCheckedPitchItems] = useState<Set<string>>(new Set());
+  const checkedPitchRef = useRef<Set<string>>(new Set());
+  const [currentPitchKey, setCurrentPitchKey] = useState<string>("");
   const [userLang, setUserLang] = useState("English");
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBadge, setShowBadge] = useState(true);
@@ -189,30 +591,51 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       const ctx = localStorage.getItem("hamzury-chat-context");
       if (ctx) {
         localStorage.removeItem("hamzury-chat-context");
+        // Check if context matches a known service → show sub-service pitch
+        const pitch = matchServicePitch(ctx);
+        if (pitch) {
+          addBotMsg(pitch.pitch);
+          setTimeout(() => {
+            addBotButtons(pitch.items.map(item => ({ label: `${item.name} (${item.price})`, value: `Tell me about ${item.name}. What is included, timeline, and how to start?` })));
+          }, 400);
+          setChatState("AI_CHAT");
+          return;
+        }
+        // No pitch match → send directly to AI
         addBotMsg(ctx);
         setChatState("AI_CHAT");
         handleAIChat(ctx);
         return;
       }
-      // Check for returning client
-      const session = loadClientSession();
-      if (session?.name) {
-        addBotMsg(`Welcome back, ${session.name}. How can I help you today?`);
-        showMainMenu();
-        return;
+      // Only greet by name on dashboard — public chat has no memory
+      if (isDashboard) {
+        const session = loadClientSession();
+        if (session?.name) {
+          addBotMsg(t(userLang, "welcomeBack", { name: session.name }));
+          showMainMenu();
+          return;
+        }
       }
-      // v7 opening: welcome + language buttons
-      addBotMsg("Welcome to HAMZURY.\n\nWe help businesses become ready to start, operate, grow, and scale through compliance, systems, and practical training.\n\nBefore we continue, which language would you prefer?");
-      addBotButtons([
-        { label: "English", value: "English" },
-        { label: "Pidgin", value: "Pidgin" },
-        { label: "Arabic", value: "Arabic" },
-        { label: "French", value: "French" },
-      ]);
-      setChatState("LANG_SELECT");
+      // Public chat: fresh greeting, no memory
+      addBotMsg(t(userLang, "welcome"));
+      showMainMenu();
     }
     if (!isOpen) reset();
   }, [isOpen]);
+
+  // When language changes mid-conversation, restart with new language
+  const prevLangRef = useRef(userLang);
+  useEffect(() => {
+    if (prevLangRef.current !== userLang && isOpen) {
+      prevLangRef.current = userLang;
+      reset();
+      setTimeout(() => {
+        addBotMsg(t(userLang, "welcome"));
+        showMainMenu();
+      }, 100);
+    }
+    prevLangRef.current = userLang;
+  }, [userLang]);
 
   /* ── Helpers ── */
   const addBotMsg = (text: string) => setMessages(prev => [...prev, { sender: "bot", text }]);
@@ -232,21 +655,19 @@ export default function ChatWidget({ department = "general", open: externalOpen,
   function showMainMenu() {
     if (isDashboard) {
       addBotButtons([
-        { label: "View updates", value: "DASH_UPDATES" },
-        { label: "Continue my request", value: "DASH_CONTINUE" },
-        { label: "Upload what you need", value: "DASH_UPLOAD" },
-        { label: "Ask about this case", value: "AI_CHAT" },
-        { label: "See recommended next service", value: "DASH_UPSELL" },
-        { label: "Talk to support", value: "TALK_SUPPORT" },
+        { label: t(userLang, "viewUpdates"), value: "DASH_UPDATES" },
+        { label: t(userLang, "continueRequest"), value: "DASH_CONTINUE" },
+        { label: t(userLang, "uploadNeeded"), value: "DASH_UPLOAD" },
+        { label: t(userLang, "askAboutCase"), value: "AI_CHAT" },
+        { label: t(userLang, "recommendedService"), value: "DASH_UPSELL" },
+        { label: t(userLang, "talkSupport"), value: "TALK_SUPPORT" },
       ]);
     } else {
       addBotButtons([
-        { label: "Start a request", value: "START_REQUEST" },
-        { label: "Track my work", value: "TRACK_MY_WORK" },
-        { label: "Help me choose", value: "HELP_CHOOSE" },
-        { label: "Positioning Guide", value: "POSITIONING" },
-        { label: "I can't explain my problem", value: "CANT_EXPLAIN" },
-        { label: "I came for a specific service", value: "SPECIFIC_SERVICE" },
+        { label: t(userLang, "ourServices") || "Our Services", value: "OUR_SERVICES" },
+        { label: t(userLang, "talkToUs") || "Talk to Us", value: "TALK_TO_US" },
+        { label: t(userLang, "trackProject") || "Track My Project", value: "TRACK_MY_WORK" },
+        { label: t(userLang, "completeCheckup") || "Complete Checkup", value: "COMPLETE_CHECKUP" },
       ]);
     }
     setChatState("MAIN_MENU");
@@ -288,6 +709,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
           department,
           language: userLang,
           tone_preference: isDashboard ? tonePreference : undefined,
+          context: leadData.context === "consultation" ? "consultation" : undefined,
         }),
       });
 
@@ -335,25 +757,36 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       });
       setAiMessages(prev => [...prev, { role: "assistant", content: answer }]);
 
-      // After 2 exchanges, offer action buttons
+      // After every AI response, show contextual suggested next steps
       const userCount = newHistory.filter(m => m.role === "user").length;
-      if (userCount >= 2) {
-        const lower = answer.toLowerCase();
-        setTimeout(() => {
-          if (lower.includes("want me to") || lower.includes("ready to") || lower.includes("set this up") || lower.includes("get started") || lower.includes("proceed")) {
-            addBotButtons([
-              { label: "Yes, let's start", value: "AI_CLOSE_YES" },
-              { label: "Tell me more first", value: "AI_CLOSE_MORE" },
-              { label: "Book a call instead", value: "SCHEDULE" },
-            ]);
-          } else {
-            addBotButtons([
-              { label: "Start my request", value: "AI_CLOSE_YES" },
-              { label: "Keep chatting", value: "AI_CLOSE_MORE" },
-            ]);
-          }
-        }, 600);
-      }
+      const lower = answer.toLowerCase();
+      setTimeout(() => {
+        // If AI is clearly ready to close, show closing buttons
+        if (userCount >= 2 && (lower.includes("want me to") || lower.includes("ready to") || lower.includes("set this up") || lower.includes("get started") || lower.includes("proceed") || lower.includes("open a file"))) {
+          addBotButtons([
+            { label: t(userLang, "letsStart"), value: "AI_CLOSE_YES" },
+            { label: t(userLang, "tellMore"), value: "AI_CLOSE_MORE" },
+            { label: t(userLang, "bookCall"), value: "SCHEDULE" },
+          ]);
+        } else {
+          // Show smart contextual suggestions (translated)
+          const steps = getSuggestedSteps(answer, department, userCount);
+          const translatedSteps = steps.map(s => {
+            // Map known suggestion labels to translation keys
+            const keyMap: Record<string, string> = {
+              "How do I pay?": "howToPay", "Can it be faster?": "canBeFaster",
+              "What do I need to start?": "whatDoINeed", "Can I see examples?": "seeExamples",
+              "When does it start?": "whenStart", "Am I owing penalties?": "taxPenalties",
+              "What does my business need?": "whatBusinessNeeds", "What systems do I need?": "whatSystems",
+              "Which program fits me?": "whichProgram", "Tell me more": "tellMeMore",
+              "Let's get started": "letsGetStarted",
+            };
+            const tKey = keyMap[s.label];
+            return tKey ? { label: t(userLang, tKey), value: s.value } : s;
+          });
+          if (translatedSteps.length > 0) addBotButtons(translatedSteps);
+        }
+      }, 600);
     } catch {
       try {
         const result = await trpcUtils.ask.answer.fetch({ question: text });
@@ -388,7 +821,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     addUserMsg(text);
     setInput("");
 
-    if (chatState === "AI_CHAT" || chatState === "START_REQUEST" || chatState === "POSITIONING" || chatState === "CANT_EXPLAIN" || chatState === "HELP_CHOOSE") {
+    if (chatState === "AI_CHAT" || chatState === "CONSULTATION") {
       handleAIChat(text);
       return;
     }
@@ -415,59 +848,55 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
     // Main menu selections
     if (chatState === "MAIN_MENU") {
-      if (val === "START_REQUEST") {
-        setTimeout(() => addBotMsg("Let us start simply. Tell me what you need help with right now."), 400);
-        setChatState("AI_CHAT");
+      // ── Our Services → if on a department page, show only that department's services directly
+      if (val === "OUR_SERVICES") {
+        if (department !== "general") {
+          // Department-specific: go straight to that department's service list
+          const dept = department;
+          setLeadData(prev => ({ ...prev, department: dept, selectedServices: [] }));
+          const catalog = SERVICES[dept] || [];
+          setTimeout(() => {
+            addBotMsg("Here is what we offer. Tap any service to learn more.");
+            addBotButtons(catalog.map(s => ({ label: s.label, value: `SVC_${s.value}` })));
+          }, 400);
+          setChatState("SERVICES_LIST");
+        } else {
+          // General page: show all 3 departments
+          setTimeout(() => {
+            addBotMsg("We cover three areas. Which one fits what you need?");
+            addBotButtons([
+              { label: "Compliance & Registration (BizDoc)", value: "DEPT_BIZDOC" },
+              { label: "Brand, Website & Systems (Systemise)", value: "DEPT_SYSTEMISE" },
+              { label: "Training & Programs (Skills)", value: "DEPT_SKILLS" },
+            ]);
+          }, 400);
+          setChatState("SERVICES_DEPT");
+        }
         return;
       }
+      // ── Talk to Us → sub-options
+      if (val === "TALK_TO_US") {
+        setTimeout(() => {
+          addBotMsg("How would you like to connect with us?");
+          addBotButtons([
+            { label: "Drop a Message", value: "DROP_MESSAGE" },
+            { label: "Schedule a Call", value: "SCHEDULE" },
+          ]);
+        }, 400);
+        setChatState("TALK_OPTIONS");
+        return;
+      }
+      // ── Track My Project
       if (val === "TRACK_MY_WORK") {
-        setTimeout(() => addBotMsg("Enter your reference number to continue.\n\nExample: HMZ-26/3-1042"), 400);
+        setTimeout(() => addBotMsg("Enter your reference number to access your dashboard.\n\nExample: HMZ-26/3-1042"), 400);
         setChatState("TRACK_REF");
         return;
       }
-      if (val === "HELP_CHOOSE") {
-        setTimeout(() => {
-          addBotMsg("I will help you choose the right path. Which of these feels closest to what you need?");
-          addBotButtons([
-            { label: "Compliance or documents", value: "CHOOSE_BIZDOC" },
-            { label: "Brand, website, systems, or automation", value: "CHOOSE_SYSTEMISE" },
-            { label: "Training or team capability", value: "CHOOSE_SKILLS" },
-            { label: "I need full business clarity", value: "CHOOSE_CLARITY" },
-          ]);
-        }, 400);
-        setChatState("HELP_CHOOSE");
-        return;
-      }
-      if (val === "POSITIONING") {
-        setTimeout(() => addBotMsg("Good choice. I will help you understand what your business likely needs to operate properly, reduce risk, and grow with less confusion.\n\nTell me your business type or sector first."), 400);
-        setChatState("AI_CHAT");
-        return;
-      }
-      if (val === "CANT_EXPLAIN") {
-        setTimeout(() => {
-          addBotMsg("That is okay. You do not need to explain it perfectly. I will help you figure it out step by step.\n\nWhat feels most true right now?");
-          addBotButtons([
-            { label: "My business feels stuck", value: "STUCK" },
-            { label: "Things are scattered", value: "SCATTERED" },
-            { label: "I do not know what I need", value: "DONT_KNOW" },
-            { label: "I am losing time", value: "LOSING_TIME" },
-            { label: "I am losing opportunities", value: "LOSING_OPP" },
-            { label: "I need clarity", value: "NEED_CLARITY" },
-          ]);
-        }, 400);
-        setChatState("CANT_EXPLAIN");
-        return;
-      }
-      if (val === "SPECIFIC_SERVICE") {
-        setTimeout(() => {
-          addBotMsg("Already know what you want? Choose your department and I will guide you.");
-          addBotButtons([
-            { label: "BizDoc services", value: "DEPT_BIZDOC" },
-            { label: "Systemise services", value: "DEPT_SYSTEMISE" },
-            { label: "Skills programs", value: "DEPT_SKILLS" },
-          ]);
-        }, 400);
-        setChatState("SPECIFIC_DEPT");
+      // ── Complete Checkup (deep consultation)
+      if (val === "COMPLETE_CHECKUP") {
+        setLeadData(prev => ({ ...prev, context: "consultation" }));
+        setTimeout(() => addBotMsg("Welcome to your Complete Business Checkup. I will walk you through your business step by step, understand where you are, identify gaps, and show you exactly what to do next.\n\nLet us start. What is the name of your business and what do you do?"), 400);
+        setChatState("CONSULTATION");
         return;
       }
       // Dashboard-specific
@@ -486,17 +915,18 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       return;
     }
 
-    // Help me choose sub-buttons
-    if (chatState === "HELP_CHOOSE") {
-      const contextMap: Record<string, string> = {
-        CHOOSE_BIZDOC: "The user needs compliance, registration, or documentation help. Guide them through BizDoc services.",
-        CHOOSE_SYSTEMISE: "The user needs brand, website, systems, or automation help. Guide them through Systemise services.",
-        CHOOSE_SKILLS: "The user needs training or team capability building. Guide them through Skills programs.",
-        CHOOSE_CLARITY: "The user needs full business clarity. Use the positioning guide approach to diagnose what they need.",
-      };
-      if (contextMap[val]) {
-        setChatState("AI_CHAT");
-        handleAIChat(contextMap[val]);
+    // ── Our Services: department selection
+    if (chatState === "SERVICES_DEPT") {
+      const deptMap: Record<string, string> = { DEPT_BIZDOC: "bizdoc", DEPT_SYSTEMISE: "systemise", DEPT_SKILLS: "skills" };
+      const dept = deptMap[val];
+      if (dept) {
+        setLeadData(prev => ({ ...prev, department: dept, selectedServices: [] }));
+        const catalog = SERVICES[dept] || [];
+        setTimeout(() => {
+          addBotMsg("Here is what we offer. Tap any service to learn more.");
+          addBotButtons(catalog.map(s => ({ label: s.label, value: `SVC_${s.value}` })));
+        }, 400);
+        setChatState("SERVICES_LIST");
         return;
       }
       setChatState("AI_CHAT");
@@ -504,11 +934,195 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       return;
     }
 
-    // Can't explain sub-buttons
-    if (chatState === "CANT_EXPLAIN") {
-      setLeadData(prev => ({ ...prev, context: `Client feeling: ${val}` }));
-      setTimeout(() => addBotMsg("I understand. Let me ask you one thing. What is frustrating you most right now?"), 400);
+    // ── Services list: show pitch for selected service
+    // ── Services list: tap a service → show checklist pitch
+    if (chatState === "SERVICES_LIST") {
+      if (val.startsWith("SVC_")) {
+        const svcValue = val.slice(4);
+        const dept = leadData.department || "bizdoc";
+        const catalog = SERVICES[dept] || [];
+        const item = catalog.find(s => s.value === svcValue);
+        if (item) {
+          setLeadData(prev => ({ ...prev, service: item.label, selectedServices: [svcValue] }));
+          // Find a detailed pitch for this service
+          const pitchKey = Object.keys(SERVICE_PITCH_MAP).find(k =>
+            SERVICE_PITCH_MAP[k].items?.some((pi) => pi.name.toLowerCase().includes(item.label.toLowerCase().split(" ")[0])) ||
+            k.toLowerCase().includes(item.label.toLowerCase().split(" ")[0])
+          );
+          const pitch = pitchKey ? SERVICE_PITCH_MAP[pitchKey] : null;
+          setCurrentPitchKey(pitchKey || "");
+          setCheckedPitchItems(new Set());
+          checkedPitchRef.current = new Set();
+          setTimeout(() => {
+            if (pitch) {
+              addBotMsg(pitch.pitch + "\n\nSelect what you need:");
+              // Show checklist items as buttons
+              addBotButtons([
+                ...pitch.items.map(pi => ({ label: `☐ ${pi.name} — ${pi.price}`, value: `CHECK_${pi.name}` })),
+                { label: "✓ Proceed to Pay", value: "PITCH_CHECKOUT" },
+                { label: "← Back to Services", value: "PITCH_BACK" },
+              ]);
+            } else {
+              // No detailed checklist — simple service
+              addBotMsg(`${item.label} (${item.price}) — this service is designed to protect and grow your business.`);
+              addBotButtons([
+                { label: "Get Started", value: "PITCH_CHECKOUT" },
+                { label: "Tell me more", value: "PITCH_MORE" },
+                { label: "← Back to Services", value: "PITCH_BACK" },
+              ]);
+            }
+          }, 400);
+          setChatState("SERVICE_PITCH");
+          return;
+        }
+      }
       setChatState("AI_CHAT");
+      handleAIChat(val);
+      return;
+    }
+
+    // ── Service pitch: checklist selection + checkout
+    if (chatState === "SERVICE_PITCH") {
+      // Checklist item toggled
+      if (val.startsWith("CHECK_")) {
+        const itemName = val.slice(6);
+        const pitch = SERVICE_PITCH_MAP[currentPitchKey];
+        if (!pitch) return;
+        const newChecked = new Set(checkedPitchRef.current);
+        if (newChecked.has(itemName)) newChecked.delete(itemName);
+        else newChecked.add(itemName);
+        checkedPitchRef.current = newChecked;
+        setCheckedPitchItems(newChecked);
+        // Calculate running total
+        const total = pitch.items.filter(pi => newChecked.has(pi.name)).reduce((sum, pi) => sum + pi.amount, 0);
+        const selectedNames = pitch.items.filter(pi => newChecked.has(pi.name)).map(pi => pi.name);
+        // Re-show the checklist with updated checks
+        addBotMsg(selectedNames.length > 0
+          ? `Selected: ${selectedNames.join(", ")}\nRunning total: ₦${total.toLocaleString()}`
+          : "No items selected yet. Tap to select.");
+        addBotButtons([
+          ...pitch.items.map(pi => ({ label: `${newChecked.has(pi.name) ? "☑" : "☐"} ${pi.name} — ${pi.price}`, value: `CHECK_${pi.name}` })),
+          ...(newChecked.size > 0 ? [{ label: `✓ Proceed to Pay (₦${total.toLocaleString()})`, value: "PITCH_CHECKOUT" }] : []),
+          { label: "← Back to Services", value: "PITCH_BACK" },
+        ]);
+        return;
+      }
+      // Proceed to checkout
+      if (val === "PITCH_CHECKOUT") {
+        const pitch = SERVICE_PITCH_MAP[currentPitchKey];
+        const dept = leadData.department || "bizdoc";
+        const acct = dept === "bizdoc" ? PAYMENT_ACCOUNTS.bizdoc : PAYMENT_ACCOUNTS.general;
+        let total = 0;
+        let summary = "";
+        if (pitch && checkedPitchRef.current.size > 0) {
+          const selectedItems = pitch.items.filter(pi => checkedPitchRef.current.has(pi.name));
+          total = selectedItems.reduce((sum, pi) => sum + pi.amount, 0);
+          summary = selectedItems.map(pi => `${pi.name}: ${pi.price}`).join("\n");
+        } else {
+          // Simple service without checklist
+          const catalog = SERVICES[dept] || [];
+          const svc = catalog.find(s => s.label === leadData.service);
+          total = svc?.amount || 0;
+          summary = `${leadData.service}: ${svc?.price || "Quote required"}`;
+        }
+        setLeadData(prev => ({ ...prev, context: `Selected: ${summary}. Total: ₦${total.toLocaleString()}` }));
+        setTimeout(() => {
+          addBotMsg(`Your selection:\n\n${summary}\n\nTotal: ₦${total.toLocaleString()}\n\nTo proceed, transfer to:\nBank: ${acct.bank}\nAccount: ${acct.number}\nName: ${acct.name}\n\nPay here and it will be faster. If you have a message for the team, type it and I will make sure they understand exactly what you need.`);
+          addBotButtons([
+            { label: "I've paid", value: "PAID" },
+            { label: "Leave a message for the team", value: "TEAM_MESSAGE" },
+            { label: "Talk to Us", value: "TALK_TO_US_CHECKOUT" },
+          ]);
+        }, 400);
+        setChatState("SERVICE_CHECKOUT");
+        return;
+      }
+      if (val === "PITCH_MORE") {
+        setChatState("AI_CHAT");
+        handleAIChat(`Tell me more about ${leadData.service}. What exactly is included, how long does it take, and what happens after I sign up?`);
+        return;
+      }
+      if (val === "PITCH_BACK") {
+        const dept = leadData.department || "bizdoc";
+        const catalog = SERVICES[dept] || [];
+        setTimeout(() => {
+          addBotMsg("Here are our services. Tap any to learn more.");
+          addBotButtons(catalog.map(s => ({ label: s.label, value: `SVC_${s.value}` })));
+        }, 400);
+        setChatState("SERVICES_LIST");
+        return;
+      }
+      setChatState("AI_CHAT");
+      handleAIChat(val);
+      return;
+    }
+
+    // ── Service checkout: payment + team message
+    if (chatState === "SERVICE_CHECKOUT") {
+      if (val === "PAID") {
+        setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [PAYMENT CLAIMED]" }));
+        setTimeout(() => addBotMsg("Payment noted. What is your full name so we can open your file?"), 400);
+        setChatState("LEAD_NAME");
+        return;
+      }
+      if (val === "TEAM_MESSAGE") {
+        setTimeout(() => addBotMsg("Type your message below. I will rephrase it to make sure the team understands exactly what you need."), 400);
+        return; // Stay in SERVICE_CHECKOUT, next text input will be the message
+      }
+      if (val === "TALK_TO_US_CHECKOUT") {
+        setTimeout(() => {
+          addBotButtons([
+            { label: "Drop a Message", value: "DROP_MESSAGE" },
+            { label: "Schedule a Call", value: "SCHEDULE" },
+          ]);
+        }, 400);
+        setChatState("TALK_OPTIONS");
+        return;
+      }
+      // Free text = team message — AI rephrases
+      if (val.trim().length > 2) {
+        setLeadData(prev => ({ ...prev, context: (prev.context || "") + ` | Client message: ${val.trim()}` }));
+        setChatState("AI_CHAT");
+        handleAIChat(`The client wants to leave this message for the team: "${val.trim()}". Rephrase it professionally and confirm back to them what you understood. Then remind them to make payment to proceed. Keep it short and warm.`);
+        return;
+      }
+      return;
+    }
+
+    // ── Talk to Us: sub-options
+    if (chatState === "TALK_OPTIONS") {
+      if (val === "DROP_MESSAGE") {
+        setTimeout(() => addBotMsg("Write your message below. Our team will read it and get back to you."), 400);
+        setChatState("TALK_MESSAGE");
+        return;
+      }
+      if (val === "SCHEDULE") {
+        setTimeout(() => addBotMsg("Let me schedule a call for you. What is your name?"), 400);
+        setChatState("SCHEDULE_NAME");
+        return;
+      }
+      setChatState("AI_CHAT");
+      handleAIChat(val);
+      return;
+    }
+
+    // ── Drop a Message
+    if (chatState === "TALK_MESSAGE") {
+      if (val.trim().length < 3) { addBotMsg("Please write a bit more so our team can understand your request."); return; }
+      setTimeout(() => {
+        addBotMsg("Message received. Our team will read it and get back to you shortly. Thank you for reaching out.");
+        addBotButtons([
+          { label: "Explore our services", value: "OUR_SERVICES" },
+          { label: "Back to menu", value: "RESTART" },
+        ]);
+      }, 400);
+      setChatState("MAIN_MENU");
+      return;
+    }
+
+    // ── Consultation: handled by AI_CHAT (the CONSULTATION state routes to handleAIChat)
+    if (chatState === "CONSULTATION") {
+      handleAIChat(val);
       return;
     }
 
@@ -531,88 +1145,37 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       return;
     }
 
-    // Specific service: department selection
-    if (chatState === "SPECIFIC_DEPT") {
-      const deptMap: Record<string, string> = { DEPT_BIZDOC: "bizdoc", DEPT_SYSTEMISE: "systemise", DEPT_SKILLS: "skills" };
-      const dept = deptMap[val];
-      if (dept) {
-        setLeadData(prev => ({ ...prev, department: dept, selectedServices: [] }));
-        const catalog = SERVICES[dept] || [];
-        setTimeout(() => {
-          addBotMsg("Pick the services you need. You can select more than one.");
-          addBotButtons([
-            ...catalog.map(s => ({ label: `${s.label} (${s.price})`, value: s.value })),
-            { label: "Done selecting", value: "DONE_SELECTING" },
-          ]);
-        }, 400);
-        setChatState("SPECIFIC_SELECT");
-        return;
-      }
-      setChatState("AI_CHAT");
-      handleAIChat(val);
-      return;
-    }
-
-    // Specific service: multi-select
-    if (chatState === "SPECIFIC_SELECT") {
-      if (val === "DONE_SELECTING") {
-        const selected = leadData.selectedServices || [];
-        const dept = leadData.department || "bizdoc";
-        if (selected.length === 0) {
-          setTimeout(() => addBotMsg("No worries. What is your full name so I can open a file?"), 400);
-          setChatState("LEAD_NAME");
-          return;
-        }
-        setTimeout(() => {
-          addBotMsg(buildPricingSummary(selected, dept));
-          // Show payment
-          const acct = dept === "bizdoc" ? PAYMENT_ACCOUNTS.bizdoc : PAYMENT_ACCOUNTS.general;
-          setTimeout(() => {
-            addBotMsg(`To proceed, transfer to:\n\nBank: ${acct.bank}\nAccount: ${acct.number}\nName: ${acct.name}\n\nOnce paid, tap below.`);
-            addBotButtons([
-              { label: "I've made payment", value: "PAID" },
-              { label: "I will pay later", value: "PAY_LATER" },
-              { label: "Upload receipt", value: "UPLOAD_RECEIPT" },
-              { label: "Talk to finance", value: "TALK_FINANCE" },
-            ]);
-            setChatState("PAYMENT_STAGE");
-          }, 800);
-        }, 400);
-        return;
-      }
-      // Add service to selection
-      const updated = [...(leadData.selectedServices || []), val];
-      setLeadData(prev => ({ ...prev, selectedServices: updated }));
-      const dept = leadData.department || "bizdoc";
-      const catalog = SERVICES[dept] || [];
-      const item = catalog.find(s => s.value === val);
-      setTimeout(() => {
-        addBotMsg(`Added: ${item?.label || val}. Anything else?`);
-        const remaining = catalog.filter(s => !updated.includes(s.value));
-        addBotButtons([
-          ...remaining.map(s => ({ label: `${s.label} (${s.price})`, value: s.value })),
-          { label: "Done selecting", value: "DONE_SELECTING" },
-        ]);
-      }, 300);
-      return;
-    }
-
-    // Payment stage
+    // Payment stage — after payment, offer upsell THEN collect details
     if (chatState === "PAYMENT_STAGE") {
       if (val === "PAID") {
         setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [PAYMENT CLAIMED]" }));
-        setTimeout(() => addBotMsg("Thanks for paying. What is your full name so I can open your file?"), 400);
-        setChatState("LEAD_NAME");
+        setTimeout(() => {
+          addBotMsg("Payment received. Would you like to add another service before we open your file?");
+          // Show upsell options based on department
+          const upsellItems = department === "bizdoc"
+            ? [{ label: "Tax Compliance", value: "UPSELL_Tax Compliance" }, { label: "Sector Licences", value: "UPSELL_Sector Licences" }, { label: "Legal Documents", value: "UPSELL_Legal Documents" }]
+            : department === "systemise"
+            ? [{ label: "Website Design", value: "UPSELL_Website Design" }, { label: "Social Media", value: "UPSELL_Social Media" }, { label: "AI & Automation", value: "UPSELL_AI & Automation" }]
+            : department === "skills"
+            ? [{ label: "Another Program", value: "UPSELL_Another Program" }, { label: "Corporate Training", value: "UPSELL_Corporate Staff Training" }]
+            : [{ label: "BizDoc Services", value: "UPSELL_BizDoc" }, { label: "Systemise Services", value: "UPSELL_Systemise" }];
+          addBotButtons([...upsellItems, { label: "No thanks, open my file", value: "UPSELL_DONE" }]);
+          setChatState("UPSELL_STAGE");
+        }, 400);
         return;
       }
       if (val === "PAY_LATER" || val === "Continue after payment") {
-        setTimeout(() => addBotMsg("No problem, you can pay anytime. What is your full name so I can open a file?"), 400);
+        setTimeout(() => addBotMsg("No problem. Let me get your details so the team can follow up. What is your full name?"), 400);
         setChatState("LEAD_NAME");
         return;
       }
       if (val === "UPLOAD_RECEIPT") {
-        setTimeout(() => addBotMsg("Please send your payment receipt via WhatsApp to +234 806 714 9356 for faster verification. What is your full name?"), 400);
-        setChatState("LEAD_NAME");
+        setTimeout(() => {
+          addBotMsg("Please send your payment receipt via WhatsApp to +234 806 714 9356. Once verified, would you like to add another service?");
+          setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [RECEIPT SENT]" }));
+          addBotButtons([{ label: "Yes, add more", value: "PAID" }, { label: "No, open my file", value: "UPSELL_DONE" }]);
+          setChatState("PAYMENT_STAGE");
+        }, 400);
         return;
       }
       if (val === "TALK_FINANCE") {
@@ -621,24 +1184,57 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       }
     }
 
-    // AI close actions
+    // Upsell stage — client picks more services or finishes
+    if (chatState === "UPSELL_STAGE") {
+      if (val === "UPSELL_DONE") {
+        setTimeout(() => addBotMsg("Perfect. Let me get your details to open your file. What is your full name?"), 400);
+        setChatState("LEAD_NAME");
+        return;
+      }
+      if (val.startsWith("UPSELL_")) {
+        const serviceName = val.replace("UPSELL_", "");
+        const pitch = matchServicePitch(serviceName);
+        if (pitch) {
+          addBotMsg(pitch.pitch);
+          setTimeout(() => {
+            addBotButtons([
+              ...pitch.items.map(item => ({ label: `${item.name} (${item.price})`, value: `Tell me about ${item.name}. What is included, timeline, and how to start?` })),
+              { label: "Back to checkout", value: "UPSELL_DONE" },
+            ]);
+          }, 400);
+          setChatState("AI_CHAT");
+        } else {
+          setChatState("AI_CHAT");
+          handleAIChat(`I want to add ${serviceName} to my order. Tell me about it.`);
+        }
+        return;
+      }
+    }
+
+    // AI close actions — NEW FLOW: price → pay → upsell → THEN details
     if (val === "AI_CLOSE_YES") {
       const lastAi = aiMessages.filter(m => m.role === "assistant").pop()?.content || "";
       const inferredService = lastAi.toLowerCase().includes("bizdoc") || lastAi.toLowerCase().includes("compliance") || lastAi.toLowerCase().includes("cac")
         ? "BizDoc Compliance"
-        : lastAi.toLowerCase().includes("systemise") || lastAi.toLowerCase().includes("website") || lastAi.toLowerCase().includes("brand")
+        : lastAi.toLowerCase().includes("systemise") || lastAi.toLowerCase().includes("website") || lastAi.toLowerCase().includes("brand") || lastAi.toLowerCase().includes("automation") || lastAi.toLowerCase().includes("ai agent")
         ? "Systemise Systems"
         : lastAi.toLowerCase().includes("skills") || lastAi.toLowerCase().includes("training")
         ? "Skills Training"
         : "General Consultation";
-      setLeadData(prev => ({ ...prev, service: inferredService, context: aiMessages.map(m => `${m.role}: ${m.content}`).slice(-4).join("\n") }));
-      if (leadData.name) {
-        setTimeout(() => addBotMsg(`Got it, ${leadData.name!.split(" ")[0]}. What is your business name?`), 400);
-        setChatState("LEAD_BIZ");
-      } else {
-        setTimeout(() => addBotMsg("Let me get your details. What is your full name?"), 400);
-        setChatState("LEAD_NAME");
-      }
+      const dept = department === "bizdoc" ? "bizdoc" : "general";
+      setLeadData(prev => ({ ...prev, service: inferredService, department: dept, context: aiMessages.map(m => `${m.role}: ${m.content}`).slice(-4).join("\n") }));
+      // Go straight to payment — no details yet
+      const acct = dept === "bizdoc" ? PAYMENT_ACCOUNTS.bizdoc : PAYMENT_ACCOUNTS.general;
+      setTimeout(() => {
+        addBotMsg(`Great. To proceed, transfer to:\n\nBank: ${acct.bank}\nAccount: ${acct.number}\nName: ${acct.name}\n\nOnce paid, tap below.`);
+        addBotButtons([
+          { label: "I've made payment", value: "PAID" },
+          { label: "I will pay later", value: "PAY_LATER" },
+          { label: "Upload receipt", value: "UPLOAD_RECEIPT" },
+          { label: "Talk to finance", value: "TALK_FINANCE" },
+        ]);
+        setChatState("PAYMENT_STAGE");
+      }, 400);
       return;
     }
     if (val === "AI_CLOSE_MORE") { setChatState("AI_CHAT"); return; }
@@ -754,7 +1350,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       .replace(/\[([^\]]+)\]\(([^)]+)\)/g, `<a href="$2" style="color:${GOLD};text-decoration:underline;">$1</a>`)
       .replace(/\n/g, "<br/>");
 
-  const inputDisabled = chatState === "SUCCESS" || chatState === "SCHEDULE_TIME" || chatState === "SPECIFIC_SELECT";
+  const inputDisabled = chatState === "SUCCESS" || chatState === "SCHEDULE_TIME" || chatState === "SERVICES_LIST" || chatState === "SERVICES_DEPT";
   const hasInteracted = messages.some(m => m.sender === "user");
 
   /* ═══════════════════════════════════════════════════════════════
@@ -776,19 +1372,32 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       }}
     >
       {/* ── Header ── */}
-      <div className="shrink-0 relative" style={{ backgroundColor: CHARCOAL }}>
+      <div className="shrink-0 relative" style={{ backgroundColor: DEPT_BRAND[department].header }}>
         <div className="px-4 py-3 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <button onClick={() => setMenuOpen(v => !v)} className="text-white/40 hover:text-white/80 p-0.5 transition-colors">
               <MoreVertical size={16} />
             </button>
             <h3 className="font-semibold text-[14px] text-white tracking-wide">
-              HAMZURY Advisor
+              {DEPT_BRAND[department].name} Advisor
             </h3>
           </div>
-          <button onClick={close} className="text-white/40 hover:text-white/80 p-1 transition-colors" title="Minimize">
-            <Minus size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <select
+              value={userLang}
+              onChange={e => setUserLang(e.target.value)}
+              className="bg-transparent text-[10px] text-white/50 hover:text-white/80 outline-none cursor-pointer appearance-none pr-1"
+              style={{ maxWidth: 50 }}
+              title="Language"
+            >
+              {["English", "Hausa", "Yoruba", "Igbo", "Arabic", "French", "Chinese"].map(l => (
+                <option key={l} value={l} style={{ color: "#1A1A1A" }}>{l.slice(0, 3).toUpperCase()}</option>
+              ))}
+            </select>
+            <button onClick={close} className="text-white/40 hover:text-white/80 p-1 transition-colors" title="Minimize">
+              <Minus size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Menu dropdown */}
@@ -818,7 +1427,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
               Contact team
             </button>
             <button
-              onClick={() => { setMenuOpen(false); reset(); if (isOpen) { addBotMsg("Welcome to HAMZURY.\n\nWhich language would you prefer?"); addBotButtons([{ label: "English", value: "English" }, { label: "Pidgin", value: "Pidgin" }, { label: "Arabic", value: "Arabic" }, { label: "French", value: "French" }]); setChatState("LANG_SELECT"); } }}
+              onClick={() => { setMenuOpen(false); reset(); if (isOpen) { addBotMsg(t(userLang, "newChat")); showMainMenu(); } }}
               className="w-full text-left px-4 py-2.5 text-[13px] hover:bg-[#FFFAF6] transition-colors"
               style={{ color: "#DC2626" }}
             >
@@ -930,7 +1539,7 @@ export default function ChatWidget({ department = "general", open: externalOpen,
               else { setInternalOpen(true); setShowBadge(false); }
             }}
             className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 relative"
-            style={{ backgroundColor: CHARCOAL, color: GOLD }}
+            style={{ backgroundColor: DEPT_BRAND[department].header, color: DEPT_BRAND[department].accent }}
           >
             {isOpen ? <Minus size={22} /> : <MessageSquare size={22} />}
             {!isOpen && showBadge && (

@@ -8,7 +8,7 @@ import {
   generateHZRefNumber, createSystemiseLead, getSystemiseLeads, getSystemiseLeadByRef,
   createAppointment, getAppointments,
   createJoinApplication, getJoinApplications,
-  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, getCompletedTasksWithPrice, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore,
+  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore,
   getChecklistItemsByTaskId, toggleChecklistItem, getChecklistTemplates,
   createDocument, getDocumentsByTaskId, deleteDocument,
   createActivityLog, getActivityLogsByTaskId, getRecentActivityLogs,
@@ -163,6 +163,14 @@ export const appRouter = router({
               message: `Payment claimed for ${input.name} — ${input.service}. Invoice ${invoice.invoiceNumber}. Please verify.`,
               link: "/hub/finance",
             }).catch(err => console.error("[notification] Finance payment claim notify failed:", err));
+            // CSO notification — send tracking details to client
+            createNotification({
+              userId: "cso",
+              type: "payment",
+              title: "Client Paid — Send Tracking",
+              message: `${input.name} claimed payment for ${input.service}. Ref: ${lead.ref}. Send tracking details and delivery timeframe.`,
+              link: "/hub/cso",
+            }).catch(err => console.error("[notification] CSO payment notify failed:", err));
             // Audit log
             createAuditLog({
               userId: null,

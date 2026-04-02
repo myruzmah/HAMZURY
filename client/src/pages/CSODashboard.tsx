@@ -163,6 +163,14 @@ export default function CSODashboard() {
 
   const newPayments = allLeads.filter((l: any) => l.source === "chat_payment" && l.status === "new");
 
+  // Overdue follow-up leads (created 3+ days ago, still in new/contacted status)
+  const threeDaysAgo = Date.now() - 3 * 24 * 60 * 60 * 1000;
+  const overdueLeads = allLeads.filter((l: any) => {
+    if (!l.createdAt) return false;
+    const created = new Date(l.createdAt).getTime();
+    return created < threeDaysAgo && (l.status === "new" || l.status === "contacted");
+  });
+
   const handleAssign = (leadId: number) => {
     const dept = selectedDept[leadId];
     if (!dept) { toast.error("Please select a department"); return; }
@@ -387,6 +395,16 @@ export default function CSODashboard() {
         {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-6 max-w-7xl mx-auto">
+
+            {/* Overdue follow-up alert */}
+            {overdueLeads.length > 0 && (
+              <div className="mb-4 p-3 rounded-xl flex items-center gap-3 text-[13px]" style={{ backgroundColor: "#FEF3C7", color: "#92400E" }}>
+                <span className="font-semibold">{overdueLeads.length} lead{overdueLeads.length > 1 ? "s" : ""} need follow-up</span>
+                <span className="opacity-60">— not contacted in 3+ days</span>
+                <div className="flex-1" />
+                <span className="text-[11px] opacity-50">{overdueLeads.map((l: any) => l.name).join(", ")}</span>
+              </div>
+            )}
 
             {/* ── Overview ── */}
             {activeSection === "overview" && (
