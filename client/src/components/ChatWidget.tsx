@@ -1107,8 +1107,27 @@ export default function ChatWidget({ department = "general", open: externalOpen,
     if (chatState === "SERVICE_CHECKOUT") {
       if (val === "PAID") {
         setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [PAYMENT CLAIMED]" }));
-        setTimeout(() => addBotMsg("Payment noted. What is your full name so we can open your file?"), 400);
+        setTimeout(() => {
+          addBotMsg("Thank you. Please share a screenshot of your debit alert or payment receipt so our finance team can verify.\n\nYou can send it via WhatsApp to +234 806 714 9356\n\nOnce confirmed, we will collect your details and requirements to begin work.");
+          addBotButtons([
+            { label: "I've sent the receipt", value: "RECEIPT_SENT" },
+            { label: "Send via WhatsApp", value: "WHATSAPP_RECEIPT" },
+          ]);
+        }, 400);
+        return; // Stay in SERVICE_CHECKOUT
+      }
+      if (val === "RECEIPT_SENT") {
+        setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [RECEIPT SENT]" }));
+        setTimeout(() => addBotMsg("Receipt received. Our finance team will verify and update you shortly.\n\nIn the meantime, let me get your details. What is your full name?"), 400);
         setChatState("LEAD_NAME");
+        return;
+      }
+      if (val === "WHATSAPP_RECEIPT") {
+        window.open("https://wa.me/2348067149356?text=Hi%2C%20I%20just%20made%20a%20payment%20and%20want%20to%20share%20my%20receipt.", "_blank");
+        setTimeout(() => {
+          addBotMsg("WhatsApp opened. After sending your receipt, tap below to continue.");
+          addBotButtons([{ label: "I've sent it", value: "RECEIPT_SENT" }]);
+        }, 400);
         return;
       }
       if (val === "TEAM_MESSAGE") {
@@ -1216,17 +1235,25 @@ export default function ChatWidget({ department = "general", open: externalOpen,
       if (val === "PAID") {
         setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [PAYMENT CLAIMED]" }));
         setTimeout(() => {
-          addBotMsg("Payment received. Would you like to add another service before we open your file?");
-          // Show upsell options based on department
-          const upsellItems = department === "bizdoc"
-            ? [{ label: "Tax Compliance", value: "UPSELL_Tax Compliance" }, { label: "Sector Licences", value: "UPSELL_Sector Licences" }, { label: "Legal Documents", value: "UPSELL_Legal Documents" }]
-            : department === "systemise"
-            ? [{ label: "Website Design", value: "UPSELL_Website Design" }, { label: "Social Media", value: "UPSELL_Social Media" }, { label: "AI & Automation", value: "UPSELL_AI & Automation" }]
-            : department === "skills"
-            ? [{ label: "Another Program", value: "UPSELL_Another Program" }, { label: "Corporate Training", value: "UPSELL_Corporate Staff Training" }]
-            : [{ label: "BizDoc Services", value: "UPSELL_BizDoc" }, { label: "Systemise Services", value: "UPSELL_Systemise" }];
-          addBotButtons([...upsellItems, { label: "No thanks, open my file", value: "UPSELL_DONE" }]);
-          setChatState("UPSELL_STAGE");
+          addBotMsg("Thank you. Please share a screenshot of your debit alert or payment receipt so our finance team can verify.\n\nYou can send it via WhatsApp to +234 806 714 9356\n\nOnce confirmed, we will collect your details and requirements to begin work.");
+          addBotButtons([
+            { label: "I've sent the receipt", value: "RECEIPT_SENT_PAY" },
+            { label: "Send via WhatsApp", value: "WHATSAPP_RECEIPT_PAY" },
+          ]);
+        }, 400);
+        return;
+      }
+      if (val === "RECEIPT_SENT_PAY") {
+        setLeadData(prev => ({ ...prev, context: (prev.context || "") + " [RECEIPT SENT]" }));
+        setTimeout(() => addBotMsg("Receipt received. Our finance team will verify and update you shortly.\n\nLet me get your details. What is your full name?"), 400);
+        setChatState("LEAD_NAME");
+        return;
+      }
+      if (val === "WHATSAPP_RECEIPT_PAY") {
+        window.open("https://wa.me/2348067149356?text=Hi%2C%20I%20just%20made%20a%20payment%20and%20want%20to%20share%20my%20receipt.", "_blank");
+        setTimeout(() => {
+          addBotMsg("WhatsApp opened. After sending your receipt, tap below to continue.");
+          addBotButtons([{ label: "I've sent it", value: "RECEIPT_SENT_PAY" }]);
         }, 400);
         return;
       }
