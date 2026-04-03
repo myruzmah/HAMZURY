@@ -595,7 +595,8 @@ export default function SkillsPortal() {
                       e.preventDefault();
                       localStorage.setItem("hamzury-client-session", JSON.stringify({
                         ref: trackQuery.data!.ref, phone: "", name: trackQuery.data!.program,
-                        status: trackQuery.data!.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
+                        service: trackQuery.data!.program, status: trackQuery.data!.status,
+                        expiresAt: Date.now() + 24 * 60 * 60 * 1000
                       }));
                       window.location.href = "/client/dashboard";
                     }}

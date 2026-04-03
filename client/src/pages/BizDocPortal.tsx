@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
-import { ArrowRight, X, Menu, FileText, Shield, Scale, Award, Briefcase, MessageSquare, Loader2, ClipboardList, Search, PenTool, Send, CheckCircle, Handshake } from "lucide-react";
+import { ArrowRight, ArrowLeft, X, Menu, FileText, Shield, Scale, Award, Briefcase, MessageSquare, Loader2, ChevronDown } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import { trpc } from "@/lib/trpc";
 
@@ -22,30 +22,27 @@ const SERVICE_CARDS = [
   { icon: Award,     title: "Sector Licences",       tag: null,          line: "NAFDAC, NMDPRA, CBN, NEPC, and every industry permit.",             price: null,    context: "Sector Licences" },
 ];
 
-const STEPS = [
-  { icon: ClipboardList, label: "Tell us" },
-  { icon: Search,        label: "We assess" },
-  { icon: PenTool,       label: "We file" },
-  { icon: Send,          label: "Delivered" },
-  { icon: CheckCircle,   label: "Covered" },
-  { icon: Handshake,     label: "Done" },
-];
-
-const BLUEPRINTS = [
-  { id: "restaurant",    label: "Restaurant & Food",        badge: "FOOD",     emoji: "🍽" },
-  { id: "import-export", label: "Import / Export",           badge: "TRADE",    emoji: "🚢" },
-  { id: "tech-startup",  label: "Tech Startup",              badge: "TECH",     emoji: "💻" },
-  { id: "fashion",       label: "Fashion & Clothing",        badge: "FASHION",  emoji: "✂️" },
-  { id: "construction",  label: "Construction & Property",   badge: "PROPERTY", emoji: "🏗" },
-  { id: "consulting",    label: "Consulting & Services",     badge: "SERVICES", emoji: "📋" },
-];
-
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 export default function BizDocPortal() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeSvcIdx, setActiveSvcIdx] = useState(0);
   const svcScrollRef = useRef<HTMLDivElement>(null);
-  const bpScrollRef = useRef<HTMLDivElement>(null);
+
+  const PACKAGES = SERVICE_CARDS.filter(s => s.tag);
+  const INDIVIDUAL = SERVICE_CARDS.filter(s => !s.tag);
+
+  // Mobile swipe for individual services
+  const touchStart = useRef(0);
+  const handleTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const diff = touchStart.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      setActiveSvcIdx(prev =>
+        diff > 0 ? Math.min(prev + 1, INDIVIDUAL.length - 1) : Math.max(prev - 1, 0)
+      );
+    }
+  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -101,46 +98,51 @@ export default function BizDocPortal() {
       <style>{`
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { scrollbar-width: none; -ms-overflow-style: none; }
-        @keyframes flow-pulse {
-          0%   { width: 0%; }
-          60%  { width: 100%; }
-          100% { width: 100%; opacity: 0.2; }
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes dot-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(180,140,76,0); }
-          50%      { box-shadow: 0 0 0 8px rgba(180,140,76,0.12); }
+        @keyframes hero-drift {
+          0%, 100% { transform: translateY(0px); }
+          50%      { transform: translateY(-8px); }
         }
+        .fade-up { animation: fade-up 0.8s ease-out both; }
+        .fade-up-d1 { animation: fade-up 0.8s ease-out 0.1s both; }
+        .fade-up-d2 { animation: fade-up 0.8s ease-out 0.2s both; }
+        .fade-up-d3 { animation: fade-up 0.8s ease-out 0.3s both; }
       `}</style>
 
       {/* ── NAV ── */}
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-3" : "py-5"}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-2.5" : "py-5"}`}
         style={{
-          backgroundColor: scrolled ? `${W}F5` : "transparent",
-          backdropFilter: scrolled ? "blur(20px)" : "none",
-          boxShadow: scrolled ? "0 1px 20px rgba(0,0,0,0.04)" : "none",
+          backgroundColor: scrolled ? `${W}F2` : "transparent",
+          backdropFilter: scrolled ? "blur(24px) saturate(180%)" : "none",
+          boxShadow: scrolled ? "0 1px 24px rgba(0,0,0,0.06)" : "none",
         }}
       >
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between relative">
-          <span
-            className="text-[13px] tracking-[4px] font-light uppercase cursor-default select-none"
-            style={{ color: scrolled ? G : W, letterSpacing: "0.25em" }}
-          >
-            BIZDOC
-          </span>
+          <Link href="/bizdoc">
+            <span
+              className="text-[12px] tracking-[0.3em] font-medium uppercase cursor-pointer select-none"
+              style={{ color: scrolled ? G : W }}
+            >
+              BIZDOC
+            </span>
+          </Link>
           <button
             onClick={() => setNavMenuOpen(p => !p)}
-            className="flex items-center justify-center w-9 h-9 transition-opacity hover:opacity-70"
-            style={{ color: scrolled ? G : W }}
+            className="flex items-center justify-center w-10 h-10 rounded-full transition-all hover:opacity-70"
+            style={{ color: scrolled ? G : W, backgroundColor: scrolled ? `${G}06` : "rgba(255,255,255,0.1)" }}
             aria-label="Menu"
           >
-            {navMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            {navMenuOpen ? <X size={16} /> : <Menu size={16} />}
           </button>
 
           {navMenuOpen && (
             <div
-              className="absolute top-12 right-0 rounded-2xl py-2 min-w-[220px] shadow-xl"
-              style={{ backgroundColor: W }}
+              className="absolute top-14 right-0 rounded-2xl py-3 min-w-[240px] border"
+              style={{ backgroundColor: W, borderColor: `${G}08`, boxShadow: "0 20px 60px rgba(0,0,0,0.12)" }}
               onClick={() => setNavMenuOpen(false)}
             >
               <button
@@ -149,12 +151,13 @@ export default function BizDocPortal() {
                   const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
                   if (btn) btn.click();
                 }}
-                className="flex items-center gap-2 px-3 py-3.5 rounded-xl w-full text-left mx-2"
-                style={{ backgroundColor: "#B48C4C10", color: "#B48C4C" }}
+                className="flex items-center gap-2.5 px-4 py-3 rounded-xl w-[calc(100%-16px)] text-left mx-2 mb-1 transition-all hover:scale-[0.98]"
+                style={{ backgroundColor: `${Au}0C`, color: Au }}
               >
-                <MessageSquare size={16} />
+                <MessageSquare size={15} strokeWidth={1.5} />
                 <span className="text-[13px] font-medium">Chat with us</span>
               </button>
+              <div className="h-px mx-4 my-1" style={{ backgroundColor: `${G}06` }} />
               {[
                 { label: "Home",       href: "/" },
                 { label: "Systemise",  href: "/systemise" },
@@ -163,7 +166,7 @@ export default function BizDocPortal() {
                 { label: "Consultant", href: "/consultant" },
               ].map(item => (
                 <Link key={item.href} href={item.href}>
-                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: G }}>
+                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50/80 cursor-pointer" style={{ color: G }}>
                     {item.label}
                   </span>
                 </Link>
@@ -173,227 +176,104 @@ export default function BizDocPortal() {
         </div>
       </nav>
 
-      {/* ── HERO ── */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ backgroundColor: G }}>
-        <div className="max-w-3xl mx-auto px-6 text-center">
+      {/* ═══════════════════════════════════════════════════════════════════════
+         HERO
+         ═══════════════════════════════════════════════════════════════════════ */}
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ background: `linear-gradient(165deg, ${G} 0%, #143D31 50%, #0F2E24 100%)` }}>
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-[40%] -right-[20%] w-[600px] h-[600px] rounded-full opacity-[0.03]" style={{ background: `radial-gradient(circle, ${Au} 0%, transparent 70%)` }} />
+          <div className="absolute -bottom-[30%] -left-[15%] w-[500px] h-[500px] rounded-full opacity-[0.04]" style={{ background: `radial-gradient(circle, ${W} 0%, transparent 70%)` }} />
+        </div>
+
+        <div className="max-w-3xl mx-auto px-6 text-center relative z-10">
+          <div className="fade-up">
+            <span className="inline-block text-[10px] font-semibold tracking-[0.35em] uppercase mb-8 px-4 py-2 rounded-full" style={{ color: Au, backgroundColor: `${Au}10`, border: `1px solid ${Au}15` }}>
+              BUSINESS COMPLIANCE
+            </span>
+          </div>
           <h1
-            className="text-[clamp(32px,6vw,48px)] font-light leading-[1.1] mb-6 tracking-tight"
+            className="text-[clamp(34px,7vw,56px)] font-light leading-[1.08] mb-7 tracking-tight fade-up-d1"
             style={{ color: W }}
           >
             Every filing. Every licence.{" "}
             <span style={{ color: Au }}>Handled.</span>
           </h1>
-          <p className="text-[14px] leading-relaxed mb-12 max-w-md mx-auto" style={{ color: W, opacity: 0.55 }}>
+          <p className="text-[15px] leading-[1.8] mb-14 max-w-lg mx-auto fade-up-d2" style={{ color: W, opacity: 0.5 }}>
             CAC registration. Tax compliance. Sector licences. Legal documentation. So you can operate, win contracts, and scale.
           </p>
-          <div className="flex flex-wrap gap-3 justify-center">
+          <div className="flex flex-wrap gap-3 justify-center fade-up-d3">
             <button
               onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 rounded-full text-[14px] font-medium transition-all duration-300 hover:scale-[1.02]"
+              className="px-9 py-4 rounded-full text-[13px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.03] hover:shadow-lg"
               style={{ backgroundColor: Au, color: G }}
             >
               Our Services
             </button>
             <button
               onClick={() => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 rounded-full text-[14px] font-medium transition-all duration-300 hover:opacity-80"
-              style={{ color: W, border: `1px solid rgba(255,255,255,0.2)` }}
+              className="px-9 py-4 rounded-full text-[13px] font-medium tracking-wide transition-all duration-300 hover:bg-white/10"
+              style={{ color: W, border: `1px solid rgba(255,255,255,0.15)` }}
             >
               Track
             </button>
           </div>
         </div>
-      </section>
 
-      {/* ═══════════════════════════════════════════════════════════════════════
-         HOW WE WORK — premium horizontal flow
-         ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-14 md:py-20 overflow-hidden" style={{ backgroundColor: W }}>
-        <div className="max-w-3xl mx-auto px-6">
-          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-10 md:mb-14 text-center" style={{ color: Au }}>
-            HOW WE WORK
-          </p>
-
-          <div className="relative">
-            {/* Background track line */}
-            <div
-              className="absolute left-[28px] right-[28px] md:left-[36px] md:right-[36px] top-[20px] md:top-[24px] h-[1.5px]"
-              style={{ backgroundColor: `${G}10` }}
-            />
-            {/* Animated gold pulse line */}
-            <div
-              className="absolute left-[28px] right-[28px] md:left-[36px] md:right-[36px] top-[20px] md:top-[24px] h-[1.5px] overflow-hidden"
-            >
-              <div
-                className="h-full rounded-full"
-                style={{ backgroundColor: Au, animation: "flow-pulse 4s ease-in-out infinite" }}
-              />
-            </div>
-
-            {/* Steps */}
-            <div className="relative z-10 flex items-start justify-between">
-              {STEPS.map((step, i) => {
-                const Icon = step.icon;
-                const isLast = i === STEPS.length - 1;
-                return (
-                  <div key={i} className="flex flex-col items-center" style={{ width: `${100 / STEPS.length}%` }}>
-                    <div
-                      className="w-[40px] h-[40px] md:w-[48px] md:h-[48px] rounded-full flex items-center justify-center transition-all duration-500"
-                      style={{
-                        backgroundColor: isLast ? Au : W,
-                        border: isLast ? "none" : `1.5px solid ${G}18`,
-                        boxShadow: isLast ? "0 4px 20px rgba(180,140,76,0.25)" : "0 2px 12px rgba(0,0,0,0.04)",
-                        animation: isLast ? "dot-glow 3s ease-in-out infinite" : "none",
-                      }}
-                    >
-                      <Icon size={16} style={{ color: isLast ? W : G, opacity: isLast ? 1 : 0.7 }} strokeWidth={1.5} />
-                    </div>
-                    <span
-                      className="mt-2.5 text-[9px] md:text-[10px] font-medium text-center leading-tight"
-                      style={{ color: G, opacity: isLast ? 0.85 : 0.45 }}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-30">
+          <ChevronDown size={18} style={{ color: W, animation: "hero-drift 2.5s ease-in-out infinite" }} />
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-         BLUEPRINTS — horizontal scroll with arrows
+         SERVICES — grid layout, compact cards
          ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-16 md:py-24" style={{ backgroundColor: Cr }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-end justify-between px-6 mb-8 md:mb-12">
-            <div>
-              <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: Au }}>
-                POSITIONING BLUEPRINTS
-              </p>
-              <h2 className="text-[clamp(22px,3vw,32px)] font-light tracking-tight leading-tight" style={{ color: G }}>
-                Your industry roadmap.
-              </h2>
-            </div>
-            <div className="hidden md:flex items-center gap-2">
-              <button onClick={() => scroll(bpScrollRef, "left")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ border: `1.5px solid ${G}18` }}>
-                <ArrowRight size={14} style={{ color: G, transform: "rotate(180deg)" }} />
-              </button>
-              <button onClick={() => scroll(bpScrollRef, "right")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ backgroundColor: G }}>
-                <ArrowRight size={14} style={{ color: Au }} />
-              </button>
-            </div>
+      <section id="services" className="py-16 md:py-24" style={{ backgroundColor: W }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="mb-8 md:mb-12">
+            <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.35em] uppercase mb-3" style={{ color: Au }}>
+              OUR SERVICES
+            </p>
+            <h2 className="text-[clamp(22px,3.5vw,32px)] font-light tracking-tight leading-tight" style={{ color: G }}>
+              Every layer your business needs.
+            </h2>
           </div>
 
-          <div ref={bpScrollRef} className="flex gap-4 overflow-x-auto pl-6 pr-6 pb-2 snap-x snap-mandatory hide-scroll">
-            {BLUEPRINTS.map((bp) => (
-              <div
-                key={bp.id}
-                className="snap-start shrink-0 w-[200px] md:w-[220px] group cursor-pointer"
-                onClick={() => openChat(`I want the ${bp.label} positioning blueprint. Show me the roadmap — legal, financial, marketing, sales, operations, and team.`)}
-              >
-                <div
-                  className="rounded-2xl p-5 md:p-6 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-lg mb-3"
-                  style={{ backgroundColor: W, boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}
-                >
-                  <span className="text-[22px] mb-3 block">{bp.emoji}</span>
-                  <span className="text-[8px] md:text-[9px] font-bold tracking-[0.2em] uppercase block mb-2" style={{ color: Au }}>
-                    {bp.badge}
-                  </span>
-                  <h3 className="text-[13px] md:text-[14px] font-semibold leading-snug" style={{ color: G }}>
-                    {bp.label}
-                  </h3>
-                </div>
-                <span className="text-[11px] font-medium flex items-center gap-1 pl-1 transition-all group-hover:gap-2" style={{ color: Au }}>
-                  View Roadmap <ArrowRight size={11} />
-                </span>
-              </div>
-            ))}
-            {/* Spacer for edge scroll */}
-            <div className="shrink-0 w-1" />
-          </div>
-        </div>
-      </section>
-
-      {/* ═══════════════════════════════════════════════════════════════════════
-         SERVICES — horizontal scroll with arrows
-         ═══════════════════════════════════════════════════════════════════════ */}
-      <section id="services" className="py-20 md:py-28" style={{ backgroundColor: W }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="flex items-end justify-between px-6 mb-8 md:mb-12">
-            <div>
-              <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-3" style={{ color: Au }}>
-                OUR SERVICES
-              </p>
-              <h2 className="text-[clamp(22px,3.5vw,36px)] font-light tracking-tight leading-tight" style={{ color: G }}>
-                Every layer your business needs.
-              </h2>
-            </div>
-            <div className="hidden md:flex items-center gap-2">
-              <button onClick={() => scroll(svcScrollRef, "left")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ border: `1.5px solid ${G}18` }}>
-                <ArrowRight size={14} style={{ color: G, transform: "rotate(180deg)" }} />
-              </button>
-              <button onClick={() => scroll(svcScrollRef, "right")} className="w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105" style={{ backgroundColor: G }}>
-                <ArrowRight size={14} style={{ color: Au }} />
-              </button>
-            </div>
-          </div>
-
-          <div ref={svcScrollRef} className="flex gap-4 overflow-x-auto pl-6 pr-6 pb-2 snap-x snap-mandatory hide-scroll">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {SERVICE_CARDS.map((svc) => {
               const Icon = svc.icon;
+              const isPackage = !!svc.tag;
               return (
                 <div
                   key={svc.title}
-                  className="snap-start shrink-0 w-[260px] md:w-[280px] rounded-2xl p-6 md:p-7 transition-all duration-300 hover:-translate-y-1 flex flex-col"
+                  className="rounded-[16px] p-4 md:p-5 transition-all duration-300 hover:-translate-y-1 flex flex-col group relative overflow-hidden cursor-pointer"
                   style={{
-                    backgroundColor: Cr,
-                    border: svc.tag ? `1.5px solid ${Au}30` : `1px solid ${G}08`,
+                    backgroundColor: isPackage ? Cr : W,
+                    border: isPackage ? `1.5px solid ${Au}20` : `1px solid ${G}08`,
                   }}
+                  onClick={() => openChat(svc.context)}
                 >
-                  {/* Tag badge */}
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: isPackage ? `linear-gradient(90deg, ${Au}, ${Au}40)` : `linear-gradient(90deg, ${G}30, ${G}10)` }} />
+
                   {svc.tag && (
-                    <span
-                      className="self-start text-[8px] font-bold tracking-[0.2em] uppercase px-2.5 py-1 rounded-full mb-4"
-                      style={{ backgroundColor: `${Au}15`, color: Au }}
-                    >
+                    <span className="self-start text-[7px] font-bold tracking-[0.15em] uppercase px-2 py-0.5 rounded-full mb-3" style={{ backgroundColor: `${Au}10`, color: Au }}>
                       {svc.tag}
                     </span>
                   )}
 
-                  <div
-                    className="w-9 h-9 rounded-lg flex items-center justify-center mb-4"
-                    style={{ backgroundColor: `${G}06` }}
-                  >
-                    <Icon size={16} style={{ color: G }} strokeWidth={1.5} />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: isPackage ? `${Au}08` : `${G}05` }}>
+                    <Icon size={14} style={{ color: isPackage ? Au : G }} strokeWidth={1.5} />
                   </div>
 
-                  <h3 className="text-[14px] md:text-[15px] font-semibold mb-1.5" style={{ color: G }}>
-                    {svc.title}
-                  </h3>
+                  <h3 className="text-[13px] font-semibold mb-0.5" style={{ color: G }}>{svc.title}</h3>
+                  {svc.price && <span className="text-[14px] font-light mb-1.5 block tracking-tight" style={{ color: Au }}>{svc.price}</span>}
+                  <p className="text-[10px] leading-[1.6] mb-auto pb-3" style={{ color: G, opacity: 0.4 }}>{svc.line}</p>
 
-                  {svc.price && (
-                    <span className="text-[12px] font-semibold mb-2 block" style={{ color: Au }}>
-                      {svc.price}
-                    </span>
-                  )}
-
-                  <p className="text-[12px] leading-relaxed mb-auto pb-4" style={{ color: G, opacity: 0.5 }}>
-                    {svc.line}
-                  </p>
-
-                  <button
-                    onClick={() => openChat(svc.context)}
-                    className="text-[12px] font-semibold flex items-center gap-1.5 transition-all hover:gap-2.5"
-                    style={{ color: Au }}
-                  >
-                    Get Started <ArrowRight size={12} />
-                  </button>
+                  <span className="text-[10px] font-semibold flex items-center gap-1 transition-all group-hover:gap-2" style={{ color: Au }}>
+                    Get Started <ArrowRight size={10} />
+                  </span>
                 </div>
               );
             })}
-            <div className="shrink-0 w-1" />
           </div>
         </div>
       </section>
@@ -403,67 +283,68 @@ export default function BizDocPortal() {
          ═══════════════════════════════════════════════════════════════════════ */}
       <section id="track" className="py-24 md:py-32" style={{ backgroundColor: Cr }}>
         <div className="max-w-lg mx-auto px-6 text-center">
-          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-4" style={{ color: Au }}>
+          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.35em] uppercase mb-3" style={{ color: Au }}>
             TRACK
           </p>
-          <h2 className="text-[clamp(24px,3.5vw,32px)] font-light tracking-tight mb-3" style={{ color: G }}>
+          <h2 className="text-[clamp(24px,3.5vw,34px)] font-light tracking-tight mb-2" style={{ color: G }}>
             Track Your File
           </h2>
-          <p className="text-[13px] mb-8" style={{ color: G, opacity: 0.45 }}>
+          <p className="text-[13px] mb-10" style={{ color: G, opacity: 0.4 }}>
             Enter your reference to check status.
           </p>
 
-          <div className="flex gap-2 mb-6">
+          <div className="flex gap-2.5 mb-8">
             <input
               type="text"
               value={trackCode}
               onChange={(e) => handleTrackInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleTrack()}
-              placeholder="HMZ-26/3-XXXX"
+              placeholder="HMZ-26/4-XXXX"
               maxLength={17}
-              className="flex-1 rounded-full px-5 py-3.5 text-[14px] outline-none font-mono transition-all focus:ring-1"
-              style={{ backgroundColor: W, color: G, border: `1px solid ${G}12`, boxShadow: "0 1px 4px rgba(0,0,0,0.02)" }}
+              className="flex-1 rounded-2xl px-5 py-4 text-[14px] outline-none font-mono transition-all duration-300 focus:shadow-md"
+              style={{ backgroundColor: W, color: G, border: `1px solid ${G}0A`, boxShadow: "0 2px 12px rgba(0,0,0,0.02)" }}
             />
             <button
               onClick={handleTrack}
               disabled={trackQuery.isFetching}
-              className="px-6 py-3.5 rounded-full text-[13px] font-semibold transition-all hover:scale-[1.02] disabled:opacity-50 shrink-0"
+              className="px-7 py-4 rounded-2xl text-[13px] font-semibold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 shrink-0"
               style={{ backgroundColor: G, color: Au }}
             >
-              {trackQuery.isFetching ? <Loader2 size={14} className="animate-spin" /> : "Access"}
+              {trackQuery.isFetching ? <Loader2 size={15} className="animate-spin" /> : "Access"}
             </button>
           </div>
 
-          {/* Result: found */}
           {trackSubmitted && !trackQuery.isFetching && trackQuery.data?.found && (
-            <div className="rounded-2xl p-6 text-left" style={{ backgroundColor: W, boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}>
-              <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1" style={{ color: Au }}>
+            <div className="rounded-[22px] p-7 text-left relative overflow-hidden" style={{ backgroundColor: W, boxShadow: "0 8px 40px rgba(0,0,0,0.06)" }}>
+              <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${Au}, ${Au}40)` }} />
+              <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-1.5" style={{ color: Au }}>
                 {trackQuery.data.ref}
               </p>
-              <p className="text-[16px] font-semibold mb-0.5" style={{ color: G }}>
+              <p className="text-[17px] font-semibold mb-0.5" style={{ color: G }}>
                 {trackQuery.data.clientName}
               </p>
-              <p className="text-[12px] mb-5" style={{ color: G, opacity: 0.45 }}>
+              <p className="text-[12px] mb-6" style={{ color: G, opacity: 0.4 }}>
                 {trackQuery.data.service}
               </p>
-              <div className="flex items-center gap-1.5 mb-2">
+              <div className="flex items-center gap-1.5 mb-2.5">
                 {Array.from({ length: trackQuery.data.statusTotal }).map((_, i) => (
-                  <div key={i} className="h-1 flex-1 rounded-full transition-all"
-                    style={{ backgroundColor: i <= (trackQuery.data.statusIndex ?? -1) ? G : `${G}12` }} />
+                  <div key={i} className="h-1.5 flex-1 rounded-full transition-all duration-500"
+                    style={{ backgroundColor: i <= (trackQuery.data.statusIndex ?? -1) ? Au : `${G}0A` }} />
                 ))}
               </div>
-              <p className="text-[11px] font-semibold mb-5" style={{ color: G }}>{trackQuery.data.status}</p>
+              <p className="text-[11px] font-semibold mb-6" style={{ color: G }}>{trackQuery.data.status}</p>
               <a
                 href="/client/dashboard"
                 onClick={e => {
                   e.preventDefault();
                   localStorage.setItem("hamzury-client-session", JSON.stringify({
                     ref: trackQuery.data!.ref, phone: "", name: trackQuery.data!.clientName,
-                    expiresAt: Date.now() + 24 * 60 * 60 * 1000
+                    businessName: trackQuery.data!.businessName, service: trackQuery.data!.service,
+                    status: trackQuery.data!.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
                   }));
                   window.location.href = "/client/dashboard";
                 }}
-                className="block w-full py-3 rounded-full text-[13px] font-semibold text-center transition-all hover:scale-[1.01]"
+                className="block w-full py-3.5 rounded-2xl text-[13px] font-semibold text-center transition-all duration-300 hover:scale-[1.01] hover:shadow-md"
                 style={{ backgroundColor: G, color: Au }}
               >
                 Open Dashboard
@@ -472,7 +353,7 @@ export default function BizDocPortal() {
           )}
 
           {trackSubmitted && !trackQuery.isFetching && trackQuery.data && !trackQuery.data.found && (
-            <p className="text-[12px]" style={{ color: G, opacity: 0.4 }}>
+            <p className="text-[12px]" style={{ color: G, opacity: 0.35 }}>
               Reference not found. You'll receive yours after payment.
             </p>
           )}
@@ -480,11 +361,11 @@ export default function BizDocPortal() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer className="py-8 px-6" style={{ backgroundColor: W, borderTop: `1px solid ${G}06` }}>
-        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-[11px]" style={{ color: G, opacity: 0.35 }}>
-          <p className="font-medium tracking-wider">BIZDOC CONSULT</p>
+      <footer className="py-10 px-6" style={{ backgroundColor: W }}>
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[11px]" style={{ color: G, opacity: 0.3 }}>
+          <p className="font-medium tracking-[0.2em]">BIZDOC CONSULT</p>
           <p>© {new Date().getFullYear()} HAMZURY</p>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-6">
             <Link href="/privacy"><span className="hover:opacity-80 transition-opacity cursor-pointer">Privacy</span></Link>
             <Link href="/terms"><span className="hover:opacity-80 transition-opacity cursor-pointer">Terms</span></Link>
           </div>
