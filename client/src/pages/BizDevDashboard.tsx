@@ -19,7 +19,7 @@ import {
 
 // ─── Brand ──────────────────────────────────────────────────────────────────
 const GREEN = "#1B4D3E";   // HAMZURY green
-const DARK = "#1A1A1A";    // base dark
+const DARK = "#2C3E36";    // softer dark green (readable, not black)
 const GOLD = "#B48C4C";    // accent
 const MILK = "#FFFAF6";    // background
 
@@ -103,10 +103,10 @@ export default function BizDevDashboard() {
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: MILK }}>
       <PageMeta title="BizDev Dashboard — HAMZURY" description="Business development and growth operations for HAMZURY." />
       {/* ── Sidebar ── */}
-      <div className="w-16 md:w-60 flex flex-col h-full shrink-0" style={{ backgroundColor: DARK }}>
-        <div className="h-16 flex items-center justify-center md:justify-start md:px-5 border-b shrink-0" style={{ borderColor: `${GREEN}25` }}>
-          <TrendingUp size={18} style={{ color: GREEN }} />
-          <span className="hidden md:block ml-2.5 font-medium text-sm" style={{ color: GREEN }}>BizDev Hub</span>
+      <div className="w-16 md:w-60 flex flex-col h-full shrink-0" style={{ backgroundColor: GREEN }}>
+        <div className="h-16 flex items-center justify-center md:justify-start md:px-5 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.12)" }}>
+          <TrendingUp size={18} style={{ color: GOLD }} />
+          <span className="hidden md:block ml-2.5 font-medium text-sm" style={{ color: "#fff" }}>BizDev Hub</span>
         </div>
         <div className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
           {sidebarItems.map(({ key, icon: Icon, label }) => (
@@ -115,8 +115,8 @@ export default function BizDevDashboard() {
               onClick={() => setActiveSection(key)}
               className="w-full flex items-center justify-center md:justify-start md:px-3 py-3 rounded-xl transition-all"
               style={{
-                backgroundColor: activeSection === key ? `${GREEN}18` : "transparent",
-                color: activeSection === key ? GREEN : `${GREEN}50`,
+                backgroundColor: activeSection === key ? "rgba(255,255,255,0.15)" : "transparent",
+                color: activeSection === key ? "#fff" : "rgba(255,255,255,0.55)",
               }}
             >
               <Icon size={18} className="shrink-0" />
@@ -124,12 +124,12 @@ export default function BizDevDashboard() {
             </button>
           ))}
         </div>
-        <div className="p-3 border-t shrink-0" style={{ borderColor: `${GREEN}15` }}>
-          <button onClick={logout} className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm" style={{ color: `${GREEN}40` }}>
+        <div className="p-3 border-t shrink-0" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+          <button onClick={logout} className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm" style={{ color: "rgba(255,255,255,0.5)" }}>
             <LogOut size={16} className="shrink-0" />
             <span className="hidden md:block ml-3 font-normal">Sign Out</span>
           </button>
-          <Link href="/" className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm mt-1" style={{ color: `${GREEN}40` }}>
+          <Link href="/" className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
             <ArrowLeft size={16} className="shrink-0" />
             <span className="hidden md:block ml-3 font-normal">Back to HAMZURY</span>
           </Link>
@@ -197,7 +197,7 @@ function OverviewSection({ leadsList, affiliatesList, partnerships, brandQaItems
     { label: "Lead → Handoff Rate", value: handoffRate, unit: "%", target: "Target ≥60%", color: "#3B82F6" },
     { label: "Handoff Ready", value: handoffReady, unit: "", target: "Send to CSO", color: GOLD },
     { label: "Brand QA Pass Rate", value: brandQaPassRate, unit: "%", target: "Target ≥85%", color: "#8B5CF6" },
-    { label: "Active Affiliates", value: activeAffs, unit: "", target: "Q1 target: 15", color: DARK },
+    { label: "Active Affiliates", value: activeAffs, unit: "", target: "Q1 target: 15", color: GREEN },
     { label: "Referral Conversion", value: referralConversion, unit: "%", target: "Target ≥20%", color: "#22C55E" },
   ];
 
@@ -316,9 +316,9 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
               onClick={() => setFilter(f)}
               className="text-xs px-3 py-1.5 rounded-full transition-all"
               style={{
-                backgroundColor: filter === f ? DARK : "white",
-                color: filter === f ? GOLD : DARK,
-                border: `1px solid ${DARK}15`,
+                backgroundColor: filter === f ? GREEN : "white",
+                color: filter === f ? "#fff" : GREEN,
+                border: `1px solid ${GREEN}20`,
               }}
             >
               {f === "all" ? "All" : STATUS_COLORS[f]?.label}
@@ -379,7 +379,7 @@ function LeadTrackerSection({ leadsList }: { leadsList: LeadRow[] }) {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button size="sm" style={{ backgroundColor: DARK, color: GOLD }} disabled={submitLead.isPending} onClick={() => handleLogLead(false)}>
+            <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} disabled={submitLead.isPending} onClick={() => handleLogLead(false)}>
               {submitLead.isPending ? "Saving..." : "Log Lead"}
             </Button>
             <Button size="sm" style={{ backgroundColor: GREEN, color: "white" }} disabled={score < 4 || submitLead.isPending} onClick={() => handleLogLead(true)}>
