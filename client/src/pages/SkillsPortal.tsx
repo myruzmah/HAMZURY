@@ -7,6 +7,7 @@ import {
   Users, GraduationCap, Star, Target,
   Lightbulb, BookOpen, X, Loader2, Menu,
   Calendar, Clock, CheckCircle, MessageSquare, Eye, EyeOff,
+  Award, Briefcase,
 } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 
@@ -19,6 +20,61 @@ const GOLD  = "#B48C4C";   // Gold accent (5% usage)
 const TEXT  = "#1A1A1A";
 const BG    = "#FFFAF6";   // Milk white
 const W     = "#FFFFFF";
+
+// ── SKILLS CATEGORIES ──────────────────────────────────────────────────────────
+type SkillsCategory = {
+  id: string;
+  title: string;
+  icon: typeof Users;
+  items: { name: string; context: string }[];
+  cta?: { label: string; scrollTo?: string; context?: string };
+};
+
+const SKILLS_CATEGORIES: SkillsCategory[] = [
+  {
+    id: "courses",
+    title: "Course Enrollment",
+    icon: GraduationCap,
+    items: [
+      { name: "AI Lead Generation (3 days)", context: "I am interested in the AI Lead Generation course. Tell me more." },
+      { name: "Faceless Content Creation (2 weeks)", context: "I am interested in Faceless Content Creation. Tell me more." },
+      { name: "Business Automation (5 days)", context: "I am interested in Business Automation. Tell me more." },
+      { name: "Executive Programs", context: "I am interested in Executive Programs. Tell me more." },
+      { name: "Custom AI Tutor Courses", context: "I am interested in Custom AI Tutor Courses. Tell me more." },
+    ],
+  },
+  {
+    id: "applications",
+    title: "Student Applications",
+    icon: Users,
+    items: [
+      { name: "IT Internship Program", context: "I want to apply for the IT Internship Program." },
+      { name: "Department Placement", context: "I want to apply for Department Placement." },
+      { name: "Passion / Mission Assessment", context: "I want to take the Passion/Mission Assessment." },
+    ],
+    cta: { label: "Apply Now", scrollTo: "#apply" },
+  },
+  {
+    id: "certification",
+    title: "Certification",
+    icon: Award,
+    items: [
+      { name: "Course Completion Certificates", context: "I want to know about Course Completion Certificates." },
+      { name: "Industry Certifications", context: "I want to know about Industry Certifications." },
+      { name: "Verify Certificate", context: "I want to verify a certificate." },
+    ],
+  },
+  {
+    id: "corporate",
+    title: "Corporate Training",
+    icon: Briefcase,
+    items: [
+      { name: "Staff Training Packages", context: "I am interested in Staff Training Packages for my company." },
+      { name: "Executive Workshops", context: "I am interested in Executive Workshops." },
+    ],
+    cta: { label: "Request Quote", context: "I want a quote for corporate training." },
+  },
+];
 
 // ── 2026 PROGRAMS ──────────────────────────────────────────────────────────────
 type Program = {
@@ -343,6 +399,68 @@ export default function SkillsPortal() {
                 <span className="text-[14px] font-semibold" style={{ color: GOLD }}>{pkg.price}</span>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── WHAT WE OFFER ── service categories */}
+      <section className="py-16 md:py-20" style={{ backgroundColor: W }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4 text-center" style={{ color: GOLD }}>
+            SERVICES
+          </p>
+          <h2 className="text-[28px] md:text-[36px] font-semibold text-center mb-12" style={{ color: TEXT }}>
+            What We Offer
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {SKILLS_CATEGORIES.map(cat => {
+              const Icon = cat.icon;
+              return (
+                <div
+                  key={cat.id}
+                  className="rounded-[20px] p-6 flex flex-col transition-all duration-300 hover:-translate-y-1"
+                  style={{ backgroundColor: BG, boxShadow: "0 2px 20px rgba(0,0,0,0.04)" }}
+                >
+                  <div className="flex items-center gap-2.5 mb-5">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: `${DARK}08` }}
+                    >
+                      <Icon size={16} style={{ color: DARK }} />
+                    </div>
+                    <h3 className="text-[14px] font-semibold" style={{ color: TEXT }}>{cat.title}</h3>
+                  </div>
+                  <div className="flex-1 space-y-1 mb-4">
+                    {cat.items.map(item => (
+                      <button
+                        key={item.name}
+                        onClick={() => openChat(item.context)}
+                        className="w-full text-left px-3 py-2.5 rounded-xl text-[13px] transition-colors hover:bg-white/80 flex items-center justify-between group"
+                        style={{ color: TEXT }}
+                      >
+                        <span>{item.name}</span>
+                        <ArrowRight size={12} className="opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: TEXT }} />
+                      </button>
+                    ))}
+                  </div>
+                  {cat.cta && (
+                    <button
+                      onClick={() => {
+                        if (cat.cta!.scrollTo) {
+                          document.querySelector(cat.cta!.scrollTo)?.scrollIntoView({ behavior: "smooth" });
+                        } else if (cat.cta!.context) {
+                          openChat(cat.cta!.context);
+                        }
+                      }}
+                      className="w-full py-2.5 rounded-full text-[12px] font-medium transition-all hover:opacity-80"
+                      style={{ backgroundColor: `${DARK}08`, color: DARK }}
+                    >
+                      {cat.cta.label}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

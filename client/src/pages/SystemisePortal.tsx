@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 import { trpc } from "@/lib/trpc";
 import {
-  ArrowRight, Layers, Monitor, Search, Instagram,
+  ArrowRight, Layers, Monitor, Search,
   PieChart, Menu, X, Loader2, MessageSquare, Eye, EyeOff, Zap,
 } from "lucide-react";
 
@@ -18,57 +18,83 @@ const Au = "#B48C4C";   // Gold accent (5% usage)
 const Cr = "#FFFAF6";   // Milk white background
 const W  = "#FFFFFF";
 
-// ── SERVICE CARDS (simplified) ──────────────────────────────────────────────
-const SERVICE_CARDS = [
-  // Packages first — higher ticket, recommended
+// ── RECOMMENDED PACKAGES ───────────────────────────────────────────────────
+const PACKAGES = [
   {
     icon: Layers,
-    title: "⭐ Digital Starter",
-    line: "Brand Identity + Landing Page — look professional online. ₦350K",
+    title: "Digital Starter",
+    line: "Brand Identity + Landing Page — look professional online.",
+    price: "₦350K",
     context: "Systemise Packages",
   },
   {
     icon: Monitor,
-    title: "⭐ Business Launch",
-    line: "Brand + Full Website + Social Media Setup — ready for clients. ₦500K",
+    title: "Business Launch",
+    line: "Brand + Full Website + Social Media Setup — ready for clients.",
+    price: "₦500K",
     context: "Systemise Packages",
   },
   {
     icon: Zap,
-    title: "⭐ Full Architecture",
-    line: "Brand + Web + Social + CRM + AI — complete digital business. From ₦1.2M",
+    title: "Full Architecture",
+    line: "Brand + Web + Social + CRM + AI — complete digital business.",
+    price: "From ₦1.2M",
     context: "Systemise Packages",
   },
-  // Individual services
+];
+
+// ── SERVICE CATEGORIES ─────────────────────────────────────────────────────
+const SERVICE_CATEGORIES = [
   {
+    id: "branding",
+    title: "Brand Identity",
     icon: Layers,
-    title: "Branding",
-    line: "Logo, identity system, and brand guide for premium positioning.",
-    context: "Brand Identity",
+    items: [
+      { name: "Logo Design", context: "Brand Identity", price: "₦80K" },
+      { name: "Brand Guidelines", context: "Brand Identity", price: "₦150K" },
+      { name: "Voice & Tone Guide", context: "Brand Identity", price: "₦60K" },
+    ],
   },
   {
+    id: "web",
+    title: "Web Development",
     icon: Monitor,
-    title: "Website",
-    line: "Fast, mobile-first website designed around your buyer's journey.",
-    context: "Website Design",
+    items: [
+      { name: "Landing Pages", context: "Website Design", price: "₦120K" },
+      { name: "Full Websites (5+ pages)", context: "Website Design", price: "₦350K+" },
+      { name: "E-commerce", context: "Website Design", price: "₦500K+" },
+    ],
   },
   {
-    icon: Instagram,
-    title: "Social Media",
-    line: "Content created, scheduled, managed. Your audience grows hands-off.",
-    context: "Social Media",
+    id: "seo",
+    title: "SEO / AEO",
+    icon: Search,
+    items: [
+      { name: "Google Ranking Setup", context: "SEO & AEO" },
+      { name: "AI Answer Optimization (ChatGPT, etc.)", context: "SEO & AEO" },
+      { name: "Content Strategy", context: "Social Media" },
+    ],
   },
   {
+    id: "automation",
+    title: "Automation",
+    icon: Zap,
+    items: [
+      { name: "CRM Setup", context: "CRM & Automation" },
+      { name: "WhatsApp Flows", context: "AI & Automation" },
+      { name: "Booking Systems", context: "AI & Automation" },
+      { name: "Agentic AI (Lead Gen, Marketing, Research)", context: "AI & Automation" },
+    ],
+  },
+  {
+    id: "dashboards",
+    title: "Dashboards",
     icon: PieChart,
-    title: "CRM & Sales",
-    line: "Pipeline dashboard so you never lose track of a lead again.",
-    context: "CRM & Automation",
-  },
-  {
-    icon: Zap,
-    title: "AI & Automation",
-    line: "AI agents, workflow bots, and smart automations that work while you sleep.",
-    context: "AI & Automation",
+    items: [
+      { name: "Business Analytics", context: "CRM & Automation" },
+      { name: "Compliance Dashboards", context: "CRM & Automation" },
+      { name: "Custom Reports", context: "CRM & Automation" },
+    ],
   },
 ];
 
@@ -210,7 +236,7 @@ export default function SystemizePortal() {
         </div>
       </section>
 
-      {/* ── SERVICES ── clean grid, no accordions */}
+      {/* ── SERVICES ── packages + category grid */}
       <section id="services" className="py-24 md:py-32" style={{ backgroundColor: Cr }}>
         <div className="max-w-5xl mx-auto px-6">
           <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4 text-center" style={{ color: Au }}>
@@ -223,37 +249,107 @@ export default function SystemizePortal() {
             Five systems. One studio.
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {SERVICE_CARDS.map((svc) => {
-              const Icon = svc.icon;
+          {/* ── Recommended Packages ── */}
+          <p className="text-[12px] font-semibold tracking-[0.15em] uppercase mb-6" style={{ color: Au }}>
+            Recommended Packages
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-20">
+            {PACKAGES.map((pkg) => {
+              const Icon = pkg.icon;
+              return (
+                <button
+                  key={pkg.title}
+                  onClick={() => openChat(pkg.context)}
+                  className="rounded-[20px] p-7 text-left transition-all duration-300 hover:-translate-y-1 group"
+                  style={{
+                    backgroundColor: W,
+                    boxShadow: "0 2px 20px rgba(0,0,0,0.04)",
+                    border: `1px solid ${Au}20`,
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${Au}12` }}
+                    >
+                      <Icon size={16} style={{ color: Au }} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-[11px] font-semibold tracking-wide uppercase" style={{ color: Au }}>
+                      {pkg.price}
+                    </span>
+                  </div>
+                  <h3 className="text-[15px] font-semibold mb-1.5" style={{ color: G }}>
+                    {pkg.title}
+                  </h3>
+                  <p className="text-[12px] leading-relaxed mb-4" style={{ color: "#2C2C2C", opacity: 0.5 }}>
+                    {pkg.line}
+                  </p>
+                  <span
+                    className="text-[12px] font-medium flex items-center gap-1 transition-opacity group-hover:opacity-70"
+                    style={{ color: Au }}
+                  >
+                    Get Started <ArrowRight size={12} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Service Categories ── */}
+          <p className="text-[12px] font-semibold tracking-[0.15em] uppercase mb-6" style={{ color: G, opacity: 0.4 }}>
+            Individual Services
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {SERVICE_CATEGORIES.map((cat) => {
+              const CatIcon = cat.icon;
               return (
                 <div
-                  key={svc.title}
-                  className="rounded-[20px] p-8 transition-all duration-300 hover:-translate-y-1"
+                  key={cat.id}
+                  className="rounded-[20px] p-7 transition-all duration-300"
                   style={{
                     backgroundColor: W,
                     boxShadow: "0 2px 20px rgba(0,0,0,0.04)",
                   }}
                 >
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-6"
-                    style={{ backgroundColor: `${G}08` }}
-                  >
-                    <Icon size={18} style={{ color: G }} strokeWidth={1.5} />
+                  {/* Category header */}
+                  <div className="flex items-center gap-3 mb-5 pb-4" style={{ borderBottom: `1px solid ${G}08` }}>
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${G}08` }}
+                    >
+                      <CatIcon size={16} style={{ color: G }} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-[14px] font-semibold" style={{ color: G }}>
+                      {cat.title}
+                    </h3>
                   </div>
-                  <h3 className="text-[16px] font-semibold mb-2" style={{ color: G }}>
-                    {svc.title}
-                  </h3>
-                  <p className="text-[13px] leading-relaxed mb-6" style={{ color: "#2C2C2C", opacity: 0.55 }}>
-                    {svc.line}
-                  </p>
-                  <button
-                    onClick={() => openChat(svc.context)}
-                    className="text-[13px] font-medium flex items-center gap-1.5 transition-opacity hover:opacity-70"
-                    style={{ color: Au }}
-                  >
-                    Get Started <ArrowRight size={13} />
-                  </button>
+
+                  {/* Items */}
+                  <div className="flex flex-col gap-1">
+                    {cat.items.map((item) => (
+                      <button
+                        key={item.name}
+                        onClick={() => openChat(item.context)}
+                        className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 hover:bg-gray-50 group"
+                      >
+                        <span className="text-[13px] leading-snug" style={{ color: "#2C2C2C", opacity: 0.75 }}>
+                          {item.name}
+                        </span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          {"price" in item && item.price && (
+                            <span className="text-[11px] font-medium" style={{ color: Au }}>
+                              {item.price}
+                            </span>
+                          )}
+                          <ArrowRight
+                            size={11}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ color: Au }}
+                          />
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               );
             })}

@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
-import { ArrowRight, ArrowLeft, X, Menu, FileText, Shield, Scale, Award, Briefcase, MessageSquare, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, X, Menu, FileText, Shield, Award, Briefcase, MessageSquare, Loader2, ChevronDown } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import { trpc } from "@/lib/trpc";
 
@@ -10,39 +10,59 @@ const Au = "#B48C4C";
 const Cr = "#FFFAF6";
 const W  = "#FFFFFF";
 
-// ── SERVICE CARDS ────────────────────────────────────────────────────────────
-const SERVICE_CARDS = [
-  { icon: Award,     title: "Starter Pack",          tag: "RECOMMENDED", line: "CAC Ltd + TIN + Bank Account + Seal — everything to start legally.", price: "₦250K", context: "BizDoc Packages" },
-  { icon: Shield,    title: "Pro Pack",              tag: "POPULAR",     line: "Starter + Tax Filing + Compliance Management — stay protected.",     price: "₦400K", context: "BizDoc Packages" },
-  { icon: Briefcase, title: "Complete Pack",         tag: "BEST VALUE",  line: "Pro + Legal Pack + Sector Licence — fully covered.",                 price: "₦600K", context: "BizDoc Packages" },
-  { icon: Briefcase, title: "Business Registration", tag: null,          line: "CAC, foreign company setup, and all entity formation.",              price: null,    context: "Business Registration" },
-  { icon: FileText,  title: "Foreign Business",      tag: null,          line: "Expatriate quota, CERPAC, business permit — full foreign setup.",    price: null,    context: "Foreign Business" },
-  { icon: Shield,    title: "Tax Compliance",        tag: null,          line: "TIN, annual returns, FIRS clearance, and ongoing monitoring.",       price: null,    context: "Tax Compliance" },
-  { icon: Scale,     title: "Legal Documents",       tag: null,          line: "Contracts, NDAs, document packs, and custom legal drafting.",        price: null,    context: "Legal Documents" },
-  { icon: Award,     title: "Sector Licences",       tag: null,          line: "NAFDAC, NMDPRA, CBN, NEPC, and every industry permit.",             price: null,    context: "Sector Licences" },
-];
+// ── SERVICE CATEGORIES ───────────────────────────────────────────────────────
+const SERVICE_CATEGORIES = [
+  {
+    id: "registration",
+    title: "Registration & Modification",
+    icon: Briefcase,
+    items: [
+      { name: "CAC Business Name Registration", context: "Business Registration", price: "₦50K" },
+      { name: "CAC Private Limited Company", context: "Business Registration", price: "₦150K" },
+      { name: "CAC NGO / Trusteeship", context: "Business Registration", price: "₦120K" },
+      { name: "Director / Shareholder Changes", context: "Business Registration" },
+      { name: "Address Updates", context: "Business Registration" },
+      { name: "Name Changes", context: "Business Registration" },
+      { name: "Share Allotments", context: "Business Registration" },
+      { name: "Annual Returns Filing", context: "Tax Compliance", price: "₦50K" },
+    ],
+  },
+  {
+    id: "blueprint",
+    title: "Business Positioning Blueprint",
+    icon: FileText,
+    description: "Select your industry, tick required documents, get a total — then chat with us.",
+    cta: { label: "Open Blueprint Tool", href: "/bizdoc/blueprint" },
+  },
+  {
+    id: "subscriptions",
+    title: "Subscription Packages",
+    icon: Shield,
+    items: [
+      { name: "Maintenance Plan", context: "BizDoc Packages", price: "₦75K/mo", tag: "STARTER" },
+      { name: "Growth Plan", context: "BizDoc Packages", price: "₦150K/mo", tag: "POPULAR" },
+      { name: "Enterprise Plan", context: "BizDoc Packages", price: "₦300K/mo", tag: "BEST VALUE" },
+    ],
+  },
+  {
+    id: "renewals",
+    title: "Renewals",
+    icon: Award,
+    items: [
+      { name: "CAC Annual Returns", context: "Tax Compliance", price: "₦50K" },
+      { name: "Tax Clearance Certificate", context: "Tax Compliance", price: "₦90K/yr" },
+      { name: "PENCOM Clearance", context: "Tax Compliance", price: "₦75K" },
+      { name: "VAT Registration / Filing", context: "Tax Compliance", price: "₦35K+" },
+      { name: "Industry Licence (NAFDAC/SON/DPR)", context: "Sector Licences" },
+      { name: "Multiple Items — Bundle Pricing", context: "Tax Compliance" },
+    ],
+  },
+] as const;
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 export default function BizDocPortal() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [activeSvcIdx, setActiveSvcIdx] = useState(0);
-  const svcScrollRef = useRef<HTMLDivElement>(null);
-
-  const PACKAGES = SERVICE_CARDS.filter(s => s.tag);
-  const INDIVIDUAL = SERVICE_CARDS.filter(s => !s.tag);
-
-  // Mobile swipe for individual services
-  const touchStart = useRef(0);
-  const handleTouchStart = (e: React.TouchEvent) => { touchStart.current = e.touches[0].clientX; };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    const diff = touchStart.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      setActiveSvcIdx(prev =>
-        diff > 0 ? Math.min(prev + 1, INDIVIDUAL.length - 1) : Math.max(prev - 1, 0)
-      );
-    }
-  };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -79,12 +99,6 @@ export default function BizDocPortal() {
     localStorage.setItem("hamzury-chat-context", context);
     const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
     if (btn) btn.click();
-  };
-
-  const scroll = (ref: React.RefObject<HTMLDivElement | null>, dir: "left" | "right") => {
-    if (!ref.current) return;
-    const w = ref.current.offsetWidth * 0.8;
-    ref.current.scrollBy({ left: dir === "left" ? -w : w, behavior: "smooth" });
   };
 
   return (
@@ -225,7 +239,7 @@ export default function BizDocPortal() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-         SERVICES — grid layout, compact cards
+         SERVICES — category cards with item rows
          ═══════════════════════════════════════════════════════════════════════ */}
       <section id="services" className="py-16 md:py-24" style={{ backgroundColor: W }}>
         <div className="max-w-5xl mx-auto px-6">
@@ -238,39 +252,92 @@ export default function BizDocPortal() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {SERVICE_CARDS.map((svc) => {
-              const Icon = svc.icon;
-              const isPackage = !!svc.tag;
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+            {SERVICE_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              const isBlueprint = cat.id === "blueprint";
+
               return (
                 <div
-                  key={svc.title}
-                  className="rounded-[16px] p-4 md:p-5 transition-all duration-300 hover:-translate-y-1 flex flex-col group relative overflow-hidden cursor-pointer"
+                  key={cat.id}
+                  className="rounded-[20px] overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
                   style={{
-                    backgroundColor: isPackage ? Cr : W,
-                    border: isPackage ? `1.5px solid ${Au}20` : `1px solid ${G}08`,
+                    backgroundColor: Cr,
+                    border: `1px solid ${G}08`,
                   }}
-                  onClick={() => openChat(svc.context)}
                 >
-                  <div className="absolute top-0 left-0 right-0 h-[1.5px] opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ background: isPackage ? `linear-gradient(90deg, ${Au}, ${Au}40)` : `linear-gradient(90deg, ${G}30, ${G}10)` }} />
-
-                  {svc.tag && (
-                    <span className="self-start text-[7px] font-bold tracking-[0.15em] uppercase px-2 py-0.5 rounded-full mb-3" style={{ backgroundColor: `${Au}10`, color: Au }}>
-                      {svc.tag}
-                    </span>
-                  )}
-
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: isPackage ? `${Au}08` : `${G}05` }}>
-                    <Icon size={14} style={{ color: isPackage ? Au : G }} strokeWidth={1.5} />
+                  {/* Category header */}
+                  <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${G}08` }}
+                    >
+                      <Icon size={16} style={{ color: G }} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-[14px] font-semibold tracking-tight" style={{ color: G }}>
+                      {cat.title}
+                    </h3>
                   </div>
 
-                  <h3 className="text-[13px] font-semibold mb-0.5" style={{ color: G }}>{svc.title}</h3>
-                  {svc.price && <span className="text-[14px] font-light mb-1.5 block tracking-tight" style={{ color: Au }}>{svc.price}</span>}
-                  <p className="text-[10px] leading-[1.6] mb-auto pb-3" style={{ color: G, opacity: 0.4 }}>{svc.line}</p>
+                  <div className="h-px mx-5" style={{ backgroundColor: `${G}08` }} />
 
-                  <span className="text-[10px] font-semibold flex items-center gap-1 transition-all group-hover:gap-2" style={{ color: Au }}>
-                    Get Started <ArrowRight size={10} />
-                  </span>
+                  {/* Blueprint special card */}
+                  {isBlueprint && "description" in cat ? (
+                    <div className="px-5 py-5">
+                      <p className="text-[12px] leading-[1.7] mb-5" style={{ color: G, opacity: 0.5 }}>
+                        {cat.description}
+                      </p>
+                      {"cta" in cat && cat.cta && (
+                        <Link href={cat.cta.href}>
+                          <span
+                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-[12px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.03] hover:shadow-md cursor-pointer"
+                            style={{ backgroundColor: G, color: Au }}
+                          >
+                            {cat.cta.label}
+                            <ArrowRight size={13} />
+                          </span>
+                        </Link>
+                      )}
+                    </div>
+                  ) : (
+                    /* Item rows */
+                    <div className="px-3 py-3 flex flex-col gap-1">
+                      {"items" in cat && cat.items?.map((item, i) => (
+                        <button
+                          key={i}
+                          onClick={() => openChat(item.context)}
+                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 hover:scale-[0.995] group/item"
+                          style={{ backgroundColor: "transparent" }}
+                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${W}`)}
+                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                        >
+                          <span className="flex-1 text-[12px] font-medium leading-snug" style={{ color: G }}>
+                            {item.name}
+                          </span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            {"tag" in item && item.tag && (
+                              <span
+                                className="text-[8px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full"
+                                style={{ backgroundColor: `${Au}12`, color: Au }}
+                              >
+                                {item.tag}
+                              </span>
+                            )}
+                            {"price" in item && item.price && (
+                              <span className="text-[11px] font-semibold tabular-nums" style={{ color: Au }}>
+                                {item.price}
+                              </span>
+                            )}
+                            <ArrowRight
+                              size={11}
+                              className="opacity-0 group-hover/item:opacity-60 transition-opacity duration-200"
+                              style={{ color: G }}
+                            />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}

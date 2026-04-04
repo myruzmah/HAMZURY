@@ -340,13 +340,32 @@ const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items
     { name: "Full Program (6 weeks)", price: "₦65,000", amount: 65000 }, { name: "Project Review Add-on", price: "₦20,000", amount: 20000 }] },
   "Corporate Training": { dept: "skills", pitch: "Corporate Staff Training upskills your entire team on AI tools, automation, and digital operations. Customized for your business.", items: [
     { name: "Half-Day Workshop (up to 20)", price: "₦200,000", amount: 200000 }, { name: "Full-Day Workshop (up to 20)", price: "₦350,000", amount: 350000 }, { name: "2-Week Staff Program", price: "₦500,000+", amount: 500000 }, { name: "Custom Curriculum Design", price: "₦150,000", amount: 150000 }] },
+  /* ═══════════════════════════════════════════════════════════
+     ADDITIONAL SERVICES
+     ═══════════════════════════════════════════════════════════ */
+  "SEO & AEO": { dept: "systemise" as Department, pitch: "Search visibility is everything. We'll make sure your business shows up where it matters — Google, ChatGPT, and beyond.", items: [
+    { name: "Google Ranking Setup", price: "₦120,000", amount: 120000 }, { name: "AI Answer Optimization", price: "₦150,000", amount: 150000 }, { name: "Content Strategy (3 months)", price: "₦200,000", amount: 200000 }, { name: "Full SEO + AEO Package", price: "₦400,000", amount: 400000 }] },
+  "Renewals": { dept: "bizdoc" as Department, pitch: "Keeping your business compliant means zero surprises. Let's renew what's due.", items: [
+    { name: "CAC Annual Returns", price: "₦50,000", amount: 50000 }, { name: "Tax Clearance Certificate (1 year)", price: "₦90,000", amount: 90000 }, { name: "PENCOM Clearance", price: "₦75,000", amount: 75000 }, { name: "VAT Registration + Filing", price: "₦50,000", amount: 50000 }, { name: "Industry Licence Renewal", price: "Varies", amount: 0 }] },
+  "Dashboards": { dept: "systemise" as Department, pitch: "See your entire business at a glance. We build dashboards that turn data into decisions.", items: [
+    { name: "Business Analytics Dashboard", price: "₦250,000", amount: 250000 }, { name: "Compliance Dashboard", price: "₦200,000", amount: 200000 }, { name: "Custom Reports System", price: "₦180,000", amount: 180000 }] },
 };
 
 /** Match a chat context string to a known service */
 function matchServicePitch(context: string): typeof SERVICE_PITCH_MAP[string] | null {
   const lower = context.toLowerCase();
+  // Exact key match first
   for (const [key, val] of Object.entries(SERVICE_PITCH_MAP)) {
     if (lower.includes(key.toLowerCase())) return val;
+  }
+  // Partial / alias matching for new categories
+  const aliases: [string[], string][] = [
+    [["renewal", "renew", "annual return", "clearance renewal"], "Renewals"],
+    [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
+    [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],
+  ];
+  for (const [keywords, pitchKey] of aliases) {
+    if (keywords.some(k => lower.includes(k)) && SERVICE_PITCH_MAP[pitchKey]) return SERVICE_PITCH_MAP[pitchKey];
   }
   return null;
 }
@@ -369,6 +388,9 @@ function detectPitchFromResponse(text: string): string | null {
     [["training", "course", "program", "cohort", "launchpad"], "AI Founder Launchpad"],
     [["corporate training", "staff training", "team training"], "Corporate Training"],
     [["coding", "vibe coding", "app building"], "Vibe Coding"],
+    [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
+    [["renewal", "renew", "annual return", "clearance renewal", "pencom"], "Renewals"],
+    [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],
   ];
   for (const [keywords, pitchKey] of map) {
     if (keywords.some(k => lower.includes(k)) && SERVICE_PITCH_MAP[pitchKey]) return pitchKey;

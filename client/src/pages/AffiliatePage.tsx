@@ -23,7 +23,17 @@ export default function AffiliatePage() {
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPhone, setRegPhone] = useState("");
+  const [regState, setRegState] = useState("");
+  const [regInstagram, setRegInstagram] = useState("");
+  const [regLinkedin, setRegLinkedin] = useState("");
+  const [regTwitter, setRegTwitter] = useState("");
+  const [regMarketingPlan, setRegMarketingPlan] = useState("");
+  const [regAudienceSize, setRegAudienceSize] = useState("");
+  const [regHoursPerWeek, setRegHoursPerWeek] = useState("");
+  const [regWhyAffiliate, setRegWhyAffiliate] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
+  const [regError, setRegError] = useState("");
+  const [regStep, setRegStep] = useState<1 | 2 | 3>(1);
 
   // Tab
   const [tab, setTab] = useState<"login" | "register">("login");
@@ -61,7 +71,18 @@ export default function AffiliatePage() {
 
   function handleRegister(e: React.FormEvent) {
     e.preventDefault();
-    if (!regName.trim() || !regEmail.trim() || !regPhone.trim()) return;
+    setRegError("");
+    if (regStep === 1) {
+      if (!regName.trim() || !regEmail.trim() || !regPhone.trim()) { setRegError("Name, email and phone are required."); return; }
+      setRegStep(2);
+      return;
+    }
+    if (regStep === 2) {
+      setRegStep(3);
+      return;
+    }
+    // Step 3 — submit
+    if (!regMarketingPlan.trim() || !regWhyAffiliate.trim()) { setRegError("Please fill in all required fields."); return; }
     setRegSuccess(true);
   }
 
@@ -281,43 +302,57 @@ export default function AffiliatePage() {
                 </div>
               ) : (
                 <form onSubmit={handleRegister} className="space-y-4">
-                  <input
-                    type="text"
-                    value={regName}
-                    onChange={(e) => setRegName(e.target.value)}
-                    placeholder="Full name"
-                    required
-                    className="w-full px-5 py-4 text-[14px] font-light outline-none"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="email"
-                    value={regEmail}
-                    onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="Email address"
-                    required
-                    className="w-full px-5 py-4 text-[14px] font-light outline-none"
-                    style={inputStyle}
-                  />
-                  <input
-                    type="tel"
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    placeholder="Phone number"
-                    required
-                    className="w-full px-5 py-4 text-[14px] font-light outline-none"
-                    style={inputStyle}
-                  />
-                  <button
-                    type="submit"
-                    className="w-full py-4 rounded-full text-[14px] font-medium transition-opacity duration-200 hover:opacity-80"
-                    style={{ backgroundColor: CHARCOAL, color: MILK }}
-                  >
-                    Submit application
-                  </button>
+                  {/* Progress dots */}
+                  <div className="flex justify-center gap-2 mb-2">
+                    {[1, 2, 3].map(s => (
+                      <div key={s} className="w-2 h-2 rounded-full transition-all" style={{ backgroundColor: regStep >= s ? CHARCOAL : `${CHARCOAL}15` }} />
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-center mb-3" style={{ color: `${CHARCOAL}40` }}>
+                    Step {regStep} of 3 — {regStep === 1 ? "Basic Info" : regStep === 2 ? "Social Media" : "Experience"}
+                  </p>
+
+                  {regError && <p className="text-[12px] text-center" style={{ color: "#E53E3E" }}>{regError}</p>}
+
+                  {regStep === 1 && (
+                    <>
+                      <input type="text" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Full name *" required className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="Email address *" required className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <input type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="Phone / WhatsApp *" required className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <input type="text" value={regState} onChange={e => setRegState(e.target.value)} placeholder="State of residence" className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                    </>
+                  )}
+
+                  {regStep === 2 && (
+                    <>
+                      <input type="text" value={regInstagram} onChange={e => setRegInstagram(e.target.value)} placeholder="Instagram handle (optional)" className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <input type="text" value={regLinkedin} onChange={e => setRegLinkedin(e.target.value)} placeholder="LinkedIn profile URL (optional)" className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <input type="text" value={regTwitter} onChange={e => setRegTwitter(e.target.value)} placeholder="Twitter / X handle (optional)" className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <input type="text" value={regAudienceSize} onChange={e => setRegAudienceSize(e.target.value)} placeholder="Approximate audience size (optional)" className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                    </>
+                  )}
+
+                  {regStep === 3 && (
+                    <>
+                      <textarea value={regMarketingPlan} onChange={e => setRegMarketingPlan(e.target.value)} placeholder="How will you promote HAMZURY? *" required rows={3} className="w-full px-5 py-4 text-[14px] font-light outline-none resize-none" style={inputStyle} />
+                      <input type="text" value={regHoursPerWeek} onChange={e => setRegHoursPerWeek(e.target.value)} placeholder="Hours per week you can dedicate" className="w-full px-5 py-4 text-[14px] font-light outline-none" style={inputStyle} />
+                      <textarea value={regWhyAffiliate} onChange={e => setRegWhyAffiliate(e.target.value)} placeholder="Why do you want to be an affiliate? *" required rows={3} className="w-full px-5 py-4 text-[14px] font-light outline-none resize-none" style={inputStyle} />
+                    </>
+                  )}
+
+                  <div className="flex gap-3">
+                    {regStep > 1 && (
+                      <button type="button" onClick={() => setRegStep((regStep - 1) as 1 | 2)} className="flex-1 py-4 rounded-full text-[14px] font-medium" style={{ color: `${CHARCOAL}60` }}>
+                        Back
+                      </button>
+                    )}
+                    <button type="submit" className="flex-1 py-4 rounded-full text-[14px] font-medium transition-opacity duration-200 hover:opacity-80" style={{ backgroundColor: CHARCOAL, color: MILK }}>
+                      {regStep < 3 ? "Continue" : "Submit Application"}
+                    </button>
+                  </div>
                   <p className="text-[12px] text-center mt-4" style={{ color: `${CHARCOAL}40` }}>
                     Already have an account?{" "}
-                    <button onClick={() => setTab("login")} className="underline" style={{ color: CHARCOAL }}>
+                    <button type="button" onClick={() => setTab("login")} className="underline" style={{ color: CHARCOAL }}>
                       Sign in
                     </button>
                   </p>

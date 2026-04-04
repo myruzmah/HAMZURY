@@ -36,6 +36,7 @@ import RIDIPage from "./pages/RIDIPage";
 import RIDIDashboard from "./pages/RIDIDashboard";
 import MediaDashboard from "./pages/MediaDashboard";
 import BizDocLeadDashboard from "./pages/BizDocLeadDashboard";
+import BizDocBlueprint from "./pages/BizDocBlueprint";
 import SystemiseLeadDashboard from "./pages/SystemiseLeadDashboard";
 import TeamPage from "./pages/TeamPage";
 import MetFixPage from "./pages/MetFixPage";
@@ -100,6 +101,7 @@ function Router() {
 
       {/* BizDoc Department Portal */}
       <Route path={"/bizdoc"} component={BizDocPortal} />
+      <Route path={"/bizdoc/blueprint"} component={BizDocBlueprint} />
       <Route path={"/bizdoc/dashboard"}>
         <RoleGuard allowedRoles={ROLE_ACCESS["/bizdoc/dashboard"]}>
           <BizDocLeadDashboard />

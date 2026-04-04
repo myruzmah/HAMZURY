@@ -154,7 +154,7 @@ class SDKServer {
         id: staffId,
         openId: sessionUserId,
         name: session.name,
-        email: `${hamzuryRole}@hamzuryos.biz`,
+        email: `${hamzuryRole}@hamzury.com`,
         loginMethod: "password",
         role: "admin" as "admin" | "user",
         hamzuryRole,
