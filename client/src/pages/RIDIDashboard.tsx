@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 import NotificationBell from "@/components/NotificationBell";
@@ -21,139 +22,28 @@ const MILK   = "#FFFAF6";
 
 type Section = "overview" | "applications" | "funding" | "communities" | "cohort";
 
-// ─── Mock Data ───────────────────────────────────────────────────────────────
-type Applicant = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  community: string;
-  state: string;
-  taskStatus: "Submitted" | "Pending" | "Approved" | "Rejected";
-  score: number | null;
-  taskResponse?: string;
-};
+// ─── Status mapping: DB uses lowercase, UI uses title-case ──────────────────
+type DisplayStatus = "Submitted" | "Pending" | "Approved" | "Rejected";
 
-const MOCK_APPLICANTS: Applicant[] = [
-  {
-    id: "RD-001",
-    name: "Aminat Suleiman",
-    email: "aminat.suleiman@email.com",
-    phone: "08032001001",
-    community: "Wudil Community",
-    state: "Kano",
-    taskStatus: "Submitted",
-    score: 8,
-    taskResponse: "To source funding for this initiative, I would approach state government micro-enterprise grants and partner with local cooperatives to pool seed capital. I have identified three NGOs active in our LGA who have funded similar training programs. I will also leverage our community savings union (ajo) to raise matching funds from participants' families.",
-  },
-  {
-    id: "RD-002",
-    name: "Bello Ibrahim",
-    email: "bello.ibrahim@email.com",
-    phone: "08034002002",
-    community: "Sokoto Central",
-    state: "Sokoto",
-    taskStatus: "Pending",
-    score: null,
-  },
-  {
-    id: "RD-003",
-    name: "Chidinma Okafor",
-    email: "chidinma.okafor@email.com",
-    phone: "07056003003",
-    community: "Awka Youth Hub",
-    state: "Anambra",
-    taskStatus: "Submitted",
-    score: 6,
-    taskResponse: "My strategy centres on a three-pronged approach: first, applying for the Anambra State Youth Development Fund which accepts training program co-funding applications quarterly. Second, partnering with two Awka-based credit unions who have previously sponsored skill acquisition events. Third, crowdfunding within the diaspora WhatsApp community for Awka indigenes — this channel has raised over ₦800,000 for similar initiatives in the past year.",
-  },
-  {
-    id: "RD-004",
-    name: "Fatima Abdullahi",
-    email: "fatima.abdullahi@email.com",
-    phone: "08023004004",
-    community: "Katsina Rural Dev",
-    state: "Katsina",
-    taskStatus: "Approved",
-    score: 9,
-    taskResponse: "I have secured verbal commitment from two sponsors: the Katsina State Rural Enterprise Fund (KREF) and a private donor who runs a tech empowerment foundation. My plan includes: a formal proposal to KREF by end of next week, a corporate sponsorship pitch to two telecoms with active CSR programs in Katsina, and an online fundraising page targeting alumni of our community who are now working professionals. I have mapped out a 6-week fundraising timeline with weekly milestones.",
-  },
-  {
-    id: "RD-005",
-    name: "Grace Eze",
-    email: "grace.eze@email.com",
-    phone: "07038005005",
-    community: "Port Harcourt Skills",
-    state: "Rivers",
-    taskStatus: "Submitted",
-    score: 7,
-    taskResponse: "Rivers State has a robust CSR environment given the oil sector. My approach is to contact three oil service companies' community relations offices with a joint funding proposal. I will also apply to the Rivers State Sustainable Development Fund and partner with the Youth Empowerment Initiative in Obio-Akpor LGA. Secondary source: the Port Harcourt Rotary Club has a youth skills grant cycle opening in April.",
-  },
-  {
-    id: "RD-006",
-    name: "Haruna Musa",
-    email: "haruna.musa@email.com",
-    phone: "08046006006",
-    community: "Gombe Innovation",
-    state: "Gombe",
-    taskStatus: "Pending",
-    score: null,
-  },
-  {
-    id: "RD-007",
-    name: "Idayat Lawal",
-    email: "idayat.lawal@email.com",
-    phone: "08057007007",
-    community: "Sagamu Youth Centre",
-    state: "Ogun",
-    taskStatus: "Submitted",
-    score: 8,
-    taskResponse: "I have identified Ogun State's FADAMA III+ agricultural and community skills program as a co-funding pathway. Additionally, Dangote Foundation has an active grants program in Ogun which I intend to apply to within the week. I will also organise a community fundraising dinner — Sagamu has a strong returnee professional base who respond well to structured asks. My target is to raise 40% locally and cover the remainder through institutional grants.",
-  },
-  {
-    id: "RD-008",
-    name: "Jamilu Usman",
-    email: "jamilu.usman@email.com",
-    phone: "07069008008",
-    community: "Kaduna Tech Hub",
-    state: "Kaduna",
-    taskStatus: "Approved",
-    score: 10,
-    taskResponse: "My funding strategy is fully mapped. Kaduna State Investment Promotion Agency (KADIPA) has a youth training co-funding window I have already begun an application for. I have also secured a letter of support from Arewa Development Foundation. Beyond grants, I have designed a community buy-in model: each scholar's family contributes ₦5,000 as a commitment deposit (refundable on completion) — this creates accountability and reduces dropout. With 20 scholars, that covers 25% of program costs. The remaining amount will come from a pitch to two Kaduna-based fintech companies whose founders are alumni of development programs.",
-  },
-];
+function mapAppStatus(dbStatus: string): DisplayStatus {
+  switch (dbStatus) {
+    case "submitted":    return "Submitted";
+    case "under_review": return "Pending";
+    case "accepted":     return "Approved";
+    case "rejected":     return "Rejected";
+    case "waitlisted":   return "Pending";
+    default:             return "Pending";
+  }
+}
 
-const MOCK_COMMUNITIES = [
-  { id: 1, name: "Wudil Community Centre",        state: "Kano",    coordinator: "Aminu Wudil",    members: 42, status: "Active" },
-  { id: 2, name: "Sokoto Youth Skills Hub",        state: "Sokoto",  coordinator: "Binta Sokoto",   members: 28, status: "Active" },
-  { id: 3, name: "Awka Innovation Space",          state: "Anambra", coordinator: "Chike Awka",     members: 35, status: "Active" },
-  { id: 4, name: "Katsina Rural Dev Initiative",   state: "Katsina", coordinator: "Halima Katsina", members: 31, status: "Active" },
-  { id: 5, name: "Port Harcourt Skills Centre",    state: "Rivers",  coordinator: "Grace Eze",      members: 50, status: "Active" },
-  { id: 6, name: "Gombe Innovation Hub",           state: "Gombe",   coordinator: "Haruna Gombe",   members: 19, status: "Inactive" },
-  { id: 7, name: "Sagamu Youth Centre",            state: "Ogun",    coordinator: "Idayat Lawal",   members: 38, status: "Active" },
-  { id: 8, name: "Kaduna Tech Hub",                state: "Kaduna",  coordinator: "Jamilu Usman",   members: 55, status: "Active" },
-  { id: 9, name: "Makurdi Skills Alliance",        state: "Benue",   coordinator: "Tersoo Makurdi", members: 22, status: "Active" },
-  { id: 10, name: "Maiduguri Community Trainers",  state: "Borno",   coordinator: "Falmata Maiduguri", members: 17, status: "Inactive" },
-  { id: 11, name: "Owerri Youth Dev Centre",       state: "Imo",     coordinator: "Chioma Owerri",  members: 41, status: "Active" },
-  { id: 12, name: "Ibadan Innovation Collective",  state: "Oyo",     coordinator: "Adeyinka Ibadan",members: 47, status: "Active" },
-  { id: 13, name: "Enugu Skills Initiative",       state: "Enugu",   coordinator: "Obinna Enugu",   members: 33, status: "Active" },
-  { id: 14, name: "Ilorin Digital Hub",            state: "Kwara",   coordinator: "Maryam Ilorin",  members: 29, status: "Active" },
-  { id: 15, name: "Calabar Community Impact",      state: "Cross River", coordinator: "Efiom Calabar", members: 24, status: "Inactive" },
-];
-
-const MOCK_COHORT_STUDENTS = [
-  { id: "SKS-001", name: "Adaeze Nwosu",       program: "Business Essentials",   mergeRIDI: true },
-  { id: "SKS-002", name: "Biodun Adesanya",     program: "Digital Marketing",     mergeRIDI: false },
-  { id: "SKS-003", name: "Chiamaka Obi",        program: "Business Essentials",   mergeRIDI: true },
-  { id: "SKS-004", name: "Damilola Fashola",    program: "Web Development",       mergeRIDI: false },
-  { id: "SKS-005", name: "Emeka Okafor",        program: "Business Essentials",   mergeRIDI: true },
-  { id: "SKS-006", name: "Femi Adeleke",        program: "Digital Marketing",     mergeRIDI: false },
-  { id: "SKS-007", name: "Giwa Hassan",         program: "Web Development",       mergeRIDI: false },
-  { id: "SKS-008", name: "Hauwa Abdulkadir",    program: "Business Essentials",   mergeRIDI: true },
-];
+function mapCommunityStatus(dbStatus: string): string {
+  if (dbStatus === "active") return "Active";
+  if (dbStatus === "inactive") return "Inactive";
+  return dbStatus.charAt(0).toUpperCase() + dbStatus.slice(1);
+}
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-function TaskBadge({ status }: { status: Applicant["taskStatus"] }) {
+function TaskBadge({ status }: { status: DisplayStatus }) {
   const map: Record<string, { bg: string; color: string }> = {
     Submitted: { bg: "#DBEAFE", color: "#1E40AF" },
     Pending:   { bg: "#FEF3C7", color: "#92400E" },
@@ -167,6 +57,27 @@ function TaskBadge({ status }: { status: Applicant["taskStatus"] }) {
     </span>
   );
 }
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="animate-spin" size={24} style={{ color: ORANGE }} />
+      <span className="ml-2 text-sm opacity-40" style={{ color: TEAL }}>Loading...</span>
+    </div>
+  );
+}
+
+// ─── MOCK for Cohort (no tRPC route specified, kept as local data) ──────────
+const MOCK_COHORT_STUDENTS = [
+  { id: "SKS-001", name: "Adaeze Nwosu",       program: "Business Essentials",   mergeRIDI: true },
+  { id: "SKS-002", name: "Biodun Adesanya",     program: "Digital Marketing",     mergeRIDI: false },
+  { id: "SKS-003", name: "Chiamaka Obi",        program: "Business Essentials",   mergeRIDI: true },
+  { id: "SKS-004", name: "Damilola Fashola",    program: "Web Development",       mergeRIDI: false },
+  { id: "SKS-005", name: "Emeka Okafor",        program: "Business Essentials",   mergeRIDI: true },
+  { id: "SKS-006", name: "Femi Adeleke",        program: "Digital Marketing",     mergeRIDI: false },
+  { id: "SKS-007", name: "Giwa Hassan",         program: "Web Development",       mergeRIDI: false },
+  { id: "SKS-008", name: "Hauwa Abdulkadir",    program: "Business Essentials",   mergeRIDI: true },
+];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function RIDIDashboard() {
@@ -276,16 +187,32 @@ export default function RIDIDashboard() {
 
 // ─── Overview Panel ───────────────────────────────────────────────────────────
 function OverviewPanel() {
-  const totalApplicants   = MOCK_APPLICANTS.length;
-  const fundedQuarter     = MOCK_APPLICANTS.filter(a => a.taskStatus === "Approved").length;
-  const activeCommunities = MOCK_COMMUNITIES.filter(c => c.status === "Active").length;
-  const pendingReview     = MOCK_APPLICANTS.filter(a => a.taskStatus === "Submitted").length;
+  const { data: applications, isLoading: appsLoading } = trpc.skills.applications.useQuery();
+  const { data: communities, isLoading: commsLoading } = trpc.ridiCommunities.list.useQuery();
+
+  if (appsLoading || commsLoading) return <LoadingSpinner />;
+
+  const applicants = applications ?? [];
+  const comms = communities ?? [];
+
+  const totalApplicants   = applicants.length;
+  const fundedQuarter     = applicants.filter(a => a.status === "accepted").length;
+  const activeCommunities = comms.filter(c => c.status === "active").length;
+  const pendingReview     = applicants.filter(a => a.status === "submitted").length;
 
   const STAT_CARDS = [
     { label: "Total Applicants",          value: totalApplicants,   icon: Users,         color: ORANGE },
     { label: "Funded This Quarter",       value: fundedQuarter,     icon: CheckCircle2,  color: "#22C55E" },
     { label: "Active Communities",        value: activeCommunities, icon: Globe,         color: "#3B82F6" },
     { label: "Applications Pending Review", value: pendingReview,   icon: AlertTriangle, color: "#EAB308" },
+  ];
+
+  // Map DB statuses to display statuses for the breakdown chart
+  const statusBreakdown: { display: DisplayStatus; dbStatuses: string[] }[] = [
+    { display: "Submitted",  dbStatuses: ["submitted"] },
+    { display: "Pending",    dbStatuses: ["under_review", "waitlisted"] },
+    { display: "Approved",   dbStatuses: ["accepted"] },
+    { display: "Rejected",   dbStatuses: ["rejected"] },
   ];
 
   return (
@@ -309,15 +236,15 @@ function OverviewPanel() {
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${TEAL}08` }}>
         <p className="text-sm font-normal mb-5 opacity-60" style={{ color: TEAL }}>Application Status Breakdown</p>
         <div className="space-y-4">
-          {(["Submitted", "Pending", "Approved", "Rejected"] as const).map(status => {
-            const count = MOCK_APPLICANTS.filter(a => a.taskStatus === status).length;
-            const pct   = Math.round((count / MOCK_APPLICANTS.length) * 100);
-            const colorMap = { Submitted: "#3B82F6", Pending: "#EAB308", Approved: "#22C55E", Rejected: "#EF4444" };
+          {statusBreakdown.map(({ display, dbStatuses }) => {
+            const count = applicants.filter(a => dbStatuses.includes(a.status)).length;
+            const pct   = totalApplicants > 0 ? Math.round((count / totalApplicants) * 100) : 0;
+            const colorMap: Record<string, string> = { Submitted: "#3B82F6", Pending: "#EAB308", Approved: "#22C55E", Rejected: "#EF4444" };
             return (
-              <div key={status} className="flex items-center gap-3">
-                <p className="text-sm w-24 shrink-0 font-normal opacity-60" style={{ color: TEAL }}>{status}</p>
+              <div key={display} className="flex items-center gap-3">
+                <p className="text-sm w-24 shrink-0 font-normal opacity-60" style={{ color: TEAL }}>{display}</p>
                 <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
-                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: colorMap[status] }} />
+                  <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: colorMap[display] }} />
                 </div>
                 <p className="text-sm font-medium w-6 text-right" style={{ color: TEAL }}>{count}</p>
               </div>
@@ -330,8 +257,8 @@ function OverviewPanel() {
       <div className="bg-white rounded-2xl border p-6" style={{ borderColor: `${TEAL}08` }}>
         <p className="text-sm font-normal mb-4 opacity-60" style={{ color: TEAL }}>Community Reach — Top 5 by Members</p>
         <div className="space-y-3">
-          {MOCK_COMMUNITIES.filter(c => c.status === "Active").sort((a, b) => b.members - a.members).slice(0, 5).map(c => {
-            const max = 60;
+          {comms.filter(c => c.status === "active").sort((a, b) => b.members - a.members).slice(0, 5).map(c => {
+            const max = Math.max(60, ...comms.map(x => x.members));
             return (
               <div key={c.id} className="flex items-center gap-3">
                 <p className="text-sm w-44 shrink-0 font-normal opacity-70 truncate" style={{ color: TEAL }}>{c.name}</p>
@@ -350,13 +277,19 @@ function OverviewPanel() {
 
 // ─── Applications Panel ───────────────────────────────────────────────────────
 function ApplicationsPanel() {
+  const { data: applications, isLoading } = trpc.skills.applications.useQuery();
   const [search, setSearch]         = useState("");
-  const [statusFilter, setStatusFilter] = useState<"All" | Applicant["taskStatus"]>("All");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<"All" | DisplayStatus>("All");
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
-  const filtered = MOCK_APPLICANTS.filter(a => {
-    const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.state.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "All" || a.taskStatus === statusFilter;
+  if (isLoading) return <LoadingSpinner />;
+
+  const applicants = applications ?? [];
+
+  const filtered = applicants.filter(a => {
+    const displayStatus = mapAppStatus(a.status);
+    const matchSearch = !search || (a.fullName ?? "").toLowerCase().includes(search.toLowerCase()) || (a.program ?? "").toLowerCase().includes(search.toLowerCase());
+    const matchStatus = statusFilter === "All" || displayStatus === statusFilter;
     return matchSearch && matchStatus;
   });
 
@@ -364,7 +297,7 @@ function ApplicationsPanel() {
     <div className="space-y-6">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: TEAL }}>Applications</h2>
-        <p className="text-xs opacity-30" style={{ color: TEAL }}>{MOCK_APPLICANTS.length} total applicants — Q1 2026</p>
+        <p className="text-xs opacity-30" style={{ color: TEAL }}>{applicants.length} total applicants</p>
       </div>
 
       {/* Filters */}
@@ -372,7 +305,7 @@ function ApplicationsPanel() {
         <div className="relative">
           <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" style={{ color: TEAL }} />
           <Input
-            placeholder="Search name or state..."
+            placeholder="Search name or program..."
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="pl-8 border-gray-200 bg-white text-sm w-52"
@@ -401,14 +334,13 @@ function ApplicationsPanel() {
         {/* Header */}
         <div
           className="grid gap-4 px-5 py-3 border-b text-[10px] uppercase tracking-wider opacity-40 font-normal"
-          style={{ borderColor: `${TEAL}08`, color: TEAL, gridTemplateColumns: "1fr 1fr 1fr 1fr 80px 80px 100px" }}
+          style={{ borderColor: `${TEAL}08`, color: TEAL, gridTemplateColumns: "1fr 1fr 1fr 1fr 80px 100px" }}
         >
           <span>Name</span>
           <span>Email</span>
-          <span>Community / State</span>
+          <span>Program</span>
           <span>Phone</span>
-          <span>Task</span>
-          <span>Score</span>
+          <span>Status</span>
           <span className="text-right">Actions</span>
         </div>
 
@@ -416,61 +348,67 @@ function ApplicationsPanel() {
           <div className="p-10 text-center">
             <p className="text-sm opacity-30" style={{ color: TEAL }}>No applicants match your filters</p>
           </div>
-        ) : filtered.map(a => (
-          <div key={a.id}>
-            <div
-              className="grid gap-4 px-5 py-4 border-b last:border-0 items-center"
-              style={{ borderColor: `${TEAL}06`, gridTemplateColumns: "1fr 1fr 1fr 1fr 80px 80px 100px" }}
-            >
-              <div>
-                <p className="text-sm font-normal" style={{ color: TEAL }}>{a.name}</p>
-                <p className="text-[10px] font-mono opacity-30 mt-0.5" style={{ color: TEAL }}>{a.id}</p>
+        ) : filtered.map(a => {
+          const displayStatus = mapAppStatus(a.status);
+          return (
+            <div key={a.id}>
+              <div
+                className="grid gap-4 px-5 py-4 border-b last:border-0 items-center"
+                style={{ borderColor: `${TEAL}06`, gridTemplateColumns: "1fr 1fr 1fr 1fr 80px 100px" }}
+              >
+                <div>
+                  <p className="text-sm font-normal" style={{ color: TEAL }}>{a.fullName}</p>
+                  <p className="text-[10px] font-mono opacity-30 mt-0.5" style={{ color: TEAL }}>{a.ref}</p>
+                </div>
+                <p className="text-xs opacity-60 truncate" style={{ color: TEAL }}>{a.email ?? "—"}</p>
+                <p className="text-xs opacity-70 truncate" style={{ color: TEAL }}>{a.program}</p>
+                <p className="text-xs opacity-60" style={{ color: TEAL }}>{a.phone ?? "—"}</p>
+                <TaskBadge status={displayStatus} />
+                <div className="flex items-center gap-1.5 justify-end flex-wrap">
+                  {a.businessDescription && (
+                    <button
+                      onClick={() => setExpandedId(expandedId === a.id ? null : a.id)}
+                      className="text-[10px] px-2 py-1 rounded-lg border transition-all"
+                      style={{ borderColor: `${TEAL}20`, color: TEAL }}
+                    >
+                      Details <ChevronDown size={9} className="inline ml-0.5" style={{ transform: expandedId === a.id ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
+                    </button>
+                  )}
+                  {displayStatus !== "Approved" && displayStatus !== "Rejected" && (
+                    <button
+                      onClick={() => toast.success(`${a.fullName} approved`)}
+                      className="text-[10px] px-2 py-1 rounded-lg transition-all"
+                      style={{ backgroundColor: "#DCFCE7", color: "#166534" }}
+                    >
+                      Approve
+                    </button>
+                  )}
+                  {displayStatus !== "Rejected" && displayStatus !== "Approved" && (
+                    <button
+                      onClick={() => toast.error(`${a.fullName} rejected`)}
+                      className="text-[10px] px-2 py-1 rounded-lg transition-all"
+                      style={{ backgroundColor: "#FEE2E2", color: "#991B1B" }}
+                    >
+                      Reject
+                    </button>
+                  )}
+                </div>
               </div>
-              <p className="text-xs opacity-60 truncate" style={{ color: TEAL }}>{a.email}</p>
-              <p className="text-xs opacity-70 truncate" style={{ color: TEAL }}>{a.community}, {a.state}</p>
-              <p className="text-xs opacity-60" style={{ color: TEAL }}>{a.phone}</p>
-              <TaskBadge status={a.taskStatus} />
-              <p className="text-sm font-medium text-center" style={{ color: a.score !== null ? TEAL : "#9CA3AF" }}>
-                {a.score !== null ? a.score + "/10" : "—"}
-              </p>
-              <div className="flex items-center gap-1.5 justify-end flex-wrap">
-                {a.taskResponse && (
-                  <button
-                    onClick={() => setExpandedId(expandedId === a.id ? null : a.id)}
-                    className="text-[10px] px-2 py-1 rounded-lg border transition-all"
-                    style={{ borderColor: `${TEAL}20`, color: TEAL }}
-                  >
-                    Task <ChevronDown size={9} className="inline ml-0.5" style={{ transform: expandedId === a.id ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }} />
-                  </button>
-                )}
-                {a.taskStatus !== "Approved" && a.taskStatus !== "Rejected" && (
-                  <button
-                    onClick={() => toast.success(`${a.name} approved`)}
-                    className="text-[10px] px-2 py-1 rounded-lg transition-all"
-                    style={{ backgroundColor: "#DCFCE7", color: "#166534" }}
-                  >
-                    Approve
-                  </button>
-                )}
-                {a.taskStatus !== "Rejected" && a.taskStatus !== "Approved" && (
-                  <button
-                    onClick={() => toast.error(`${a.name} rejected`)}
-                    className="text-[10px] px-2 py-1 rounded-lg transition-all"
-                    style={{ backgroundColor: "#FEE2E2", color: "#991B1B" }}
-                  >
-                    Reject
-                  </button>
-                )}
-              </div>
+              {expandedId === a.id && a.businessDescription && (
+                <div className="px-5 py-4 border-b" style={{ borderColor: `${TEAL}06`, backgroundColor: `${TEAL}03` }}>
+                  <p className="text-[10px] uppercase tracking-wider opacity-30 mb-2" style={{ color: TEAL }}>Business Description</p>
+                  <p className="text-sm leading-relaxed opacity-70" style={{ color: TEAL }}>{a.businessDescription}</p>
+                  {a.biggestChallenge && (
+                    <>
+                      <p className="text-[10px] uppercase tracking-wider opacity-30 mb-2 mt-3" style={{ color: TEAL }}>Biggest Challenge</p>
+                      <p className="text-sm leading-relaxed opacity-70" style={{ color: TEAL }}>{a.biggestChallenge}</p>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
-            {expandedId === a.id && a.taskResponse && (
-              <div className="px-5 py-4 border-b" style={{ borderColor: `${TEAL}06`, backgroundColor: `${TEAL}03` }}>
-                <p className="text-[10px] uppercase tracking-wider opacity-30 mb-2" style={{ color: TEAL }}>Funding Task Response</p>
-                <p className="text-sm leading-relaxed opacity-70" style={{ color: TEAL }}>{a.taskResponse}</p>
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -478,135 +416,219 @@ function ApplicationsPanel() {
 
 // ─── Funding Tasks Panel ──────────────────────────────────────────────────────
 function FundingTasksPanel() {
-  const [scores, setScores] = useState<Record<string, string>>({});
-  const submitted = MOCK_APPLICANTS.filter(a => a.taskResponse);
+  const { data: applications, isLoading } = trpc.skills.applications.useQuery();
+  const [scores, setScores] = useState<Record<number, string>>({});
+
+  if (isLoading) return <LoadingSpinner />;
+
+  const applicants = applications ?? [];
+  // Show applicants that have a business description (analogous to task responses)
+  const submitted = applicants.filter(a => a.businessDescription);
 
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: TEAL }}>Funding Tasks</h2>
-        <p className="text-xs opacity-30" style={{ color: TEAL }}>Review submitted "how to source funding" responses and assign scores</p>
+        <p className="text-xs opacity-30" style={{ color: TEAL }}>Review submitted business descriptions and assign scores</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {submitted.map(a => (
-          <div key={a.id} className="bg-white rounded-2xl border p-5 space-y-4" style={{ borderColor: `${TEAL}08` }}>
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium" style={{ color: TEAL }}>{a.name}</p>
-                <p className="text-xs opacity-40 mt-0.5" style={{ color: TEAL }}>{a.community}, {a.state}</p>
+      {submitted.length === 0 ? (
+        <div className="py-16 text-center">
+          <p className="text-sm opacity-30" style={{ color: TEAL }}>No submissions with business descriptions yet</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {submitted.map(a => (
+            <div key={a.id} className="bg-white rounded-2xl border p-5 space-y-4" style={{ borderColor: `${TEAL}08` }}>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium" style={{ color: TEAL }}>{a.fullName}</p>
+                  <p className="text-xs opacity-40 mt-0.5" style={{ color: TEAL }}>{a.program}</p>
+                </div>
+                <TaskBadge status={mapAppStatus(a.status)} />
               </div>
-              <TaskBadge status={a.taskStatus} />
-            </div>
 
-            {/* Response text */}
-            <div className="rounded-xl p-4" style={{ backgroundColor: `${TEAL}04` }}>
-              <p className="text-xs leading-relaxed opacity-70 line-clamp-4" style={{ color: TEAL }}>
-                {a.taskResponse}
-              </p>
-            </div>
+              {/* Response text */}
+              <div className="rounded-xl p-4" style={{ backgroundColor: `${TEAL}04` }}>
+                <p className="text-xs leading-relaxed opacity-70 line-clamp-4" style={{ color: TEAL }}>
+                  {a.businessDescription}
+                </p>
+              </div>
 
-            {/* Score + Notify */}
-            <div className="flex items-center gap-3">
-              <Input
-                type="number"
-                min={0}
-                max={10}
-                placeholder={a.score !== null ? String(a.score) : "Score 0–10"}
-                value={scores[a.id] ?? (a.score !== null ? String(a.score) : "")}
-                onChange={e => setScores(p => ({ ...p, [a.id]: e.target.value }))}
-                className="border-gray-200 bg-gray-50 text-sm w-28"
-              />
-              <Button
-                size="sm"
-                className="flex-1 text-xs"
-                style={{ backgroundColor: ORANGE, color: "white" }}
-                onClick={() => {
-                  const s = scores[a.id];
-                  if (s) toast.success(`Score ${s}/10 saved. Notification sent to ${a.name}.`);
-                  else toast(`Notification sent to ${a.name}`);
-                }}
-              >
-                Notify Applicant
-              </Button>
+              {/* Score + Notify */}
+              <div className="flex items-center gap-3">
+                <Input
+                  type="number"
+                  min={0}
+                  max={10}
+                  placeholder="Score 0–10"
+                  value={scores[a.id] ?? ""}
+                  onChange={e => setScores(p => ({ ...p, [a.id]: e.target.value }))}
+                  className="border-gray-200 bg-gray-50 text-sm w-28"
+                />
+                <Button
+                  size="sm"
+                  className="flex-1 text-xs"
+                  style={{ backgroundColor: ORANGE, color: "white" }}
+                  onClick={() => {
+                    const s = scores[a.id];
+                    if (s) toast.success(`Score ${s}/10 saved. Notification sent to ${a.fullName}.`);
+                    else toast(`Notification sent to ${a.fullName}`);
+                  }}
+                >
+                  Notify Applicant
+                </Button>
+              </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // ─── Communities Panel ────────────────────────────────────────────────────────
 function CommunitiesPanel() {
-  const [search, setSearch] = useState("");
+  const { data: communities, isLoading, refetch } = trpc.ridiCommunities.list.useQuery();
+  const createMutation = trpc.ridiCommunities.create.useMutation({
+    onSuccess: () => { refetch(); toast.success("Community created"); },
+    onError: (err) => toast.error(err.message),
+  });
+  const updateMutation = trpc.ridiCommunities.update.useMutation({
+    onSuccess: () => { refetch(); toast.success("Community updated"); },
+    onError: (err) => toast.error(err.message),
+  });
 
-  const filtered = MOCK_COMMUNITIES.filter(c =>
+  const [search, setSearch] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [newComm, setNewComm] = useState({ name: "", state: "", coordinator: "", members: 0 });
+
+  if (isLoading) return <LoadingSpinner />;
+
+  const comms = communities ?? [];
+
+  const filtered = comms.filter(c =>
     !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.state.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleCreate = () => {
+    if (!newComm.name || !newComm.state) {
+      toast.error("Name and state are required");
+      return;
+    }
+    createMutation.mutate({ name: newComm.name, state: newComm.state, coordinator: newComm.coordinator || undefined, members: newComm.members || 0, status: "active" });
+    setNewComm({ name: "", state: "", coordinator: "", members: 0 });
+    setShowCreate(false);
+  };
+
+  const toggleStatus = (c: typeof comms[0]) => {
+    const nextStatus = c.status === "active" ? "inactive" : "active";
+    updateMutation.mutate({ id: c.id, status: nextStatus as any });
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-sm uppercase tracking-wider mb-1 opacity-40 font-normal" style={{ color: TEAL }}>Communities</h2>
-          <p className="text-xs opacity-30" style={{ color: TEAL }}>{MOCK_COMMUNITIES.length} registered communities across Nigeria</p>
+          <p className="text-xs opacity-30" style={{ color: TEAL }}>{comms.length} registered communities across Nigeria</p>
         </div>
-        <div className="relative">
-          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" style={{ color: TEAL }} />
-          <Input
-            placeholder="Search name or state..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="pl-8 border-gray-200 bg-white text-sm w-52"
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 opacity-30" style={{ color: TEAL }} />
+            <Input
+              placeholder="Search name or state..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-8 border-gray-200 bg-white text-sm w-52"
+            />
+          </div>
+          <Button
+            size="sm"
+            className="text-xs"
+            style={{ backgroundColor: ORANGE, color: "white" }}
+            onClick={() => setShowCreate(!showCreate)}
+          >
+            {showCreate ? "Cancel" : "+ Add"}
+          </Button>
         </div>
       </div>
+
+      {/* Create form */}
+      {showCreate && (
+        <div className="bg-white rounded-2xl border p-5 space-y-3" style={{ borderColor: `${TEAL}08` }}>
+          <p className="text-sm font-normal opacity-60" style={{ color: TEAL }}>New Community</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Input placeholder="Community Name" value={newComm.name} onChange={e => setNewComm(p => ({ ...p, name: e.target.value }))} className="border-gray-200 text-sm" />
+            <Input placeholder="State" value={newComm.state} onChange={e => setNewComm(p => ({ ...p, state: e.target.value }))} className="border-gray-200 text-sm" />
+            <Input placeholder="Coordinator" value={newComm.coordinator} onChange={e => setNewComm(p => ({ ...p, coordinator: e.target.value }))} className="border-gray-200 text-sm" />
+            <Input type="number" placeholder="Members" value={newComm.members || ""} onChange={e => setNewComm(p => ({ ...p, members: parseInt(e.target.value) || 0 }))} className="border-gray-200 text-sm" />
+          </div>
+          <Button size="sm" style={{ backgroundColor: TEAL, color: "white" }} onClick={handleCreate} disabled={createMutation.isPending}>
+            {createMutation.isPending ? <Loader2 className="animate-spin mr-1" size={12} /> : null}
+            Create Community
+          </Button>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border overflow-hidden" style={{ borderColor: `${TEAL}08` }}>
         <div
           className="grid gap-4 px-5 py-3 border-b text-[10px] uppercase tracking-wider opacity-40 font-normal"
-          style={{ borderColor: `${TEAL}08`, color: TEAL, gridTemplateColumns: "1fr 80px 1fr 80px 80px" }}
+          style={{ borderColor: `${TEAL}08`, color: TEAL, gridTemplateColumns: "1fr 80px 1fr 80px 80px 60px" }}
         >
           <span>Community Name</span>
           <span>State</span>
           <span>Coordinator</span>
           <span className="text-center">Members</span>
           <span className="text-center">Status</span>
+          <span className="text-center">Toggle</span>
         </div>
 
         {filtered.length === 0 ? (
           <div className="p-8 text-center">
             <p className="text-sm opacity-30" style={{ color: TEAL }}>No communities match your search</p>
           </div>
-        ) : filtered.map((c, i) => (
-          <div
-            key={c.id}
-            className="grid gap-4 px-5 py-4 border-b last:border-0 items-center"
-            style={{ borderColor: `${TEAL}06`, gridTemplateColumns: "1fr 80px 1fr 80px 80px", backgroundColor: i % 2 === 0 ? "white" : `${TEAL}02` }}
-          >
-            <p className="text-sm font-normal" style={{ color: TEAL }}>{c.name}</p>
-            <p className="text-xs opacity-60" style={{ color: TEAL }}>{c.state}</p>
-            <p className="text-xs opacity-70" style={{ color: TEAL }}>{c.coordinator}</p>
-            <p className="text-sm font-medium text-center" style={{ color: TEAL }}>{c.members}</p>
-            <div className="flex justify-center">
-              <span
-                className="text-[10px] font-medium px-2 py-0.5 rounded-full"
-                style={{
-                  backgroundColor: c.status === "Active" ? "#DCFCE7" : "#F3F4F6",
-                  color: c.status === "Active" ? "#166534" : "#6B7280",
-                }}
-              >
-                {c.status}
-              </span>
+        ) : filtered.map((c, i) => {
+          const displayStatus = mapCommunityStatus(c.status);
+          return (
+            <div
+              key={c.id}
+              className="grid gap-4 px-5 py-4 border-b last:border-0 items-center"
+              style={{ borderColor: `${TEAL}06`, gridTemplateColumns: "1fr 80px 1fr 80px 80px 60px", backgroundColor: i % 2 === 0 ? "white" : `${TEAL}02` }}
+            >
+              <p className="text-sm font-normal" style={{ color: TEAL }}>{c.name}</p>
+              <p className="text-xs opacity-60" style={{ color: TEAL }}>{c.state}</p>
+              <p className="text-xs opacity-70" style={{ color: TEAL }}>{c.coordinator ?? "—"}</p>
+              <p className="text-sm font-medium text-center" style={{ color: TEAL }}>{c.members}</p>
+              <div className="flex justify-center">
+                <span
+                  className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: displayStatus === "Active" ? "#DCFCE7" : "#F3F4F6",
+                    color: displayStatus === "Active" ? "#166534" : "#6B7280",
+                  }}
+                >
+                  {displayStatus}
+                </span>
+              </div>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => toggleStatus(c)}
+                  className="text-[10px] px-2 py-1 rounded-lg border transition-all hover:opacity-80"
+                  style={{ borderColor: `${TEAL}20`, color: TEAL }}
+                  disabled={updateMutation.isPending}
+                >
+                  {c.status === "active" ? "Deactivate" : "Activate"}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <p className="text-xs opacity-30 text-right" style={{ color: TEAL }}>
-        Showing {filtered.length} of {MOCK_COMMUNITIES.length} communities
+        Showing {filtered.length} of {comms.length} communities
       </p>
     </div>
   );

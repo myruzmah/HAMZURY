@@ -55,6 +55,17 @@ import {
   skillsInteractiveSessions, SkillsInteractiveSession,
   skillsAwards, SkillsAward,
   clientChats, InsertClientChat, ClientChat,
+  partnerships, Partnership,
+  brandQaItems, BrandQaItem,
+  jobPostings, JobPosting,
+  hiringApplications, HiringApplication,
+  trainingSessions, TrainingSession,
+  developmentPlans, DevelopmentPlan,
+  performanceCycles, PerformanceCycle,
+  ridiCommunities, RidiCommunity,
+  podcastEpisodes, PodcastEpisode,
+  mediaAssets, MediaAsset,
+  socialPlatformStats, SocialPlatformStat,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -2024,4 +2035,229 @@ export async function updateClientChat(id: number, data: Partial<{ chatHistory: 
   await db.update(clientChats).set(data).where(eq(clientChats.id, id));
   const result = await db.select().from(clientChats).where(eq(clientChats.id, id)).limit(1);
   return result[0];
+}
+
+// ─── Partnerships (BizDev) ──────────────────────────────────────────────────
+
+export async function listPartnerships(): Promise<Partnership[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(partnerships).orderBy(desc(partnerships.createdAt));
+}
+
+export async function createPartnership(data: Omit<Partnership, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(partnerships).values(data);
+}
+
+export async function updatePartnership(id: number, data: Partial<Pick<Partnership, "name" | "type" | "contact" | "stage" | "referrals" | "notes">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(partnerships).set(data).where(eq(partnerships.id, id));
+}
+
+// ─── Brand QA (BizDev) ─────────────────────────────────────────────────────
+
+export async function listBrandQaItems(): Promise<BrandQaItem[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(brandQaItems).orderBy(desc(brandQaItems.createdAt));
+}
+
+export async function createBrandQaItem(data: Omit<BrandQaItem, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(brandQaItems).values(data);
+}
+
+export async function updateBrandQaItem(id: number, data: Partial<Pick<BrandQaItem, "status" | "reviewedBy" | "notes">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(brandQaItems).set(data).where(eq(brandQaItems.id, id));
+}
+
+// ─── Job Postings (HR) ─────────────────────────────────────────────────────
+
+export async function listJobPostings(): Promise<JobPosting[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(jobPostings).orderBy(desc(jobPostings.createdAt));
+}
+
+export async function createJobPosting(data: Omit<JobPosting, "id" | "createdAt" | "updatedAt" | "postedAt" | "closedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(jobPostings).values(data);
+}
+
+export async function updateJobPosting(id: number, data: Partial<Pick<JobPosting, "title" | "department" | "status" | "description" | "requirements" | "closedAt">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(jobPostings).set(data).where(eq(jobPostings.id, id));
+}
+
+// ─── Hiring Applications (HR) ──────────────────────────────────────────────
+
+export async function listHiringApplications(): Promise<HiringApplication[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hiringApplications).orderBy(desc(hiringApplications.createdAt));
+}
+
+export async function createHiringApplication(data: Omit<HiringApplication, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(hiringApplications).values(data);
+}
+
+export async function updateHiringApplication(id: number, data: Partial<Pick<HiringApplication, "status" | "score" | "interviewDate" | "notes">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(hiringApplications).set(data).where(eq(hiringApplications.id, id));
+}
+
+// ─── Training Sessions (HR) ────────────────────────────────────────────────
+
+export async function listTrainingSessions(): Promise<TrainingSession[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(trainingSessions).orderBy(desc(trainingSessions.createdAt));
+}
+
+export async function createTrainingSession(data: Omit<TrainingSession, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(trainingSessions).values(data);
+}
+
+export async function updateTrainingSession(id: number, data: Partial<Pick<TrainingSession, "title" | "type" | "sessionDate" | "participants" | "status" | "notes">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(trainingSessions).set(data).where(eq(trainingSessions.id, id));
+}
+
+// ─── Development Plans (HR) ────────────────────────────────────────────────
+
+export async function listDevelopmentPlans(): Promise<DevelopmentPlan[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(developmentPlans).orderBy(desc(developmentPlans.createdAt));
+}
+
+export async function createDevelopmentPlan(data: Omit<DevelopmentPlan, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(developmentPlans).values(data);
+}
+
+export async function updateDevelopmentPlan(id: number, data: Partial<Pick<DevelopmentPlan, "goal" | "targetDate" | "progress" | "support" | "notes">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(developmentPlans).set(data).where(eq(developmentPlans.id, id));
+}
+
+// ─── Performance Cycles (HR) ───────────────────────────────────────────────
+
+export async function listPerformanceCycles(): Promise<PerformanceCycle[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(performanceCycles).orderBy(desc(performanceCycles.createdAt));
+}
+
+export async function createPerformanceCycle(data: Omit<PerformanceCycle, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(performanceCycles).values(data);
+}
+
+export async function updatePerformanceCycle(id: number, data: Partial<Pick<PerformanceCycle, "cycleName" | "period" | "status" | "totalReviews" | "completedReviews">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(performanceCycles).set(data).where(eq(performanceCycles.id, id));
+}
+
+// ─── RIDI Communities ──────────────────────────────────────────────────────
+
+export async function listRidiCommunities(): Promise<RidiCommunity[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(ridiCommunities).orderBy(desc(ridiCommunities.createdAt));
+}
+
+export async function createRidiCommunity(data: Omit<RidiCommunity, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(ridiCommunities).values(data);
+}
+
+export async function updateRidiCommunity(id: number, data: Partial<Pick<RidiCommunity, "name" | "state" | "coordinator" | "members" | "status">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(ridiCommunities).set(data).where(eq(ridiCommunities.id, id));
+}
+
+// ─── Podcast Episodes (Media) ──────────────────────────────────────────────
+
+export async function listPodcastEpisodes(): Promise<PodcastEpisode[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(podcastEpisodes).orderBy(desc(podcastEpisodes.createdAt));
+}
+
+export async function createPodcastEpisode(data: Omit<PodcastEpisode, "id" | "createdAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(podcastEpisodes).values(data);
+}
+
+export async function updatePodcastEpisode(id: number, data: Partial<Pick<PodcastEpisode, "title" | "guest" | "recordingDate" | "duration" | "status" | "plays" | "audioUrl">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(podcastEpisodes).set(data).where(eq(podcastEpisodes.id, id));
+}
+
+// ─── Media Assets ──────────────────────────────────────────────────────────
+
+export async function listMediaAssets(): Promise<MediaAsset[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(mediaAssets).orderBy(desc(mediaAssets.createdAt));
+}
+
+export async function createMediaAsset(data: Omit<MediaAsset, "id" | "createdAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(mediaAssets).values(data);
+}
+
+export async function deleteMediaAsset(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(mediaAssets).where(eq(mediaAssets.id, id));
+}
+
+// ─── Social Platform Stats (Media) ─────────────────────────────────────────
+
+export async function listSocialPlatformStats(): Promise<SocialPlatformStat[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(socialPlatformStats).orderBy(socialPlatformStats.platform);
+}
+
+export async function upsertSocialPlatformStat(data: Omit<SocialPlatformStat, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(socialPlatformStats).where(eq(socialPlatformStats.platform, data.platform)).limit(1);
+  if (existing[0]) {
+    await db.update(socialPlatformStats).set(data).where(eq(socialPlatformStats.id, existing[0].id));
+  } else {
+    await db.insert(socialPlatformStats).values(data);
+  }
+}
+
+export async function createSocialPlatformStat(data: Omit<SocialPlatformStat, "id" | "createdAt" | "updatedAt">): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(socialPlatformStats).values(data);
 }

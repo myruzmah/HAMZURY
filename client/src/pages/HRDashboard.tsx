@@ -24,61 +24,7 @@ const MILK  = "#FFFAF6";   // Milk white
 
 type Section = "overview" | "staff" | "attendance" | "performance" | "hiring" | "itstudents" | "training" | "leaves" | "discipline" | "commissions" | "policy" | "reports";
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const MOCK_STAFF = [
-  { id: "STF-001", name: "Idris Ibrahim",    role: "CEO",           dept: "CEO",       status: "Active",   hireDate: "2024-01-15" },
-  { id: "STF-002", name: "Amena Sule",       role: "CSO Lead",      dept: "CSO",       status: "Active",   hireDate: "2024-03-01" },
-  { id: "STF-003", name: "Emeka Okafor",     role: "BizDoc Lead",   dept: "BizDoc",    status: "Active",   hireDate: "2024-06-10" },
-  { id: "STF-004", name: "Yusuf Danlami",    role: "Developer",     dept: "Systemise", status: "On Leave", hireDate: "2024-08-20" },
-  { id: "STF-005", name: "Ngozi Chukwu",     role: "Skills Admin",  dept: "Skills",    status: "Active",   hireDate: "2024-09-05" },
-  { id: "STF-006", name: "Kemi Adeyemi",     role: "BizDev Lead",   dept: "BizDev",    status: "Active",   hireDate: "2024-11-12" },
-  { id: "STF-007", name: "Fatima Al-Hassan", role: "Finance Lead",  dept: "Finance",   status: "Active",   hireDate: "2025-01-08" },
-  { id: "STF-008", name: "Aliyu Musa",       role: "RIDI Coord.",   dept: "RIDI",      status: "Active",   hireDate: "2025-03-20" },
-];
-
-const MOCK_ATTENDANCE = [
-  { name: "Amena Sule",       dept: "CSO",       checkIn: "08:58", checkOut: null,    status: "Present"  },
-  { name: "Yusuf Danlami",    dept: "Systemise", checkIn: "09:15", checkOut: null,    status: "Late"     },
-  { name: "Fatima Al-Hassan", dept: "Finance",   checkIn: null,    checkOut: null,    status: "On Leave" },
-  { name: "Emeka Okafor",     dept: "BizDoc",    checkIn: "08:45", checkOut: "17:00", status: "Present"  },
-  { name: "Ngozi Chukwu",     dept: "Skills",    checkIn: "09:05", checkOut: null,    status: "Present"  },
-];
-
-const MOCK_LEAVE = [
-  { id: "LVE-001", staff: "Yusuf Danlami",    type: "Annual",        start: "2026-04-01", end: "2026-04-05", status: "Pending"  },
-  { id: "LVE-002", staff: "Fatima Al-Hassan", type: "Sick",          start: "2026-03-28", end: "2026-03-28", status: "Approved" },
-  { id: "LVE-003", staff: "Aliyu Musa",       type: "Compassionate", start: "2026-04-10", end: "2026-04-11", status: "Pending"  },
-];
-
-const CYCLES = [
-  { cycle: "Q1 2026", period: "Jan – Mar", status: "Completed", total: 24, completed: 24, pending: 0  },
-  { cycle: "Q2 2026", period: "Apr – Jun", status: "Active",    total: 24, completed: 8,  pending: 16 },
-  { cycle: "Q3 2026", period: "Jul – Sep", status: "Upcoming",  total: 24, completed: 0,  pending: 24 },
-];
-
-const MOCK_JOBS = [
-  { id: "JOB-001", title: "CSO Assistant",     dept: "CSO",       status: "Open",    apps: 12, posted: "2026-03-15" },
-  { id: "JOB-002", title: "Frontend Developer", dept: "Systemise", status: "Open",    apps: 8,  posted: "2026-03-20" },
-  { id: "JOB-003", title: "BizDoc Consultant",  dept: "BizDoc",    status: "On Hold", apps: 3,  posted: "2026-03-10" },
-];
-
-const MOCK_APPS = [
-  { id: "APP-001", job: "CSO Assistant",      candidate: "John Adewale", status: "Interviewed", score: "4/5", date: "2026-03-25" },
-  { id: "APP-002", job: "CSO Assistant",      candidate: "Jane Obi",     status: "Offer Sent",  score: "5/5", date: null         },
-  { id: "APP-003", job: "Frontend Developer", candidate: "Tunde Salami", status: "Shortlisted", score: null,  date: "2026-03-28" },
-  { id: "APP-004", job: "BizDoc Consultant",  candidate: "Chioma Eze",   status: "Received",    score: null,  date: null         },
-];
-
-const MOCK_SESSIONS = [
-  { id: "TRN-001", title: "Onboarding Program",     type: "Internal", date: "2026-04-01", participants: 5, status: "Scheduled" },
-  { id: "TRN-002", title: "Leadership Development",  type: "External", date: "2026-04-15", participants: 3, status: "Completed" },
-  { id: "TRN-003", title: "Compliance Training",     type: "Internal", date: "2026-04-22", participants: 8, status: "Scheduled" },
-];
-
-const MOCK_PLANS = [
-  { staff: "Amena Sule",    goal: "CSO Lead Certification", targetDate: "2026-12-31", progress: 60, support: "Mentorship"     },
-  { staff: "Yusuf Danlami", goal: "Senior Developer Track",  targetDate: "2026-09-30", progress: 40, support: "Training Budget" },
-];
+// ─── Mock data removed — all data now from tRPC queries ──────────────────────
 
 const DEPT_DIST = [
   { dept: "BizDoc",    count: 0, color: "#1B4D3E" },
@@ -129,6 +75,13 @@ export default function HRDashboard() {
   const leaveQuery       = trpc.leave.list.useQuery({});
   const disciplineQuery  = trpc.discipline.list.useQuery({});
 
+  // HR-specific queries
+  const jobPostingsQuery   = trpc.jobPostings.list.useQuery(undefined, { refetchInterval: 30000 });
+  const hiringAppsQuery    = trpc.hiringApps.list.useQuery(undefined, { refetchInterval: 30000 });
+  const trainingQuery      = trpc.trainingSessions.list.useQuery(undefined, { refetchInterval: 30000 });
+  const devPlansQuery      = trpc.devPlans.list.useQuery(undefined, { refetchInterval: 30000 });
+  const perfCyclesQuery    = trpc.perfCycles.list.useQuery(undefined, { refetchInterval: 30000 });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
@@ -145,6 +98,11 @@ export default function HRDashboard() {
   const todayAttendance = attendanceQuery.data || [];
   const leaveRequests   = leaveQuery.data || [];
   const disciplineLogs  = disciplineQuery.data || [];
+  const jobPostings     = jobPostingsQuery.data || [];
+  const hiringApps      = hiringAppsQuery.data || [];
+  const trainingSessions = trainingQuery.data || [];
+  const devPlans        = devPlansQuery.data || [];
+  const perfCycles      = perfCyclesQuery.data || [];
 
   // Use real staff from DB — no mock fallback
   const staffList = realStaff;
@@ -235,13 +193,13 @@ export default function HRDashboard() {
         {/* Content */}
         <ScrollArea className="flex-1">
           <div className="p-6 md:p-8">
-            {activeSection === "overview"    && <OverviewSection stats={stats} activity={activity} staffList={staffList} />}
+            {activeSection === "overview"    && <OverviewSection stats={stats} activity={activity} staffList={staffList} jobPostings={jobPostings} perfCycles={perfCycles} />}
             {activeSection === "staff"       && <StaffSection staffList={staffList} />}
             {activeSection === "attendance"  && <AttendanceSection attendanceList={attendanceList} />}
-            {activeSection === "performance" && <PerformanceSection />}
-            {activeSection === "hiring"      && <HiringSection joinApps={joinApps} />}
+            {activeSection === "performance" && <PerformanceSection perfCycles={perfCycles} loading={perfCyclesQuery.isLoading} refetch={perfCyclesQuery.refetch} />}
+            {activeSection === "hiring"      && <HiringSection joinApps={joinApps} jobPostings={jobPostings} hiringApps={hiringApps} loading={jobPostingsQuery.isLoading || hiringAppsQuery.isLoading} refetchJobs={jobPostingsQuery.refetch} refetchApps={hiringAppsQuery.refetch} />}
             {activeSection === "itstudents"  && <ITStudentsSection />}
-            {activeSection === "training"    && <TrainingSection />}
+            {activeSection === "training"    && <TrainingSection sessions={trainingSessions} devPlans={devPlans} loadingSessions={trainingQuery.isLoading} loadingPlans={devPlansQuery.isLoading} refetchSessions={trainingQuery.refetch} refetchPlans={devPlansQuery.refetch} />}
             {activeSection === "leaves"      && <LeaveSection leaveRequests={leaveRequests} refetch={leaveQuery.refetch} />}
             {activeSection === "discipline"  && <DisciplineSection disciplineLogs={disciplineLogs} staffList={staffList} refetch={disciplineQuery.refetch} />}
             {activeSection === "policy"      && <HRPolicySection />}
@@ -255,14 +213,17 @@ export default function HRDashboard() {
 }
 
 // ─── Overview Section ─────────────────────────────────────────────────────────
-function OverviewSection({ stats, activity, staffList }: { stats: any; activity: any[]; staffList: typeof MOCK_STAFF }) {
+function OverviewSection({ stats, activity, staffList, jobPostings, perfCycles }: { stats: any; activity: any[]; staffList: any[]; jobPostings: any[]; perfCycles: any[] }) {
   const totalStaff = stats?.totalStaff ?? 0;
+  const openPositions = jobPostings.filter((j: any) => j.status === "open" || j.status === "Open").length;
+  const activeCycle = perfCycles.find((c: any) => c.status === "Active" || c.status === "active");
+  const reviewsDue = activeCycle ? (activeCycle.totalReviews ?? 0) - (activeCycle.completedReviews ?? 0) : 0;
   const STAT_CARDS = [
     { label: "Total Staff",       value: totalStaff,  icon: Users,         color: GREEN   },
     { label: "Present Today",     value: stats?.presentToday ?? 0, icon: CheckCircle2,  color: "#22C55E" },
     { label: "On Leave",          value: stats?.onLeave ?? 0,      icon: Clock,         color: "#EAB308" },
-    { label: "Open Positions",    value: 0,           icon: Briefcase,     color: "#3B82F6"            },
-    { label: "Reviews Due",       value: 0,           icon: AlertTriangle, color: "#EF4444"            },
+    { label: "Open Positions",    value: openPositions,             icon: Briefcase,     color: "#3B82F6"            },
+    { label: "Reviews Due",       value: reviewsDue,                icon: AlertTriangle, color: "#EF4444"            },
     { label: "Commission Earned", value: "₦0",        icon: DollarSign,    color: GOLD, isText: true   },
   ];
 
@@ -323,7 +284,7 @@ function OverviewSection({ stats, activity, staffList }: { stats: any; activity:
 }
 
 // ─── Staff Section ────────────────────────────────────────────────────────────
-function StaffSection({ staffList }: { staffList: typeof MOCK_STAFF }) {
+function StaffSection({ staffList }: { staffList: any[] }) {
   const [search, setSearch] = useState("");
 
   const filtered = staffList.filter((s: any) =>
@@ -495,18 +456,22 @@ const PERF_SOP = {
   ],
 };
 
-function PerformanceSection() {
+function PerformanceSection({ perfCycles, loading, refetch }: { perfCycles: any[]; loading: boolean; refetch: () => void }) {
   const totalItems = Object.values(PERF_SOP).flat().length;
   const [checked, setChecked] = useState<Record<string, boolean>>(
     Object.fromEntries(Object.values(PERF_SOP).flat().map(item => [item, false]))
   );
 
+  const createCycleMutation = trpc.perfCycles.create.useMutation({ onSuccess: () => { refetch(); toast.success("Performance cycle created"); } });
+  const updateCycleMutation = trpc.perfCycles.update.useMutation({ onSuccess: () => { refetch(); toast.success("Performance cycle updated"); } });
+
   const toggle = (item: string) => setChecked(p => ({ ...p, [item]: !p[item] }));
   const doneCount = Object.values(checked).filter(Boolean).length;
 
   const cycleStatusColor = (status: string) => {
-    if (status === "Completed") return { bg: "#22C55E15", text: "#22C55E" };
-    if (status === "Active")    return { bg: "#3B82F615", text: "#3B82F6" };
+    const s = status?.toLowerCase();
+    if (s === "completed") return { bg: "#22C55E15", text: "#22C55E" };
+    if (s === "active")    return { bg: "#3B82F615", text: "#3B82F6" };
     return { bg: "#6B728015", text: "#6B7280" };
   };
 
@@ -515,32 +480,49 @@ function PerformanceSection() {
       {/* Review Cycles */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Review Cycles</h2>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin" size={20} style={{ color: GOLD }} />
+          </div>
+        ) : perfCycles.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-sm opacity-30" style={{ color: GREEN }}>No performance cycles yet.</p>
+          </div>
+        ) : (
         <div className="space-y-3">
-          {CYCLES.map(c => {
+          {perfCycles.map((c: any) => {
             const sc = cycleStatusColor(c.status);
-            const pct = c.total > 0 ? Math.round((c.completed / c.total) * 100) : 0;
+            const total = c.totalReviews ?? 0;
+            const completed = c.completedReviews ?? 0;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
             return (
-              <div key={c.cycle} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+              <div key={c.id} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
                     <div>
-                      <p className="text-sm font-medium" style={{ color: GREEN }}>{c.cycle}</p>
+                      <p className="text-sm font-medium" style={{ color: GREEN }}>{c.cycleName}</p>
                       <p className="text-xs opacity-40" style={{ color: GREEN }}>{c.period}</p>
                     </div>
                     <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal" style={{ backgroundColor: sc.bg, color: sc.text }}>{c.status}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <p className="text-xs opacity-50" style={{ color: GREEN }}>{c.completed}/{c.total} completed</p>
+                    <p className="text-xs opacity-50" style={{ color: GREEN }}>{completed}/{total} completed</p>
                     <Button
                       size="sm"
-                      variant={c.status === "Completed" ? "outline" : "default"}
+                      variant={c.status?.toLowerCase() === "completed" ? "outline" : "default"}
                       className="text-xs h-8"
-                      style={c.status === "Completed"
+                      style={c.status?.toLowerCase() === "completed"
                         ? { borderColor: `${GREEN}20`, color: GREEN }
                         : { backgroundColor: GREEN, color: GOLD }}
-                      onClick={() => toast(`${c.cycle} review ${c.status === "Upcoming" ? "started" : "opened"}`)}
+                      onClick={() => {
+                        if (c.status?.toLowerCase() === "upcoming") {
+                          updateCycleMutation.mutate({ id: c.id, status: "active" });
+                        } else {
+                          toast(`Viewing ${c.cycleName} review`);
+                        }
+                      }}
                     >
-                      {c.status === "Upcoming" ? "Start Review" : "View"}
+                      {c.status?.toLowerCase() === "upcoming" ? "Start Review" : "View"}
                     </Button>
                   </div>
                 </div>
@@ -551,6 +533,7 @@ function PerformanceSection() {
             );
           })}
         </div>
+        )}
       </div>
 
       {/* SOP Checklist */}
@@ -612,7 +595,7 @@ const HIRING_SOP = {
   ],
 };
 
-function HiringSection({ joinApps }: { joinApps: any[] }) {
+function HiringSection({ joinApps, jobPostings, hiringApps, loading, refetchJobs, refetchApps }: { joinApps: any[]; jobPostings: any[]; hiringApps: any[]; loading: boolean; refetchJobs: () => void; refetchApps: () => void }) {
   const [checked, setChecked] = useState<Record<string, boolean>>(
     Object.fromEntries(Object.values(HIRING_SOP).flat().map(item => [item, false]))
   );
@@ -620,18 +603,25 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
   const doneCount = Object.values(checked).filter(Boolean).length;
   const toggle = (item: string) => setChecked(p => ({ ...p, [item]: !p[item] }));
 
+  const createJobMutation = trpc.jobPostings.create.useMutation({ onSuccess: () => { refetchJobs(); toast.success("Job posting created"); } });
+  const updateJobMutation = trpc.jobPostings.update.useMutation({ onSuccess: () => { refetchJobs(); toast.success("Job posting updated"); } });
+  const updateAppMutation = trpc.hiringApps.update.useMutation({ onSuccess: () => { refetchApps(); toast.success("Application updated"); } });
+
   const jobStatusColor = (status: string) => {
-    if (status === "Open")    return { bg: "#22C55E15", text: "#22C55E" };
-    if (status === "On Hold") return { bg: "#EAB30815", text: "#EAB308" };
+    const s = status?.toLowerCase();
+    if (s === "open")    return { bg: "#22C55E15", text: "#22C55E" };
+    if (s === "on hold") return { bg: "#EAB30815", text: "#EAB308" };
+    if (s === "closed")  return { bg: "#6B728015", text: "#6B7280" };
     return { bg: "#6B728015", text: "#6B7280" };
   };
 
   const appStatusColor = (status: string) => {
-    if (status === "Received")    return { bg: "#6B728015", text: "#6B7280" };
-    if (status === "Shortlisted") return { bg: "#3B82F615", text: "#3B82F6" };
-    if (status === "Interviewed") return { bg: "#8B5CF615", text: "#8B5CF6" };
-    if (status === "Offer Sent")  return { bg: `${GOLD}20`, text: GOLD };
-    if (status === "Hired")       return { bg: "#22C55E15", text: "#22C55E" };
+    const s = status?.toLowerCase();
+    if (s === "received" || s === "new")  return { bg: "#6B728015", text: "#6B7280" };
+    if (s === "shortlisted")             return { bg: "#3B82F615", text: "#3B82F6" };
+    if (s === "interviewed")             return { bg: "#8B5CF615", text: "#8B5CF6" };
+    if (s === "offer sent" || s === "offer_sent") return { bg: `${GOLD}20`, text: GOLD };
+    if (s === "hired")                   return { bg: "#22C55E15", text: "#22C55E" };
     return { bg: "#EF444415", text: "#EF4444" };
   };
 
@@ -640,12 +630,74 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
       {/* Job Postings */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Job Postings</h2>
-        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <p className="text-sm opacity-30" style={{ color: GREEN }}>No job postings yet.</p>
-        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin" size={20} style={{ color: GOLD }} />
+          </div>
+        ) : jobPostings.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-sm opacity-30" style={{ color: GREEN }}>No job postings yet.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+            <div className="hidden md:grid grid-cols-[1fr_120px_100px_100px_80px] gap-4 px-5 py-3 border-b" style={{ borderColor: `${GREEN}06`, backgroundColor: `${GREEN}04` }}>
+              {["Title", "Department", "Status", "Posted", ""].map(h => (
+                <p key={h} className="text-[10px] uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>{h}</p>
+              ))}
+            </div>
+            {jobPostings.map((j: any, i: number) => {
+              const sc = jobStatusColor(j.status);
+              const appsForJob = hiringApps.filter((a: any) => a.jobPostingId === j.id).length;
+              return (
+                <div key={j.id} className="grid grid-cols-1 md:grid-cols-[1fr_120px_100px_100px_80px] gap-4 px-5 py-4 border-b last:border-0 items-center"
+                  style={{ borderColor: `${GREEN}06`, backgroundColor: i % 2 === 0 ? "white" : `${GREEN}02` }}>
+                  <div>
+                    <p className="text-sm font-medium" style={{ color: GREEN }}>{j.title}</p>
+                    {appsForJob > 0 && <p className="text-xs opacity-40" style={{ color: GREEN }}>{appsForJob} application{appsForJob !== 1 ? "s" : ""}</p>}
+                  </div>
+                  <p className="text-xs opacity-60" style={{ color: GREEN }}>{j.department || "—"}</p>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal w-fit" style={{ backgroundColor: sc.bg, color: sc.text }}>{j.status}</span>
+                  <p className="text-xs opacity-60" style={{ color: GREEN }}>{j.postedAt ? new Date(j.postedAt).toLocaleDateString("en-NG") : "—"}</p>
+                  <Button variant="ghost" size="sm" className="text-xs h-7 w-fit" style={{ color: GREEN }}
+                    onClick={() => toast(`Viewing: ${j.title}`)}>
+                    View <ChevronRight size={12} className="ml-1" />
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* Applications */}
+      {/* Hiring Applications from DB */}
+      {hiringApps.length > 0 && (
+        <div>
+          <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>
+            Hiring Applications <span className="normal-case px-2 py-0.5 rounded-full text-[10px]" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>{hiringApps.length} total</span>
+          </h2>
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+            {hiringApps.map((a: any, i: number) => {
+              const sc = appStatusColor(a.status);
+              const jobTitle = jobPostings.find((j: any) => j.id === a.jobPostingId)?.title || "—";
+              return (
+                <div key={a.id} className="flex items-center gap-4 px-5 py-4 border-b last:border-0"
+                  style={{ borderColor: `${GREEN}06`, backgroundColor: i % 2 === 0 ? "white" : `${GREEN}02` }}>
+                  <span className="text-[10px] font-mono opacity-40 shrink-0" style={{ color: GREEN }}>#{a.id}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: GREEN }}>{a.candidateName}</p>
+                    <p className="text-xs opacity-50 truncate" style={{ color: GREEN }}>{jobTitle}</p>
+                  </div>
+                  {a.score && <span className="text-xs opacity-40 shrink-0 hidden sm:block" style={{ color: GREEN }}>Score: {a.score}</span>}
+                  {a.interviewDate && <span className="text-xs opacity-30 shrink-0 hidden md:block" style={{ color: GREEN }}>{new Date(a.interviewDate).toLocaleDateString("en-NG")}</span>}
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal shrink-0 capitalize" style={{ backgroundColor: sc.bg, color: sc.text }}>{a.status}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Join Applications (website) */}
       <div>
         <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>
           Join Applications {joinApps.length > 0 && <span className="normal-case px-2 py-0.5 rounded-full text-[10px]" style={{ backgroundColor: `${GOLD}20`, color: GOLD }}>{joinApps.length} received</span>}
@@ -723,10 +775,21 @@ function HiringSection({ joinApps }: { joinApps: any[] }) {
 }
 
 // ─── Training Section ─────────────────────────────────────────────────────────
-function TrainingSection() {
+function TrainingSection({ sessions, devPlans, loadingSessions, loadingPlans, refetchSessions, refetchPlans }: { sessions: any[]; devPlans: any[]; loadingSessions: boolean; loadingPlans: boolean; refetchSessions: () => void; refetchPlans: () => void }) {
+  const createSessionMutation = trpc.trainingSessions.create.useMutation({ onSuccess: () => { refetchSessions(); toast.success("Training session created"); setShowSessionForm(false); setSessionForm({ title: "", type: "Internal", sessionDate: new Date().toISOString().split("T")[0], participants: "", notes: "" }); } });
+  const createPlanMutation = trpc.devPlans.create.useMutation({ onSuccess: () => { refetchPlans(); toast.success("Development plan created"); setShowPlanForm(false); setPlanForm({ staffEmail: "", staffName: "", goal: "", targetDate: "", progress: "0", support: "", notes: "" }); } });
+  const updateSessionMutation = trpc.trainingSessions.update.useMutation({ onSuccess: () => { refetchSessions(); toast.success("Session updated"); } });
+  const updatePlanMutation = trpc.devPlans.update.useMutation({ onSuccess: () => { refetchPlans(); toast.success("Plan updated"); } });
+
+  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [sessionForm, setSessionForm] = useState({ title: "", type: "Internal", sessionDate: new Date().toISOString().split("T")[0], participants: "", notes: "" });
+  const [showPlanForm, setShowPlanForm] = useState(false);
+  const [planForm, setPlanForm] = useState({ staffEmail: "", staffName: "", goal: "", targetDate: "", progress: "0", support: "", notes: "" });
+
   const sessionStatusColor = (status: string) => {
-    if (status === "Completed")  return { bg: "#22C55E15", text: "#22C55E" };
-    if (status === "Cancelled")  return { bg: "#EF444415", text: "#EF4444" };
+    const s = status?.toLowerCase();
+    if (s === "completed")  return { bg: "#22C55E15", text: "#22C55E" };
+    if (s === "cancelled")  return { bg: "#EF444415", text: "#EF4444" };
     return { bg: "#3B82F615", text: "#3B82F6" };
   };
 
@@ -734,25 +797,157 @@ function TrainingSection() {
     <div className="space-y-8">
       {/* Training Sessions */}
       <div>
-        <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Training Sessions</h2>
-        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <p className="text-sm opacity-30" style={{ color: GREEN }}>No training sessions logged yet.</p>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>Training Sessions</h2>
+          <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} onClick={() => setShowSessionForm(!showSessionForm)}>
+            <Plus size={13} className="mr-1" /> Log Session
+          </Button>
         </div>
-        <Button
-          className="mt-4"
-          style={{ backgroundColor: GREEN, color: GOLD }}
-          onClick={() => toast("Training session creation coming soon")}
-        >
-          + Log Session
-        </Button>
+
+        {showSessionForm && (
+          <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="Session Title *" value={sessionForm.title} onChange={e => setSessionForm(p => ({ ...p, title: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+              <select value={sessionForm.type} onChange={e => setSessionForm(p => ({ ...p, type: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none bg-white" style={{ borderColor: `${GREEN}20` }}>
+                <option value="Internal">Internal</option>
+                <option value="External">External</option>
+              </select>
+              <div className="space-y-1">
+                <label className="text-[10px] opacity-40" style={{ color: GREEN }}>Session Date</label>
+                <input type="date" value={sessionForm.sessionDate} onChange={e => setSessionForm(p => ({ ...p, sessionDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+              </div>
+              <input type="number" placeholder="Participants count" value={sessionForm.participants} onChange={e => setSessionForm(p => ({ ...p, participants: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            </div>
+            <textarea placeholder="Notes" value={sessionForm.notes} onChange={e => setSessionForm(p => ({ ...p, notes: e.target.value }))} rows={2}
+              className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none resize-none" style={{ borderColor: `${GREEN}20` }} />
+            <div className="flex gap-2">
+              <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} disabled={createSessionMutation.isPending}
+                onClick={() => {
+                  if (!sessionForm.title || !sessionForm.sessionDate) { toast.error("Title and date are required"); return; }
+                  createSessionMutation.mutate({ title: sessionForm.title, type: sessionForm.type as "internal" | "external" | "online" | "workshop", sessionDate: sessionForm.sessionDate, participants: sessionForm.participants ? parseInt(sessionForm.participants) : 0, notes: sessionForm.notes || undefined });
+                }}>
+                {createSessionMutation.isPending ? <Loader2 size={13} className="animate-spin mr-1" /> : null} Create
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowSessionForm(false)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {loadingSessions ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin" size={20} style={{ color: GOLD }} />
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-sm opacity-30" style={{ color: GREEN }}>No training sessions logged yet.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
+            {sessions.map((s: any, i: number) => {
+              const sc = sessionStatusColor(s.status);
+              return (
+                <div key={s.id} className="flex items-center gap-4 px-5 py-4 border-b last:border-0"
+                  style={{ borderColor: `${GREEN}06`, backgroundColor: i % 2 === 0 ? "white" : `${GREEN}02` }}>
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${GREEN}08` }}>
+                    <GraduationCap size={16} style={{ color: GREEN }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium" style={{ color: GREEN }}>{s.title}</p>
+                    <p className="text-xs opacity-50" style={{ color: GREEN }}>{s.type} · {s.participants ?? 0} participants</p>
+                  </div>
+                  <p className="text-xs opacity-40 hidden sm:block" style={{ color: GREEN }}>{s.sessionDate ? new Date(s.sessionDate).toLocaleDateString("en-NG") : "—"}</p>
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full font-normal shrink-0" style={{ backgroundColor: sc.bg, color: sc.text }}>{s.status}</span>
+                  {s.status?.toLowerCase() === "scheduled" && (
+                    <Button variant="ghost" size="sm" className="text-xs h-7" style={{ color: GREEN }}
+                      onClick={() => updateSessionMutation.mutate({ id: s.id, status: "completed" })}>
+                      Complete
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Development Plans */}
       <div>
-        <h2 className="text-sm uppercase tracking-wider mb-4 opacity-40 font-normal" style={{ color: GREEN }}>Development Plans</h2>
-        <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-          <p className="text-sm opacity-30" style={{ color: GREEN }}>No development plans yet.</p>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>Development Plans</h2>
+          <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} onClick={() => setShowPlanForm(!showPlanForm)}>
+            <Plus size={13} className="mr-1" /> New Plan
+          </Button>
         </div>
+
+        {showPlanForm && (
+          <div className="bg-white rounded-2xl p-5 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] mb-4">
+            <div className="grid grid-cols-2 gap-3">
+              <input placeholder="Staff Email *" value={planForm.staffEmail} onChange={e => setPlanForm(p => ({ ...p, staffEmail: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+              <input placeholder="Staff Name *" value={planForm.staffName} onChange={e => setPlanForm(p => ({ ...p, staffName: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+              <input placeholder="Goal *" value={planForm.goal} onChange={e => setPlanForm(p => ({ ...p, goal: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none col-span-2" style={{ borderColor: `${GREEN}20` }} />
+              <div className="space-y-1">
+                <label className="text-[10px] opacity-40" style={{ color: GREEN }}>Target Date</label>
+                <input type="date" value={planForm.targetDate} onChange={e => setPlanForm(p => ({ ...p, targetDate: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+              </div>
+              <input placeholder="Support needed" value={planForm.support} onChange={e => setPlanForm(p => ({ ...p, support: e.target.value }))}
+                className="px-3 py-2 rounded-lg border text-[13px] outline-none" style={{ borderColor: `${GREEN}20` }} />
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" style={{ backgroundColor: GREEN, color: GOLD }} disabled={createPlanMutation.isPending}
+                onClick={() => {
+                  if (!planForm.staffEmail || !planForm.staffName || !planForm.goal) { toast.error("Fill all required fields"); return; }
+                  createPlanMutation.mutate({ staffEmail: planForm.staffEmail, staffName: planForm.staffName, goal: planForm.goal, targetDate: planForm.targetDate || undefined, progress: parseInt(planForm.progress) || 0, support: planForm.support || undefined, notes: planForm.notes || undefined });
+                }}>
+                {createPlanMutation.isPending ? <Loader2 size={13} className="animate-spin mr-1" /> : null} Create
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setShowPlanForm(false)}>Cancel</Button>
+            </div>
+          </div>
+        )}
+
+        {loadingPlans ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="animate-spin" size={20} style={{ color: GOLD }} />
+          </div>
+        ) : devPlans.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <p className="text-sm opacity-30" style={{ color: GREEN }}>No development plans yet.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {devPlans.map((p: any) => {
+              const progress = p.progress ?? 0;
+              return (
+                <div key={p.id} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-sm font-medium" style={{ color: GREEN }}>{p.staffName}</p>
+                      <p className="text-xs opacity-50" style={{ color: GREEN }}>{p.goal}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs opacity-40" style={{ color: GREEN }}>Target: {p.targetDate ? new Date(p.targetDate).toLocaleDateString("en-NG") : "—"}</p>
+                      {p.support && <p className="text-xs opacity-40" style={{ color: GREEN }}>{p.support}</p>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 h-2 rounded-full bg-gray-100 overflow-hidden">
+                      <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, backgroundColor: progress >= 80 ? "#22C55E" : progress >= 40 ? GOLD : GREEN }} />
+                    </div>
+                    <span className="text-xs font-medium" style={{ color: GREEN }}>{progress}%</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -27,48 +27,7 @@ type Section = "overview" | "leads" | "partnerships" | "brandqa" | "affiliates" 
 type LeadRow = { id: number; ref: string; name: string; contact: string; source: string; score: number; budget: string; timeline: string; service: string; status: "handoff_ready" | "qualifying" | "nurturing" | "handed_off" };
 type AffRow  = { id: number; name: string; ref: string; leads: number; converted: number; earnings: string; status: string };
 
-// ─── Mock Seed Data ──────────────────────────────────────────────────────────
-const MOCK_KPI = {
-  qualifiedLeadsWeek: 11,
-  handoffRate: 68,
-  avgScore: 4.2,
-  brandQAPass: 87,
-  activePartnerships: 12,
-  referralConversion: 23,
-};
-
-const MOCK_LEADS: LeadRow[] = [
-  { id: 1, ref: "HMZ-26/3-0041", name: "Chukwuemeka Foods Ltd", contact: "CEO — Chukwuemeka Obi", source: "Referral", score: 5, budget: "₦1.2M", timeline: "4 weeks", service: "BizDoc + Systemise", status: "handoff_ready" },
-  { id: 2, ref: "HMZ-26/3-0040", name: "Kemi Adeyemi Properties", contact: "Director — Kemi Adeyemi", source: "Content", score: 4, budget: "₦750K", timeline: "6 weeks", service: "BizDoc", status: "qualifying" },
-  { id: 3, ref: "HMZ-26/2-0039", name: "Abuja Digital Ventures", contact: "Co-founder — Tunde Salami", source: "Events", score: 3, budget: "₦500K", timeline: "8 weeks", service: "Systemise", status: "qualifying" },
-  { id: 4, ref: "HMZ-26/2-0038", name: "NorthStar Trading Co", contact: "GM — Fatima Yusuf", source: "Partnership", score: 5, budget: "₦2.1M", timeline: "2 weeks", service: "BizDoc + Skills", status: "handed_off" },
-  { id: 5, ref: "HMZ-26/1-0037", name: "Lagos Fashion House", contact: "Owner — Amaka Chidi", source: "Content", score: 2, budget: "₦300K", timeline: "Unclear", service: "TBD", status: "nurturing" },
-];
-
 const KANBAN_STAGES = ["Researching", "Outreach", "Agreed", "Active", "Paused"] as const;
-
-const MOCK_PARTNERSHIPS = [
-  { id: 1, name: "CAC Filing Associates", type: "Referral Partner", contact: "Bayo Adeleke", stage: "Active" as const, referrals: 8 },
-  { id: 2, name: "Abuja Real Estate Network", type: "Community Partner", contact: "Ibrahim Musa", stage: "Active" as const, referrals: 5 },
-  { id: 3, name: "Lagos SME Forum", type: "Events Partner", contact: "Chioma Eze", stage: "Agreed" as const, referrals: 0 },
-  { id: 4, name: "Kano Merchants Association", type: "Regional Partner", contact: "Aliyu Dantata", stage: "Outreach" as const, referrals: 0 },
-  { id: 5, name: "TechHub Abuja", type: "Ecosystem Partner", contact: "Ngozi Okonkwo", stage: "Researching" as const, referrals: 0 },
-];
-
-const MOCK_QA = [
-  { id: 1, dept: "CSO", item: "Client proposal — Lagos conglomerate", type: "Proposal", status: "pending", submitted: "Today", urgent: true },
-  { id: 2, dept: "Systemise", item: "Service page rewrite — ClarityDesk positioning", type: "Content", status: "pending", submitted: "Yesterday", urgent: false },
-  { id: 3, dept: "Skills", item: "Q2 Cohort brochure design", type: "Visual", status: "approved", submitted: "20 Mar", urgent: false },
-  { id: 4, dept: "BizDoc", item: "Compliance guide PDF", type: "Document", status: "revision", submitted: "18 Mar", urgent: false },
-];
-
-const MOCK_AFFILIATES = [
-  { id: 1, name: "Adaeze Nnadi", ref: "AFF-001", leads: 14, converted: 3, earnings: "₦87,000", status: "active" },
-  { id: 2, name: "Olumide Hassan", ref: "AFF-002", leads: 9, converted: 2, earnings: "₦54,000", status: "active" },
-  { id: 3, name: "Chisom Eze", ref: "AFF-003", leads: 21, converted: 5, earnings: "₦142,000", status: "active" },
-  { id: 4, name: "Tunde Olatunji", ref: "AFF-004", leads: 2, converted: 0, earnings: "₦0", status: "active" },
-  { id: 5, name: "Pending Applicant", ref: "AFF-005", leads: 0, converted: 0, earnings: "₦0", status: "pending" },
-];
 
 const FILES_LIST = [
   { icon: CheckSquare, title: "Lead Qualification Checklist", desc: "5-point scoring system" },
@@ -86,8 +45,10 @@ export default function BizDevDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [activeSection, setActiveSection] = useState<Section>("overview");
 
-  const leadsQuery     = trpc.leads.list.useQuery(undefined, { refetchInterval: 20000 });
-  const affiliatesQuery = trpc.affiliate.listAll.useQuery(undefined, { refetchInterval: 30000 });
+  const leadsQuery        = trpc.leads.list.useQuery(undefined, { refetchInterval: 20000 });
+  const affiliatesQuery   = trpc.affiliate.listAll.useQuery(undefined, { refetchInterval: 30000 });
+  const partnershipsQuery = trpc.partnerships.list.useQuery(undefined, { refetchInterval: 30000 });
+  const brandQaQuery      = trpc.brandQa.list.useQuery(undefined, { refetchInterval: 30000 });
 
   if (loading) {
     return (
@@ -100,6 +61,9 @@ export default function BizDevDashboard() {
 
   const realLeads = leadsQuery.data || [];
   const realAffiliates = affiliatesQuery.data || [];
+  const realPartnerships = partnershipsQuery.data || [];
+  const realBrandQa = brandQaQuery.data || [];
+
   // Use real leads only — no mock fallback
   const leadsList: LeadRow[] = realLeads.map(l => ({
     id: l.id,
@@ -123,6 +87,8 @@ export default function BizDevDashboard() {
     earnings: "₦0",
     status: a.status || "active",
   }));
+
+  const dataLoading = leadsQuery.isLoading || affiliatesQuery.isLoading || partnershipsQuery.isLoading || brandQaQuery.isLoading;
 
   const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "overview", icon: LayoutDashboard, label: "Overview" },
@@ -184,12 +150,21 @@ export default function BizDevDashboard() {
 
         <ScrollArea className="flex-1">
           <div className="p-6 md:p-8">
-            {activeSection === "overview" && <OverviewSection leadsList={leadsList} affiliatesList={affiliatesList} />}
-            {activeSection === "leads" && <LeadTrackerSection leadsList={leadsList} />}
-            {activeSection === "partnerships" && <PartnershipsSection />}
-            {activeSection === "brandqa" && <BrandQASection />}
-            {activeSection === "affiliates" && <AffiliatesSection affiliatesList={affiliatesList} />}
-            {activeSection === "files" && <FilesSection />}
+            {dataLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <Loader2 className="animate-spin mr-2" size={20} style={{ color: GREEN }} />
+                <span className="text-sm opacity-50" style={{ color: DARK }}>Loading data...</span>
+              </div>
+            ) : (
+              <>
+                {activeSection === "overview" && <OverviewSection leadsList={leadsList} affiliatesList={affiliatesList} partnerships={realPartnerships} brandQaItems={realBrandQa} />}
+                {activeSection === "leads" && <LeadTrackerSection leadsList={leadsList} />}
+                {activeSection === "partnerships" && <PartnershipsSection partnerships={realPartnerships} isLoading={partnershipsQuery.isLoading} />}
+                {activeSection === "brandqa" && <BrandQASection brandQaItems={realBrandQa} isLoading={brandQaQuery.isLoading} />}
+                {activeSection === "affiliates" && <AffiliatesSection affiliatesList={affiliatesList} />}
+                {activeSection === "files" && <FilesSection />}
+              </>
+            )}
           </div>
         </ScrollArea>
       </div>
@@ -198,20 +173,32 @@ export default function BizDevDashboard() {
 }
 
 // ─── Overview ────────────────────────────────────────────────────────────────
-function OverviewSection({ leadsList, affiliatesList }: { leadsList: LeadRow[]; affiliatesList: AffRow[] }) {
+function OverviewSection({ leadsList, affiliatesList, partnerships, brandQaItems }: { leadsList: LeadRow[]; affiliatesList: AffRow[]; partnerships: any[]; brandQaItems: any[] }) {
   const qualifiedThisWeek = leadsList.filter(l => l.status === "qualifying" || l.status === "handoff_ready").length;
   const handoffReady = leadsList.filter(l => l.status === "handoff_ready").length;
   const handedOff = leadsList.filter(l => l.status === "handed_off").length;
-  const handoffRate = leadsList.length > 0 ? Math.round((handedOff / leadsList.length) * 100) : MOCK_KPI.handoffRate;
+  const handoffRate = leadsList.length > 0 ? Math.round((handedOff / leadsList.length) * 100) : 0;
   const activeAffs = affiliatesList.filter(a => a.status === "active").length;
+
+  // Compute Brand QA pass rate from real data
+  const totalQa = brandQaItems.length;
+  const approvedQa = brandQaItems.filter((q: any) => q.status === "approved").length;
+  const brandQaPassRate = totalQa > 0 ? Math.round((approvedQa / totalQa) * 100) : 0;
+
+  // Compute referral conversion from partnerships
+  const totalReferrals = partnerships.reduce((sum: number, p: any) => sum + (p.referrals || 0), 0);
+  const activePartnerCount = partnerships.filter((p: any) => p.stage === "Active").length;
+  const referralConversion = totalReferrals > 0 && leadsList.length > 0
+    ? Math.round((handedOff / totalReferrals) * 100)
+    : 0;
 
   const KPI_CARDS = [
     { label: "Qualified Leads", value: qualifiedThisWeek, unit: "", target: "10–15/week", color: GREEN },
     { label: "Lead → Handoff Rate", value: handoffRate, unit: "%", target: "Target ≥60%", color: "#3B82F6" },
     { label: "Handoff Ready", value: handoffReady, unit: "", target: "Send to CSO", color: GOLD },
-    { label: "Brand QA Pass Rate", value: 0, unit: "%", target: "Target ≥85%", color: "#8B5CF6" },
+    { label: "Brand QA Pass Rate", value: brandQaPassRate, unit: "%", target: "Target ≥85%", color: "#8B5CF6" },
     { label: "Active Affiliates", value: activeAffs, unit: "", target: "Q1 target: 15", color: DARK },
-    { label: "Referral Conversion", value: 0, unit: "%", target: "Target ≥20%", color: "#22C55E" },
+    { label: "Referral Conversion", value: referralConversion, unit: "%", target: "Target ≥20%", color: "#22C55E" },
   ];
 
   const WEEKLY = [
@@ -532,20 +519,54 @@ const PENDING_DEALS = [
 ];
 
 // ─── Partnerships ─────────────────────────────────────────────────────────────
-function PartnershipsSection() {
+function PartnershipsSection({ partnerships, isLoading }: { partnerships: any[]; isLoading: boolean }) {
   const STAGE_COLORS: Record<string, string> = {
     Researching: "#6B7280", Outreach: "#3B82F6", Agreed: GOLD, Active: "#16A34A", Paused: "#EF4444",
   };
   const [expanded, setExpanded] = useState<number | null>(null);
+  const utils = trpc.useUtils();
+  const createPartnership = trpc.partnerships.create.useMutation({
+    onSuccess: () => { utils.partnerships.list.invalidate(); toast.success("Partnership added"); },
+    onError: (err) => toast.error(err.message),
+  });
+  const updatePartnership = trpc.partnerships.update.useMutation({
+    onSuccess: () => { utils.partnerships.list.invalidate(); toast.success("Partnership updated"); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  // Combine DB partnerships with curated REAL_PARTNERSHIPS for display
+  const allPartnerships = [
+    ...REAL_PARTNERSHIPS,
+    ...partnerships.filter(p => !REAL_PARTNERSHIPS.some(rp => rp.name === p.name)).map(p => ({
+      id: p.id + 1000,
+      name: p.name,
+      fullName: p.name,
+      type: p.type || "Partner",
+      stage: (p.stage || "Researching") as typeof KANBAN_STAGES[number],
+      status: p.notes || "",
+      milestone: "",
+      value: "",
+      note: p.notes || "",
+    })),
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin mr-2" size={20} style={{ color: GREEN }} />
+        <span className="text-sm opacity-50" style={{ color: DARK }}>Loading partnerships...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Total Partners", value: REAL_PARTNERSHIPS.length },
-          { label: "Active", value: REAL_PARTNERSHIPS.filter(p => p.stage === "Active").length },
-          { label: "Approved / Agreed", value: REAL_PARTNERSHIPS.filter(p => p.stage === "Agreed").length },
+          { label: "Total Partners", value: allPartnerships.length },
+          { label: "Active", value: allPartnerships.filter(p => p.stage === "Active").length },
+          { label: "Approved / Agreed", value: allPartnerships.filter(p => p.stage === "Agreed").length },
           { label: "Pending Deals", value: PENDING_DEALS.length },
         ].map(({ label, value }) => (
           <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
@@ -559,7 +580,7 @@ function PartnershipsSection() {
       <div>
         <p className="text-[11px] uppercase tracking-widest opacity-40 mb-3" style={{ color: DARK }}>Institutional Partnerships</p>
         <div className="space-y-3">
-          {REAL_PARTNERSHIPS.map(p => (
+          {allPartnerships.map(p => (
             <div key={p.id} className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
               <button
                 className="w-full flex items-center justify-between p-4 text-left"
@@ -628,9 +649,18 @@ function PartnershipsSection() {
 }
 
 // ─── Brand QA ─────────────────────────────────────────────────────────────────
-function BrandQASection() {
-  const [qaItems, setQaItems] = useState<typeof MOCK_QA>([]);
+function BrandQASection({ brandQaItems, isLoading }: { brandQaItems: any[]; isLoading: boolean }) {
   const [expanded, setExpanded] = useState(false);
+  const utils = trpc.useUtils();
+
+  const createBrandQa = trpc.brandQa.create.useMutation({
+    onSuccess: () => { utils.brandQa.list.invalidate(); toast.success("QA item submitted"); },
+    onError: (err) => toast.error(err.message),
+  });
+  const updateBrandQa = trpc.brandQa.update.useMutation({
+    onSuccess: () => { utils.brandQa.list.invalidate(); },
+    onError: (err) => toast.error(err.message),
+  });
 
   const STATUS_CONFIG = {
     pending: { label: "Pending Review", color: GOLD, bg: `${GOLD}15` },
@@ -638,10 +668,30 @@ function BrandQASection() {
     revision: { label: "Revision Requested", color: "#EF4444", bg: "#EF444415" },
   };
 
+  // Map DB items to display format
+  const qaItems = brandQaItems.map((q: any) => ({
+    id: q.id,
+    dept: q.department || "—",
+    item: q.item || "—",
+    type: q.type || "Other",
+    status: q.status || "pending",
+    submitted: q.createdAt ? new Date(q.createdAt).toLocaleDateString("en-NG", { day: "numeric", month: "short" }) : "—",
+    urgent: !!q.urgent,
+  }));
+
   const update = (id: number, status: "approved" | "revision") => {
-    setQaItems(prev => prev.map(q => q.id === id ? { ...q, status } : q));
+    updateBrandQa.mutate({ id, status });
     toast.success(status === "approved" ? "Output approved" : "Revision requested");
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="animate-spin mr-2" size={20} style={{ color: GREEN }} />
+        <span className="text-sm opacity-50" style={{ color: DARK }}>Loading QA items...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

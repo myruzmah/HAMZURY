@@ -47,34 +47,13 @@ const TASK_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   "Completed":         { bg: "#22C55E14", text: "#16A34A" },
 };
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────
-const MOCK_CONTENT: {
-  id: number; title: string; platform: string; type: string;
-  status: string; date: string; assignee: string; views?: number;
-}[] = [
-  { id: 1,  title: "5 CAC Mistakes Nigerian Businesses Make", platform: "YouTube",   type: "Video",   status: "Published",    date: "Mar 18", assignee: "Salis",    views: 3240 },
-  { id: 2,  title: "How to Register Your Business (Step-by-Step)", platform: "TikTok", type: "Short",  status: "Published",    date: "Mar 19", assignee: "Hikma",    views: 12800 },
-  { id: 3,  title: "The Faceless Content Formula",             platform: "LinkedIn",  type: "Article", status: "Draft",        date: "Mar 22", assignee: "Khadija" },
-  { id: 4,  title: "HAMZURY Skills Cohort Highlight Reel",     platform: "YouTube",   type: "Video",   status: "Editing",      date: "Mar 24", assignee: "Salis" },
-  { id: 5,  title: "What Is a Business Permit? Quick Answer",  platform: "TikTok",   type: "Short",   status: "Scripting",    date: "Mar 25", assignee: "Maryam" },
-  { id: 6,  title: "Ep.14 — Building Systems While Broke",     platform: "Podcast",  type: "Episode", status: "Recording",    date: "Mar 26", assignee: "Faree" },
-  { id: 7,  title: "AI Tools Every Nigerian Entrepreneur Needs", platform: "Instagram", type: "Reel",  status: "Scheduled",    date: "Mar 27", assignee: "Lalo" },
-  { id: 8,  title: "Foreign Business Registration in Nigeria",  platform: "LinkedIn",  type: "Article", status: "Pending Approval", date: "Mar 28", assignee: "Abdullahi" },
-  { id: 9,  title: "RIDI Programme 2026 — Application Open",   platform: "All",      type: "Campaign", status: "Planning",    date: "Apr 1",  assignee: "Khadija" },
-  { id: 10, title: "Client Success Story — Tilz Spar",         platform: "YouTube",   type: "Video",   status: "Draft",        date: "Apr 3",  assignee: "Salis" },
-];
+// ─── Platform colors (for social stats) ────────────────────────────────────
+const PLATFORM_COLORS: Record<string, string> = {
+  Instagram: "#E1306C", TikTok: "#010101", LinkedIn: "#0A66C2",
+  YouTube: "#FF0000", Podcast: GOLD, Facebook: "#1877F2", Twitter: "#1DA1F2",
+};
 
-const PODCAST_EPISODES: {
-  ep: number; title: string; guest?: string; date: string;
-  duration?: string; status: string; plays?: number;
-}[] = [
-  { ep: 14, title: "Building Systems While Broke",         guest: "Idris Ibrahim (CEO)", date: "Mar 26", duration: "42 min", status: "Recording" },
-  { ep: 13, title: "The RIDI Model — Rural Talent Goes Global", guest: "Abdulmalik",    date: "Mar 12", duration: "38 min", status: "Published", plays: 1240 },
-  { ep: 12, title: "Why Every Nigerian Business Needs a Trademark", date: "Feb 27",     duration: "31 min", status: "Published", plays: 890 },
-  { ep: 11, title: "From Freelancer to Registered Brand",   guest: "Tabitha",          date: "Feb 13", duration: "45 min", status: "Published", plays: 2100 },
-  { ep: 10, title: "AI Content Creation for African Brands", guest: "Khadija",         date: "Jan 30", duration: "36 min", status: "Published", plays: 3400 },
-];
-
+// ���── AI Twin tasks (local until AI twin API exists) ────────────────────────
 const AI_TWIN_TASKS: {
   id: number; title: string; platform: string; topic: string;
   status: string; output?: string; createdAt: string;
@@ -86,24 +65,6 @@ const AI_TWIN_TASKS: {
   { id: 3, title: "Instagram carousel — RIDI eligibility", platform: "Instagram", topic: "RIDI", status: "Pending Review", createdAt: "Today 10:15 AM" },
   { id: 4, title: "YouTube description — Episode 14", platform: "YouTube", topic: "Podcast", status: "Pending Review", createdAt: "Today 11:00 AM" },
   { id: 5, title: "Email nurture — Systemise intro", platform: "Email", topic: "Systemise", status: "Draft", createdAt: "Yesterday 3:00 PM" },
-];
-
-const ASSETS = [
-  { id: 1, name: "HAMZURY Brand Kit 2026", type: "zip", size: "12.4 MB", date: "Mar 1" },
-  { id: 2, name: "Podcast Intro/Outro Jingle", type: "audio", size: "3.2 MB", date: "Feb 15" },
-  { id: 3, name: "YouTube Thumbnail Templates", type: "figma", size: "—", date: "Feb 10" },
-  { id: 4, name: "Reel B-Roll Library Q1 2026", type: "video", size: "4.7 GB", date: "Mar 20" },
-  { id: 5, name: "Canva Social Templates", type: "figma", size: "—", date: "Jan 30" },
-  { id: 6, name: "Client Testimonial Clips", type: "video", size: "890 MB", date: "Mar 15" },
-  { id: 7, name: "RIDI Programme Promo Kit", type: "zip", size: "8.1 MB", date: "Mar 5" },
-];
-
-const SOCIAL_STATS = [
-  { platform: "Instagram",  handle: "@hamzury.co",     followers: "4,210",  growth: "+8.3%", posts: 42, reach: "18,400",  color: "#E1306C" },
-  { platform: "TikTok",     handle: "@hamzury",         followers: "12,840", growth: "+22.1%", posts: 58, reach: "94,200", color: "#010101" },
-  { platform: "LinkedIn",   handle: "HAMZURY",          followers: "1,680",  growth: "+5.6%", posts: 18, reach: "6,800",   color: "#0A66C2" },
-  { platform: "YouTube",    handle: "HAMZURY Official", followers: "2,340",  growth: "+11.4%", posts: 14, reach: "31,000", color: "#FF0000" },
-  { platform: "Podcast",    handle: "The HAMZURY Show", followers: "840",    growth: "+4.2%", posts: 13, reach: "8,700",   color: GOLD },
 ];
 
 // ─── Status color helper ───────────────────────────────────────────────────
@@ -132,7 +93,42 @@ export default function MediaDashboard() {
 
   const clientTasksQuery = trpc.tasks.list.useQuery({ department: "media" }, { refetchInterval: 15000 });
   const subsQuery        = trpc.subscriptions.list.useQuery(undefined, { refetchInterval: 30000 });
+  const contentListQuery = trpc.content.list.useQuery(undefined, { refetchInterval: 30000 });
+  const podcastsQuery    = trpc.podcasts.list.useQuery(undefined, { refetchInterval: 30000 });
+  const mediaAssetsQuery = trpc.mediaAssets.list.useQuery(undefined, { refetchInterval: 30000 });
+  const socialStatsQuery = trpc.socialStats.list.useQuery(undefined, { refetchInterval: 30000 });
   const utils            = trpc.useUtils();
+
+  // Mutations for create/update actions
+  const podcastCreateMut = trpc.podcasts.create.useMutation({
+    onSuccess: () => { toast.success("Episode logged"); utils.podcasts.list.invalidate(); },
+    onError: () => toast.error("Failed to create episode"),
+  });
+  const podcastUpdateMut = trpc.podcasts.update.useMutation({
+    onSuccess: () => { toast.success("Episode updated"); utils.podcasts.list.invalidate(); },
+    onError: () => toast.error("Failed to update episode"),
+  });
+  const mediaAssetCreateMut = trpc.mediaAssets.create.useMutation({
+    onSuccess: () => { toast.success("Asset uploaded"); utils.mediaAssets.list.invalidate(); },
+    onError: () => toast.error("Failed to upload asset"),
+  });
+  const mediaAssetDeleteMut = trpc.mediaAssets.delete.useMutation({
+    onSuccess: () => { toast.success("Asset deleted"); utils.mediaAssets.list.invalidate(); },
+    onError: () => toast.error("Failed to delete asset"),
+  });
+  const socialStatsUpsertMut = trpc.socialStats.upsert.useMutation({
+    onSuccess: () => { toast.success("Social stats updated"); utils.socialStats.list.invalidate(); },
+    onError: () => toast.error("Failed to update social stats"),
+  });
+
+  // Derived data from queries
+  const contentList = contentListQuery.data || [];
+  const podcastEpisodes = podcastsQuery.data || [];
+  const mediaAssets = mediaAssetsQuery.data || [];
+  const socialStats = (socialStatsQuery.data || []).map((s: any) => ({
+    ...s,
+    color: PLATFORM_COLORS[s.platform] || GOLD,
+  }));
   const submitMut = trpc.tasks.submit.useMutation({
     onSuccess: () => { toast.success("Submitted to CSO for review"); utils.tasks.list.invalidate(); },
     onError:   () => toast.error("Failed to submit"),
@@ -229,10 +225,19 @@ export default function MediaDashboard() {
 
   // ─── Overview Section ─────────────────────────────────────────────────
   function renderOverview() {
-    const published = MOCK_CONTENT.filter(c => c.status === "Published").length;
-    const inProg    = MOCK_CONTENT.filter(c => ["Editing","Recording","Scripting"].includes(c.status)).length;
-    const pending   = MOCK_CONTENT.filter(c => ["Draft","Planning","Pending Approval"].includes(c.status)).length;
-    const totalViews = MOCK_CONTENT.reduce((s, c) => s + (c.views || 0), 0);
+    const isLoading = contentListQuery.isLoading || socialStatsQuery.isLoading;
+    const published = contentList.filter((c: any) => c.status === "Published" || c.status === "posted").length;
+    const inProg    = contentList.filter((c: any) => ["Editing","Recording","Scripting","In Progress"].includes(c.status)).length;
+    const pending   = contentList.filter((c: any) => ["Draft","Planning","Pending Approval","draft"].includes(c.status)).length;
+    const totalViews = contentList.reduce((s: number, c: any) => s + (c.views || 0), 0);
+
+    if (isLoading) {
+      return (
+        <div className="flex justify-center py-16">
+          <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-8">
@@ -258,48 +263,64 @@ export default function MediaDashboard() {
         {/* Recent content */}
         <div>
           <p className="text-sm font-bold mb-4" style={{ color: DARK }}>Recent Content</p>
-          <div className="space-y-2">
-            {MOCK_CONTENT.slice(0, 5).map(item => (
-              <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl"
-                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                  style={{ background: `${GOLD}18` }}>
-                  {item.type === "Video" || item.type === "Short" || item.type === "Reel"
-                    ? <Video size={14} style={{ color: GOLD }} />
-                    : item.type === "Episode"
-                      ? <Mic size={14} style={{ color: GOLD }} />
-                      : <Edit3 size={14} style={{ color: GOLD }} />}
+          {contentList.length === 0 ? (
+            <div className="rounded-2xl p-10 text-center" style={{ background: WHITE }}>
+              <Edit3 size={32} className="mx-auto mb-3 opacity-20" style={{ color: TEAL }} />
+              <p className="text-sm opacity-40" style={{ color: DARK }}>No content posts yet</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {contentList.slice(0, 5).map((item: any) => (
+                <div key={item.id} className="flex items-center gap-4 p-4 rounded-xl"
+                  style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{ background: `${GOLD}18` }}>
+                    {(item.type === "Video" || item.type === "Short" || item.type === "Reel" || item.contentType === "video")
+                      ? <Video size={14} style={{ color: GOLD }} />
+                      : (item.type === "Episode" || item.contentType === "podcast")
+                        ? <Mic size={14} style={{ color: GOLD }} />
+                        : <Edit3 size={14} style={{ color: GOLD }} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: DARK }}>{item.title || item.caption}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+                      {item.platform} · {item.assignee || item.createdBy || "—"} · {item.date || (item.scheduledFor ? new Date(item.scheduledFor).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—")}
+                    </p>
+                  </div>
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0"
+                    style={{ background: `${statusColor(item.status)}18`, color: statusColor(item.status) }}>
+                    {item.status}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate" style={{ color: DARK }}>{item.title}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>{item.platform} · {item.assignee} · {item.date}</p>
-                </div>
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full shrink-0"
-                  style={{ background: `${statusColor(item.status)}18`, color: statusColor(item.status) }}>
-                  {item.status}
-                </span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Platform quick stats */}
         <div>
           <p className="text-sm font-bold mb-4" style={{ color: DARK }}>Platform Snapshot</p>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {SOCIAL_STATS.slice(0, 3).map(s => (
-              <div key={s.platform} className="rounded-2xl p-4 space-y-1"
-                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
-                  <span className="text-xs font-bold" style={{ color: DARK }}>{s.platform}</span>
-                  <span className="ml-auto text-[11px] font-bold" style={{ color: "#16A34A" }}>{s.growth}</span>
+          {socialStats.length === 0 ? (
+            <div className="rounded-2xl p-8 text-center" style={{ background: WHITE }}>
+              <TrendingUp size={28} className="mx-auto mb-3 opacity-20" style={{ color: TEAL }} />
+              <p className="text-sm opacity-40" style={{ color: DARK }}>No social stats yet</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {socialStats.slice(0, 3).map((s: any) => (
+                <div key={s.platform} className="rounded-2xl p-4 space-y-1"
+                  style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: s.color }} />
+                    <span className="text-xs font-bold" style={{ color: DARK }}>{s.platform}</span>
+                    <span className="ml-auto text-[11px] font-bold" style={{ color: "#16A34A" }}>{s.growth}</span>
+                  </div>
+                  <p className="text-xl font-bold" style={{ color: DARK }}>{Number(s.followers).toLocaleString()}</p>
+                  <p className="text-[11px]" style={{ color: "#9CA3AF" }}>{Number(s.reach).toLocaleString()} reach · {s.postsCount} posts</p>
                 </div>
-                <p className="text-xl font-bold" style={{ color: DARK }}>{s.followers}</p>
-                <p className="text-[11px]" style={{ color: "#9CA3AF" }}>{s.reach} reach · {s.posts} posts</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -774,6 +795,20 @@ export default function MediaDashboard() {
 
   // ─── Podcast Section ───────────────────────────────────────────────────
   function renderPodcast() {
+    const totalEpisodes = podcastEpisodes.length;
+    const totalPlays = podcastEpisodes.reduce((s: number, ep: any) => s + (ep.plays || 0), 0);
+    const avgDuration = totalEpisodes > 0
+      ? Math.round(podcastEpisodes.reduce((s: number, ep: any) => s + (ep.duration || 0), 0) / totalEpisodes)
+      : 0;
+
+    if (podcastsQuery.isLoading) {
+      return (
+        <div className="flex justify-center py-16">
+          <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="rounded-2xl p-5" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
@@ -789,9 +824,9 @@ export default function MediaDashboard() {
           </div>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: "Total Episodes", value: "14" },
-              { label: "Total Plays",    value: "7,630" },
-              { label: "Avg Duration",  value: "38 min" },
+              { label: "Total Episodes", value: String(totalEpisodes) },
+              { label: "Total Plays",    value: totalPlays.toLocaleString() },
+              { label: "Avg Duration",  value: `${avgDuration} min` },
             ].map(stat => (
               <div key={stat.label} className="rounded-xl p-3 text-center" style={{ background: MILK }}>
                 <p className="text-xl font-bold" style={{ color: DARK }}>{stat.value}</p>
@@ -801,36 +836,45 @@ export default function MediaDashboard() {
           </div>
         </div>
 
-        <div className="space-y-3">
-          {PODCAST_EPISODES.map(ep => (
-            <div key={ep.ep} className="flex items-center gap-4 p-4 rounded-xl"
-              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: ep.status === "Published" ? `${GOLD}18` : `${TEAL}08` }}>
-                <span className="text-xs font-bold" style={{ color: ep.status === "Published" ? GOLD : TEAL }}>
-                  #{ep.ep}
-                </span>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: DARK }}>{ep.title}</p>
-                <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-                  {ep.guest ? `Guest: ${ep.guest} · ` : ""}{ep.date}{ep.duration ? ` · ${ep.duration}` : ""}
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                {ep.plays && (
-                  <span className="text-xs" style={{ color: "#9CA3AF" }}>
-                    <Play size={11} className="inline mr-1" />{ep.plays.toLocaleString()}
+        {podcastEpisodes.length === 0 ? (
+          <div className="rounded-2xl p-10 text-center" style={{ background: WHITE }}>
+            <Mic size={32} className="mx-auto mb-3 opacity-20" style={{ color: TEAL }} />
+            <p className="text-sm opacity-40" style={{ color: DARK }}>No podcast episodes yet</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {podcastEpisodes.map((ep: any) => (
+              <div key={ep.id} className="flex items-center gap-4 p-4 rounded-xl"
+                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: ep.status === "Published" ? `${GOLD}18` : `${TEAL}08` }}>
+                  <span className="text-xs font-bold" style={{ color: ep.status === "Published" ? GOLD : TEAL }}>
+                    #{ep.episodeNumber}
                   </span>
-                )}
-                <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-                  style={{ background: `${statusColor(ep.status)}18`, color: statusColor(ep.status) }}>
-                  {ep.status}
-                </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" style={{ color: DARK }}>{ep.title}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+                    {ep.guest ? `Guest: ${ep.guest} · ` : ""}
+                    {ep.recordingDate ? new Date(ep.recordingDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                    {ep.duration ? ` · ${ep.duration} min` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {ep.plays > 0 && (
+                    <span className="text-xs" style={{ color: "#9CA3AF" }}>
+                      <Play size={11} className="inline mr-1" />{ep.plays.toLocaleString()}
+                    </span>
+                  )}
+                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+                    style={{ background: `${statusColor(ep.status)}18`, color: statusColor(ep.status) }}>
+                    {ep.status}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <button
           onClick={() => toast.success("Coming soon: Log new episode")}
@@ -851,6 +895,22 @@ export default function MediaDashboard() {
       return <Image size={14} style={{ color: "#16A34A" }} />;
     };
 
+    const formatFileSize = (bytes: number | null | undefined) => {
+      if (!bytes) return "—";
+      if (bytes >= 1_073_741_824) return `${(bytes / 1_073_741_824).toFixed(1)} GB`;
+      if (bytes >= 1_048_576) return `${(bytes / 1_048_576).toFixed(1)} MB`;
+      if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${bytes} B`;
+    };
+
+    if (mediaAssetsQuery.isLoading) {
+      return (
+        <div className="flex justify-center py-16">
+          <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -862,87 +922,127 @@ export default function MediaDashboard() {
             <Upload size={12} /> Upload
           </button>
         </div>
-        <div className="space-y-2">
-          {ASSETS.map(asset => (
-            <div key={asset.id} className="flex items-center gap-4 p-4 rounded-xl"
-              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                style={{ background: MILK }}>
-                {typeIcon(asset.type)}
+        {mediaAssets.length === 0 ? (
+          <div className="rounded-2xl p-10 text-center" style={{ background: WHITE }}>
+            <Folder size={32} className="mx-auto mb-3 opacity-20" style={{ color: TEAL }} />
+            <p className="text-sm opacity-40" style={{ color: DARK }}>No media assets yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {mediaAssets.map((asset: any) => (
+              <div key={asset.id} className="flex items-center gap-4 p-4 rounded-xl"
+                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
+                  style={{ background: MILK }}>
+                  {typeIcon(asset.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate" style={{ color: DARK }}>{asset.name}</p>
+                  <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
+                    {(asset.type || "").toUpperCase()} · {formatFileSize(asset.fileSize)} · Added {asset.createdAt ? new Date(asset.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
+                  </p>
+                </div>
+                <div className="flex gap-2 shrink-0">
+                  {asset.fileUrl && (
+                    <a href={asset.fileUrl} target="_blank" rel="noopener noreferrer"
+                      className="p-1.5 rounded-lg transition"
+                      style={{ background: `${TEAL}08`, color: TEAL }}>
+                      <Eye size={13} />
+                    </a>
+                  )}
+                  {asset.fileUrl && (
+                    <a href={asset.fileUrl} download
+                      className="p-1.5 rounded-lg transition"
+                      style={{ background: `${GOLD}10`, color: "#7B4F00" }}>
+                      <Download size={13} />
+                    </a>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete "${asset.name}"?`)) {
+                        mediaAssetDeleteMut.mutate({ id: asset.id });
+                      }
+                    }}
+                    className="p-1.5 rounded-lg transition"
+                    style={{ background: "#EF444410", color: "#EF4444" }}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate" style={{ color: DARK }}>{asset.name}</p>
-                <p className="text-xs mt-0.5" style={{ color: "#9CA3AF" }}>
-                  {asset.type.toUpperCase()} · {asset.size} · Added {asset.date}
-                </p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  onClick={() => toast.success(`Opening ${asset.name}…`)}
-                  className="p-1.5 rounded-lg transition"
-                  style={{ background: `${TEAL}08`, color: TEAL }}>
-                  <Eye size={13} />
-                </button>
-                <button
-                  onClick={() => toast.success(`Downloading ${asset.name}…`)}
-                  className="p-1.5 rounded-lg transition"
-                  style={{ background: `${GOLD}10`, color: "#7B4F00" }}>
-                  <Download size={13} />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   }
 
   // ─── Social Reports Section ───────────────────────────────────────────
   function renderSocial() {
+    // Compute goals from real data
+    const ytStat = socialStats.find((s: any) => s.platform === "YouTube");
+    const ttStat = socialStats.find((s: any) => s.platform === "TikTok");
+    const totalReach = socialStats.reduce((s: number, p: any) => s + (Number(p.reach) || 0), 0);
+    const totalEpisodes = podcastEpisodes.length;
+
+    if (socialStatsQuery.isLoading) {
+      return (
+        <div className="flex justify-center py-16">
+          <Loader2 className="animate-spin" size={24} style={{ color: GOLD }} />
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {SOCIAL_STATS.map(s => (
-            <div key={s.platform} className="rounded-2xl p-5"
-              style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: `${s.color}18` }}>
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold" style={{ color: DARK }}>{s.platform}</p>
-                  <p className="text-xs" style={{ color: "#9CA3AF" }}>{s.handle}</p>
-                </div>
-                <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full"
-                  style={{ background: "#F0FDF4", color: "#16A34A" }}>
-                  {s.growth}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: "Followers", value: s.followers },
-                  { label: "Posts",     value: String(s.posts) },
-                  { label: "Reach",     value: s.reach },
-                ].map(stat => (
-                  <div key={stat.label} className="rounded-xl p-2.5 text-center" style={{ background: MILK }}>
-                    <p className="text-base font-bold" style={{ color: DARK }}>{stat.value}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "#9CA3AF" }}>{stat.label}</p>
+        {socialStats.length === 0 ? (
+          <div className="rounded-2xl p-14 text-center" style={{ background: WHITE }}>
+            <TrendingUp size={40} className="mx-auto mb-4 opacity-20" style={{ color: TEAL }} />
+            <p className="text-sm opacity-40" style={{ color: DARK }}>No social platform stats yet</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {socialStats.map((s: any) => (
+              <div key={s.platform} className="rounded-2xl p-5"
+                style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: `${s.color}18` }}>
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
                   </div>
-                ))}
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: DARK }}>{s.platform}</p>
+                    <p className="text-xs" style={{ color: "#9CA3AF" }}>{s.handle}</p>
+                  </div>
+                  <span className="ml-auto text-xs font-bold px-2.5 py-1 rounded-full"
+                    style={{ background: "#F0FDF4", color: "#16A34A" }}>
+                    {s.growth}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { label: "Followers", value: Number(s.followers).toLocaleString() },
+                    { label: "Posts",     value: String(s.postsCount || 0) },
+                    { label: "Reach",     value: Number(s.reach).toLocaleString() },
+                  ].map(stat => (
+                    <div key={stat.label} className="rounded-xl p-2.5 text-center" style={{ background: MILK }}>
+                      <p className="text-base font-bold" style={{ color: DARK }}>{stat.value}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "#9CA3AF" }}>{stat.label}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <div className="rounded-2xl p-5" style={{ background: WHITE, boxShadow: "0 1px 3px rgba(0,0,0,0.04)", borderRadius: 16 }}>
           <p className="text-sm font-bold mb-3" style={{ color: DARK }}>Content Goals — Q2 2026</p>
           {[
-            { label: "YouTube Subscribers",      current: 2340,  target: 5000,  unit: "" },
-            { label: "TikTok Followers",          current: 12840, target: 25000, unit: "" },
-            { label: "Monthly Reach (all platforms)", current: 158100, target: 250000, unit: "" },
-            { label: "Podcast Episodes",          current: 14,    target: 26,    unit: " eps" },
+            { label: "YouTube Subscribers",           current: Number(ytStat?.followers) || 0, target: 5000,   unit: "" },
+            { label: "TikTok Followers",              current: Number(ttStat?.followers) || 0, target: 25000,  unit: "" },
+            { label: "Monthly Reach (all platforms)",  current: totalReach,                     target: 250000, unit: "" },
+            { label: "Podcast Episodes",              current: totalEpisodes,                   target: 26,     unit: " eps" },
           ].map(goal => {
-            const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
+            const pct = goal.target > 0 ? Math.min(100, Math.round((goal.current / goal.target) * 100)) : 0;
             return (
               <div key={goal.label} className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">

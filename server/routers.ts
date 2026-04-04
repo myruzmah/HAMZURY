@@ -70,6 +70,28 @@ import {
   getSkillsAwards, createSkillsAward,
   // Client AI Chat
   createClientChat, getClientChatsByTask, getClientChatByRef, getClientChatById, updateClientChat,
+  // Partnerships (BizDev)
+  listPartnerships, createPartnership, updatePartnership,
+  // Brand QA (BizDev)
+  listBrandQaItems, createBrandQaItem, updateBrandQaItem,
+  // Job Postings (HR)
+  listJobPostings, createJobPosting, updateJobPosting,
+  // Hiring Applications (HR)
+  listHiringApplications, createHiringApplication, updateHiringApplication,
+  // Training Sessions (HR)
+  listTrainingSessions, createTrainingSession, updateTrainingSession,
+  // Development Plans (HR)
+  listDevelopmentPlans, createDevelopmentPlan, updateDevelopmentPlan,
+  // Performance Cycles (HR)
+  listPerformanceCycles, createPerformanceCycle, updatePerformanceCycle,
+  // RIDI Communities
+  listRidiCommunities, createRidiCommunity, updateRidiCommunity,
+  // Podcast Episodes (Media)
+  listPodcastEpisodes, createPodcastEpisode, updatePodcastEpisode,
+  // Media Assets
+  listMediaAssets, createMediaAsset, deleteMediaAsset,
+  // Social Platform Stats (Media)
+  listSocialPlatformStats, createSocialPlatformStat, upsertSocialPlatformStat,
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
@@ -2528,7 +2550,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
 
         // Create audit log
         await createAuditLog({
-          userId: "client",
+          userId: 0,
           userName: input.clientName || invoice.clientName,
           action: "payment_claimed",
           resource: "invoices",
@@ -3406,6 +3428,160 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
         const { id, ...data } = input;
         return updateClientChat(id, data);
       }),
+  }),
+
+  // ─── Partnerships (BizDev) ────────────────────────────────────────────────
+  partnerships: router({
+    list: protectedProcedure.query(() => listPartnerships()),
+    create: protectedProcedure.input(z.object({
+      name: z.string(), type: z.enum(["referral_partner", "community_partner", "events_partner", "regional_partner", "ecosystem_partner"]),
+      contact: z.string().optional(), stage: z.enum(["researching", "outreach", "agreed", "active", "paused"]).optional(),
+      referrals: z.number().optional(), notes: z.string().optional(), createdBy: z.string().optional(),
+    })).mutation(({ input }) => createPartnership(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), name: z.string().optional(), type: z.enum(["referral_partner", "community_partner", "events_partner", "regional_partner", "ecosystem_partner"]).optional(),
+      contact: z.string().optional(), stage: z.enum(["researching", "outreach", "agreed", "active", "paused"]).optional(),
+      referrals: z.number().optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updatePartnership(id, data as any); }),
+  }),
+
+  // ─── Brand QA (BizDev) ────────────────────────────────────────────────────
+  brandQa: router({
+    list: protectedProcedure.query(() => listBrandQaItems()),
+    create: protectedProcedure.input(z.object({
+      department: z.string(), item: z.string(), type: z.enum(["proposal", "content", "visual", "document"]),
+      submittedBy: z.string().optional(), urgent: z.boolean().optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => createBrandQaItem(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), status: z.enum(["pending", "approved", "revision"]).optional(),
+      reviewedBy: z.string().optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updateBrandQaItem(id, data as any); }),
+  }),
+
+  // ─── Job Postings (HR) ────────────────────────────────────────────────────
+  jobPostings: router({
+    list: protectedProcedure.query(() => listJobPostings()),
+    create: protectedProcedure.input(z.object({
+      title: z.string(), department: z.string(), status: z.enum(["open", "on_hold", "closed", "filled"]).optional(),
+      description: z.string().optional(), requirements: z.string().optional(), createdBy: z.string().optional(),
+    })).mutation(({ input }) => createJobPosting(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), title: z.string().optional(), department: z.string().optional(),
+      status: z.enum(["open", "on_hold", "closed", "filled"]).optional(),
+      description: z.string().optional(), requirements: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updateJobPosting(id, data as any); }),
+  }),
+
+  // ─── Hiring Applications (HR) ─────────────────────────────────────────────
+  hiringApps: router({
+    list: protectedProcedure.query(() => listHiringApplications()),
+    create: protectedProcedure.input(z.object({
+      jobPostingId: z.number(), candidateName: z.string(), candidateEmail: z.string().optional(),
+      candidatePhone: z.string().optional(), status: z.enum(["received", "shortlisted", "interviewed", "offer_sent", "hired", "rejected"]).optional(),
+      score: z.string().optional(), interviewDate: z.string().optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => createHiringApplication(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), status: z.enum(["received", "shortlisted", "interviewed", "offer_sent", "hired", "rejected"]).optional(),
+      score: z.string().optional(), interviewDate: z.string().optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updateHiringApplication(id, data as any); }),
+  }),
+
+  // ─── Training Sessions (HR) ───────────────────────────────────────────────
+  trainingSessions: router({
+    list: protectedProcedure.query(() => listTrainingSessions()),
+    create: protectedProcedure.input(z.object({
+      title: z.string(), type: z.enum(["internal", "external", "online", "workshop"]).optional(),
+      sessionDate: z.string().optional(), participants: z.number().optional(),
+      status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]).optional(),
+      notes: z.string().optional(), createdBy: z.string().optional(),
+    })).mutation(({ input }) => createTrainingSession(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), title: z.string().optional(), type: z.enum(["internal", "external", "online", "workshop"]).optional(),
+      sessionDate: z.string().optional(), participants: z.number().optional(),
+      status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]).optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updateTrainingSession(id, data as any); }),
+  }),
+
+  // ─── Development Plans (HR) ───────────────────────────────────────────────
+  devPlans: router({
+    list: protectedProcedure.query(() => listDevelopmentPlans()),
+    create: protectedProcedure.input(z.object({
+      staffEmail: z.string(), staffName: z.string(), goal: z.string(),
+      targetDate: z.string().optional(), progress: z.number().optional(),
+      support: z.string().optional(), notes: z.string().optional(), createdBy: z.string().optional(),
+    })).mutation(({ input }) => createDevelopmentPlan(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), goal: z.string().optional(), targetDate: z.string().optional(),
+      progress: z.number().optional(), support: z.string().optional(), notes: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updateDevelopmentPlan(id, data as any); }),
+  }),
+
+  // ─── Performance Cycles (HR) ──────────────────────────────────────────────
+  perfCycles: router({
+    list: protectedProcedure.query(() => listPerformanceCycles()),
+    create: protectedProcedure.input(z.object({
+      cycleName: z.string(), period: z.string(), status: z.enum(["upcoming", "active", "completed"]).optional(),
+      totalReviews: z.number().optional(), completedReviews: z.number().optional(),
+    })).mutation(({ input }) => createPerformanceCycle(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), cycleName: z.string().optional(), period: z.string().optional(),
+      status: z.enum(["upcoming", "active", "completed"]).optional(),
+      totalReviews: z.number().optional(), completedReviews: z.number().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updatePerformanceCycle(id, data as any); }),
+  }),
+
+  // ─── RIDI Communities ─────────────────────────────────────────────────────
+  ridiCommunities: router({
+    list: protectedProcedure.query(() => listRidiCommunities()),
+    create: protectedProcedure.input(z.object({
+      name: z.string(), state: z.string(), coordinator: z.string().optional(),
+      members: z.number().optional(), status: z.enum(["active", "inactive", "forming"]).optional(),
+    })).mutation(({ input }) => createRidiCommunity(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), name: z.string().optional(), state: z.string().optional(),
+      coordinator: z.string().optional(), members: z.number().optional(),
+      status: z.enum(["active", "inactive", "forming"]).optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updateRidiCommunity(id, data as any); }),
+  }),
+
+  // ─── Podcast Episodes (Media) ─────────────────────────────────────────────
+  podcasts: router({
+    list: protectedProcedure.query(() => listPodcastEpisodes()),
+    create: protectedProcedure.input(z.object({
+      episodeNumber: z.number(), title: z.string(), guest: z.string().optional(),
+      recordingDate: z.string().optional(), duration: z.string().optional(),
+      status: z.enum(["scheduled", "recorded", "editing", "published"]).optional(),
+      plays: z.number().optional(), audioUrl: z.string().optional(),
+    })).mutation(({ input }) => createPodcastEpisode(input as any)),
+    update: protectedProcedure.input(z.object({
+      id: z.number(), title: z.string().optional(), guest: z.string().optional(),
+      recordingDate: z.string().optional(), duration: z.string().optional(),
+      status: z.enum(["scheduled", "recorded", "editing", "published"]).optional(),
+      plays: z.number().optional(), audioUrl: z.string().optional(),
+    })).mutation(({ input }) => { const { id, ...data } = input; return updatePodcastEpisode(id, data as any); }),
+  }),
+
+  // ─── Media Assets ─────────────────────────────────────────────────────────
+  mediaAssets: router({
+    list: protectedProcedure.query(() => listMediaAssets()),
+    create: protectedProcedure.input(z.object({
+      name: z.string(), type: z.enum(["zip", "audio", "video", "figma", "image", "document"]),
+      fileSize: z.string().optional(), fileUrl: z.string().optional(), uploadedBy: z.string().optional(),
+    })).mutation(({ input }) => createMediaAsset(input as any)),
+    delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(({ input }) => deleteMediaAsset(input.id)),
+  }),
+
+  // ─── Social Platform Stats (Media) ────────────────────────────────────────
+  socialStats: router({
+    list: protectedProcedure.query(() => listSocialPlatformStats()),
+    upsert: protectedProcedure.input(z.object({
+      platform: z.string(), handle: z.string().optional(), followers: z.number().optional(),
+      growth: z.string().optional(), postsCount: z.number().optional(), reach: z.number().optional(),
+    })).mutation(({ input }) => upsertSocialPlatformStat(input as any)),
+    create: protectedProcedure.input(z.object({
+      platform: z.string(), handle: z.string().optional(), followers: z.number().optional(),
+      growth: z.string().optional(), postsCount: z.number().optional(), reach: z.number().optional(),
+    })).mutation(({ input }) => createSocialPlatformStat(input as any)),
   }),
 
 });

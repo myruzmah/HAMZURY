@@ -1111,3 +1111,177 @@ export const clientChats = mysqlTable("client_chats", {
 });
 export type ClientChat = typeof clientChats.$inferSelect;
 export type InsertClientChat = typeof clientChats.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PARTNERSHIPS (BizDev)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const partnerships = mysqlTable("partnerships", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: mysqlEnum("partnerType", ["referral_partner", "community_partner", "events_partner", "regional_partner", "ecosystem_partner"]).notNull(),
+  contact: varchar("contact", { length: 255 }),
+  stage: mysqlEnum("partnerStage", ["researching", "outreach", "agreed", "active", "paused"]).default("researching").notNull(),
+  referrals: int("referrals").default(0).notNull(),
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Partnership = typeof partnerships.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BRAND QA (BizDev)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const brandQaItems = mysqlTable("brandQaItems", {
+  id: int("id").autoincrement().primaryKey(),
+  department: varchar("department", { length: 50 }).notNull(),
+  item: text("item").notNull(),
+  type: mysqlEnum("qaType", ["proposal", "content", "visual", "document"]).notNull(),
+  status: mysqlEnum("qaStatus", ["pending", "approved", "revision"]).default("pending").notNull(),
+  submittedBy: varchar("submittedBy", { length: 255 }),
+  reviewedBy: varchar("reviewedBy", { length: 255 }),
+  urgent: boolean("urgent").default(false).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BrandQaItem = typeof brandQaItems.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// JOB POSTINGS & HIRING (HR)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const jobPostings = mysqlTable("jobPostings", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  department: varchar("department", { length: 100 }).notNull(),
+  status: mysqlEnum("jobStatus", ["open", "on_hold", "closed", "filled"]).default("open").notNull(),
+  description: text("description"),
+  requirements: text("requirements"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  postedAt: timestamp("postedAt").defaultNow().notNull(),
+  closedAt: timestamp("closedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type JobPosting = typeof jobPostings.$inferSelect;
+
+export const hiringApplications = mysqlTable("hiringApplications", {
+  id: int("id").autoincrement().primaryKey(),
+  jobPostingId: int("jobPostingId").notNull(),
+  candidateName: varchar("candidateName", { length: 255 }).notNull(),
+  candidateEmail: varchar("candidateEmail", { length: 255 }),
+  candidatePhone: varchar("candidatePhone", { length: 50 }),
+  status: mysqlEnum("hiringStatus", ["received", "shortlisted", "interviewed", "offer_sent", "hired", "rejected"]).default("received").notNull(),
+  score: varchar("score", { length: 20 }),
+  interviewDate: varchar("interviewDate", { length: 30 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HiringApplication = typeof hiringApplications.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRAINING & DEVELOPMENT (HR)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const trainingSessions = mysqlTable("trainingSessions", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  type: mysqlEnum("trainingType", ["internal", "external", "online", "workshop"]).default("internal").notNull(),
+  sessionDate: varchar("sessionDate", { length: 30 }),
+  participants: int("participants").default(0).notNull(),
+  status: mysqlEnum("trainingStatus", ["scheduled", "in_progress", "completed", "cancelled"]).default("scheduled").notNull(),
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TrainingSession = typeof trainingSessions.$inferSelect;
+
+export const developmentPlans = mysqlTable("developmentPlans", {
+  id: int("id").autoincrement().primaryKey(),
+  staffEmail: varchar("staffEmail", { length: 255 }).notNull(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  goal: text("goal").notNull(),
+  targetDate: varchar("targetDate", { length: 30 }),
+  progress: int("progress").default(0).notNull(),
+  support: varchar("support", { length: 255 }),
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DevelopmentPlan = typeof developmentPlans.$inferSelect;
+
+export const performanceCycles = mysqlTable("performanceCycles", {
+  id: int("id").autoincrement().primaryKey(),
+  cycleName: varchar("cycleName", { length: 255 }).notNull(),
+  period: varchar("period", { length: 50 }).notNull(),
+  status: mysqlEnum("cycleStatus", ["upcoming", "active", "completed"]).default("upcoming").notNull(),
+  totalReviews: int("totalReviews").default(0).notNull(),
+  completedReviews: int("completedReviews").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PerformanceCycle = typeof performanceCycles.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RIDI COMMUNITIES
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const ridiCommunities = mysqlTable("ridiCommunities", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  state: varchar("state", { length: 100 }).notNull(),
+  coordinator: varchar("coordinator", { length: 255 }),
+  members: int("members").default(0).notNull(),
+  status: mysqlEnum("communityStatus", ["active", "inactive", "forming"]).default("forming").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RidiCommunity = typeof ridiCommunities.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MEDIA — PODCASTS, ASSETS, SOCIAL STATS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export const podcastEpisodes = mysqlTable("podcastEpisodes", {
+  id: int("id").autoincrement().primaryKey(),
+  episodeNumber: int("episodeNumber").notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  guest: varchar("guest", { length: 255 }),
+  recordingDate: varchar("recordingDate", { length: 30 }),
+  duration: varchar("duration", { length: 20 }),
+  status: mysqlEnum("podcastStatus", ["scheduled", "recorded", "editing", "published"]).default("scheduled").notNull(),
+  plays: int("plays").default(0).notNull(),
+  audioUrl: varchar("audioUrl", { length: 500 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type PodcastEpisode = typeof podcastEpisodes.$inferSelect;
+
+export const mediaAssets = mysqlTable("mediaAssets", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  type: mysqlEnum("assetType", ["zip", "audio", "video", "figma", "image", "document"]).notNull(),
+  fileSize: varchar("fileSize", { length: 50 }),
+  fileUrl: varchar("fileUrl", { length: 500 }),
+  uploadedBy: varchar("uploadedBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MediaAsset = typeof mediaAssets.$inferSelect;
+
+export const socialPlatformStats = mysqlTable("socialPlatformStats", {
+  id: int("id").autoincrement().primaryKey(),
+  platform: varchar("platform", { length: 50 }).notNull(),
+  handle: varchar("handle", { length: 100 }),
+  followers: int("followers").default(0).notNull(),
+  growth: varchar("growth", { length: 20 }),
+  postsCount: int("postsCount").default(0).notNull(),
+  reach: int("reach").default(0).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type SocialPlatformStat = typeof socialPlatformStats.$inferSelect;
