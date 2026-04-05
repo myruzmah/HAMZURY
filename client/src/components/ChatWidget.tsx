@@ -287,11 +287,23 @@ const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items
   /* ═══════════════════════════════════════════════════════════
      PACKAGES — shown first, higher ticket, less decision fatigue
      ═══════════════════════════════════════════════════════════ */
-  "BizDoc Packages": { dept: "bizdoc", pitch: "Most serious businesses need more than one thing. Our packs save you money and get everything done at once. Pick the level that fits where you are:", items: [
-    { name: "BizDoc Starter (CAC Ltd + TIN + Bank + Seal)", price: "₦250,000", amount: 250000 },
-    { name: "BizDoc Pro (Starter + Tax Filing + Compliance Mgmt)", price: "₦400,000", amount: 400000 },
-    { name: "BizDoc Complete (Pro + Legal Pack + Sector Licence)", price: "₦600,000", amount: 600000 },
-    { name: "I just need one service", price: "See individual", amount: 0 },
+  "BizDoc Packages": { dept: "bizdoc", pitch: "Choose the package that matches where your business is right now. Each builds on the one before:", items: [
+    { name: "Starter — CAC Ltd + EFCC + Tax ProMax (₦200K)", price: "₦200,000", amount: 200000 },
+    { name: "Growth — + Branding + Templates + Business Plan (₦450K)", price: "₦450,000", amount: 450000 },
+    { name: "Pro — + 1yr Tax Management + Contracts (₦570K)", price: "₦570,000", amount: 570000 },
+    { name: "Enterprise — + ITF/NSITF/PENCOM/BPP (₦1M)", price: "₦1,000,000", amount: 1000000 },
+  ] },
+  "Starter Package": { dept: "bizdoc", pitch: "The Starter Package — ₦200,000 — is everything you need to legally exist and start operating.\n\n📋 What's included:\n✓ Full CAC Limited Company (Ltd) registration — your business becomes a separate legal entity\n✓ EFCC Certificate — financial compliance clearance\n✓ Tax ProMax Activation — we set up your tax records so you're filing-ready from day one\n\n💡 Why Ltd and not Business Name?\nA Limited Company protects your personal assets. If anything goes wrong with the business, your house, car, savings are safe. Business Name (BN) doesn't offer this protection.\n\n📋 Share Capital: We'll need to know how many million in shares you want. Each million has its own filing fee tier. If any director is a foreigner, minimum share capital must be ₦100,000,000.\n\nReady to get registered?", items: [
+    { name: "Starter Package (CAC Ltd + EFCC + Tax ProMax)", price: "₦200,000", amount: 200000 },
+  ] },
+  "Growth Package": { dept: "bizdoc", pitch: "The Growth Package — ₦450,000 — sets you up to look and operate like a serious business.\n\n📋 What's included:\n✓ Everything in Starter (CAC Ltd + EFCC + Tax ProMax)\n✓ Branding & Templates — professional letterhead, invoice templates, branded documents\n✓ Business Plan — a solid plan you can use for bank loans, investor pitches, and strategic clarity\n\n💡 Why branding matters:\nFirst impressions win contracts. When a potential client or partner sees professionally branded documents, they take you seriously. A typed proposal on plain paper vs a branded deck — the difference is trust.\n\n💡 Why a business plan:\nBanks require it for loans. Investors require it for funding. But more importantly, it forces you to think clearly about your market, revenue model, and growth strategy.\n\nShall we get you started with the Growth package?", items: [
+    { name: "Growth Package (Starter + Branding + Business Plan)", price: "₦450,000", amount: 450000 },
+  ] },
+  "Pro Package": { dept: "bizdoc", pitch: "The Pro Package — ₦570,000 — covers your first full year of compliance management.\n\n📋 What's included:\n✓ Everything in Growth (CAC Ltd + EFCC + Tax ProMax + Branding + Business Plan)\n✓ 1 Year Tax ProMax Management — every month we send you a questionnaire, you send us bank statements, we keep your records current. At year-end, we process your Tax Clearance Certificate and tell you exactly what tax to pay\n✓ All Contract Documents — SLA, NDA, MOU, Employment Contracts, Consultancy Agreements — every template your business needs\n\n💡 How Tax ProMax saves you money:\nWithout proper records, FIRS can estimate your tax (and they always estimate HIGH). With monthly updates, we identify every legitimate deduction throughout the year. You pay only what you legally owe — not a kobo more.\n\nReady to go Pro?", items: [
+    { name: "Pro Package (Growth + 1yr Tax Mgmt + Contracts)", price: "₦570,000", amount: 570000 },
+  ] },
+  "Enterprise Package": { dept: "bizdoc", pitch: "The Enterprise Package — ₦1,000,000 — makes your business fully tender-ready and compliance-proof.\n\n📋 What's included:\n✓ Everything in Pro (CAC Ltd + EFCC + Branding + Business Plan + 1yr Tax Management + Contracts)\n✓ ITF Compliance Certificate — required for government contracts above ₦50M\n✓ NSITF Compliance Certificate — employee insurance, mandatory for all employers\n✓ PENCOM Clearance — pension compliance, required for tenders\n✓ BPP Registration — your key to federal government procurement\n\nℹ️ Note: ITF, NSITF, PENCOM and BPP are processed after your company completes 1 year of operation. We handle the timing — you don't need to remember.\n\n💡 Why this matters:\nMost businesses lose tender opportunities because ONE certificate is missing. Enterprise means you're always ready. When the tender drops, you submit — no last-minute scrambles.\n\nShall we set up your Enterprise package?", items: [
+    { name: "Enterprise Package (Full Compliance + BPP)", price: "₦1,000,000", amount: 1000000 },
   ] },
   "Systemise Packages": { dept: "systemise", pitch: "Building a brand without systems is like opening a shop with no signboard. Our packs give you the full digital foundation:", items: [
     { name: "Digital Starter (Brand Identity + Landing Page)", price: "₦350,000", amount: 350000 },
@@ -499,6 +511,10 @@ function matchServicePitch(context: string): typeof SERVICE_PITCH_MAP[string] | 
     [["pencom", "pension commission", "pension clearance", "pension compliance"], "PENCOM Renewal"],
     [["bpp", "public procurement", "government contractor", "tender registration"], "BPP Renewal"],
     [["contract document", "sla", "mou", "joint venture agreement", "employment contract", "consultancy agreement", "contract drafting"], "Contract Documents"],
+    [["starter package", "200k package", "cac + efcc"], "Starter Package"],
+    [["growth package", "450k package", "branding package", "business plan package"], "Growth Package"],
+    [["pro package", "570k package", "tax management package"], "Pro Package"],
+    [["enterprise package", "1m package", "1 million package", "full tender package", "bpp package"], "Enterprise Package"],
     [["renewal", "renew", "clearance renewal"], "Renewals"],
     [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
     [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],

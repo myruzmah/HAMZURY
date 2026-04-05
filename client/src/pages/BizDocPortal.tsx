@@ -341,6 +341,103 @@ export default function BizDocPortal() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
+         RECOMMENDED PACKAGES
+         ═══════════════════════════════════════════════════════════════════════ */}
+      <section className="py-20 md:py-28" style={{ backgroundColor: `${G}04` }}>
+        <div className="max-w-5xl mx-auto px-6">
+          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.35em] uppercase mb-3 text-center" style={{ color: Au }}>
+            RECOMMENDED
+          </p>
+          <h2 className="text-[clamp(22px,3.5vw,32px)] font-light tracking-tight text-center mb-4" style={{ color: G }}>
+            Start Right. Stay Compliant.
+          </h2>
+          <p className="text-sm text-center opacity-50 mb-12 max-w-lg mx-auto" style={{ color: G }}>
+            Choose the package that matches where your business is right now.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {/* Package 1 — Starter */}
+            <button
+              onClick={() => openChat("Starter Package")}
+              className="bg-white rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group"
+              style={{ borderColor: `${G}10` }}
+            >
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: `${Au}12`, color: Au }}>STARTER</p>
+              <h3 className="text-lg font-medium mb-2" style={{ color: G }}>₦200,000</h3>
+              <p className="text-xs opacity-50 mb-5" style={{ color: G }}>One-time setup</p>
+              <ul className="space-y-2.5 text-[12px]" style={{ color: G }}>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Full CAC Ltd Registration</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> EFCC Certificate</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Tax ProMax Activation</li>
+              </ul>
+              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: `${G}08`, color: Au }}>
+                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+
+            {/* Package 2 — Growth */}
+            <button
+              onClick={() => openChat("Growth Package")}
+              className="bg-white rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group relative"
+              style={{ borderColor: `${Au}30` }}
+            >
+              <div className="absolute -top-2.5 left-6 text-[9px] font-bold tracking-[0.15em] uppercase px-3 py-1 rounded-full" style={{ backgroundColor: Au, color: W }}>POPULAR</div>
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: `${G}08`, color: G }}>GROWTH</p>
+              <h3 className="text-lg font-medium mb-2" style={{ color: G }}>₦450,000</h3>
+              <p className="text-xs opacity-50 mb-5" style={{ color: G }}>One-time setup</p>
+              <ul className="space-y-2.5 text-[12px]" style={{ color: G }}>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Everything in Starter</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Branding & Templates</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Business Plan</li>
+              </ul>
+              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: `${G}08`, color: Au }}>
+                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+
+            {/* Package 3 — Pro */}
+            <button
+              onClick={() => openChat("Pro Package")}
+              className="bg-white rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group"
+              style={{ borderColor: `${G}10` }}
+            >
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: `${G}08`, color: G }}>PRO</p>
+              <h3 className="text-lg font-medium mb-2" style={{ color: G }}>₦570,000</h3>
+              <p className="text-xs opacity-50 mb-5" style={{ color: G }}>1 year management</p>
+              <ul className="space-y-2.5 text-[12px]" style={{ color: G }}>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Everything in Growth</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> 1 Year Tax ProMax Management</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> All Contract Documents</li>
+              </ul>
+              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: `${G}08`, color: Au }}>
+                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+
+            {/* Package 4 — Enterprise */}
+            <button
+              onClick={() => openChat("Enterprise Package")}
+              className="rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group"
+              style={{ backgroundColor: G, borderColor: G }}
+            >
+              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: "rgba(255,255,255,0.12)", color: W }}>ENTERPRISE</p>
+              <h3 className="text-lg font-medium mb-2" style={{ color: W }}>₦1,000,000</h3>
+              <p className="text-xs opacity-50 mb-5" style={{ color: W }}>1 year full compliance</p>
+              <ul className="space-y-2.5 text-[12px]" style={{ color: "rgba(255,255,255,0.85)" }}>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Everything in Pro</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> ITF + NSITF + PENCOM</li>
+                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> BPP Registration</li>
+                <li className="flex items-start gap-2 opacity-60"><span className="text-[10px]">ℹ️</span> <span className="italic">After company does 1 year</span></li>
+              </ul>
+              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.12)", color: Au }}>
+                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════════════════════════════════════════════════════
          TRACK
          ═══════════════════════════════════════════════════════════════════════ */}
       <section id="track" className="py-24 md:py-32" style={{ backgroundColor: Cr }}>
