@@ -139,7 +139,7 @@ export default function BizDocPortal() {
 
   return (
     <>
-      <SplashScreen text="BIZDOC" color={G} />
+      <SplashScreen text="BIZDOC" color={G} accent={Au} />
       <PageMeta
         title="BizDoc Consult. Business Compliance, Legal & Growth"
         description="CAC registration, tax compliance, sector licences, legal documents, and managed business compliance for Nigerian businesses."
@@ -161,6 +161,18 @@ export default function BizDocPortal() {
         .fade-up-d1 { animation: fade-up 0.8s ease-out 0.1s both; }
         .fade-up-d2 { animation: fade-up 0.8s ease-out 0.2s both; }
         .fade-up-d3 { animation: fade-up 0.8s ease-out 0.3s both; }
+        @keyframes blueprint-shimmer {
+          0%, 100% { border-color: ${Au}30; text-shadow: none; }
+          50% { border-color: ${Au}80; text-shadow: 0 0 12px ${Au}40; }
+        }
+        .hero-blueprint-btn {
+          animation: blueprint-shimmer 3s ease-in-out infinite;
+        }
+        .hero-blueprint-btn:hover {
+          background: rgba(255,255,255,0.08);
+          transform: scale(1.03);
+          transition: all 0.3s;
+        }
       `}</style>
 
       {/* ── NAV ── */}
@@ -269,8 +281,8 @@ export default function BizDocPortal() {
             </button>
             <Link href="/bizdoc/blueprint">
               <span
-                className="px-9 py-4 rounded-full text-[13px] font-bold tracking-wide transition-all duration-300 hover:bg-white/10 cursor-pointer inline-block"
-                style={{ color: Au, border: `1px solid ${Au}30` }}
+                className="px-9 py-4 rounded-full text-[13px] font-bold tracking-wide cursor-pointer inline-block hero-blueprint-btn"
+                style={{ color: Au, border: `1px solid ${Au}40` }}
               >
                 Positioning Blueprint
               </span>

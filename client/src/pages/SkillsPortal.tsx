@@ -289,6 +289,21 @@ export default function SkillsPortal() {
         description="Cohort-based business education for ambitious professionals. Digital marketing, business development, data analysis, and AI programs."
       />
 
+      <style>{`
+        @keyframes blueprint-shimmer {
+          0%, 100% { border-color: ${GOLD}30; text-shadow: none; }
+          50% { border-color: ${GOLD}80; text-shadow: 0 0 12px ${GOLD}40; }
+        }
+        .hero-blueprint-btn {
+          animation: blueprint-shimmer 3s ease-in-out infinite;
+        }
+        .hero-blueprint-btn:hover {
+          background: rgba(255,255,255,0.08);
+          transform: scale(1.03);
+          transition: all 0.3s;
+        }
+      `}</style>
+
       {/* ── NAV ── */}
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${scrolled ? "py-3" : "py-5"}`}
@@ -375,8 +390,8 @@ export default function SkillsPortal() {
             </button>
             <Link href="/bizdoc/blueprint">
               <span
-                className="px-8 py-4 rounded-full text-[14px] font-bold transition-all duration-300 hover:opacity-80 cursor-pointer inline-block"
-                style={{ color: GOLD, border: `1px solid ${GOLD}` }}
+                className="px-8 py-4 rounded-full text-[14px] font-bold cursor-pointer inline-block hero-blueprint-btn"
+                style={{ color: GOLD, border: `1px solid ${GOLD}40` }}
               >
                 Positioning Blueprint
               </span>
