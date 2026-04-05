@@ -327,6 +327,23 @@ export async function getTaskByRef(ref: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
+/** Find a lead by its ref number */
+export async function getLeadByRef(ref: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(leads).where(eq(leads.ref, ref)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+/** Find tasks matching a lead's phone number */
+export async function getTasksByLeadPhone(phone: string): Promise<any[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const last6 = phone.replace(/\D/g, "").slice(-6);
+  if (!last6) return [];
+  return db.select().from(tasks).where(like(tasks.phone, `%${last6}`)).orderBy(desc(tasks.createdAt));
+}
+
 export async function getTasksByLeadId(leadId: number): Promise<Task[]> {
   const db = await getDb();
   if (!db) return [];

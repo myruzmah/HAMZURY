@@ -8,7 +8,7 @@ import {
   generateHZRefNumber, createSystemiseLead, getSystemiseLeads, getSystemiseLeadByRef,
   createAppointment, getAppointments,
   createJoinApplication, getJoinApplications,
-  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore, getTasksByLeadId, getTasksByClientPhone,
+  createTask, createTaskFromLead, getTasks, getTaskById, getTaskByRef, getTaskByPhone, updateTask, getTasksByDepartment, getTasksByAssignee, updateTaskDepartmentByLeadId, getSubmittedTasksForReview, getTasksByDeptForStaff, getCommissionByTaskRef, updateLeadScore, getTasksByLeadId, getTasksByClientPhone, getLeadByRef, getTasksByLeadPhone,
   getChecklistItemsByTaskId, toggleChecklistItem, getChecklistTemplates,
   createDocument, getDocumentsByTaskId, deleteDocument,
   createActivityLog, getActivityLogsByTaskId, getRecentActivityLogs,
@@ -769,7 +769,40 @@ export const appRouter = router({
         phone: z.string().optional(),
       }))
       .query(async ({ input }) => {
-        const task = await getTaskByRef(input.ref.trim());
+        const refTrimmed = input.ref.trim();
+
+        // Try task first
+        let task = await getTaskByRef(refTrimmed);
+
+        // If no task found, check if it's a lead ref → find tasks by that lead's phone
+        if (!task) {
+          const lead = await getLeadByRef(refTrimmed);
+          if (lead && lead.phone) {
+            const matchedTasks = await getTasksByLeadPhone(lead.phone);
+            if (matchedTasks.length > 0) {
+              task = matchedTasks[0] as any;
+            } else {
+              // Return lead info even if no task exists yet
+              return {
+                found: true as const,
+                ref: lead.ref,
+                clientName: lead.name,
+                businessName: lead.businessName,
+                service: lead.service,
+                department: lead.assignedDepartment || "bizdoc",
+                status: "Not Started",
+                statusIndex: 0,
+                statusTotal: 5,
+                statusSteps: ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"],
+                statusMessage: "Your file has been received and is queued for processing. A compliance officer will begin work shortly.",
+                deadline: null,
+                lastUpdated: lead.updatedAt,
+                createdAt: lead.createdAt,
+              };
+            }
+          }
+        }
+
         if (!task) return { found: false as const, reason: "not_found" as const };
 
         // Phone verification: if phone provided, verify it matches (last 6 digits)

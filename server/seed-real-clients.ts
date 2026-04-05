@@ -41,18 +41,15 @@ async function safeLead(db: ReturnType<typeof drizzle>, data: any) {
   return row[0];
 }
 
-/** Unique ref counter to avoid collisions for same-phone tasks */
-let taskCounter = 0;
-
 /** Insert task — always creates new (tasks can have same client) */
 async function safeTask(db: ReturnType<typeof drizzle>, data: any) {
-  taskCounter++;
-  const now = new Date();
-  const yy = String(now.getFullYear()).slice(-2);
-  const m = String(now.getMonth() + 1);
-  const suffix = String(taskCounter).padStart(4, "0");
-  const phoneDigits = data.phone ? data.phone.replace(/\D/g, "").slice(-2) : "00";
-  const ref = `HMZ-${yy}/${m}-T${phoneDigits}${suffix}`;
+  // Use same ref format as generateRef() — HMZ-YY/M-XXXX (digits only, no letters)
+  const ref = hmzRef(data.phone);
+  const existing = await db.select().from(tasks).where(eq(tasks.ref, ref)).limit(1);
+  if (existing.length > 0) {
+    console.log(`   ⏭  Task ${ref} already exists (${data.clientName})`);
+    return;
+  }
   const { status, ...rest } = data;
   const insertData: any = { ref, ...rest };
   if (status) insertData.status = status;
