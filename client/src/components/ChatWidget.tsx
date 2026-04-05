@@ -483,6 +483,48 @@ const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items
       { name: "Contract Document Drafting", price: "Get Started", amount: 50000 },
     ],
   },
+  "Tax Contract Documents": {
+    dept: "bizdoc" as Department,
+    pitch: "📄 TAX & CONTRACT DOCUMENTS\n\nThese are the critical documents businesses renew regularly:\n\n• TCC (Tax Clearance Certificate) — Proves 3 years of tax compliance. Required for government contracts, bank loans, and tenders.\n• ITF (Industrial Training Fund) — Mandatory for companies with 5+ employees or turnover above ₦50M.\n• NSITF (Nigeria Social Insurance Trust Fund) — Employee compensation insurance compliance.\n• BPP (Bureau of Public Procurement) — Registration for federal government contract eligibility.\n\n❓ Is this a NEW registration or a RENEWAL?\n\nLet me know which document you need and whether it's your first time or a renewal, so I can guide you properly.",
+    items: [
+      { name: "TCC (Tax Clearance Certificate)", price: "₦90,000", amount: 90000 },
+      { name: "ITF Compliance Certificate", price: "₦60,000", amount: 60000 },
+      { name: "NSITF Compliance Certificate", price: "₦60,000", amount: 60000 },
+      { name: "BPP Registration/Renewal", price: "₦100,000", amount: 100000 },
+    ],
+  },
+  "SCUML Certificate": {
+    dept: "bizdoc" as Department,
+    pitch: "🛡️ SCUML CERTIFICATE\n\nSCUML (Special Control Unit against Money Laundering) certificate is FREE from EFCC — it proves your business is not involved in money laundering.\n\nHowever, the PROCESSING and documentation requires professional handling:\n\n• We handle the full application process\n• You receive the official SCUML certificate\n• We provide training documentation on how SCUML compliance works for your business\n• You'll understand your reporting obligations going forward\n\nSCUML is increasingly required for:\n✅ Opening corporate bank accounts\n✅ High-value transactions\n✅ Financial institution dealings\n✅ Government contract compliance\n\nWould you like us to process your SCUML certificate? Let me know your business name and type.",
+    items: [
+      { name: "SCUML Certificate Processing", price: "Get Started", amount: 50000 },
+    ],
+  },
+  "Tax CAC SCUML Management": {
+    dept: "bizdoc" as Department,
+    pitch: "📊 TAX + CAC + SCUML MANAGEMENT — ₦300,000/Year\n\nThis is your complete compliance management package:\n\n📋 What's included:\n• Monthly tax questionnaire — we send it, you fill it, we handle the rest\n• Bank account monitoring for accurate tax reporting\n• Year-end tax processing and filing\n• Tax Clearance Certificate (TCC) processing\n• CAC Annual Returns filing\n• SCUML Dashboard Management — we maintain your SCUML compliance records and reporting\n• Director/shareholder change filings\n• Address update filings\n\n💡 Why this saves you money:\nMost businesses pay ₦90K+ for TCC alone, ₦20K for annual returns, plus accountant fees. This package covers EVERYTHING for one flat annual fee.\n\nReady to activate? I just need your business details to get started.",
+    items: [
+      { name: "Tax + CAC + SCUML Management (1 Year)", price: "₦300,000/year", amount: 300000 },
+    ],
+  },
+  "Licenses and Permits": {
+    dept: "bizdoc" as Department,
+    pitch: "📋 LICENSES & PERMITS\n\nDifferent businesses require different licenses depending on your industry:\n\n🏗️ Construction: COREN, Council of Registered Builders, ARCON\n🏥 Healthcare: Pharmacy Council, NAFDAC, Medical & Dental Council\n🍔 Food & Beverage: NAFDAC, SON, State Health Permits\n✈️ Travel: NANTA Membership, IATA License, Tourism Board\n⛏️ Mining: Mining Lease, Environmental Impact Assessment\n🏦 Finance: CBN License, SEC Registration, NAICOM\n📡 Telecom: NCC License\n🎓 Education: State Ministry of Education Approval\n🚗 Transport: State Transport Authority Permit\n\n❓ Is this a NEW license application or a RENEWAL?\n\nTell me your industry and I'll recommend the exact licenses you need.",
+    items: [
+      { name: "License/Permit Application", price: "From ₦60,000", amount: 60000 },
+      { name: "License/Permit Renewal", price: "Varies", amount: 0 },
+    ],
+  },
+  "Legal Template Documents": {
+    dept: "bizdoc" as Department,
+    pitch: "📝 LEGAL & TEMPLATE DOCUMENTS\n\nWe prepare professional legal documents your business needs:\n\n📄 Corporate Documents:\n• Board Resolutions\n• Memorandum of Understanding (MOU)\n• Non-Disclosure Agreements (NDA)\n• Shareholder Agreements\n• Partnership Agreements\n\n📋 Business Templates:\n• Employment Contracts\n• Service Level Agreements (SLA)\n• Vendor/Supplier Contracts\n• Terms of Service & Privacy Policy\n• Company Profile Documents\n• Prequalification Document Packs\n\n📊 Financial Documents:\n• Business Plans (for loans, grants, investors)\n• Financial Projections\n• Invoice Templates\n\n❓ Is this a NEW document or do you need an existing one UPDATED?\n\nTell me which document you need and I'll guide you through the process.",
+    items: [
+      { name: "Contract Templates Pack", price: "₦40,000", amount: 40000 },
+      { name: "Custom Legal Drafting", price: "₦80,000+", amount: 80000 },
+      { name: "Business Plan", price: "₦100,000+", amount: 100000 },
+      { name: "Full Document Pack", price: "₦60,000", amount: 60000 },
+    ],
+  },
 };
 
 /** Match a chat context string to a known service */
@@ -518,6 +560,11 @@ function matchServicePitch(context: string): typeof SERVICE_PITCH_MAP[string] | 
     [["renewal", "renew", "clearance renewal"], "Renewals"],
     [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
     [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],
+    [["scuml", "money laundering certificate", "efcc certificate"], "SCUML Certificate"],
+    [["tax contract", "tcc renewal", "itf renewal", "nsitf renewal", "bpp renewal", "tax contract document"], "Tax Contract Documents"],
+    [["licenses", "permits", "sector license", "industry license", "coren", "nanta", "iata", "ncc license", "nafdac license"], "Licenses and Permits"],
+    [["legal template", "template document", "legal document", "board resolution", "prequalification document", "company profile document", "financial projection"], "Legal Template Documents"],
+    [["tax cac scuml", "300k", "300,000/year", "scuml management", "scuml dashboard"], "Tax CAC SCUML Management"],
   ];
   for (const [keywords, pitchKey] of aliases) {
     if (keywords.some(k => lower.includes(k)) && SERVICE_PITCH_MAP[pitchKey]) return SERVICE_PITCH_MAP[pitchKey];
@@ -565,6 +612,11 @@ function detectPitchFromResponse(text: string): string | null {
     [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
     [["renewal", "renew", "clearance renewal"], "Renewals"],
     [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],
+    [["scuml", "money laundering certificate", "efcc certificate", "anti-money laundering"], "SCUML Certificate"],
+    [["tax contract document", "tcc renewal", "itf renewal", "nsitf renewal", "bpp renewal"], "Tax Contract Documents"],
+    [["licenses and permits", "sector license", "industry license", "coren", "nanta", "iata license", "ncc license"], "Licenses and Permits"],
+    [["legal template", "template document", "board resolution", "prequalification document", "company profile document", "financial projection"], "Legal Template Documents"],
+    [["tax cac scuml", "scuml management", "scuml dashboard", "300,000/year"], "Tax CAC SCUML Management"],
   ];
   for (const [keywords, pitchKey] of map) {
     if (keywords.some(k => lower.includes(k)) && SERVICE_PITCH_MAP[pitchKey]) return pitchKey;

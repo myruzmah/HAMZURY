@@ -11,6 +11,7 @@ import { useLocation, Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
+import SplashScreen from "@/components/SplashScreen";
 
 // Apple-standard palette
 const CHARCOAL = "#1A1A1A";
@@ -154,6 +155,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: MILK, fontFamily: "'Inter', sans-serif" }}>
+      <SplashScreen text="HAMZURY" color={CHARCOAL} />
       <PageMeta
         title="HAMZURY | Compliance, Systems & Skills for Businesses"
         description="Compliance, systems, and skills for Nigerian businesses. BizDoc, Systemize, and Hamzury Skills under one roof."
@@ -491,16 +493,27 @@ export default function Home() {
       {/* ─── FOOTER (minimal) ─── */}
       <footer className="px-4 md:px-8" style={{ paddingTop: 60, paddingBottom: 60, backgroundColor: MILK }}>
         <div className="max-w-6xl mx-auto text-center">
-          <p className="text-sm font-normal mb-4" style={{ color: CHARCOAL, opacity: 0.3 }}>
+          <p className="text-sm font-normal mb-6" style={{ color: CHARCOAL, opacity: 0.3 }}>
             HAMZURY &middot; Abuja, Nigeria
           </p>
-          <div className="flex items-center justify-center gap-4 text-[12px] font-medium" style={{ color: CHARCOAL }}>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-[12px] font-medium mb-4" style={{ color: CHARCOAL }}>
             <Link href="/privacy"  className="opacity-30 hover:opacity-60 transition-opacity duration-200">Privacy</Link>
             <span className="opacity-15">&middot;</span>
             <Link href="/terms"    className="opacity-30 hover:opacity-60 transition-opacity duration-200">Terms</Link>
             <span className="opacity-15">&middot;</span>
+            <Link href="/affiliate"  className="opacity-30 hover:opacity-60 transition-opacity duration-200">Affiliate</Link>
+            <span className="opacity-15">&middot;</span>
+            <Link href="/ridi"   className="opacity-30 hover:opacity-60 transition-opacity duration-200">RIDI</Link>
+            <span className="opacity-15">&middot;</span>
             <Link href="/skills"   className="opacity-30 hover:opacity-60 transition-opacity duration-200">Training</Link>
           </div>
+          <button
+            onClick={() => setPartnershipOpen(true)}
+            className="text-[12px] font-medium opacity-30 hover:opacity-60 transition-opacity duration-200 bg-transparent border-none cursor-pointer p-0"
+            style={{ color: CHARCOAL }}
+          >
+            Partner with Us
+          </button>
         </div>
       </footer>
 

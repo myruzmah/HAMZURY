@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
-import { ArrowRight, X, Menu, FileText, Shield, Award, Briefcase, MessageSquare, Loader2, ChevronDown } from "lucide-react";
+import { ArrowRight, X, Menu, Shield, Award, Briefcase, MessageSquare, Loader2, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
+import SplashScreen from "@/components/SplashScreen";
 import { trpc } from "@/lib/trpc";
 
 const G  = "#1B4D3E";
@@ -33,36 +34,71 @@ const SERVICE_CATEGORIES = [
     icon: Shield,
     items: [
       { name: "Tax ProMax Update", context: "Tax ProMax Update", tag: "₦150K/YEAR" },
-      { name: "Tax + CAC Management", context: "Tax CAC Management", tag: "₦200K/YEAR" },
+      { name: "Tax + CAC + SCUML Management", context: "Tax CAC SCUML Management", tag: "₦300K/YEAR" },
       { name: "Full Compliance Management", context: "Full Compliance Management", tag: "₦500K/YEAR" },
     ],
   },
   {
     id: "renewals",
-    title: "Renewals",
+    title: "Renewals & Documents",
     icon: Award,
     items: [
-      { name: "Tax Clearance Certificate (TCC)", context: "TCC Renewal" },
-      { name: "ITF Compliance Certificate", context: "ITF Renewal" },
-      { name: "NSITF Compliance Certificate", context: "NSITF Renewal" },
-      { name: "PENCOM Clearance Certificate", context: "PENCOM Renewal" },
-      { name: "BPP Registration Renewal", context: "BPP Renewal" },
-      { name: "Contract Documents", context: "Contract Documents" },
+      { name: "Tax & Contract Documents (TCC, ITF, NSITF, BPP)", context: "Tax Contract Documents" },
+      { name: "SCUML Certificate", context: "SCUML Certificate" },
+      { name: "Licenses & Permits", context: "Licenses and Permits" },
+      { name: "Legal & Template Documents", context: "Legal Template Documents" },
     ],
   },
+];
+
+// ── PACKAGES ─────────────────────────────────────────────────────────────────
+const PACKAGES = [
   {
-    id: "blueprint",
-    title: "Business Positioning Blueprint",
-    icon: FileText,
-    description: "Understand what documents and licences your specific industry needs. We'll guide you through it.",
-    cta: { label: "Open Blueprint Tool", href: "/bizdoc/blueprint" },
+    id: "starter",
+    label: "STARTER",
+    price: "₦200,000",
+    sub: "One-time setup",
+    items: ["Full CAC Ltd Registration", "EFCC Certificate", "Tax ProMax Activation"],
+    context: "Starter Package",
+    dark: false,
   },
-] as const;
+  {
+    id: "growth",
+    label: "GROWTH",
+    price: "₦450,000",
+    sub: "One-time setup",
+    items: ["Everything in Starter", "Branding & Templates", "Business Plan"],
+    context: "Growth Package",
+    badge: "POPULAR",
+    dark: false,
+  },
+  {
+    id: "pro",
+    label: "PRO",
+    price: "₦570,000",
+    sub: "1 year management",
+    items: ["Everything in Growth", "1 Year Tax ProMax Management", "All Contract Documents"],
+    context: "Pro Package",
+    dark: false,
+  },
+  {
+    id: "enterprise",
+    label: "ENTERPRISE",
+    price: "₦1,000,000",
+    sub: "1 year full compliance",
+    items: ["Everything in Pro", "ITF + NSITF + PENCOM", "BPP Registration"],
+    note: "After company does 1 year",
+    context: "Enterprise Package",
+    dark: true,
+  },
+];
 
 // ── COMPONENT ─────────────────────────────────────────────────────────────────
 export default function BizDocPortal() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [expandedPkg, setExpandedPkg] = useState<string | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -103,6 +139,7 @@ export default function BizDocPortal() {
 
   return (
     <>
+      <SplashScreen text="BIZDOC" color={G} />
       <PageMeta
         title="BizDoc Consult. Business Compliance, Legal & Growth"
         description="CAC registration, tax compliance, sector licences, legal documents, and managed business compliance for Nigerian businesses."
@@ -191,7 +228,7 @@ export default function BizDocPortal() {
       </nav>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-         HERO
+         HERO — 3 buttons: Our Services, Track, Positioning Blueprint (bold)
          ═══════════════════════════════════════════════════════════════════════ */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden" style={{ background: `linear-gradient(165deg, ${G} 0%, #143D31 50%, #0F2E24 100%)` }}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -230,6 +267,14 @@ export default function BizDocPortal() {
             >
               Track
             </button>
+            <Link href="/bizdoc/blueprint">
+              <span
+                className="px-9 py-4 rounded-full text-[13px] font-bold tracking-wide transition-all duration-300 hover:bg-white/10 cursor-pointer inline-block"
+                style={{ color: Au, border: `1px solid ${Au}30` }}
+              >
+                Positioning Blueprint
+              </span>
+            </Link>
           </div>
         </div>
 
@@ -239,7 +284,7 @@ export default function BizDocPortal() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-         SERVICES — category cards with item rows
+         SERVICES — accordion on mobile, grid on desktop
          ═══════════════════════════════════════════════════════════════════════ */}
       <section id="services" className="py-16 md:py-24" style={{ backgroundColor: W }}>
         <div className="max-w-5xl mx-auto px-6">
@@ -252,83 +297,43 @@ export default function BizDocPortal() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+          {/* ── MOBILE: compact accordion ── */}
+          <div className="md:hidden flex flex-col gap-2">
             {SERVICE_CATEGORIES.map((cat) => {
               const Icon = cat.icon;
-              const isBlueprint = cat.id === "blueprint";
-
+              const isOpen = expandedCat === cat.id;
               return (
-                <div
-                  key={cat.id}
-                  className="rounded-[20px] overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
-                  style={{
-                    backgroundColor: Cr,
-                    border: `1px solid ${G}08`,
-                  }}
-                >
-                  {/* Category header */}
-                  <div className="flex items-center gap-3 px-5 pt-5 pb-3">
-                    <div
-                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${G}08` }}
-                    >
-                      <Icon size={16} style={{ color: G }} strokeWidth={1.5} />
+                <div key={cat.id} className="rounded-2xl overflow-hidden border" style={{ borderColor: isOpen ? `${G}20` : `${G}08`, backgroundColor: Cr }}>
+                  <button
+                    onClick={() => setExpandedCat(isOpen ? null : cat.id)}
+                    className="flex items-center gap-3 w-full px-4 py-3.5 text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${G}08` }}>
+                      <Icon size={14} style={{ color: G }} strokeWidth={1.5} />
                     </div>
-                    <h3 className="text-[14px] font-semibold tracking-tight" style={{ color: G }}>
-                      {cat.title}
-                    </h3>
-                  </div>
-
-                  <div className="h-px mx-5" style={{ backgroundColor: `${G}08` }} />
-
-                  {/* Blueprint special card */}
-                  {isBlueprint && "description" in cat ? (
-                    <div className="px-5 py-5">
-                      <p className="text-[12px] leading-[1.7] mb-5" style={{ color: G, opacity: 0.5 }}>
-                        {cat.description}
-                      </p>
-                      {"cta" in cat && cat.cta && (
-                        <Link href={cat.cta.href}>
-                          <span
-                            className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-[12px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.03] hover:shadow-md cursor-pointer"
-                            style={{ backgroundColor: G, color: Au }}
-                          >
-                            {cat.cta.label}
-                            <ArrowRight size={13} />
-                          </span>
-                        </Link>
-                      )}
-                    </div>
-                  ) : (
-                    /* Item rows */
-                    <div className="px-3 py-3 flex flex-col gap-1">
-                      {"items" in cat && cat.items?.map((item, i) => (
+                    <span className="flex-1 text-[13px] font-semibold" style={{ color: G }}>{cat.title}</span>
+                    <span className="text-[10px] opacity-40 mr-1" style={{ color: G }}>{cat.items.length}</span>
+                    <ChevronRight
+                      size={14}
+                      style={{ color: G, opacity: 0.3, transition: "transform 0.2s", transform: isOpen ? "rotate(90deg)" : "rotate(0)" }}
+                    />
+                  </button>
+                  {isOpen && (
+                    <div className="px-3 pb-3 flex flex-col gap-0.5">
+                      <div className="h-px mb-1" style={{ backgroundColor: `${G}08` }} />
+                      {cat.items.map((item, i) => (
                         <button
                           key={i}
                           onClick={() => openChat(item.context)}
-                          className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 hover:scale-[0.995] group/item"
-                          style={{ backgroundColor: "transparent" }}
-                          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${W}`)}
-                          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                          className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-left transition-colors active:bg-white"
                         >
-                          <span className="flex-1 text-[12px] font-medium leading-snug" style={{ color: G }}>
-                            {item.name}
-                          </span>
-                          <div className="flex items-center gap-2 shrink-0">
-                            {"tag" in item && item.tag && (
-                              <span
-                                className="text-[8px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full"
-                                style={{ backgroundColor: `${Au}12`, color: Au }}
-                              >
-                                {item.tag}
-                              </span>
-                            )}
-                            <ArrowRight
-                              size={11}
-                              className="opacity-0 group-hover/item:opacity-60 transition-opacity duration-200"
-                              style={{ color: G }}
-                            />
-                          </div>
+                          <span className="flex-1 text-[12px] font-medium" style={{ color: G }}>{item.name}</span>
+                          {"tag" in item && item.tag && (
+                            <span className="text-[8px] font-bold tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: `${Au}12`, color: Au }}>
+                              {item.tag}
+                            </span>
+                          )}
+                          <ArrowRight size={10} style={{ color: Au, opacity: 0.5 }} />
                         </button>
                       ))}
                     </div>
@@ -337,13 +342,57 @@ export default function BizDocPortal() {
               );
             })}
           </div>
+
+          {/* ── DESKTOP: grid cards ── */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-5">
+            {SERVICE_CATEGORIES.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <div
+                  key={cat.id}
+                  className="rounded-[20px] overflow-hidden transition-all duration-300 hover:-translate-y-0.5"
+                  style={{ backgroundColor: Cr, border: `1px solid ${G}08` }}
+                >
+                  <div className="flex items-center gap-3 px-5 pt-5 pb-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: `${G}08` }}>
+                      <Icon size={16} style={{ color: G }} strokeWidth={1.5} />
+                    </div>
+                    <h3 className="text-[14px] font-semibold tracking-tight" style={{ color: G }}>{cat.title}</h3>
+                  </div>
+                  <div className="h-px mx-5" style={{ backgroundColor: `${G}08` }} />
+                  <div className="px-3 py-3 flex flex-col gap-1">
+                    {cat.items.map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={() => openChat(item.context)}
+                        className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-left transition-all duration-200 hover:scale-[0.995] group/item"
+                        style={{ backgroundColor: "transparent" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = `${W}`)}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        <span className="flex-1 text-[12px] font-medium leading-snug" style={{ color: G }}>{item.name}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {"tag" in item && item.tag && (
+                            <span className="text-[8px] font-bold tracking-[0.12em] uppercase px-2 py-0.5 rounded-full" style={{ backgroundColor: `${Au}12`, color: Au }}>
+                              {item.tag}
+                            </span>
+                          )}
+                          <ArrowRight size={11} className="opacity-0 group-hover/item:opacity-60 transition-opacity duration-200" style={{ color: G }} />
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
       {/* ═══════════════════════════════════════════════════════════════════════
-         RECOMMENDED PACKAGES
+         RECOMMENDED PACKAGES — 2x2 accordion on mobile, 4-col grid on desktop
          ═══════════════════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ backgroundColor: `${G}04` }}>
+      <section className="py-16 md:py-28" style={{ backgroundColor: `${G}04` }}>
         <div className="max-w-5xl mx-auto px-6">
           <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.35em] uppercase mb-3 text-center" style={{ color: Au }}>
             RECOMMENDED
@@ -351,88 +400,126 @@ export default function BizDocPortal() {
           <h2 className="text-[clamp(22px,3.5vw,32px)] font-light tracking-tight text-center mb-4" style={{ color: G }}>
             Start Right. Stay Compliant.
           </h2>
-          <p className="text-sm text-center opacity-50 mb-12 max-w-lg mx-auto" style={{ color: G }}>
+          <p className="text-sm text-center opacity-50 mb-10 md:mb-12 max-w-lg mx-auto" style={{ color: G }}>
             Choose the package that matches where your business is right now.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Package 1 — Starter */}
-            <button
-              onClick={() => openChat("Starter Package")}
-              className="bg-white rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group"
-              style={{ borderColor: `${G}10` }}
-            >
-              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: `${Au}12`, color: Au }}>STARTER</p>
-              <h3 className="text-lg font-medium mb-2" style={{ color: G }}>₦200,000</h3>
-              <p className="text-xs opacity-50 mb-5" style={{ color: G }}>One-time setup</p>
-              <ul className="space-y-2.5 text-[12px]" style={{ color: G }}>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Full CAC Ltd Registration</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> EFCC Certificate</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Tax ProMax Activation</li>
-              </ul>
-              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: `${G}08`, color: Au }}>
-                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </button>
+          {/* ── MOBILE: 2x2 compact grid, tap to expand ── */}
+          <div className="md:hidden grid grid-cols-2 gap-3">
+            {PACKAGES.map((pkg) => {
+              const isOpen = expandedPkg === pkg.id;
+              return (
+                <div key={pkg.id} className="relative">
+                  {pkg.badge && (
+                    <div className="absolute -top-2 left-3 z-10 text-[8px] font-bold tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: Au, color: W }}>
+                      {pkg.badge}
+                    </div>
+                  )}
+                  <button
+                    onClick={() => setExpandedPkg(isOpen ? null : pkg.id)}
+                    className="w-full rounded-2xl border p-4 text-left transition-all"
+                    style={{
+                      backgroundColor: pkg.dark ? G : W,
+                      borderColor: pkg.badge ? `${Au}40` : pkg.dark ? G : `${G}10`,
+                    }}
+                  >
+                    <p className="text-[9px] font-bold tracking-wider uppercase mb-2" style={{ color: pkg.dark ? "rgba(255,255,255,0.5)" : Au }}>
+                      {pkg.label}
+                    </p>
+                    <p className="text-[15px] font-semibold mb-1" style={{ color: pkg.dark ? W : G }}>
+                      {pkg.price}
+                    </p>
+                    <p className="text-[10px] opacity-50" style={{ color: pkg.dark ? W : G }}>
+                      {pkg.sub}
+                    </p>
+                    <ChevronDown
+                      size={12}
+                      className="mt-2"
+                      style={{
+                        color: pkg.dark ? "rgba(255,255,255,0.4)" : `${G}40`,
+                        transition: "transform 0.2s",
+                        transform: isOpen ? "rotate(180deg)" : "rotate(0)",
+                      }}
+                    />
+                  </button>
 
-            {/* Package 2 — Growth */}
-            <button
-              onClick={() => openChat("Growth Package")}
-              className="bg-white rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group relative"
-              style={{ borderColor: `${Au}30` }}
-            >
-              <div className="absolute -top-2.5 left-6 text-[9px] font-bold tracking-[0.15em] uppercase px-3 py-1 rounded-full" style={{ backgroundColor: Au, color: W }}>POPULAR</div>
-              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: `${G}08`, color: G }}>GROWTH</p>
-              <h3 className="text-lg font-medium mb-2" style={{ color: G }}>₦450,000</h3>
-              <p className="text-xs opacity-50 mb-5" style={{ color: G }}>One-time setup</p>
-              <ul className="space-y-2.5 text-[12px]" style={{ color: G }}>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Everything in Starter</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Branding & Templates</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Business Plan</li>
-              </ul>
-              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: `${G}08`, color: Au }}>
-                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </button>
+                  {/* Expanded details — spans full width below */}
+                  {isOpen && (
+                    <div
+                      className="col-span-2 mt-2 rounded-2xl border p-4"
+                      style={{
+                        backgroundColor: pkg.dark ? "#143D31" : Cr,
+                        borderColor: pkg.dark ? `${G}` : `${G}10`,
+                      }}
+                    >
+                      <ul className="space-y-2 text-[11px] mb-3" style={{ color: pkg.dark ? "rgba(255,255,255,0.85)" : G }}>
+                        {pkg.items.map((it, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span style={{ color: Au }}>✓</span> {it}
+                          </li>
+                        ))}
+                        {pkg.note && (
+                          <li className="flex items-start gap-2 opacity-60">
+                            <span className="text-[9px]">ℹ️</span> <span className="italic">{pkg.note}</span>
+                          </li>
+                        )}
+                      </ul>
+                      <button
+                        onClick={() => openChat(pkg.context)}
+                        className="w-full py-2.5 rounded-xl text-[11px] font-semibold text-center"
+                        style={{ backgroundColor: pkg.dark ? Au : G, color: pkg.dark ? G : Au }}
+                      >
+                        Get Started
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Package 3 — Pro */}
-            <button
-              onClick={() => openChat("Pro Package")}
-              className="bg-white rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group"
-              style={{ borderColor: `${G}10` }}
-            >
-              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: `${G}08`, color: G }}>PRO</p>
-              <h3 className="text-lg font-medium mb-2" style={{ color: G }}>₦570,000</h3>
-              <p className="text-xs opacity-50 mb-5" style={{ color: G }}>1 year management</p>
-              <ul className="space-y-2.5 text-[12px]" style={{ color: G }}>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Everything in Growth</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> 1 Year Tax ProMax Management</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> All Contract Documents</li>
-              </ul>
-              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: `${G}08`, color: Au }}>
-                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </button>
-
-            {/* Package 4 — Enterprise */}
-            <button
-              onClick={() => openChat("Enterprise Package")}
-              className="rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group"
-              style={{ backgroundColor: G, borderColor: G }}
-            >
-              <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block" style={{ backgroundColor: "rgba(255,255,255,0.12)", color: W }}>ENTERPRISE</p>
-              <h3 className="text-lg font-medium mb-2" style={{ color: W }}>₦1,000,000</h3>
-              <p className="text-xs opacity-50 mb-5" style={{ color: W }}>1 year full compliance</p>
-              <ul className="space-y-2.5 text-[12px]" style={{ color: "rgba(255,255,255,0.85)" }}>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> Everything in Pro</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> ITF + NSITF + PENCOM</li>
-                <li className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> BPP Registration</li>
-                <li className="flex items-start gap-2 opacity-60"><span className="text-[10px]">ℹ️</span> <span className="italic">After company does 1 year</span></li>
-              </ul>
-              <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between" style={{ borderColor: "rgba(255,255,255,0.12)", color: Au }}>
-                Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </button>
+          {/* ── DESKTOP: full 4-col grid ── */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-5">
+            {PACKAGES.map((pkg) => (
+              <button
+                key={pkg.id}
+                onClick={() => openChat(pkg.context)}
+                className="rounded-2xl border p-6 text-left transition-all hover:-translate-y-1 hover:shadow-lg group relative"
+                style={{
+                  backgroundColor: pkg.dark ? G : W,
+                  borderColor: pkg.badge ? `${Au}30` : pkg.dark ? G : `${G}10`,
+                }}
+              >
+                {pkg.badge && (
+                  <div className="absolute -top-2.5 left-6 text-[9px] font-bold tracking-[0.15em] uppercase px-3 py-1 rounded-full" style={{ backgroundColor: Au, color: W }}>
+                    {pkg.badge}
+                  </div>
+                )}
+                <p className="text-[10px] font-bold tracking-[0.15em] uppercase mb-4 px-2.5 py-1 rounded-full inline-block"
+                  style={{
+                    backgroundColor: pkg.dark ? "rgba(255,255,255,0.12)" : pkg.badge ? `${G}08` : `${Au}12`,
+                    color: pkg.dark ? W : pkg.badge ? G : Au,
+                  }}
+                >
+                  {pkg.label}
+                </p>
+                <h3 className="text-lg font-medium mb-2" style={{ color: pkg.dark ? W : G }}>{pkg.price}</h3>
+                <p className="text-xs opacity-50 mb-5" style={{ color: pkg.dark ? W : G }}>{pkg.sub}</p>
+                <ul className="space-y-2.5 text-[12px]" style={{ color: pkg.dark ? "rgba(255,255,255,0.85)" : G }}>
+                  {pkg.items.map((it, i) => (
+                    <li key={i} className="flex items-start gap-2"><span style={{ color: Au }}>✓</span> {it}</li>
+                  ))}
+                  {pkg.note && (
+                    <li className="flex items-start gap-2 opacity-60"><span className="text-[10px]">ℹ️</span> <span className="italic">{pkg.note}</span></li>
+                  )}
+                </ul>
+                <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between"
+                  style={{ borderColor: pkg.dark ? "rgba(255,255,255,0.12)" : `${G}08`, color: Au }}
+                >
+                  Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -524,9 +611,12 @@ export default function BizDocPortal() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[11px]" style={{ color: G, opacity: 0.3 }}>
           <p className="font-medium tracking-[0.2em]">BIZDOC CONSULT</p>
           <p>© {new Date().getFullYear()} HAMZURY</p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link href="/privacy"><span className="hover:opacity-80 transition-opacity cursor-pointer">Privacy</span></Link>
             <Link href="/terms"><span className="hover:opacity-80 transition-opacity cursor-pointer">Terms</span></Link>
+            <button onClick={() => openChat("I want to file a complaint or give a suggestion about BizDoc services.")} className="hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-1">
+              <AlertCircle size={10} /> Complaint / Suggestion
+            </button>
           </div>
         </div>
       </footer>

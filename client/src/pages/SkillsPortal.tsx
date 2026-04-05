@@ -7,9 +7,10 @@ import {
   Users, GraduationCap, Star, Target,
   Lightbulb, BookOpen, X, Loader2, Menu,
   Calendar, Clock, CheckCircle, MessageSquare, Eye, EyeOff,
-  Award, Briefcase,
+  Award, Briefcase, ChevronRight, AlertCircle,
 } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
+import SplashScreen from "@/components/SplashScreen";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HAMZURY SKILLS PORTAL. /skills — Apple-standard design
@@ -36,11 +37,11 @@ const SKILLS_CATEGORIES: SkillsCategory[] = [
     title: "Course Enrollment",
     icon: GraduationCap,
     items: [
-      { name: "AI Lead Generation (3 days)", context: "I am interested in the AI Lead Generation course. Tell me more." },
-      { name: "Faceless Content Creation (2 weeks)", context: "I am interested in Faceless Content Creation. Tell me more." },
-      { name: "Business Automation (5 days)", context: "I am interested in Business Automation. Tell me more." },
-      { name: "Executive Programs", context: "I am interested in Executive Programs. Tell me more." },
-      { name: "Custom AI Tutor Courses", context: "I am interested in Custom AI Tutor Courses. Tell me more." },
+      { name: "AI Lead Generation (3 days)", context: "I am interested in the AI Lead Generation course. Tell me more. What are the next orientation dates, class start dates, and duration? Online is always active — 100% AI-powered with a dedicated mentor. Flexible appointment-based mentoring." },
+      { name: "Faceless Content Creation (2 weeks)", context: "I am interested in Faceless Content Creation. Tell me more. What are the next orientation dates, class start dates, and duration? Online is always active — 100% AI-powered with a dedicated mentor. Flexible appointment-based mentoring." },
+      { name: "Business Automation (5 days)", context: "I am interested in Business Automation. Tell me more. What are the next orientation dates, class start dates, and duration? Online is always active — 100% AI-powered with a dedicated mentor. Flexible appointment-based mentoring." },
+      { name: "Executive Programs", context: "I am interested in Executive Programs. Tell me more. What are the next orientation dates, class start dates, and duration?" },
+      { name: "Custom AI Tutor Courses", context: "I am interested in Custom AI Tutor Courses. Tell me more. What are the next orientation dates, class start dates, and duration? Online is always active — 100% AI-powered with a dedicated mentor. Flexible appointment-based mentoring." },
     ],
   },
   {
@@ -219,6 +220,8 @@ function CalendarSection() {
 export default function SkillsPortal() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [expandedPkg, setExpandedPkg] = useState<number | null>(null);
 
   // Apply form
   const [applyName, setApplyName] = useState("");
@@ -280,6 +283,7 @@ export default function SkillsPortal() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: BG, color: TEXT }}>
+      <SplashScreen text="HAMZURY" color={DARK} />
       <PageMeta
         title="Hamzury Skills. Business Education & Professional Development"
         description="Cohort-based business education for ambitious professionals. Digital marketing, business development, data analysis, and AI programs."
@@ -369,6 +373,14 @@ export default function SkillsPortal() {
             >
               Programs
             </button>
+            <Link href="/bizdoc/blueprint">
+              <span
+                className="px-8 py-4 rounded-full text-[14px] font-bold transition-all duration-300 hover:opacity-80 cursor-pointer inline-block"
+                style={{ color: GOLD, border: `1px solid ${GOLD}` }}
+              >
+                Positioning Blueprint
+              </span>
+            </Link>
           </div>
         </div>
       </section>
@@ -382,7 +394,52 @@ export default function SkillsPortal() {
           <h2 className="text-[28px] md:text-[36px] font-semibold text-center mb-12" style={{ color: TEXT }}>
             Save more. Learn more.
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Mobile: compact expandable cards */}
+          <div className="md:hidden space-y-3">
+            {[
+              { title: "⭐ Founder Fast Track", desc: "AI Founder Launchpad + Vibe Coding — learn to build and sell with AI.", price: "₦120,000", context: "Skills Packages" },
+              { title: "⭐ Full Founder Bundle", desc: "All 3 core programs + Mentorship — complete founder education.", price: "₦200,000", context: "Skills Packages" },
+              { title: "⭐ Corporate Team", desc: "Staff Training + Custom Curriculum — upskill your whole team.", price: "From ₦350,000", context: "Skills Packages" },
+            ].map((pkg, idx) => (
+              <div
+                key={pkg.title}
+                className="rounded-[16px] overflow-hidden transition-all duration-300"
+                style={{ backgroundColor: W, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", border: `1px solid ${GOLD}30` }}
+              >
+                <button
+                  className="w-full flex items-center justify-between px-5 py-4"
+                  onClick={() => setExpandedPkg(expandedPkg === idx ? null : idx)}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-[14px] font-semibold text-left" style={{ color: TEXT }}>{pkg.title}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[13px] font-semibold" style={{ color: GOLD }}>{pkg.price}</span>
+                    <ChevronRight
+                      size={16}
+                      className="transition-transform duration-300"
+                      style={{ color: `${TEXT}40`, transform: expandedPkg === idx ? "rotate(90deg)" : "rotate(0deg)" }}
+                    />
+                  </div>
+                </button>
+                {expandedPkg === idx && (
+                  <div className="px-5 pb-4">
+                    <p className="text-[13px] leading-relaxed mb-4" style={{ color: TEXT, opacity: 0.55 }}>{pkg.desc}</p>
+                    <button
+                      onClick={() => openChat(pkg.context)}
+                      className="w-full py-2.5 rounded-full text-[13px] font-medium transition-all hover:opacity-80"
+                      style={{ backgroundColor: `${DARK}08`, color: DARK }}
+                    >
+                      Learn more
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: 3-col grid */}
+          <div className="hidden md:grid grid-cols-3 gap-6">
             {[
               { title: "⭐ Founder Fast Track", desc: "AI Founder Launchpad + Vibe Coding — learn to build and sell with AI.", price: "₦120,000", context: "Skills Packages" },
               { title: "⭐ Full Founder Bundle", desc: "All 3 core programs + Mentorship — complete founder education.", price: "₦200,000", context: "Skills Packages" },
@@ -412,7 +469,81 @@ export default function SkillsPortal() {
           <h2 className="text-[28px] md:text-[36px] font-semibold text-center mb-12" style={{ color: TEXT }}>
             What We Offer
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+
+          {/* Mobile: compact accordion */}
+          <div className="md:hidden space-y-2">
+            {SKILLS_CATEGORIES.map(cat => {
+              const Icon = cat.icon;
+              const isOpen = expandedCat === cat.id;
+              return (
+                <div
+                  key={cat.id}
+                  className="rounded-[16px] overflow-hidden transition-all duration-300"
+                  style={{ backgroundColor: BG, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+                >
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-3.5"
+                    onClick={() => setExpandedCat(isOpen ? null : cat.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${DARK}08` }}
+                      >
+                        <Icon size={15} style={{ color: DARK }} />
+                      </div>
+                      <span className="text-[14px] font-semibold" style={{ color: TEXT }}>{cat.title}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-[11px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${DARK}08`, color: `${TEXT}60` }}>
+                        {cat.items.length}
+                      </span>
+                      <ChevronRight
+                        size={16}
+                        className="transition-transform duration-300"
+                        style={{ color: `${TEXT}40`, transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
+                      />
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="px-4 pb-4">
+                      <div className="space-y-1 mb-3">
+                        {cat.items.map(item => (
+                          <button
+                            key={item.name}
+                            onClick={() => openChat(item.context)}
+                            className="w-full text-left px-3 py-2.5 rounded-xl text-[13px] transition-colors hover:bg-white/80 flex items-center justify-between group"
+                            style={{ color: TEXT }}
+                          >
+                            <span>{item.name}</span>
+                            <ArrowRight size={12} className="opacity-0 group-hover:opacity-50 transition-opacity" style={{ color: TEXT }} />
+                          </button>
+                        ))}
+                      </div>
+                      {cat.cta && (
+                        <button
+                          onClick={() => {
+                            if (cat.cta!.scrollTo) {
+                              document.querySelector(cat.cta!.scrollTo)?.scrollIntoView({ behavior: "smooth" });
+                            } else if (cat.cta!.context) {
+                              openChat(cat.cta!.context);
+                            }
+                          }}
+                          className="w-full py-2.5 rounded-full text-[12px] font-medium transition-all hover:opacity-80"
+                          style={{ backgroundColor: `${DARK}08`, color: DARK }}
+                        >
+                          {cat.cta.label}
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: grid */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6">
             {SKILLS_CATEGORIES.map(cat => {
               const Icon = cat.icon;
               return (
@@ -742,6 +873,9 @@ export default function SkillsPortal() {
           <div className="flex items-center gap-6">
             <Link href="/privacy"><span className="hover:opacity-80 transition-opacity cursor-pointer">Privacy</span></Link>
             <Link href="/terms"><span className="hover:opacity-80 transition-opacity cursor-pointer">Terms</span></Link>
+            <button onClick={() => openChat("I want to file a complaint or give a suggestion about Skills services.")} className="hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-1">
+              <AlertCircle size={10} /> Complaint / Suggestion
+            </button>
           </div>
         </div>
       </footer>

@@ -5,9 +5,11 @@ import { trpc } from "@/lib/trpc";
 import {
   ArrowRight, Layers, Monitor, Search,
   PieChart, Menu, X, Loader2, MessageSquare, Eye, EyeOff, Zap,
+  ChevronRight, AlertCircle,
 } from "lucide-react";
 
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
+import SplashScreen from "@/components/SplashScreen";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SYSTEMIZE PORTAL. /systemise — Apple-standard design
@@ -102,6 +104,8 @@ const SERVICE_CATEGORIES = [
 export default function SystemizePortal() {
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [expandedPkg, setExpandedPkg] = useState<string | null>(null);
 
 
   // Track
@@ -143,6 +147,7 @@ export default function SystemizePortal() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: Cr, color: "#2C2C2C" }}>
+      <SplashScreen text="HAMZURY" color={G} />
       <PageMeta
         title="Systemize. Brand, Website & Growth Systems | HAMZURY"
         description="Brand identity, website design, automation and SEO for growing businesses."
@@ -232,6 +237,14 @@ export default function SystemizePortal() {
             >
               Track
             </button>
+            <Link href="/bizdoc/blueprint">
+              <span
+                className="px-8 py-4 rounded-full text-[14px] font-bold transition-all duration-300 hover:opacity-80 cursor-pointer inline-block"
+                style={{ color: Au, border: `1px solid ${Au}` }}
+              >
+                Positioning Blueprint
+              </span>
+            </Link>
           </div>
         </div>
       </section>
@@ -253,7 +266,58 @@ export default function SystemizePortal() {
           <p className="text-[12px] font-semibold tracking-[0.15em] uppercase mb-6" style={{ color: Au }}>
             Recommended Packages
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-20">
+
+          {/* Mobile: compact expandable cards */}
+          <div className="flex flex-col gap-2 mb-20 sm:hidden">
+            {PACKAGES.map((pkg) => {
+              const Icon = pkg.icon;
+              const isOpen = expandedPkg === pkg.title;
+              return (
+                <div
+                  key={pkg.title}
+                  className="rounded-[16px] overflow-hidden"
+                  style={{ backgroundColor: W, boxShadow: "0 2px 12px rgba(0,0,0,0.04)", border: `1px solid ${Au}20` }}
+                >
+                  {/* Compact header — always visible */}
+                  <button
+                    onClick={() => setExpandedPkg(isOpen ? null : pkg.title)}
+                    className="flex items-center gap-3 w-full px-5 py-4 text-left"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${Au}12` }}
+                    >
+                      <Icon size={15} style={{ color: Au }} strokeWidth={1.5} />
+                    </div>
+                    <span className="flex-1 text-[14px] font-semibold" style={{ color: G }}>{pkg.title}</span>
+                    <span className="text-[11px] font-semibold mr-2" style={{ color: Au }}>{pkg.price}</span>
+                    <ChevronRight
+                      size={15}
+                      style={{ color: Au, transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                    />
+                  </button>
+                  {/* Expanded body */}
+                  {isOpen && (
+                    <div className="px-5 pb-5" style={{ borderTop: `1px solid ${Au}15` }}>
+                      <p className="text-[12px] leading-relaxed mt-3 mb-4" style={{ color: "#2C2C2C", opacity: 0.5 }}>
+                        {pkg.line}
+                      </p>
+                      <button
+                        onClick={() => openChat(pkg.context)}
+                        className="w-full py-3 rounded-full text-[13px] font-medium transition-opacity hover:opacity-80 flex items-center justify-center gap-1"
+                        style={{ backgroundColor: `${Au}15`, color: Au }}
+                      >
+                        Get Started <ArrowRight size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop: 3-col grid */}
+          <div className="hidden sm:grid grid-cols-3 gap-5 mb-20">
             {PACKAGES.map((pkg) => {
               const Icon = pkg.icon;
               return (
@@ -299,7 +363,75 @@ export default function SystemizePortal() {
           <p className="text-[12px] font-semibold tracking-[0.15em] uppercase mb-6" style={{ color: G, opacity: 0.4 }}>
             Individual Services
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+          {/* Mobile accordion (md:hidden) */}
+          <div className="flex flex-col gap-2 md:hidden">
+            {SERVICE_CATEGORIES.map((cat) => {
+              const CatIcon = cat.icon;
+              const isOpen = expandedCat === cat.id;
+              return (
+                <div
+                  key={cat.id}
+                  className="rounded-[16px] overflow-hidden transition-all duration-300"
+                  style={{ backgroundColor: W, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}
+                >
+                  {/* Accordion header */}
+                  <button
+                    onClick={() => setExpandedCat(isOpen ? null : cat.id)}
+                    className="flex items-center gap-3 w-full px-5 py-4 text-left"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${G}08` }}
+                    >
+                      <CatIcon size={15} style={{ color: G }} strokeWidth={1.5} />
+                    </div>
+                    <span className="flex-1 text-[14px] font-semibold" style={{ color: G }}>
+                      {cat.title}
+                    </span>
+                    <span className="text-[11px] font-medium px-2 py-0.5 rounded-full mr-1" style={{ backgroundColor: `${G}08`, color: G }}>
+                      {cat.items.length}
+                    </span>
+                    <ChevronRight
+                      size={15}
+                      style={{ color: G, opacity: 0.4, transform: isOpen ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.2s" }}
+                    />
+                  </button>
+                  {/* Accordion body */}
+                  {isOpen && (
+                    <div className="px-4 pb-3 flex flex-col gap-1" style={{ borderTop: `1px solid ${G}08` }}>
+                      {cat.items.map((item) => (
+                        <button
+                          key={item.name}
+                          onClick={() => openChat(item.context)}
+                          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 hover:bg-gray-50 group"
+                        >
+                          <span className="text-[13px] leading-snug" style={{ color: "#2C2C2C", opacity: 0.75 }}>
+                            {item.name}
+                          </span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            {"price" in item && item.price && (
+                              <span className="text-[11px] font-medium" style={{ color: Au }}>
+                                {item.price}
+                              </span>
+                            )}
+                            <ArrowRight
+                              size={11}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity"
+                              style={{ color: Au }}
+                            />
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop grid (hidden md:grid) */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
             {SERVICE_CATEGORIES.map((cat) => {
               const CatIcon = cat.icon;
               return (
@@ -452,9 +584,12 @@ export default function SystemizePortal() {
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-[12px]" style={{ color: G, opacity: 0.4 }}>
           <p>Systemize</p>
           <p>© {new Date().getFullYear()} HAMZURY</p>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4 flex-wrap justify-center">
             <Link href="/privacy"><span className="hover:opacity-80 transition-opacity cursor-pointer">Privacy</span></Link>
             <Link href="/terms"><span className="hover:opacity-80 transition-opacity cursor-pointer">Terms</span></Link>
+            <button onClick={() => openChat("I want to file a complaint or give a suggestion about Systemise services.")} className="hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-1">
+              <AlertCircle size={10} /> Complaint / Suggestion
+            </button>
           </div>
         </div>
       </footer>
