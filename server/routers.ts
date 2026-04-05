@@ -770,19 +770,27 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         const refTrimmed = input.ref.trim();
+        const STATUS_ORDER = ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"];
+        const statusMessages: Record<string, string> = {
+          "Not Started": "Your file has been received and is queued for processing. A compliance officer will begin work shortly.",
+          "In Progress": "Your file is actively being processed. Documents are being prepared and reviewed.",
+          "Waiting on Client": "We need additional information or documents from you. Please check your WhatsApp for details.",
+          "Submitted": "Your documents have been submitted to the relevant regulatory authority. We are awaiting their response.",
+          "Completed": "Your file has been completed successfully. Please contact us to arrange document pickup.",
+        };
 
-        // Try task first
+        // 1. Try task first (BizDoc tasks)
         let task = await getTaskByRef(refTrimmed);
 
-        // If no task found, check if it's a lead ref → find tasks by that lead's phone
+        // 2. If no task, check leads table → find tasks by lead's phone
         if (!task) {
           const lead = await getLeadByRef(refTrimmed);
-          if (lead && lead.phone) {
-            const matchedTasks = await getTasksByLeadPhone(lead.phone);
-            if (matchedTasks.length > 0) {
-              task = matchedTasks[0] as any;
-            } else {
-              // Return lead info even if no task exists yet
+          if (lead) {
+            if (lead.phone) {
+              const matchedTasks = await getTasksByLeadPhone(lead.phone);
+              if (matchedTasks.length > 0) task = matchedTasks[0] as any;
+            }
+            if (!task) {
               return {
                 found: true as const,
                 ref: lead.ref,
@@ -792,14 +800,64 @@ export const appRouter = router({
                 department: lead.assignedDepartment || "bizdoc",
                 status: "Not Started",
                 statusIndex: 0,
-                statusTotal: 5,
-                statusSteps: ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"],
-                statusMessage: "Your file has been received and is queued for processing. A compliance officer will begin work shortly.",
+                statusTotal: STATUS_ORDER.length,
+                statusSteps: STATUS_ORDER,
+                statusMessage: statusMessages["Not Started"],
                 deadline: null,
                 lastUpdated: lead.updatedAt,
                 createdAt: lead.createdAt,
               };
             }
+          }
+        }
+
+        // 3. If still no task, check systemiseLeads table
+        if (!task) {
+          const sysLead = await getSystemiseLeadByRef(refTrimmed);
+          if (sysLead) {
+            const sysStatus = sysLead.status === "completed" ? "Completed" : sysLead.status === "in_progress" ? "In Progress" : "Not Started";
+            const sysIdx = STATUS_ORDER.indexOf(sysStatus);
+            return {
+              found: true as const,
+              ref: sysLead.ref,
+              clientName: sysLead.contactName || sysLead.businessName,
+              businessName: sysLead.businessName,
+              service: sysLead.package || sysLead.service || "Systemise",
+              department: "systemise",
+              status: sysStatus,
+              statusIndex: sysIdx >= 0 ? sysIdx : 0,
+              statusTotal: STATUS_ORDER.length,
+              statusSteps: STATUS_ORDER,
+              statusMessage: statusMessages[sysStatus] || statusMessages["Not Started"],
+              deadline: null,
+              lastUpdated: sysLead.updatedAt,
+              createdAt: sysLead.createdAt,
+            };
+          }
+        }
+
+        // 4. If still nothing, check skillsApplications table
+        if (!task) {
+          const app = await getSkillsApplicationByRef(refTrimmed);
+          if (app) {
+            const sklStatus = app.status === "accepted" ? "In Progress" : app.status === "completed" ? "Completed" : "Not Started";
+            const sklIdx = STATUS_ORDER.indexOf(sklStatus);
+            return {
+              found: true as const,
+              ref: app.ref,
+              clientName: app.fullName,
+              businessName: null,
+              service: app.program || "Skills Training",
+              department: "skills",
+              status: sklStatus,
+              statusIndex: sklIdx >= 0 ? sklIdx : 0,
+              statusTotal: STATUS_ORDER.length,
+              statusSteps: STATUS_ORDER,
+              statusMessage: statusMessages[sklStatus] || statusMessages["Not Started"],
+              deadline: null,
+              lastUpdated: app.updatedAt,
+              createdAt: app.createdAt,
+            };
           }
         }
 
@@ -814,14 +872,6 @@ export const appRouter = router({
           }
         }
 
-        const STATUS_ORDER = ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"];
-        const statusMessages: Record<string, string> = {
-          "Not Started": "Your file has been received and is queued for processing. A compliance officer will begin work shortly.",
-          "In Progress": "Your file is actively being processed. Documents are being prepared and reviewed.",
-          "Waiting on Client": "We need additional information or documents from you. Please check your WhatsApp for details.",
-          "Submitted": "Your documents have been submitted to the relevant regulatory authority. We are awaiting their response.",
-          "Completed": "Your file has been completed successfully. Please contact us to arrange document pickup.",
-        };
         const statusIndex = STATUS_ORDER.indexOf(task.status);
         return {
           found: true as const,
@@ -861,14 +911,98 @@ export const appRouter = router({
         };
       }),
 
-    /** Full client portal lookup — returns task + checklist + activity + invoices */
+    /** Full client portal lookup — returns task + checklist + activity + invoices.
+     *  Searches: tasks → leads → systemiseLeads → skillsApplications */
     fullLookup: publicProcedure
       .input(z.object({
         ref: z.string().min(1),
         phone: z.string().optional(),
       }))
       .query(async ({ input }) => {
-        const task = await getTaskByRef(input.ref.trim());
+        const refTrimmed = input.ref.trim();
+        const STATUS_ORDER = ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"];
+
+        // 1. Try task directly
+        let task = await getTaskByRef(refTrimmed);
+
+        // 2. If no task, check leads → find task by phone
+        if (!task) {
+          const lead = await getLeadByRef(refTrimmed);
+          if (lead && lead.phone) {
+            const matchedTasks = await getTasksByLeadPhone(lead.phone);
+            if (matchedTasks.length > 0) task = matchedTasks[0] as any;
+          }
+          // If lead found but no task, return lead-based dashboard
+          if (!task && lead) {
+            return {
+              found: true as const,
+              task: {
+                id: 0, ref: lead.ref,
+                clientName: lead.name, businessName: lead.businessName,
+                phone: lead.phone ? `***${lead.phone.slice(-4)}` : null,
+                service: lead.service,
+                department: lead.assignedDepartment || "bizdoc",
+                status: "Not Started", statusIndex: 0, statusTotal: STATUS_ORDER.length,
+                statusSteps: STATUS_ORDER,
+                progress: 20, deadline: null, notes: lead.context,
+                createdAt: lead.createdAt, updatedAt: lead.updatedAt,
+              },
+              checklist: [], invoiceSummary: null, activity: [],
+            };
+          }
+        }
+
+        // 3. Check systemiseLeads
+        if (!task) {
+          const sysLead = await getSystemiseLeadByRef(refTrimmed);
+          if (sysLead) {
+            const sysStatus = sysLead.status === "completed" ? "Completed" : sysLead.status === "in_progress" ? "In Progress" : "Not Started";
+            const sysIdx = STATUS_ORDER.indexOf(sysStatus);
+            return {
+              found: true as const,
+              task: {
+                id: 0, ref: sysLead.ref,
+                clientName: sysLead.contactName || sysLead.businessName,
+                businessName: sysLead.businessName,
+                phone: sysLead.phone ? `***${sysLead.phone.slice(-4)}` : null,
+                service: sysLead.package || sysLead.service || "Systemise",
+                department: "systemise",
+                status: sysStatus, statusIndex: sysIdx >= 0 ? sysIdx : 0, statusTotal: STATUS_ORDER.length,
+                statusSteps: STATUS_ORDER,
+                progress: Math.round(((Math.max(sysIdx, 0) + 1) / STATUS_ORDER.length) * 100),
+                deadline: null, notes: sysLead.notes || null,
+                createdAt: sysLead.createdAt, updatedAt: sysLead.updatedAt,
+              },
+              checklist: [], invoiceSummary: null, activity: [],
+            };
+          }
+        }
+
+        // 4. Check skillsApplications
+        if (!task) {
+          const app = await getSkillsApplicationByRef(refTrimmed);
+          if (app) {
+            const sklStatus = app.status === "accepted" ? "In Progress" : app.status === "completed" ? "Completed" : "Not Started";
+            const sklIdx = STATUS_ORDER.indexOf(sklStatus);
+            return {
+              found: true as const,
+              task: {
+                id: 0, ref: app.ref,
+                clientName: app.fullName, businessName: null,
+                phone: app.phone ? `***${app.phone.slice(-4)}` : null,
+                service: app.program || "Skills Training",
+                department: "skills",
+                status: sklStatus, statusIndex: sklIdx >= 0 ? sklIdx : 0, statusTotal: STATUS_ORDER.length,
+                statusSteps: STATUS_ORDER,
+                progress: Math.round(((Math.max(sklIdx, 0) + 1) / STATUS_ORDER.length) * 100),
+                deadline: null, notes: app.businessDescription || null,
+                createdAt: app.createdAt, updatedAt: app.updatedAt,
+              },
+              checklist: [], invoiceSummary: null, activity: [],
+            };
+          }
+        }
+
         if (!task) return { found: false as const, reason: "not_found" as const };
 
         // Phone verification — only if phone is actual digits (not a ref)
@@ -886,7 +1020,6 @@ export const appRouter = router({
           getInvoicesByTaskId(task.id),
         ]);
 
-        const STATUS_ORDER = ["Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"];
         const statusIndex = STATUS_ORDER.indexOf(task.status);
 
         // Summarize invoices
