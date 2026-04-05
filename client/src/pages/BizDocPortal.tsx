@@ -17,31 +17,24 @@ const SERVICE_CATEGORIES = [
     title: "Registration & Modification",
     icon: Briefcase,
     items: [
-      { name: "CAC Business Name Registration", context: "Business Registration", price: "₦50K" },
-      { name: "CAC Private Limited Company", context: "Business Registration", price: "₦150K" },
-      { name: "CAC NGO / Trusteeship", context: "Business Registration", price: "₦120K" },
-      { name: "Director / Shareholder Changes", context: "Business Registration" },
-      { name: "Address Updates", context: "Business Registration" },
-      { name: "Name Changes", context: "Business Registration" },
-      { name: "Share Allotments", context: "Business Registration" },
-      { name: "Annual Returns Filing", context: "Tax Compliance", price: "₦50K" },
+      { name: "CAC Business Name (BN)", context: "CAC Business Name" },
+      { name: "CAC Private Limited Company (Ltd)", context: "CAC Limited Company" },
+      { name: "CAC NGO / Trusteeship", context: "CAC NGO Registration" },
+      { name: "Director / Shareholder Changes", context: "Director Shareholder Changes" },
+      { name: "Address Updates", context: "Address Updates" },
+      { name: "Name Changes", context: "Name Changes" },
+      { name: "Share Allotments", context: "Share Allotments" },
+      { name: "Annual Returns", context: "Annual Returns" },
     ],
-  },
-  {
-    id: "blueprint",
-    title: "Business Positioning Blueprint",
-    icon: FileText,
-    description: "Select your industry, tick required documents, get a total — then chat with us.",
-    cta: { label: "Open Blueprint Tool", href: "/bizdoc/blueprint" },
   },
   {
     id: "subscriptions",
     title: "Subscription Packages",
     icon: Shield,
     items: [
-      { name: "Maintenance Plan", context: "BizDoc Packages", price: "₦75K/mo", tag: "STARTER" },
-      { name: "Growth Plan", context: "BizDoc Packages", price: "₦150K/mo", tag: "POPULAR" },
-      { name: "Enterprise Plan", context: "BizDoc Packages", price: "₦300K/mo", tag: "BEST VALUE" },
+      { name: "Tax ProMax Update", context: "Tax ProMax Update", tag: "₦150K/YEAR" },
+      { name: "Tax + CAC Management", context: "Tax CAC Management", tag: "₦200K/YEAR" },
+      { name: "Full Compliance Management", context: "Full Compliance Management", tag: "₦500K/YEAR" },
     ],
   },
   {
@@ -49,13 +42,20 @@ const SERVICE_CATEGORIES = [
     title: "Renewals",
     icon: Award,
     items: [
-      { name: "CAC Annual Returns", context: "Tax Compliance", price: "₦50K" },
-      { name: "Tax Clearance Certificate", context: "Tax Compliance", price: "₦90K/yr" },
-      { name: "PENCOM Clearance", context: "Tax Compliance", price: "₦75K" },
-      { name: "VAT Registration / Filing", context: "Tax Compliance", price: "₦35K+" },
-      { name: "Industry Licence (NAFDAC/SON/DPR)", context: "Sector Licences" },
-      { name: "Multiple Items — Bundle Pricing", context: "Tax Compliance" },
+      { name: "Tax Clearance Certificate (TCC)", context: "TCC Renewal" },
+      { name: "ITF Compliance Certificate", context: "ITF Renewal" },
+      { name: "NSITF Compliance Certificate", context: "NSITF Renewal" },
+      { name: "PENCOM Clearance Certificate", context: "PENCOM Renewal" },
+      { name: "BPP Registration Renewal", context: "BPP Renewal" },
+      { name: "Contract Documents", context: "Contract Documents" },
     ],
+  },
+  {
+    id: "blueprint",
+    title: "Business Positioning Blueprint",
+    icon: FileText,
+    description: "Understand what documents and licences your specific industry needs. We'll guide you through it.",
+    cta: { label: "Open Blueprint Tool", href: "/bizdoc/blueprint" },
   },
 ] as const;
 
@@ -321,11 +321,6 @@ export default function BizDocPortal() {
                                 style={{ backgroundColor: `${Au}12`, color: Au }}
                               >
                                 {item.tag}
-                              </span>
-                            )}
-                            {"price" in item && item.price && (
-                              <span className="text-[11px] font-semibold tabular-nums" style={{ color: Au }}>
-                                {item.price}
                               </span>
                             )}
                             <ArrowRight

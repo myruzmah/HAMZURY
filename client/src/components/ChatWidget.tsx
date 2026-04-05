@@ -349,6 +349,128 @@ const SERVICE_PITCH_MAP: Record<string, { dept: Department; pitch: string; items
     { name: "CAC Annual Returns", price: "₦50,000", amount: 50000 }, { name: "Tax Clearance Certificate (1 year)", price: "₦90,000", amount: 90000 }, { name: "PENCOM Clearance", price: "₦75,000", amount: 75000 }, { name: "VAT Registration + Filing", price: "₦50,000", amount: 50000 }, { name: "Industry Licence Renewal", price: "Varies", amount: 0 }] },
   "Dashboards": { dept: "systemise" as Department, pitch: "See your entire business at a glance. We build dashboards that turn data into decisions.", items: [
     { name: "Business Analytics Dashboard", price: "₦250,000", amount: 250000 }, { name: "Compliance Dashboard", price: "₦200,000", amount: 200000 }, { name: "Custom Reports System", price: "₦180,000", amount: 180000 }] },
+  /* ═══════════════════════════════════════════════════════════
+     DEEP EDUCATIONAL PITCHES — BizDoc Individual Services
+     ═══════════════════════════════════════════════════════════ */
+  "CAC Business Name": {
+    dept: "bizdoc" as Department,
+    pitch: "A Business Name (BN) registration is the simplest way to legally operate in Nigeria. It's registered under YOUR personal name — meaning you and the business are legally the same entity.\n\nThis is perfect for freelancers, consultants, traders, and small businesses. It's cheaper and faster to register than a Limited Company.\n\nHowever, there's no legal separation — if the business gets sued, your personal assets are at risk.\n\n💡 Suggestion: If your business handles large contracts or you plan to bring in partners, a Limited Company (Ltd) might protect you better. Want me to explain the difference?\n\nReady to register your Business Name? Let's get started.",
+    items: [
+      { name: "Business Name Registration", price: "Get Started", amount: 50000 },
+    ],
+  },
+  "CAC Limited Company": {
+    dept: "bizdoc" as Department,
+    pitch: "A Private Limited Company (Ltd) is a separate legal entity from you. This means:\n\n✓ Your personal assets are protected if the business faces legal issues\n✓ You can bring in shareholders and investors\n✓ Banks and government agencies take Ltd companies more seriously\n✓ Required for most government contracts and tenders\n\n📋 Share Capital: Every Ltd company must have share capital. The minimum is ₦100,000 but many businesses register with ₦1,000,000 or more. Each million in shares has its own pricing tier.\n\n⚠️ If any director is a foreigner, the minimum share capital MUST be ₦100,000,000 (100 million). This is a legal requirement.\n\n💡 BN vs Ltd: A Business Name is simpler and cheaper, but offers no legal protection. Ltd costs more but protects your personal assets and opens doors to tenders and investment.\n\nHow many shareholders will your company have? And what share capital are you considering?",
+    items: [
+      { name: "Ltd Company Registration", price: "Get Started", amount: 150000 },
+    ],
+  },
+  "CAC NGO Registration": {
+    dept: "bizdoc" as Department,
+    pitch: "An NGO or Trusteeship (Incorporated Trustees) is the legal structure for non-profit organizations in Nigeria — charities, foundations, religious bodies, community groups, and social enterprises.\n\nUnlike a business, an NGO cannot distribute profits to its members. All income must go toward the organization's objectives.\n\n📋 Requirements:\n✓ At least 2 trustees\n✓ A constitution or trust deed\n✓ Registered office address\n✓ Clear objectives (educational, charitable, religious, etc.)\n\n💡 Many social enterprises register BOTH — an NGO for grants/donations and a Ltd company for commercial activities. This keeps your mission clean while still generating revenue.\n\nWhat type of organization are you setting up?",
+    items: [
+      { name: "NGO / Trusteeship Registration", price: "Get Started", amount: 120000 },
+    ],
+  },
+  "Director Shareholder Changes": {
+    dept: "bizdoc" as Department,
+    pitch: "Need to add or remove a director or shareholder from your company? This is a common corporate modification at CAC.\n\n📋 Common scenarios:\n✓ Adding a new partner or investor as shareholder\n✓ Removing a departing director\n✓ Changing the company secretary\n✓ Transferring shares between parties\n\n⚠️ Important: Share transfers may have stamp duty implications. If you're bringing in a foreign director, your share capital must be at least ₦100,000,000.\n\n💡 We handle the entire process — board resolutions, CAC forms, filing, and follow-up until the update reflects on CAC records.\n\nWhat changes do you need to make?",
+    items: [
+      { name: "Director/Shareholder Changes", price: "Get Started", amount: 80000 },
+    ],
+  },
+  "Address Updates": {
+    dept: "bizdoc" as Department,
+    pitch: "Moved your business to a new location? Your CAC records must reflect your current registered address.\n\nThis is important because:\n✓ Legal correspondence goes to your registered address\n✓ Outdated records can cause issues with bank verification\n✓ Required for compliance during audits\n\nWe file the change with CAC and ensure your records are updated. Usually takes 5-7 working days.\n\nWhat's your new business address?",
+    items: [
+      { name: "Address Update Filing", price: "Get Started", amount: 30000 },
+    ],
+  },
+  "Name Changes": {
+    dept: "bizdoc" as Department,
+    pitch: "Rebranding? You can change your business name at CAC while keeping all your existing history and compliance records.\n\n📋 Process:\n1. Search for new name availability at CAC\n2. Pass a board resolution approving the change\n3. File the amendment with CAC\n4. Receive updated certificate\n\n⚠️ Note: Your TIN and other registrations will need to be updated to reflect the new name. We can handle all of this for you.\n\nWhat new name are you considering?",
+    items: [
+      { name: "Name Change Filing", price: "Get Started", amount: 50000 },
+    ],
+  },
+  "Share Allotments": {
+    dept: "bizdoc" as Department,
+    pitch: "Share allotment is how a company issues new shares to raise capital or bring in new investors.\n\n📋 How it works:\n✓ The board passes a resolution to allot new shares\n✓ New shares are issued at a price per share\n✓ CAC is notified of the increased share capital\n✓ Updated records reflect the new ownership structure\n\n💡 Each ₦1,000,000 in share capital has its own pricing for CAC filing fees. The higher your share capital, the higher the filing fee.\n\n⚠️ If allotting to a foreign national, minimum total share capital must reach ₦100,000,000.\n\nHow much additional share capital are you looking to allot?",
+    items: [
+      { name: "Share Allotment Filing", price: "Get Started", amount: 60000 },
+    ],
+  },
+  "Annual Returns": {
+    dept: "bizdoc" as Department,
+    pitch: "Annual Returns is a yearly filing every registered business MUST do with CAC. It's how you confirm your business is still active.\n\n📋 Key facts:\n✓ Filing fee: ₦20,000 per year\n✓ Due date: Your CAC becomes eligible for annual returns after 16 months from registration\n✓ Late filing attracts penalties\n✓ Without current annual returns, you CANNOT get Tax Clearance Certificate\n\n⚠️ If you haven't filed in multiple years, the penalties stack up. We can calculate your exact backlog and handle everything.\n\n💡 Our subscription packages include automatic annual returns filing so you never miss a deadline.\n\nWhen was your business registered? Let me check if your returns are due.",
+    items: [
+      { name: "Annual Returns Filing", price: "Get Started", amount: 20000 },
+    ],
+  },
+  "Tax ProMax Update": {
+    dept: "bizdoc" as Department,
+    pitch: "Tax ProMax Update is our annual tax management service — ₦150,000/year.\n\n📋 How it works:\n✓ Every month, we send you a simple questionnaire to fill\n✓ You send us your bank statements\n✓ We update your financial records throughout the year\n✓ At year-end, we process your Tax Clearance Certificate (TCC)\n✓ We inform you exactly how much tax you should pay\n\n💡 Why this saves you money:\nMost businesses panic at year-end and pay accountants emergency fees. With ProMax, your records are always current. We identify legitimate deductions throughout the year, so you pay ONLY what you legally owe — not a kobo more.\n\n⚠️ Without proper records, FIRS can estimate your tax (and they always estimate HIGH). ProMax prevents that.\n\nWant to start your tax management?",
+    items: [
+      { name: "Tax ProMax Update (1 Year)", price: "₦150,000/year", amount: 150000 },
+    ],
+  },
+  "Tax CAC Management": {
+    dept: "bizdoc" as Department,
+    pitch: "Tax + CAC Management — ₦200,000/year. Everything in Tax ProMax PLUS full CAC compliance.\n\n📋 What's included:\n✓ Everything in Tax ProMax Update (monthly questionnaires, bank updates, year-end TCC)\n✓ Annual Returns filing with CAC (automatically, no reminders needed)\n✓ CAC status monitoring — we alert you before anything expires\n✓ Director/address change support if needed during the year\n\n💡 This is our most popular package because it covers the two things that trip up most businesses: tax and CAC compliance. One payment, zero stress for the entire year.\n\nReady to get started?",
+    items: [
+      { name: "Tax + CAC Management (1 Year)", price: "₦200,000/year", amount: 200000 },
+    ],
+  },
+  "Full Compliance Management": {
+    dept: "bizdoc" as Department,
+    pitch: "Full Compliance Management — ₦500,000/year. Complete business compliance handled for you.\n\n📋 Everything included:\n✓ Tax ProMax Update (monthly records, year-end TCC)\n✓ CAC Annual Returns filing\n✓ PENCOM compliance management\n✓ ITF compliance management\n✓ NSITF compliance management\n✓ BPP registration maintenance\n✓ All renewal reminders and filings\n✓ Dedicated compliance officer assigned to your business\n✓ Quarterly compliance health check reports\n\n💡 This is for businesses that want ZERO compliance headaches. Tender-ready at all times. No more last-minute scrambles when you need clearance certificates.\n\n⚠️ Most businesses lose tender opportunities because one certificate expired. Full Compliance means you're always ready.\n\nShall we set this up for your business?",
+    items: [
+      { name: "Full Compliance Management (1 Year)", price: "₦500,000/year", amount: 500000 },
+    ],
+  },
+  "TCC Renewal": {
+    dept: "bizdoc" as Department,
+    pitch: "Tax Clearance Certificate (TCC) is proof that your business has paid all due taxes for the past 3 years.\n\n📋 Why you need it:\n✓ Required for government tenders and contracts\n✓ Required for bank loan applications\n✓ Required for CAC Annual Returns\n✓ Required for most licence renewals\n✓ Shows credibility to partners and investors\n\n⚠️ Without a valid TCC, you're locked out of most serious business opportunities in Nigeria.\n\n💡 If you haven't been filing, we can help you get compliant — back-filing is possible, and we'll calculate the most cost-effective approach.\n\nHave you filed taxes before, or is this your first time?",
+    items: [
+      { name: "Tax Clearance Certificate", price: "Get Started", amount: 90000 },
+    ],
+  },
+  "ITF Renewal": {
+    dept: "bizdoc" as Department,
+    pitch: "ITF (Industrial Training Fund) compliance is mandatory for businesses with 5+ employees OR turnover above ₦50 million.\n\n📋 What it covers:\n✓ Contribution: 1% of annual payroll\n✓ Certificate proves you're training-compliant\n✓ Required for government contracts above ₦50M\n\n💡 Even if you don't have many staff, having ITF compliance positions your business for larger contracts.\n\nHow many employees does your business have?",
+    items: [
+      { name: "ITF Compliance Certificate", price: "Get Started", amount: 60000 },
+    ],
+  },
+  "NSITF Renewal": {
+    dept: "bizdoc" as Department,
+    pitch: "NSITF (Nigeria Social Insurance Trust Fund) provides employee compensation insurance — it's mandatory for all employers.\n\n📋 What it covers:\n✓ Contribution: 1% of monthly payroll\n✓ Covers workplace injury, disability, and death benefits\n✓ Certificate required for government contracts\n✓ Non-compliance attracts penalties\n\n💡 NSITF clearance is one of the most commonly missing documents in tender submissions. Getting it sorted now saves you from losing contracts later.\n\nShall we process your NSITF compliance?",
+    items: [
+      { name: "NSITF Compliance Certificate", price: "Get Started", amount: 60000 },
+    ],
+  },
+  "PENCOM Renewal": {
+    dept: "bizdoc" as Department,
+    pitch: "PENCOM (National Pension Commission) clearance proves your business remits employee pensions as required by law.\n\n📋 Key facts:\n✓ Mandatory for businesses with 3+ employees\n✓ Contribution: 18% of monthly salary (10% employer + 8% employee)\n✓ Required for all government contracts and tenders\n✓ Annual clearance certificate needed\n\n⚠️ PENCOM compliance is checked in almost every tender evaluation. Missing it can disqualify an otherwise perfect bid.\n\nDo you currently have active pension arrangements for your staff?",
+    items: [
+      { name: "PENCOM Clearance Certificate", price: "Get Started", amount: 75000 },
+    ],
+  },
+  "BPP Renewal": {
+    dept: "bizdoc" as Department,
+    pitch: "BPP (Bureau of Public Procurement) registration is your gateway to government contracts in Nigeria.\n\n📋 What it does:\n✓ Registers your company as an approved government contractor\n✓ Required before you can bid on federal government projects\n✓ Renewed annually\n✓ Requires TCC, PENCOM, ITF, NSITF as prerequisites\n\n💡 Think of BPP as the master key — without it, you can't even enter the tender room. But you need all the other certificates first.\n\nDo you already have your TCC, PENCOM, ITF, and NSITF clearances?",
+    items: [
+      { name: "BPP Registration/Renewal", price: "Get Started", amount: 100000 },
+    ],
+  },
+  "Contract Documents": {
+    dept: "bizdoc" as Department,
+    pitch: "Contract Documents are the legal agreements that protect you and your clients in business transactions.\n\n📋 Common types:\n✓ Service Level Agreements (SLA)\n✓ Non-Disclosure Agreements (NDA)\n✓ Memorandum of Understanding (MOU)\n✓ Joint Venture Agreements\n✓ Employment Contracts\n✓ Consultancy Agreements\n✓ Tenancy Agreements (commercial)\n\n💡 Operating without proper contracts is one of the biggest risks in Nigerian business. A single dispute without documentation can cost you millions.\n\nWhat type of contract do you need?",
+    items: [
+      { name: "Contract Document Drafting", price: "Get Started", amount: 50000 },
+    ],
+  },
 };
 
 /** Match a chat context string to a known service */
@@ -360,7 +482,24 @@ function matchServicePitch(context: string): typeof SERVICE_PITCH_MAP[string] | 
   }
   // Partial / alias matching for new categories
   const aliases: [string[], string][] = [
-    [["renewal", "renew", "annual return", "clearance renewal"], "Renewals"],
+    [["business name", "bn registration", "sole trader"], "CAC Business Name"],
+    [["limited company", "ltd company", "ltd registration", "private limited"], "CAC Limited Company"],
+    [["ngo", "trusteeship", "incorporated trustee", "non-profit", "nonprofit", "charity registration", "foundation registration"], "CAC NGO Registration"],
+    [["director change", "shareholder change", "add director", "remove director", "add shareholder", "remove shareholder", "transfer shares", "change secretary"], "Director Shareholder Changes"],
+    [["address update", "change address", "new address", "office address", "registered address"], "Address Updates"],
+    [["name change", "rebrand", "change name", "new name"], "Name Changes"],
+    [["share allot", "allotment", "issue shares", "new shares", "increase share capital"], "Share Allotments"],
+    [["annual return", "annual filing", "yearly filing", "cac return"], "Annual Returns"],
+    [["tax promax", "promax", "tax management service", "monthly questionnaire"], "Tax ProMax Update"],
+    [["tax cac management", "tax and cac", "tax + cac"], "Tax CAC Management"],
+    [["full compliance", "complete compliance", "all compliance", "compliance management"], "Full Compliance Management"],
+    [["tcc", "tax clearance", "clearance certificate"], "TCC Renewal"],
+    [["itf", "industrial training fund", "training fund"], "ITF Renewal"],
+    [["nsitf", "social insurance", "employee compensation insurance"], "NSITF Renewal"],
+    [["pencom", "pension commission", "pension clearance", "pension compliance"], "PENCOM Renewal"],
+    [["bpp", "public procurement", "government contractor", "tender registration"], "BPP Renewal"],
+    [["contract document", "sla", "mou", "joint venture agreement", "employment contract", "consultancy agreement", "contract drafting"], "Contract Documents"],
+    [["renewal", "renew", "clearance renewal"], "Renewals"],
     [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
     [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],
   ];
@@ -375,8 +514,27 @@ function matchServicePitch(context: string): typeof SERVICE_PITCH_MAP[string] | 
 function detectPitchFromResponse(text: string): string | null {
   const lower = text.toLowerCase();
   const map: [string[], string][] = [
+    // Deep educational BizDoc pitches (check specific ones first)
+    [["business name registration", "bn registration", "sole trader registration"], "CAC Business Name"],
+    [["limited company", "ltd registration", "ltd company", "private limited"], "CAC Limited Company"],
+    [["ngo registration", "trusteeship", "incorporated trustee", "non-profit registration"], "CAC NGO Registration"],
+    [["director change", "shareholder change", "add director", "remove director", "transfer shares"], "Director Shareholder Changes"],
+    [["address update", "change address", "registered address", "new office address"], "Address Updates"],
+    [["name change", "rebrand", "change business name"], "Name Changes"],
+    [["share allot", "allotment", "issue new shares", "increase share capital"], "Share Allotments"],
+    [["annual return", "yearly filing", "cac return"], "Annual Returns"],
+    [["tax promax", "promax", "tax management service"], "Tax ProMax Update"],
+    [["tax cac management", "tax and cac", "tax + cac"], "Tax CAC Management"],
+    [["full compliance", "complete compliance", "compliance management"], "Full Compliance Management"],
+    [["tcc", "tax clearance certificate"], "TCC Renewal"],
+    [["itf", "industrial training fund"], "ITF Renewal"],
+    [["nsitf", "social insurance trust"], "NSITF Renewal"],
+    [["pencom", "pension commission", "pension clearance"], "PENCOM Renewal"],
+    [["bpp", "public procurement", "government contractor registration"], "BPP Renewal"],
+    [["contract document", "contract drafting", "sla agreement", "mou agreement"], "Contract Documents"],
+    // Original broad categories
     [["registration", "cac", "incorporate"], "Business Registration"],
-    [["tax", "tin", "tcc", "firs", "annual return"], "Tax Compliance"],
+    [["tax", "tin", "firs"], "Tax Compliance"],
     [["licence", "permit", "nafdac", "scuml", "nepc", "son"], "Sector Licences"],
     [["foreign", "expatriate", "cerpac", "expat"], "Foreign Business"],
     [["contract", "legal", "nda", "agreement", "document"], "Legal Documents"],
@@ -389,7 +547,7 @@ function detectPitchFromResponse(text: string): string | null {
     [["corporate training", "staff training", "team training"], "Corporate Training"],
     [["coding", "vibe coding", "app building"], "Vibe Coding"],
     [["seo", "aeo", "search engine", "google ranking", "answer engine"], "SEO & AEO"],
-    [["renewal", "renew", "annual return", "clearance renewal", "pencom"], "Renewals"],
+    [["renewal", "renew", "clearance renewal"], "Renewals"],
     [["dashboard", "analytics dashboard", "reporting", "custom reports"], "Dashboards"],
   ];
   for (const [keywords, pitchKey] of map) {
