@@ -5,9 +5,12 @@ import PageMeta from "@/components/PageMeta";
 import NotificationBell from "@/components/NotificationBell";
 import DeptChatPanel from "@/components/DeptChatPanel";
 import AgentSuggestionCard from "@/components/AgentSuggestionCard";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
 import {
   Loader2, LogOut, Briefcase, CalendarDays, Users, BarChart3,
-  Clock, CheckCircle2, AlertCircle, Send, ArrowRight,
+  Clock, CheckCircle2, AlertCircle, Send, ArrowRight, ArrowLeft,
+  LayoutDashboard, Target,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
@@ -19,14 +22,7 @@ const MILK = "#FFFAF6";
 const WHITE = "#FFFFFF";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-type Tab = "projects" | "appointments" | "applications" | "stats";
-
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "projects",     label: "Projects",     icon: <Briefcase size={16} /> },
-  { id: "appointments", label: "Appointments", icon: <CalendarDays size={16} /> },
-  { id: "applications", label: "Applications", icon: <Users size={16} /> },
-  { id: "stats",        label: "Stats",        icon: <BarChart3 size={16} /> },
-];
+type Section = "overview" | "projects" | "appointments" | "applications";
 
 const KANBAN_COLUMNS = [
   "Not Started",
@@ -51,11 +47,19 @@ function daysSince(dateStr: string | null | undefined): number {
   return Math.floor((Date.now() - d.getTime()) / 86400000);
 }
 
+// ─── Sidebar items ────────────────────────────────────────────────────────────
+const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
+  { key: "overview",      icon: LayoutDashboard, label: "Overview" },
+  { key: "projects",      icon: Briefcase,       label: "Projects" },
+  { key: "appointments",  icon: CalendarDays,    label: "Appointments" },
+  { key: "applications",  icon: Users,           label: "Applications" },
+];
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function SystemiseLeadDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const staffUser = user as StaffUser;
-  const [activeTab, setActiveTab] = useState<Tab>("projects");
+  const [activeSection, setActiveSection] = useState<Section>("overview");
 
   // Data queries
   const tasksQuery = trpc.tasks.byDepartment.useQuery(
@@ -90,8 +94,8 @@ export default function SystemiseLeadDashboard() {
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: MILK }}>
-        <Loader2 className="animate-spin" size={32} style={{ color: GOLD }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
+        <Loader2 className="animate-spin" size={28} style={{ color: GOLD }} />
       </div>
     );
   }
@@ -102,101 +106,179 @@ export default function SystemiseLeadDashboard() {
   const joinApps = joinAppsQuery.data || [];
 
   return (
-    <>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: MILK }}>
       <PageMeta title="Systemise Operations | HAMZURY" description="Systemise department lead dashboard" />
-      <div style={{ minHeight: "100vh", backgroundColor: MILK }}>
-        {/* ─── Header ──────────────────────────────────────────────────────── */}
-        <header style={{ backgroundColor: TEAL, color: WHITE, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 600, margin: 0, letterSpacing: "-0.02em" }}>
-              Systemise Operations
-            </h1>
-            <span style={{ fontSize: 13, opacity: 0.7 }}>
-              Welcome, {staffUser.name || staffUser.displayName || "Lead"}
-            </span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <NotificationBell />
-            <button
-              onClick={() => logout()}
-              style={{ background: "none", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 6, color: WHITE, padding: "6px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}
-            >
-              <LogOut size={14} /> Logout
-            </button>
-          </div>
-        </header>
 
-        {/* ─── Tab Bar ─────────────────────────────────────────────────────── */}
-        <nav style={{ backgroundColor: WHITE, borderBottom: "1px solid #E5E7EB", display: "flex", gap: 0, padding: "0 24px", overflowX: "auto" }}>
-          {TABS.map((tab) => (
+      {/* ── Sidebar ── */}
+      <div className="w-16 md:w-60 flex flex-col h-full shrink-0" style={{ backgroundColor: TEAL }}>
+        <div className="h-16 flex items-center justify-center md:justify-start md:px-5 border-b shrink-0" style={{ borderColor: `${GOLD}20` }}>
+          <Briefcase size={18} style={{ color: GOLD }} />
+          <span className="hidden md:block ml-2.5 font-medium text-sm" style={{ color: GOLD }}>Systemise Ops</span>
+        </div>
+        <div className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+          {sidebarItems.map(({ key, icon: Icon, label }) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              key={key}
+              onClick={() => setActiveSection(key)}
+              className="w-full flex items-center justify-center md:justify-start md:px-3 py-3 rounded-xl transition-all"
               style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "12px 20px", fontSize: 14, fontWeight: activeTab === tab.id ? 600 : 400,
-                color: activeTab === tab.id ? TEAL : "#6B7280",
-                borderBottom: activeTab === tab.id ? `2px solid ${GOLD}` : "2px solid transparent",
-                background: "none", border: "none", borderBottomStyle: "solid", cursor: "pointer",
-                whiteSpace: "nowrap",
+                backgroundColor: activeSection === key ? `${GOLD}18` : "transparent",
+                color: activeSection === key ? GOLD : `${GOLD}60`,
               }}
             >
-              {tab.icon} {tab.label}
+              <Icon size={18} className="shrink-0" />
+              <span className="hidden md:block ml-3 text-sm font-normal">{label}</span>
             </button>
           ))}
-        </nav>
-
-        {/* ─── Content ─────────────────────────────────────────────────────── */}
-        <main style={{ padding: 24, maxWidth: 1400, margin: "0 auto" }}>
-          {/* Agent Suggestions */}
-          <AgentSuggestionCard
-            suggestions={suggestionsQuery.data || []}
-            onAccept={(id) => reviewMutation.mutate({ id, action: "accepted" })}
-            onReject={(id) => reviewMutation.mutate({ id, action: "rejected" })}
-            isLoading={suggestionsQuery.isLoading}
-          />
-
-          {activeTab === "projects" && (
-            <ProjectsBoard tasks={tasks} onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status: status as any })} />
-          )}
-          {activeTab === "appointments" && <AppointmentsTable appointments={appointments} />}
-          {activeTab === "applications" && <ApplicationsTable applications={joinApps} />}
-          {activeTab === "stats" && <StatsOverview tasks={tasks} appointments={appointments} />}
-          {/* ─── My Weekly Targets ─────────────────────────────────────── */}
-          <div style={{ marginTop: 24 }}>
-            <div style={{ backgroundColor: WHITE, borderRadius: 12, border: "1px solid #E5E7EB", padding: 24 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 600, color: TEAL, margin: "0 0 16px 0" }}>My Weekly Targets</h2>
-              {weeklyTargetsQuery.isLoading ? (
-                <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#9CA3AF", fontSize: 13 }}>
-                  <Loader2 className="animate-spin" size={16} /> Loading targets...
-                </div>
-              ) : !weeklyTargetsQuery.data?.length ? (
-                <p style={{ color: "#9CA3AF", fontSize: 13 }}>No targets set for this week.</p>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {weeklyTargetsQuery.data.map((target: any) => (
-                    <div key={target.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 8, border: "1px solid #F3F4F6", backgroundColor: "#FAFAFA" }}>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: "#1A1A1A" }}>{target.title || target.description}</div>
-                        {target.metric && <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>{target.metric}</div>}
-                      </div>
-                      <span style={{
-                        padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-                        backgroundColor: target.status === "completed" ? "rgba(34,197,94,0.10)" : target.status === "in_progress" ? "rgba(59,130,246,0.10)" : "rgba(234,179,8,0.12)",
-                        color: target.status === "completed" ? "#16A34A" : target.status === "in_progress" ? "#3B82F6" : "#B45309",
-                      }}>
-                        {target.status === "completed" ? "Done" : target.status === "in_progress" ? "In Progress" : "Pending"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
+        </div>
+        <div className="p-3 border-t shrink-0" style={{ borderColor: `${GOLD}15` }}>
+          <button
+            onClick={() => logout()}
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm"
+            style={{ color: `${GOLD}50` }}
+          >
+            <LogOut size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Sign Out</span>
+          </button>
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm mt-1"
+            style={{ color: `${GOLD}50` }}
+          >
+            <ArrowLeft size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Back to HAMZURY</span>
+          </Link>
+        </div>
       </div>
+
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="h-16 flex items-center justify-between px-6 border-b shrink-0 bg-white" style={{ borderColor: `${TEAL}10` }}>
+          <div>
+            <h1 className="text-base font-medium" style={{ color: TEAL }}>
+              {sidebarItems.find(s => s.key === activeSection)?.label || "Overview"}
+            </h1>
+            <p className="text-xs opacity-40" style={{ color: TEAL }}>
+              {staffUser.name || staffUser.displayName || "Lead"}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+          </div>
+        </div>
+
+        {/* Content */}
+        <ScrollArea className="flex-1">
+          <div className="p-6 md:p-8">
+            {/* Agent Suggestions — shown on all sections */}
+            <AgentSuggestionCard
+              suggestions={suggestionsQuery.data || []}
+              onAccept={(id) => reviewMutation.mutate({ id, action: "accepted" })}
+              onReject={(id) => reviewMutation.mutate({ id, action: "rejected" })}
+              isLoading={suggestionsQuery.isLoading}
+            />
+
+            {activeSection === "overview" && (
+              <OverviewSection
+                tasks={tasks}
+                appointments={appointments}
+                weeklyTargetsQuery={weeklyTargetsQuery}
+              />
+            )}
+            {activeSection === "projects" && (
+              <ProjectsBoard tasks={tasks} onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status: status as any })} />
+            )}
+            {activeSection === "appointments" && <AppointmentsTable appointments={appointments} />}
+            {activeSection === "applications" && <ApplicationsTable applications={joinApps} />}
+          </div>
+        </ScrollArea>
+      </div>
+
       <DeptChatPanel department="systemise" staffId={staffUser.staffRef || ""} staffName={staffUser.name || "Staff"} />
-    </>
+    </div>
+  );
+}
+
+// ─── Overview Section (Stats + Weekly Targets) ───────────────────────────────
+function OverviewSection({ tasks, appointments, weeklyTargetsQuery }: { tasks: any[]; appointments: any[]; weeklyTargetsQuery: any }) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const active = tasks.filter((t: any) => t.status && t.status !== "Completed").length;
+  const completedThisMonth = tasks.filter((t: any) => {
+    if (t.status !== "Completed" || !t.completedAt) return false;
+    return new Date(t.completedAt) >= monthStart;
+  }).length;
+
+  const revenueThisMonth = tasks
+    .filter((t: any) => t.status === "Completed" && t.completedAt && new Date(t.completedAt) >= monthStart)
+    .reduce((sum: number, t: any) => sum + (Number(t.quotedPrice) || 0), 0);
+
+  const subscriptionClients = tasks.filter((t: any) =>
+    (t.serviceType || t.service || "").toLowerCase().includes("subscription") ||
+    (t.serviceType || t.service || "").toLowerCase().includes("monthly"),
+  ).length;
+
+  const upcomingAppointments = appointments.filter((a: any) => a.status === "pending" || a.status === "confirmed").length;
+
+  const cards = [
+    { label: "Active Projects", value: active, icon: <Briefcase size={20} />, color: "#3B82F6" },
+    { label: "Completed This Month", value: completedThisMonth, icon: <CheckCircle2 size={20} />, color: "#16A34A" },
+    { label: "Revenue This Month", value: `₦${revenueThisMonth.toLocaleString()}`, icon: <BarChart3 size={20} />, color: GOLD },
+    { label: "Subscription Clients", value: subscriptionClients, icon: <Users size={20} />, color: "#7C3AED" },
+    { label: "Upcoming Appointments", value: upcomingAppointments, icon: <CalendarDays size={20} />, color: TEAL },
+  ];
+
+  return (
+    <div className="space-y-6">
+      {/* Stat cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 16 }}>
+        {cards.map((card) => (
+          <div key={card.label} style={{ backgroundColor: WHITE, borderRadius: 12, border: "1px solid #E5E7EB", padding: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${card.color}14`, display: "flex", alignItems: "center", justifyContent: "center", color: card.color }}>
+                {card.icon}
+              </div>
+            </div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", marginBottom: 4 }}>{card.value}</div>
+            <div style={{ fontSize: 13, color: "#6B7280" }}>{card.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Weekly Targets */}
+      <div style={{ backgroundColor: WHITE, borderRadius: 12, border: "1px solid #E5E7EB", padding: 24 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: TEAL, margin: "0 0 16px 0", display: "flex", alignItems: "center", gap: 8 }}>
+          <Target size={18} /> My Weekly Targets
+        </h2>
+        {weeklyTargetsQuery.isLoading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#9CA3AF", fontSize: 13 }}>
+            <Loader2 className="animate-spin" size={16} /> Loading targets...
+          </div>
+        ) : !weeklyTargetsQuery.data?.length ? (
+          <p style={{ color: "#9CA3AF", fontSize: 13 }}>No targets set for this week.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {weeklyTargetsQuery.data.map((target: any) => (
+              <div key={target.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", borderRadius: 8, border: "1px solid #F3F4F6", backgroundColor: "#FAFAFA" }}>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "#1A1A1A" }}>{target.title || target.description}</div>
+                  {target.metric && <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>{target.metric}</div>}
+                </div>
+                <span style={{
+                  padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
+                  backgroundColor: target.status === "completed" ? "rgba(34,197,94,0.10)" : target.status === "in_progress" ? "rgba(59,130,246,0.10)" : "rgba(234,179,8,0.12)",
+                  color: target.status === "completed" ? "#16A34A" : target.status === "in_progress" ? "#3B82F6" : "#B45309",
+                }}>
+                  {target.status === "completed" ? "Done" : target.status === "in_progress" ? "In Progress" : "Pending"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -383,65 +465,6 @@ function ApplicationsTable({ applications }: { applications: any[] }) {
           </table>
         </div>
       )}
-    </div>
-  );
-}
-
-// ─── Stats Overview ───────────────────────────────────────────────────────────
-function StatsOverview({ tasks, appointments }: { tasks: any[]; appointments: any[] }) {
-  const now = new Date();
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-  const active = tasks.filter((t: any) => t.status && t.status !== "Completed").length;
-  const completedThisMonth = tasks.filter((t: any) => {
-    if (t.status !== "Completed" || !t.completedAt) return false;
-    return new Date(t.completedAt) >= monthStart;
-  }).length;
-
-  // Revenue: sum quotedPrice for completed this month
-  const revenueThisMonth = tasks
-    .filter((t: any) => t.status === "Completed" && t.completedAt && new Date(t.completedAt) >= monthStart)
-    .reduce((sum: number, t: any) => sum + (Number(t.quotedPrice) || 0), 0);
-
-  // Subscription count approximation: tasks with recurring markers
-  const subscriptionClients = tasks.filter((t: any) =>
-    (t.serviceType || t.service || "").toLowerCase().includes("subscription") ||
-    (t.serviceType || t.service || "").toLowerCase().includes("monthly"),
-  ).length;
-
-  const cards = [
-    { label: "Active Projects", value: active, icon: <Briefcase size={20} />, color: "#3B82F6" },
-    { label: "Completed This Month", value: completedThisMonth, icon: <CheckCircle2 size={20} />, color: "#16A34A" },
-    { label: "Revenue This Month", value: `₦${revenueThisMonth.toLocaleString()}`, icon: <BarChart3 size={20} />, color: GOLD },
-    { label: "Subscription Clients", value: subscriptionClients, icon: <Users size={20} />, color: "#7C3AED" },
-  ];
-
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 16 }}>
-      {cards.map((card) => (
-        <div key={card.label} style={{ backgroundColor: WHITE, borderRadius: 12, border: "1px solid #E5E7EB", padding: 24 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: `${card.color}14`, display: "flex", alignItems: "center", justifyContent: "center", color: card.color }}>
-              {card.icon}
-            </div>
-          </div>
-          <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", marginBottom: 4 }}>{card.value}</div>
-          <div style={{ fontSize: 13, color: "#6B7280" }}>{card.label}</div>
-        </div>
-      ))}
-
-      {/* Appointment summary card */}
-      <div style={{ backgroundColor: WHITE, borderRadius: 12, border: "1px solid #E5E7EB", padding: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "rgba(10,31,28,0.08)", display: "flex", alignItems: "center", justifyContent: "center", color: TEAL }}>
-            <CalendarDays size={20} />
-          </div>
-        </div>
-        <div style={{ fontSize: 28, fontWeight: 700, color: "#1A1A1A", marginBottom: 4 }}>
-          {appointments.filter((a: any) => a.status === "pending" || a.status === "confirmed").length}
-        </div>
-        <div style={{ fontSize: 13, color: "#6B7280" }}>Upcoming Appointments</div>
-      </div>
     </div>
   );
 }

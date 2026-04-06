@@ -5,17 +5,21 @@ import PageMeta from "@/components/PageMeta";
 import NotificationBell from "@/components/NotificationBell";
 import DeptChatPanel from "@/components/DeptChatPanel";
 import AgentSuggestionCard from "@/components/AgentSuggestionCard";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Link } from "wouter";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
-  Loader2, LogOut, ChevronDown, ChevronUp,
+  Loader2, LogOut, ArrowLeft, ChevronDown, ChevronUp,
   ClipboardList, CheckCircle2, BarChart3,
   Play, Send, RotateCcw, Flag,
   Users, Eye, EyeOff, Plus, BadgeCheck, TrendingDown,
+  LayoutDashboard, Target,
 } from "lucide-react";
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const GREEN = "#1B4D3E";
+const GOLD = "#B48C4C";
 const GREEN_LIGHT = "rgba(27,77,62,0.08)";
 const MILK = "#FFFAF6";
 const WHITE = "#FFFFFF";
@@ -28,15 +32,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string }> = {
   "Completed":         { bg: "rgba(34,197,94,0.10)",   text: "#16A34A" },
 };
 
-type Tab = "queue" | "review" | "stats" | "clients" | "projects";
-
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "queue",    label: "Task Queue",   icon: <ClipboardList size={16} /> },
-  { id: "review",   label: "QA Review",    icon: <CheckCircle2 size={16} /> },
-  { id: "stats",    label: "Stats",        icon: <BarChart3 size={16} /> },
-  { id: "clients",  label: "Tax Clients",  icon: <Users size={16} /> },
-  { id: "projects", label: "Projects",     icon: <Flag size={16} /> },
-];
+type Section = "overview" | "queue" | "review" | "stats" | "clients" | "projects";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
@@ -72,7 +68,7 @@ function PriorityBadge({ score }: { score: number | null | undefined }) {
 export default function BizDocLeadDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const staffUser = user as StaffUser;
-  const [activeTab, setActiveTab] = useState<Tab>("queue");
+  const [activeSection, setActiveSection] = useState<Section>("overview");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [reworkNotes, setReworkNotes] = useState<Record<number, string>>({});
 
@@ -139,172 +135,239 @@ export default function BizDocLeadDashboard() {
     return acc;
   }, {});
 
+  // Rework rate
+  const reworkCount = allTasks.filter((t: any) => t.isRework).length;
+  const reworkRate = allTasks.length > 0 ? Math.round((reworkCount / allTasks.length) * 100) : 0;
+
   if (loading) {
     return (
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh", background: MILK }}>
-        <Loader2 size={28} style={{ animation: "spin 1s linear infinite", color: GREEN }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
+        <Loader2 className="animate-spin" size={28} style={{ color: GOLD }} />
       </div>
     );
   }
+  if (!user) return null;
+
+  const sidebarItems: { key: Section; icon: React.ElementType; label: string; badge?: number }[] = [
+    { key: "overview",  icon: LayoutDashboard, label: "Overview" },
+    { key: "queue",     icon: ClipboardList,   label: "Task Queue" },
+    { key: "review",    icon: CheckCircle2,    label: "QA Review", badge: submittedTasks.length || undefined },
+    { key: "stats",     icon: BarChart3,       label: "Stats" },
+    { key: "clients",   icon: Users,           label: "Tax Clients" },
+    { key: "projects",  icon: Flag,            label: "Projects" },
+  ];
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <>
-    <div style={{ minHeight: "100vh", background: MILK }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: MILK }}>
       <PageMeta title="BizDoc Operations" description="BizDoc department lead dashboard" />
 
-      {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header style={{
-        position: "sticky", top: 0, zIndex: 50,
-        background: GREEN, color: WHITE,
-        padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: "-0.02em" }}>BizDoc Operations</span>
-          <span style={{ fontSize: 12, opacity: 0.6 }}>Dept Lead</span>
+      {/* ── Sidebar ── */}
+      <div className="w-16 md:w-60 flex flex-col h-full shrink-0" style={{ backgroundColor: GREEN }}>
+        <div className="h-16 flex items-center justify-center md:justify-start md:px-5 border-b shrink-0" style={{ borderColor: `${GOLD}20` }}>
+          <ClipboardList size={18} style={{ color: GOLD }} />
+          <span className="hidden md:block ml-2.5 font-medium text-sm" style={{ color: GOLD }}>BizDoc Ops</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <NotificationBell />
+        <div className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+          {sidebarItems.map(({ key, icon: Icon, label, badge }) => (
+            <button
+              key={key}
+              onClick={() => setActiveSection(key)}
+              className="w-full flex items-center justify-center md:justify-start md:px-3 py-3 rounded-xl transition-all"
+              style={{
+                backgroundColor: activeSection === key ? `${GOLD}18` : "transparent",
+                color: activeSection === key ? GOLD : `${GOLD}60`,
+              }}
+            >
+              <Icon size={18} className="shrink-0" />
+              <span className="hidden md:block ml-3 text-sm font-normal">{label}</span>
+              {badge != null && badge > 0 && (
+                <span className="hidden md:inline-flex ml-auto items-center justify-center text-[10px] font-bold rounded-full px-1.5 min-w-[18px] h-[18px]" style={{ backgroundColor: GOLD, color: WHITE }}>
+                  {badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+        <div className="p-3 border-t shrink-0" style={{ borderColor: `${GOLD}15` }}>
           <button
             onClick={() => logout()}
-            style={{
-              background: "rgba(255,255,255,0.1)", border: "none", borderRadius: 6,
-              padding: "6px 12px", color: WHITE, cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
-              fontSize: 13,
-            }}
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm"
+            style={{ color: `${GOLD}50` }}
           >
-            <LogOut size={14} /> Logout
+            <LogOut size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Sign Out</span>
           </button>
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm mt-1"
+            style={{ color: `${GOLD}50` }}
+          >
+            <ArrowLeft size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Back to HAMZURY</span>
+          </Link>
         </div>
-      </header>
+      </div>
 
-      {/* ── Tab Bar ────────────────────────────────────────────────────────── */}
-      <nav style={{
-        display: "flex", gap: 0, borderBottom: "1px solid #E5E7EB",
-        background: WHITE, padding: "0 24px",
-      }}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              display: "flex", alignItems: "center", gap: 6,
-              padding: "12px 20px", border: "none", background: "none",
-              cursor: "pointer", fontSize: 14, fontWeight: activeTab === tab.id ? 600 : 400,
-              color: activeTab === tab.id ? GREEN : "#6B7280",
-              borderBottom: activeTab === tab.id ? `2px solid ${GREEN}` : "2px solid transparent",
-              transition: "all 0.15s",
-            }}
-          >
-            {tab.icon} {tab.label}
-            {tab.id === "review" && submittedTasks.length > 0 && (
-              <span style={{
-                marginLeft: 4, background: GREEN, color: WHITE,
-                borderRadius: 999, padding: "1px 7px", fontSize: 11, fontWeight: 600,
-              }}>
-                {submittedTasks.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* ── Content ────────────────────────────────────────────────────────── */}
-      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 20px" }}>
-        {/* Agent Suggestions */}
-        <AgentSuggestionCard
-          suggestions={suggestionsQuery.data || []}
-          onAccept={(id) => reviewMutation.mutate({ id, action: "accepted" })}
-          onReject={(id) => reviewMutation.mutate({ id, action: "rejected" })}
-          isLoading={suggestionsQuery.isLoading}
-        />
-
-        {activeTab === "queue" && (
-          <TaskQueueTab
-            tasks={allTasks}
-            expandedId={expandedId}
-            setExpandedId={setExpandedId}
-            onStartTask={(id: number) => updateStatus.mutate({ id, status: "In Progress" })}
-            onSubmitTask={(id: number) => submitTask.mutate({ id })}
-            isUpdating={updateStatus.isPending || submitTask.isPending}
-          />
-        )}
-        {activeTab === "review" && (
-          <QAReviewTab
-            tasks={submittedTasks}
-            reworkNotes={reworkNotes}
-            setReworkNotes={setReworkNotes}
-            onApprove={(id: number) => approveMutation.mutate({ id })}
-            onRework={(id: number) => reworkMutation.mutate({ id, reason: reworkNotes[id] || "" })}
-            isUpdating={approveMutation.isPending || reworkMutation.isPending}
-          />
-        )}
-        {activeTab === "stats" && (
-          <StatsTab
-            total={activeTasks.length}
-            completedThisMonth={completedThisMonth.length}
-            avgDays={avgDays}
-            breakdown={statusBreakdown}
-          />
-        )}
-        {activeTab === "clients" && (
-          <TaxClientsTab subs={subsQuery.data ?? []} />
-        )}
-        {activeTab === "projects" && (
-          <TilzSpaProjectBoard />
-        )}
-
-        {/* ── My Weekly Targets ─────────────────────────────────────────── */}
-        <div style={{
-          marginTop: 28, background: WHITE, borderRadius: 10,
-          border: "1px solid #E5E7EB", padding: "20px 24px",
-        }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: GREEN, marginBottom: 16 }}>
-            My Weekly Targets
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="h-16 flex items-center justify-between px-6 border-b shrink-0 bg-white" style={{ borderColor: `${GREEN}10` }}>
+          <div>
+            <h1 className="text-base font-medium" style={{ color: GREEN }}>{
+              sidebarItems.find(s => s.key === activeSection)?.label
+            }</h1>
+            <p className="text-xs opacity-40" style={{ color: GREEN }}>{staffUser?.name || "BizDoc Lead"} · Dept Lead</p>
           </div>
-          {weeklyTargetsQuery.isLoading ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#9CA3AF" }}>
-              <Loader2 size={16} style={{ animation: "spin 1s linear infinite" }} /> Loading targets...
-            </div>
-          ) : !weeklyTargetsQuery.data?.length ? (
-            <div style={{ fontSize: 13, color: "#9CA3AF" }}>No targets set for this week.</div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {weeklyTargetsQuery.data.map((target: any) => (
-                <div key={target.id} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "10px 14px", borderRadius: 8,
-                  border: "1px solid #F3F4F6", background: MILK,
-                }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: GREEN }}>
-                      {target.title || target.description}
-                    </div>
-                    {target.metric && (
-                      <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>{target.metric}</div>
-                    )}
-                  </div>
-                  <span style={{
-                    display: "inline-block", padding: "2px 10px", borderRadius: 999,
-                    fontSize: 11, fontWeight: 600,
-                    background: target.status === "completed" ? "rgba(34,197,94,0.10)"
-                      : target.status === "in_progress" ? "rgba(59,130,246,0.10)"
-                      : "rgba(234,179,8,0.12)",
-                    color: target.status === "completed" ? "#16A34A"
-                      : target.status === "in_progress" ? "#3B82F6"
-                      : "#B45309",
-                  }}>
-                    {target.status === "completed" ? "Done" : target.status === "in_progress" ? "In Progress" : "Pending"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <NotificationBell />
+          </div>
         </div>
-      </main>
+
+        {/* Content */}
+        <ScrollArea className="flex-1">
+          <div className="p-6 md:p-8" style={{ maxWidth: 1100 }}>
+            {/* Agent Suggestions — shown on all sections */}
+            <AgentSuggestionCard
+              suggestions={suggestionsQuery.data || []}
+              onAccept={(id) => reviewMutation.mutate({ id, action: "accepted" })}
+              onReject={(id) => reviewMutation.mutate({ id, action: "rejected" })}
+              isLoading={suggestionsQuery.isLoading}
+            />
+
+            {activeSection === "overview" && (
+              <OverviewSection
+                activeTasks={activeTasks.length}
+                completedThisMonth={completedThisMonth.length}
+                avgDays={avgDays}
+                submittedCount={submittedTasks.length}
+                reworkRate={reworkRate}
+                weeklyTargetsQuery={weeklyTargetsQuery}
+              />
+            )}
+            {activeSection === "queue" && (
+              <TaskQueueTab
+                tasks={allTasks}
+                expandedId={expandedId}
+                setExpandedId={setExpandedId}
+                onStartTask={(id: number) => updateStatus.mutate({ id, status: "In Progress" })}
+                onSubmitTask={(id: number) => submitTask.mutate({ id })}
+                isUpdating={updateStatus.isPending || submitTask.isPending}
+              />
+            )}
+            {activeSection === "review" && (
+              <QAReviewTab
+                tasks={submittedTasks}
+                reworkNotes={reworkNotes}
+                setReworkNotes={setReworkNotes}
+                onApprove={(id: number) => approveMutation.mutate({ id })}
+                onRework={(id: number) => reworkMutation.mutate({ id, reason: reworkNotes[id] || "" })}
+                isUpdating={approveMutation.isPending || reworkMutation.isPending}
+              />
+            )}
+            {activeSection === "stats" && (
+              <StatsTab
+                total={activeTasks.length}
+                completedThisMonth={completedThisMonth.length}
+                avgDays={avgDays}
+                breakdown={statusBreakdown}
+              />
+            )}
+            {activeSection === "clients" && (
+              <TaxClientsTab subs={subsQuery.data ?? []} />
+            )}
+            {activeSection === "projects" && (
+              <TilzSpaProjectBoard />
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+      <DeptChatPanel department="bizdoc" staffId={staffUser?.staffRef || ""} staffName={staffUser?.name || "BizDoc Staff"} />
     </div>
-    <DeptChatPanel department="bizdoc" staffId={staffUser?.staffRef || ""} staffName={staffUser?.name || "BizDoc Staff"} />
-    </>
+  );
+}
+
+// ─── Overview Section ────────────────────────────────────────────────────────
+function OverviewSection({
+  activeTasks, completedThisMonth, avgDays, submittedCount, reworkRate, weeklyTargetsQuery,
+}: {
+  activeTasks: number;
+  completedThisMonth: number;
+  avgDays: string;
+  submittedCount: number;
+  reworkRate: number;
+  weeklyTargetsQuery: any;
+}) {
+  const STAT_CARDS = [
+    { label: "Active Tasks", value: activeTasks, icon: ClipboardList, color: GREEN },
+    { label: "Completed This Month", value: completedThisMonth, icon: CheckCircle2, color: "#16A34A" },
+    { label: "Avg Completion (days)", value: avgDays, icon: BarChart3, color: "#3B82F6" },
+    { label: "Submitted for QA", value: submittedCount, icon: Send, color: "#7C3AED" },
+    { label: "Rework Rate", value: `${reworkRate}%`, icon: RotateCcw, color: "#EF4444" },
+  ];
+
+  return (
+    <div className="space-y-8">
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        {STAT_CARDS.map(({ label, value, icon: Icon, color }) => (
+          <div key={label} className="bg-white rounded-2xl p-4 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <Icon size={16} className="mx-auto mb-2" style={{ color }} />
+            <p className="text-xl font-medium leading-none mb-1" style={{ color }}>{value}</p>
+            <p className="text-[10px] uppercase tracking-wider opacity-40" style={{ color: GREEN }}>{label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Weekly Targets */}
+      <div style={{
+        background: WHITE, borderRadius: 16,
+        border: "1px solid #E5E7EB", padding: "20px 24px",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 600, color: GREEN, marginBottom: 16 }}>
+          <Target size={16} style={{ color: GOLD }} />
+          My Weekly Targets
+        </div>
+        {weeklyTargetsQuery.isLoading ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "#9CA3AF" }}>
+            <Loader2 size={16} className="animate-spin" /> Loading targets...
+          </div>
+        ) : !weeklyTargetsQuery.data?.length ? (
+          <div style={{ fontSize: 13, color: "#9CA3AF" }}>No targets set for this week.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {weeklyTargetsQuery.data.map((target: any) => (
+              <div key={target.id} style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "10px 14px", borderRadius: 8,
+                border: "1px solid #F3F4F6", background: MILK,
+              }}>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: GREEN }}>
+                    {target.title || target.description}
+                  </div>
+                  {target.metric && (
+                    <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 2 }}>{target.metric}</div>
+                  )}
+                </div>
+                <span style={{
+                  display: "inline-block", padding: "2px 10px", borderRadius: 999,
+                  fontSize: 11, fontWeight: 600,
+                  background: target.status === "completed" ? "rgba(34,197,94,0.10)"
+                    : target.status === "in_progress" ? "rgba(59,130,246,0.10)"
+                    : "rgba(234,179,8,0.12)",
+                  color: target.status === "completed" ? "#16A34A"
+                    : target.status === "in_progress" ? "#3B82F6"
+                    : "#B45309",
+                }}>
+                  {target.status === "completed" ? "Done" : target.status === "in_progress" ? "In Progress" : "Pending"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -325,7 +388,7 @@ function TaskQueueTab({
   return (
     <div>
       {/* Filter bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
         <span style={{ fontSize: 13, color: "#6B7280" }}>Filter:</span>
         {["all", "Not Started", "In Progress", "Waiting on Client", "Submitted", "Completed"].map((s) => (
           <button
@@ -815,7 +878,7 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
         <div style={{ borderTop: `1px solid rgba(27,77,62,0.08)`, padding: "20px" }}>
           {detailQuery.isLoading ? (
             <div style={{ textAlign: "center", padding: "20px" }}>
-              <Loader2 size={20} style={{ animation: "spin 1s linear infinite", color: GREEN }} />
+              <Loader2 size={20} className="animate-spin" style={{ color: GREEN }} />
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -894,7 +957,7 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
                       }}
                       style={{ background: GREEN, color: WHITE, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
                     >
-                      {addCred.isPending ? "Saving…" : "Save Credentials"}
+                      {addCred.isPending ? "Saving..." : "Save Credentials"}
                     </button>
                   </div>
                 )}
@@ -934,7 +997,7 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
                       style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13, background: WHITE }}>
                       {["FIRS", "JTBS", "KIRS", "CAC", "SCUML", "Tax Pro Max", "Other"].map(p => <option key={p}>{p}</option>)}
                     </select>
-                    <input placeholder="Action taken (e.g. Filed quarterly return, Updated TIN…)"
+                    <input placeholder="Action taken (e.g. Filed quarterly return, Updated TIN...)"
                       value={logAction} onChange={e => setLogAction(e.target.value)}
                       style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid rgba(27,77,62,0.2)", fontSize: 13 }} />
                     <select value={logStatus} onChange={e => setLogStatus(e.target.value as any)}
@@ -954,7 +1017,7 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
                       onClick={() => addLog.mutate({ subscriptionId: sub.id, clientName: sub.businessName || sub.clientName, portalName: logPortal, actionTaken: logAction || undefined, status: logStatus, nextActionDate: logNextDate || undefined, notes: logNotes || undefined })}
                       style={{ background: GREEN, color: WHITE, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
                     >
-                      {addLog.isPending ? "Logging…" : "Log Visit"}
+                      {addLog.isPending ? "Logging..." : "Log Visit"}
                     </button>
                   </div>
                 )}
@@ -1051,7 +1114,7 @@ function ClientCard({ sub, expanded, onToggle, fmtNaira }: {
                       }}
                       style={{ background: GREEN, color: WHITE, border: "none", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}
                     >
-                      {recordSavings.isPending ? "Saving…" : "Save Record"}
+                      {recordSavings.isPending ? "Saving..." : "Save Record"}
                     </button>
                   </div>
                 )}
