@@ -634,6 +634,28 @@ export const appRouter = router({
         return task;
       }),
 
+    // CSO assigns a task to a specific staff member / department lead
+    assign: csoProcedure
+      .input(z.object({
+        id: z.number(),
+        assignedTo: z.number(),
+        department: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const updateData: Parameters<typeof updateTask>[1] = {
+          assignedTo: input.assignedTo,
+        };
+        if (input.department) updateData.department = input.department;
+        const task = await updateTask(input.id, updateData);
+        await createActivityLog({
+          taskId: input.id,
+          userId: ctx.user.id,
+          action: "task_assigned",
+          details: `Task assigned to staff #${input.assignedTo} by ${ctx.user.name ?? ctx.user.openId}`,
+        });
+        return task;
+      }),
+
     // Staff submits a completed task for manager review
     submit: protectedProcedure
       .input(z.object({ id: z.number(), notes: z.string().optional() }))
@@ -1599,6 +1621,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
       const rows = await listAllStaffUsers();
       return rows.map(s => ({
         id: `HMZ-${String(s.id).padStart(3, "0")}`,
+        staffId: s.id,
         name: s.name || s.email || "Unknown",
         role: s.hamzuryRole || "department_staff",
         dept: roleToDept[s.hamzuryRole] || "General",

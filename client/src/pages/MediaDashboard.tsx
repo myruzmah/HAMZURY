@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Link } from "wouter";
 import TemplateEditor from "@/components/TemplateEditor";
 import {
-  Home, LogOut, LayoutDashboard, Calendar, Video, Mic,
+  ArrowLeft, LogOut, LayoutDashboard, Calendar, Video, Mic,
   Image, Bot, Upload, CheckCircle2, Clock, Edit3,
   TrendingUp, Play, Film, Folder, Plus, Trash2,
   Eye, Share2, Star, Target, Users, Zap, BookOpen,
@@ -30,16 +30,16 @@ const DARK  = "#1A1A1A";
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Section = "clients" | "inbox" | "overview" | "calendar" | "aitwin" | "podcast" | "vault" | "social" | "templates";
 
-const SECTIONS: { id: Section; label: string; icon: React.ReactNode }[] = [
-  { id: "clients",   label: "Social Clients",  icon: <Users size={16} /> },
-  { id: "inbox",     label: "Client Work",     icon: <Briefcase size={16} /> },
-  { id: "overview",  label: "Overview",        icon: <LayoutDashboard size={16} /> },
-  { id: "calendar",  label: "Content Calendar", icon: <Calendar size={16} /> },
-  { id: "aitwin",    label: "AI Twin",          icon: <Bot size={16} /> },
-  { id: "podcast",   label: "Podcast",          icon: <Mic size={16} /> },
-  { id: "vault",     label: "Asset Vault",      icon: <Folder size={16} /> },
-  { id: "social",    label: "Social Reports",   icon: <TrendingUp size={16} /> },
-  { id: "templates", label: "Templates",        icon: <Image size={16} /> },
+const SECTIONS: { id: Section; label: string; icon: React.ElementType }[] = [
+  { id: "clients",   label: "Social Clients",   icon: Users },
+  { id: "inbox",     label: "Client Work",      icon: Briefcase },
+  { id: "overview",  label: "Overview",         icon: LayoutDashboard },
+  { id: "calendar",  label: "Content Calendar", icon: Calendar },
+  { id: "aitwin",    label: "AI Twin",          icon: Bot },
+  { id: "podcast",   label: "Podcast",          icon: Mic },
+  { id: "vault",     label: "Asset Vault",      icon: Folder },
+  { id: "social",    label: "Social Reports",   icon: TrendingUp },
+  { id: "templates", label: "Templates",        icon: Image },
 ];
 
 const TASK_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -1353,93 +1353,72 @@ export default function MediaDashboard() {
     }
   }
 
-  const currentSection = SECTIONS.find(s => s.id === activeSection);
-
   return (
     <>
     <div className="flex h-screen overflow-hidden" style={{ backgroundColor: MILK }}>
       <PageMeta title="Media Dashboard — HAMZURY" description="Content, AI twin and media management for HAMZURY." />
 
-      {/* ── Sidebar ───────────────────────────────────────────────────── */}
-      <div
-        className="w-16 md:w-60 flex flex-col h-full shrink-0"
-        style={{ backgroundColor: TEAL }}>
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b shrink-0"
-          style={{ borderColor: `${GOLD}15` }}>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-            style={{ backgroundColor: GOLD }}>
-            <Video size={16} style={{ color: TEAL }} />
-          </div>
-          <div className="hidden md:block overflow-hidden">
-            <p className="text-[10px] font-bold tracking-[0.25em] uppercase leading-none"
-              style={{ color: `${GOLD}80` }}>Media Hub</p>
-            <p className="text-[13px] font-semibold leading-tight mt-0.5 truncate"
-              style={{ color: MILK }}>Content & Creative</p>
-          </div>
+      {/* ── Sidebar ── */}
+      <div className="w-16 md:w-60 flex flex-col h-full shrink-0" style={{ backgroundColor: TEAL }}>
+        <div className="h-16 flex items-center justify-center md:justify-start md:px-5 border-b shrink-0" style={{ borderColor: `${GOLD}20` }}>
+          <Video size={18} style={{ color: GOLD }} />
+          <span className="hidden md:block ml-2.5 font-medium text-sm" style={{ color: GOLD }}>Media Dashboard</span>
         </div>
-
-        {/* Nav */}
-        <ScrollArea className="flex-1 py-3">
-          <div className="flex flex-col gap-0.5 px-2">
-            {SECTIONS.map(s => {
-              const isActive = activeSection === s.id;
-              const badge = s.id === "inbox" && submittedCount > 0 ? submittedCount : null;
-              return (
-                <button key={s.id} onClick={() => setActiveSection(s.id)}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-left w-full transition-all"
-                  style={{
-                    backgroundColor: isActive ? `${GOLD}18` : "transparent",
-                    color: isActive ? GOLD : `${MILK}70`,
-                  }}>
-                  <span className="shrink-0">{s.icon}</span>
-                  <span className="hidden md:block text-[13px] font-medium truncate flex-1">{s.label}</span>
-                  {badge && <span className="hidden md:flex w-5 h-5 rounded-full items-center justify-center text-[10px] font-bold shrink-0"
-                    style={{ backgroundColor: "#8B5CF6", color: "#fff" }}>{badge}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </ScrollArea>
-
-        {/* Footer */}
-        <div className="px-2 pb-4 pt-2 border-t shrink-0 space-y-1"
-          style={{ borderColor: `${GOLD}12` }}>
-          <Link href="/">
-            <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all"
-              style={{ color: `${MILK}50` }}>
-              <Home size={16} className="shrink-0" />
-              <span className="hidden md:block text-[13px]">Home</span>
-            </button>
-          </Link>
+        <div className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+          {SECTIONS.map(({ id, icon: Icon, label }) => {
+            const badge = id === "inbox" && submittedCount > 0 ? submittedCount : null;
+            return (
+              <button
+                key={id}
+                onClick={() => setActiveSection(id)}
+                className="w-full flex items-center justify-center md:justify-start md:px-3 py-3 rounded-xl transition-all"
+                style={{
+                  backgroundColor: activeSection === id ? `${GOLD}18` : "transparent",
+                  color: activeSection === id ? GOLD : `${GOLD}60`,
+                }}
+              >
+                <Icon size={18} className="shrink-0" />
+                <span className="hidden md:block ml-3 text-sm font-normal flex-1 text-left">{label}</span>
+                {badge && (
+                  <span className="hidden md:flex w-5 h-5 rounded-full items-center justify-center text-[10px] font-bold shrink-0"
+                    style={{ backgroundColor: "#8B5CF6", color: "#fff" }}>{badge}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="p-3 border-t shrink-0" style={{ borderColor: `${GOLD}15` }}>
           <button
             onClick={logout}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl w-full transition-all"
-            style={{ color: `${MILK}50` }}>
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm"
+            style={{ color: `${GOLD}50` }}
+          >
             <LogOut size={16} className="shrink-0" />
-            <span className="hidden md:block text-[13px]">Sign out</span>
+            <span className="hidden md:block ml-3 font-normal">Sign Out</span>
           </button>
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm mt-1"
+            style={{ color: `${GOLD}50` }}
+          >
+            <ArrowLeft size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Back to HAMZURY</span>
+          </Link>
         </div>
       </div>
 
-      {/* ── Main content ──────────────────────────────────────────────── */}
+      {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="shrink-0 px-6 py-4 border-b flex items-center justify-between"
-          style={{ background: WHITE, borderColor: "#E8E3DC" }}>
+        {/* Top bar */}
+        <div className="h-16 flex items-center justify-between px-6 border-b shrink-0 bg-white" style={{ borderColor: `${TEAL}10` }}>
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-widest mb-0.5"
-              style={{ color: GOLD }}>Media Hub</p>
-            <h1 className="text-xl font-bold" style={{ color: TEAL }}>
-              {currentSection?.label}
-            </h1>
+            <h1 className="text-base font-medium" style={{ color: TEAL }}>{
+              SECTIONS.find(s => s.id === activeSection)?.label
+            }</h1>
+            <p className="text-xs opacity-40" style={{ color: TEAL }}>{user.name || "Media Staff"}</p>
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell />
-            <div className="text-right hidden md:block">
-              <p className="text-sm font-semibold" style={{ color: DARK }}>{user.name}</p>
-              <p className="text-xs" style={{ color: "#9CA3AF" }}>Media / Creative</p>
-            </div>
             <div className="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0"
               style={{ background: `${GOLD}20`, color: GOLD }}>
               {(user.name || "M").charAt(0).toUpperCase()}

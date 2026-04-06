@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -15,7 +14,7 @@ import {
 import {
   Loader2, LogOut, ArrowLeft, DollarSign, Calculator,
   CheckCircle2, Clock, TrendingUp, PieChart, Wallet, FileText, Plus, Trash2, X,
-  BarChart3, Bot, Trophy,
+  BarChart3, Bot, Trophy, LayoutDashboard,
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import { useLocation, Link } from "wouter";
@@ -23,10 +22,18 @@ import { toast } from "sonner";
 import { calculateCommission, formatNaira } from "@shared/commission";
 import DeptChatPanel from "@/components/DeptChatPanel";
 
+// ─── Brand ──────────────────────────────────────────────────────────────────
+const G = "#1B4D3E";
+const GOLD = "#B48C4C";
+const MILK = "#FFFAF6";
+
+type Section = "overview" | "calculator" | "commissions" | "payouts" | "subscriptions" | "invoices" | "allocations";
+
 export default function FinanceDashboard() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const staffUser = user as StaffUser;
   const [, setLocation] = useLocation();
+  const [activeSection, setActiveSection] = useState<Section>("overview");
 
   const commissionsQuery = trpc.commissions.list.useQuery(undefined, { refetchInterval: 15000 });
   const statsQuery = trpc.institutional.stats.useQuery();
@@ -48,8 +55,8 @@ export default function FinanceDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFFAF6" }}>
-        <Loader2 className="animate-spin" size={32} style={{ color: "#B48C4C" }} />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: MILK }}>
+        <Loader2 className="animate-spin" size={32} style={{ color: GOLD }} />
       </div>
     );
   }
@@ -66,241 +73,290 @@ export default function FinanceDashboard() {
   const approvedCount = commissions.filter(c => c.status === "approved").length;
   const paidCount = commissions.filter(c => c.status === "paid").length;
 
+  const sidebarItems: { key: Section; icon: React.ElementType; label: string }[] = [
+    { key: "overview",      icon: LayoutDashboard, label: "Overview" },
+    { key: "calculator",    icon: Calculator,      label: "Calculator" },
+    { key: "commissions",   icon: DollarSign,      label: "Commissions" },
+    { key: "payouts",       icon: Wallet,          label: "Payout Queue" },
+    { key: "subscriptions", icon: TrendingUp,      label: "Subscriptions" },
+    { key: "invoices",      icon: FileText,        label: "Invoices" },
+    { key: "allocations",   icon: BarChart3,       label: "Allocations" },
+  ];
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FFFAF6" }}>
+    <div className="flex h-screen overflow-hidden" style={{ backgroundColor: MILK }}>
       <PageMeta title="Finance Dashboard — HAMZURY" description="Commissions and finance overview for HAMZURY staff." />
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 px-4 md:px-8 py-3 bg-[#2D2D2D] z-50 flex justify-between items-center shadow-lg">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-[13px] font-semibold flex items-center gap-1 transition-colors" style={{ color: "#B48C4C" }}>
-            <ArrowLeft size={14} /> HAMZURY
+
+      {/* ── Sidebar ── */}
+      <div className="w-16 md:w-60 flex flex-col h-full shrink-0" style={{ backgroundColor: G }}>
+        <div className="h-16 flex items-center justify-center md:justify-start md:px-5 border-b shrink-0" style={{ borderColor: `${GOLD}20` }}>
+          <Wallet size={18} style={{ color: GOLD }} />
+          <span className="hidden md:block ml-2.5 font-medium text-sm" style={{ color: GOLD }}>Finance Hub</span>
+        </div>
+        <div className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
+          {sidebarItems.map(({ key, icon: Icon, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveSection(key)}
+              className="w-full flex items-center justify-center md:justify-start md:px-3 py-3 rounded-xl transition-all"
+              style={{
+                backgroundColor: activeSection === key ? `${GOLD}18` : "transparent",
+                color: activeSection === key ? GOLD : `${GOLD}60`,
+              }}
+            >
+              <Icon size={18} className="shrink-0" />
+              <span className="hidden md:block ml-3 text-sm font-normal">{label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="p-3 border-t shrink-0" style={{ borderColor: `${GOLD}15` }}>
+          <button
+            onClick={logout}
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm"
+            style={{ color: `${GOLD}50` }}
+          >
+            <LogOut size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Sign Out</span>
+          </button>
+          <Link
+            href="/"
+            className="w-full flex items-center justify-center md:justify-start md:px-3 py-2.5 rounded-xl transition-all text-sm mt-1"
+            style={{ color: `${GOLD}50` }}
+          >
+            <ArrowLeft size={16} className="shrink-0" />
+            <span className="hidden md:block ml-3 font-normal">Back to HAMZURY</span>
           </Link>
-          <span className="text-[#FFFAF6]/20">|</span>
-          <div className="flex items-center gap-2">
-            <Wallet size={18} style={{ color: "#B48C4C" }} />
-            <span className="text-lg font-bold" style={{ color: "#FFFAF6" }}>Finance Hub</span>
+        </div>
+      </div>
+
+      {/* ── Main ── */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar */}
+        <div className="h-16 flex items-center justify-between px-6 border-b shrink-0 bg-white" style={{ borderColor: `${G}10` }}>
+          <div>
+            <h1 className="text-base font-medium" style={{ color: G }}>
+              {sidebarItems.find(s => s.key === activeSection)?.label}
+            </h1>
+            <p className="text-xs opacity-40" style={{ color: G }}>{user.name || user.email}</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <NotificationBell />
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <NotificationBell />
-          <span className="hidden md:block text-[#FFFAF6]/20">|</span>
-          <span className="text-[13px] hidden md:block" style={{ color: "#B48C4C" }}>{user.name || user.email}</span>
-          <button onClick={logout} className="flex items-center gap-1 text-[13px]" style={{ color: "#FFFAF6" }}>
-            <LogOut size={16} />
-          </button>
-        </div>
-      </nav>
 
-      <div className="pt-[56px] p-4 md:p-8 max-w-7xl mx-auto w-full">
-        {/* Revenue Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <FinStatCard label="Total Revenue" value={formatNaira(totalRevenue)} color="#B48C4C" icon={<TrendingUp size={16} />} />
-          <FinStatCard label="Staff Pool (40%)" value={formatNaira(totalPool)} color="#22C55E" icon={<DollarSign size={16} />} />
-          <FinStatCard label="Institutional (60%)" value={formatNaira(totalInstitutional)} color="#1B4D3E" icon={<PieChart size={16} />} />
-          <FinStatCard label="Pending" value={String(pendingCount)} color="#EAB308" icon={<Clock size={16} />} />
-          <FinStatCard label="Approved" value={String(approvedCount)} color="#3B82F6" icon={<CheckCircle2 size={16} />} />
-          <FinStatCard label="Paid Out" value={String(paidCount)} color="#22C55E" icon={<CheckCircle2 size={16} />} />
-        </div>
+        {/* Content */}
+        <ScrollArea className="flex-1">
+          <div className="p-6 md:p-8 max-w-7xl">
 
-        <Tabs defaultValue="calculator" className="w-full">
-          <TabsList className="mb-6 bg-white rounded-lg shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-            <TabsTrigger value="calculator" className="gap-1.5"><Calculator size={14} /> Calculator</TabsTrigger>
-            <TabsTrigger value="commissions" className="gap-1.5"><DollarSign size={14} /> Commissions ({commissions.length})</TabsTrigger>
-            <TabsTrigger value="payouts" className="gap-1.5"><Wallet size={14} /> Payout Queue</TabsTrigger>
-            <TabsTrigger value="subscriptions" className="gap-1.5"><TrendingUp size={14} /> Subscriptions</TabsTrigger>
-            <TabsTrigger value="invoices" className="gap-1.5"><FileText size={14} /> Invoices</TabsTrigger>
-            <TabsTrigger value="allocations" className="gap-1.5"><BarChart3 size={14} /> Allocations</TabsTrigger>
-          </TabsList>
+            {/* ── Overview ── */}
+            {activeSection === "overview" && (
+              <div className="space-y-8">
+                {/* Revenue Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <FinStatCard label="Total Revenue" value={formatNaira(totalRevenue)} color={GOLD} icon={<TrendingUp size={16} />} />
+                  <FinStatCard label="Staff Pool (40%)" value={formatNaira(totalPool)} color="#22C55E" icon={<DollarSign size={16} />} />
+                  <FinStatCard label="Institutional (60%)" value={formatNaira(totalInstitutional)} color={G} icon={<PieChart size={16} />} />
+                  <FinStatCard label="Pending" value={String(pendingCount)} color="#EAB308" icon={<Clock size={16} />} />
+                  <FinStatCard label="Approved" value={String(approvedCount)} color="#3B82F6" icon={<CheckCircle2 size={16} />} />
+                  <FinStatCard label="Paid Out" value={String(paidCount)} color="#22C55E" icon={<CheckCircle2 size={16} />} />
+                </div>
 
-          <TabsContent value="calculator">
-            <CommissionCalculator />
-          </TabsContent>
-
-          <TabsContent value="commissions">
-            <CommissionList commissions={commissions} onRefresh={() => commissionsQuery.refetch()} />
-          </TabsContent>
-
-          <TabsContent value="payouts">
-            <PayoutQueue commissions={commissions.filter(c => c.status === "approved")} onRefresh={() => commissionsQuery.refetch()} />
-          </TabsContent>
-
-          <TabsContent value="subscriptions" className="space-y-4">
-            {/* Status Filter */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] uppercase tracking-wider font-bold opacity-40" style={{ color: "#1B4D3E" }}>Filter:</span>
-              {(["all", "active", "paused", "cancelled", "overdue"] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setSubsFilter(f)}
-                  className="text-[11px] px-3 py-1.5 rounded-full font-medium transition-colors"
-                  style={{
-                    backgroundColor: subsFilter === f ? "#1B4D3E" : "#2D2D2D08",
-                    color: subsFilter === f ? "#B48C4C" : "#1B4D3E",
-                  }}
-                >
-                  {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
-                </button>
-              ))}
-            </div>
-            <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "#2D2D2D10" }}>
-              <table className="w-full text-[13px]">
-                <thead>
-                  <tr className="border-b" style={{ backgroundColor: "#2D2D2D06", borderColor: "#2D2D2D08" }}>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Client</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Service</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Monthly Amount</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Status</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Next Payment Due</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Payment</th>
-                    <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: "#1B4D3E" }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(subsQuery.data || []).filter(sub => {
-                    if (subsFilter === "all") return true;
-                    if (subsFilter === "overdue") {
-                      const currentMonth = new Date().toISOString().slice(0, 7);
-                      const today = new Date().getDate();
-                      const monthPayment = (allPaymentsQuery.data || []).find(p => p.subscriptionId === sub.id && p.month === currentMonth);
-                      return sub.status === "active" && !monthPayment && today > (sub.billingDay ?? 1);
-                    }
-                    return sub.status === subsFilter;
-                  }).map(sub => {
-                    const currentMonth = new Date().toISOString().slice(0, 7);
-                    const today = new Date();
-                    const billingDay = sub.billingDay ?? 1;
-                    const monthPayment = (allPaymentsQuery.data || []).find(p => p.subscriptionId === sub.id && p.month === currentMonth);
-                    const isOverdue = sub.status === "active" && !monthPayment && today.getDate() > billingDay;
-
-                    // Calculate next payment due date
-                    const nextDueDate = new Date(today.getFullYear(), today.getMonth(), billingDay);
-                    if (monthPayment?.status === "paid" || today.getDate() > billingDay) {
-                      nextDueDate.setMonth(nextDueDate.getMonth() + 1);
-                    }
-                    const nextDueStr = nextDueDate.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
-
-                    const subStatusColor = sub.status === "active" ? "bg-green-100 text-green-700" :
-                      sub.status === "paused" ? "bg-amber-100 text-amber-700" :
-                      "bg-red-100 text-red-600";
-
-                    return (
-                      <tr key={sub.id} className="border-b hover:bg-gray-50" style={{ borderColor: "#2D2D2D06" }}>
-                        <td className="px-4 py-3 font-medium" style={{ color: "#1B4D3E" }}>{sub.clientName}</td>
-                        <td className="px-4 py-3 opacity-60" style={{ color: "#1B4D3E" }}>{sub.service}</td>
-                        <td className="px-4 py-3" style={{ color: "#B48C4C" }}>₦{Number(sub.monthlyFee).toLocaleString()}</td>
-                        <td className="px-4 py-3">
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-semibold uppercase ${subStatusColor}`}>
-                            {sub.status}
+                {/* Weekly Targets */}
+                <div className="bg-white rounded-2xl border p-6" style={{ borderColor: "#2D2D2D10" }}>
+                  <h2 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: G }}>
+                    <Trophy size={16} style={{ color: GOLD }} /> My Weekly Targets
+                  </h2>
+                  {weeklyTargetsQuery.isLoading ? (
+                    <div className="flex items-center gap-2 text-sm opacity-40" style={{ color: G }}>
+                      <Loader2 className="animate-spin" size={16} /> Loading targets...
+                    </div>
+                  ) : !weeklyTargetsQuery.data?.length ? (
+                    <p className="text-sm text-gray-400">No targets set for this week.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {weeklyTargetsQuery.data.map((target: any) => (
+                        <div key={target.id} className="flex items-center justify-between px-4 py-3 rounded-lg border" style={{ borderColor: "#2D2D2D10", backgroundColor: MILK }}>
+                          <div>
+                            <div className="text-sm font-medium" style={{ color: G }}>{target.title || target.description}</div>
+                            {target.metric && <div className="text-xs text-gray-500 mt-0.5">{target.metric}</div>}
+                          </div>
+                          <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
+                            backgroundColor: target.status === "completed" ? "#DCFCE7" : target.status === "in_progress" ? "#DBEAFE" : "#FEF3C7",
+                            color: target.status === "completed" ? "#166534" : target.status === "in_progress" ? "#1E40AF" : "#92400E",
+                          }}>
+                            {target.status === "completed" ? "Done" : target.status === "in_progress" ? "In Progress" : "Pending"}
                           </span>
-                          {isOverdue && (
-                            <span className="text-[10px] px-2 py-1 rounded-full font-semibold uppercase bg-red-100 text-red-600 ml-1">
-                              overdue
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 font-mono text-[12px] opacity-60" style={{ color: isOverdue ? "#DC2626" : "#1B4D3E" }}>
-                          {sub.status === "cancelled" ? "—" : nextDueStr}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`text-[10px] px-2 py-1 rounded-full font-semibold uppercase ${
-                            monthPayment?.status === "paid" ? "bg-green-100 text-green-700" :
-                            isOverdue ? "bg-red-100 text-red-600" :
-                            "bg-gray-100 text-gray-500"
-                          }`}>
-                            {monthPayment?.status === "paid" ? "paid" : isOverdue ? "overdue" : "pending"}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          {sub.status === "active" && monthPayment?.status !== "paid" && (
-                            <button
-                              onClick={() => setPayingMonth({ subscriptionId: sub.id, month: currentMonth, amountDue: Number(sub.monthlyFee) })}
-                              className="text-[11px] px-3 py-1.5 rounded-lg"
-                              style={{ backgroundColor: "#2D2D2D10", color: "#1B4D3E" }}
-                            >
-                              Record Payment
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {(subsQuery.data || []).length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="px-4 py-12 text-center opacity-40 text-[13px]">No subscriptions found.</td>
-                    </tr>
+                        </div>
+                      ))}
+                    </div>
                   )}
-                </tbody>
-              </table>
-            </div>
-            {payingMonth && (
-              <div className="rounded-2xl p-5 border space-y-3" style={{ borderColor: "#2D2D2D15", backgroundColor: "#2D2D2D04" }}>
-                <p className="text-[13px] font-semibold" style={{ color: "#1B4D3E" }}>
-                  Record payment for {(subsQuery.data || []).find(s => s.id === payingMonth.subscriptionId)?.clientName} — {payingMonth.month}
-                </p>
-                <input
-                  placeholder="Payment reference (bank/transfer ref)"
-                  value={paymentRef}
-                  onChange={e => setPaymentRef(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
-                  style={{ borderColor: "#2D2D2D20" }}
-                />
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => { recordPaymentMutation.mutate({ subscriptionId: payingMonth.subscriptionId, month: payingMonth.month, amountPaid: payingMonth.amountDue, paymentRef }); setPayingMonth(null); setPaymentRef(""); }}
-                    disabled={recordPaymentMutation.isPending}
-                    className="px-4 py-2 rounded-xl text-[13px] font-medium"
-                    style={{ backgroundColor: "#1B4D3E", color: "#B48C4C" }}
-                  >
-                    Confirm ₦{payingMonth.amountDue.toLocaleString()} Received
-                  </button>
-                  <button onClick={() => setPayingMonth(null)} className="px-3 py-2 rounded-xl text-[13px] opacity-40" style={{ color: "#1B4D3E" }}>
-                    Cancel
-                  </button>
                 </div>
               </div>
             )}
-          </TabsContent>
 
-          <TabsContent value="invoices">
-            <InvoiceTab />
-          </TabsContent>
+            {/* ── Calculator ── */}
+            {activeSection === "calculator" && <CommissionCalculator />}
 
-          <TabsContent value="allocations">
-            <AllocationsTab />
-          </TabsContent>
-        </Tabs>
+            {/* ── Commissions ── */}
+            {activeSection === "commissions" && (
+              <CommissionList commissions={commissions} onRefresh={() => commissionsQuery.refetch()} />
+            )}
 
-        {/* ── My Weekly Targets ── */}
-        <div className="mt-8 bg-white rounded-2xl border p-6" style={{ borderColor: "#2D2D2D10" }}>
-          <h2 className="text-base font-semibold mb-4 flex items-center gap-2" style={{ color: "#1B4D3E" }}>
-            <Trophy size={16} style={{ color: "#B48C4C" }} /> My Weekly Targets
-          </h2>
-          {weeklyTargetsQuery.isLoading ? (
-            <div className="flex items-center gap-2 text-sm opacity-40" style={{ color: "#1B4D3E" }}>
-              <Loader2 className="animate-spin" size={16} /> Loading targets...
-            </div>
-          ) : !weeklyTargetsQuery.data?.length ? (
-            <p className="text-sm text-gray-400">No targets set for this week.</p>
-          ) : (
-            <div className="space-y-2">
-              {weeklyTargetsQuery.data.map((target: any) => (
-                <div key={target.id} className="flex items-center justify-between px-4 py-3 rounded-lg border" style={{ borderColor: "#2D2D2D10", backgroundColor: "#FFFAF6" }}>
-                  <div>
-                    <div className="text-sm font-medium" style={{ color: "#1B4D3E" }}>{target.title || target.description}</div>
-                    {target.metric && <div className="text-xs text-gray-500 mt-0.5">{target.metric}</div>}
-                  </div>
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{
-                    backgroundColor: target.status === "completed" ? "#DCFCE7" : target.status === "in_progress" ? "#DBEAFE" : "#FEF3C7",
-                    color: target.status === "completed" ? "#166534" : target.status === "in_progress" ? "#1E40AF" : "#92400E",
-                  }}>
-                    {target.status === "completed" ? "Done" : target.status === "in_progress" ? "In Progress" : "Pending"}
-                  </span>
+            {/* ── Payout Queue ── */}
+            {activeSection === "payouts" && (
+              <PayoutQueue commissions={commissions.filter(c => c.status === "approved")} onRefresh={() => commissionsQuery.refetch()} />
+            )}
+
+            {/* ── Subscriptions ── */}
+            {activeSection === "subscriptions" && (
+              <div className="space-y-4">
+                {/* Status Filter */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] uppercase tracking-wider font-bold opacity-40" style={{ color: G }}>Filter:</span>
+                  {(["all", "active", "paused", "cancelled", "overdue"] as const).map(f => (
+                    <button
+                      key={f}
+                      onClick={() => setSubsFilter(f)}
+                      className="text-[11px] px-3 py-1.5 rounded-full font-medium transition-colors"
+                      style={{
+                        backgroundColor: subsFilter === f ? G : "#2D2D2D08",
+                        color: subsFilter === f ? GOLD : G,
+                      }}
+                    >
+                      {f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1)}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <div className="rounded-2xl border overflow-hidden" style={{ borderColor: "#2D2D2D10" }}>
+                  <table className="w-full text-[13px]">
+                    <thead>
+                      <tr className="border-b" style={{ backgroundColor: "#2D2D2D06", borderColor: "#2D2D2D08" }}>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Client</th>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Service</th>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Monthly Amount</th>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Status</th>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Next Payment Due</th>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Payment</th>
+                        <th className="text-left px-4 py-3 font-medium opacity-60" style={{ color: G }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(subsQuery.data || []).filter(sub => {
+                        if (subsFilter === "all") return true;
+                        if (subsFilter === "overdue") {
+                          const currentMonth = new Date().toISOString().slice(0, 7);
+                          const today = new Date().getDate();
+                          const monthPayment = (allPaymentsQuery.data || []).find(p => p.subscriptionId === sub.id && p.month === currentMonth);
+                          return sub.status === "active" && !monthPayment && today > (sub.billingDay ?? 1);
+                        }
+                        return sub.status === subsFilter;
+                      }).map(sub => {
+                        const currentMonth = new Date().toISOString().slice(0, 7);
+                        const today = new Date();
+                        const billingDay = sub.billingDay ?? 1;
+                        const monthPayment = (allPaymentsQuery.data || []).find(p => p.subscriptionId === sub.id && p.month === currentMonth);
+                        const isOverdue = sub.status === "active" && !monthPayment && today.getDate() > billingDay;
+
+                        // Calculate next payment due date
+                        const nextDueDate = new Date(today.getFullYear(), today.getMonth(), billingDay);
+                        if (monthPayment?.status === "paid" || today.getDate() > billingDay) {
+                          nextDueDate.setMonth(nextDueDate.getMonth() + 1);
+                        }
+                        const nextDueStr = nextDueDate.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
+
+                        const subStatusColor = sub.status === "active" ? "bg-green-100 text-green-700" :
+                          sub.status === "paused" ? "bg-amber-100 text-amber-700" :
+                          "bg-red-100 text-red-600";
+
+                        return (
+                          <tr key={sub.id} className="border-b hover:bg-gray-50" style={{ borderColor: "#2D2D2D06" }}>
+                            <td className="px-4 py-3 font-medium" style={{ color: G }}>{sub.clientName}</td>
+                            <td className="px-4 py-3 opacity-60" style={{ color: G }}>{sub.service}</td>
+                            <td className="px-4 py-3" style={{ color: GOLD }}>₦{Number(sub.monthlyFee).toLocaleString()}</td>
+                            <td className="px-4 py-3">
+                              <span className={`text-[10px] px-2 py-1 rounded-full font-semibold uppercase ${subStatusColor}`}>
+                                {sub.status}
+                              </span>
+                              {isOverdue && (
+                                <span className="text-[10px] px-2 py-1 rounded-full font-semibold uppercase bg-red-100 text-red-600 ml-1">
+                                  overdue
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[12px] opacity-60" style={{ color: isOverdue ? "#DC2626" : G }}>
+                              {sub.status === "cancelled" ? "—" : nextDueStr}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={`text-[10px] px-2 py-1 rounded-full font-semibold uppercase ${
+                                monthPayment?.status === "paid" ? "bg-green-100 text-green-700" :
+                                isOverdue ? "bg-red-100 text-red-600" :
+                                "bg-gray-100 text-gray-500"
+                              }`}>
+                                {monthPayment?.status === "paid" ? "paid" : isOverdue ? "overdue" : "pending"}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3">
+                              {sub.status === "active" && monthPayment?.status !== "paid" && (
+                                <button
+                                  onClick={() => setPayingMonth({ subscriptionId: sub.id, month: currentMonth, amountDue: Number(sub.monthlyFee) })}
+                                  className="text-[11px] px-3 py-1.5 rounded-lg"
+                                  style={{ backgroundColor: "#2D2D2D10", color: G }}
+                                >
+                                  Record Payment
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {(subsQuery.data || []).length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-12 text-center opacity-40 text-[13px]">No subscriptions found.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                {payingMonth && (
+                  <div className="rounded-2xl p-5 border space-y-3" style={{ borderColor: "#2D2D2D15", backgroundColor: "#2D2D2D04" }}>
+                    <p className="text-[13px] font-semibold" style={{ color: G }}>
+                      Record payment for {(subsQuery.data || []).find(s => s.id === payingMonth.subscriptionId)?.clientName} — {payingMonth.month}
+                    </p>
+                    <input
+                      placeholder="Payment reference (bank/transfer ref)"
+                      value={paymentRef}
+                      onChange={e => setPaymentRef(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border text-[13px] outline-none"
+                      style={{ borderColor: "#2D2D2D20" }}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { recordPaymentMutation.mutate({ subscriptionId: payingMonth.subscriptionId, month: payingMonth.month, amountPaid: payingMonth.amountDue, paymentRef }); setPayingMonth(null); setPaymentRef(""); }}
+                        disabled={recordPaymentMutation.isPending}
+                        className="px-4 py-2 rounded-xl text-[13px] font-medium"
+                        style={{ backgroundColor: G, color: GOLD }}
+                      >
+                        Confirm ₦{payingMonth.amountDue.toLocaleString()} Received
+                      </button>
+                      <button onClick={() => setPayingMonth(null)} className="px-3 py-2 rounded-xl text-[13px] opacity-40" style={{ color: G }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Invoices ── */}
+            {activeSection === "invoices" && <InvoiceTab />}
+
+            {/* ── Allocations ── */}
+            {activeSection === "allocations" && <AllocationsTab />}
+
+          </div>
+        </ScrollArea>
       </div>
+
       <DeptChatPanel department="finance" staffId={staffUser.staffRef || ""} staffName={staffUser.name || "Finance Staff"} />
     </div>
   );
@@ -338,9 +394,6 @@ function AllocationsTab() {
 
   const allocTotalPages = Math.max(1, Math.ceil(allocations.length / ALLOC_PAGE_SIZE));
   const allocPaged = allocations.slice((allocPage - 1) * ALLOC_PAGE_SIZE, allocPage * ALLOC_PAGE_SIZE);
-
-  const G = "#1B4D3E";
-  const GOLD = "#B48C4C";
 
   const fmtDate = (d: string | Date | null | undefined) => {
     if (!d) return "—";
@@ -453,7 +506,7 @@ function AllocationsTab() {
           </div>
           {/* Recent entries log */}
           <div className="border-t border-[#2D2D2D]/5">
-            <div className="px-4 py-2 border-b border-[#2D2D2D]/3" style={{ backgroundColor: "#FFFAF6" }}>
+            <div className="px-4 py-2 border-b border-[#2D2D2D]/3" style={{ backgroundColor: MILK }}>
               <p className="text-[10px] uppercase tracking-wider font-bold opacity-40" style={{ color: G }}>Recent Entries</p>
             </div>
             {aiFund?.entries && aiFund.entries.length > 0 ? (
@@ -604,12 +657,12 @@ function InvoiceTab() {
       {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#1B4D3E" }}>Invoices</h3>
+          <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>Invoices</h3>
           <select
             value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
             className="text-[12px] px-3 py-1.5 rounded-lg border outline-none"
-            style={{ borderColor: "#2D2D2D15", color: "#1B4D3E" }}
+            style={{ borderColor: "#2D2D2D15", color: G }}
           >
             <option value="all">All Statuses</option>
             <option value="draft">Draft</option>
@@ -624,7 +677,7 @@ function InvoiceTab() {
           onClick={() => setShowCreate(true)}
           size="sm"
           className="gap-1.5 text-[12px]"
-          style={{ backgroundColor: "#1B4D3E", color: "#B48C4C" }}
+          style={{ backgroundColor: G, color: GOLD }}
         >
           <Plus size={14} /> Create Invoice
         </Button>
@@ -634,12 +687,12 @@ function InvoiceTab() {
       <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
         {invoicesQuery.isLoading ? (
           <div className="p-12 text-center">
-            <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: "#B48C4C" }} />
+            <Loader2 className="animate-spin mx-auto mb-3" size={24} style={{ color: GOLD }} />
             <p className="text-sm opacity-40">Loading invoices...</p>
           </div>
         ) : invoiceList.length === 0 ? (
           <div className="p-12 text-center">
-            <FileText size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#B48C4C" }} />
+            <FileText size={36} className="mx-auto mb-3 opacity-20" style={{ color: GOLD }} />
             <p className="text-sm opacity-40">No invoices found.</p>
           </div>
         ) : (
@@ -663,7 +716,7 @@ function InvoiceTab() {
                     <tr key={inv.id} className="hover:bg-[#FFFAF6]/50">
                       <td className="p-3 font-mono text-[12px] font-bold">{inv.invoiceNumber}</td>
                       <td className="p-3">{inv.clientName}</td>
-                      <td className="p-3 text-right font-semibold" style={{ color: "#B48C4C" }}>
+                      <td className="p-3 text-right font-semibold" style={{ color: GOLD }}>
                         ₦{Number(inv.total).toLocaleString()}
                       </td>
                       <td className="p-3 text-right">₦{Number(inv.amountPaid || 0).toLocaleString()}</td>
@@ -792,9 +845,9 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
       >
         {/* Modal header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#2D2D2D]/10">
-          <h2 className="text-base font-bold" style={{ color: "#1B4D3E" }}>Create Invoice</h2>
+          <h2 className="text-base font-bold" style={{ color: G }}>Create Invoice</h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 transition-colors">
-            <X size={18} style={{ color: "#1B4D3E" }} />
+            <X size={18} style={{ color: G }} />
           </button>
         </div>
 
@@ -802,15 +855,15 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Client Info */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Client Name *</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Client Name *</label>
               <Input value={clientName} onChange={e => setClientName(e.target.value)} placeholder="Client name" className="text-[13px]" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Client Email</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Client Email</label>
               <Input value={clientEmail} onChange={e => setClientEmail(e.target.value)} placeholder="email@example.com" type="email" className="text-[13px]" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Client Phone</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Client Phone</label>
               <Input value={clientPhone} onChange={e => setClientPhone(e.target.value)} placeholder="+234..." className="text-[13px]" />
             </div>
           </div>
@@ -818,8 +871,8 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Line Items */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: "#1B4D3E" }}>Line Items</label>
-              <button onClick={addItem} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: "#B48C4C" }}>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Line Items</label>
+              <button onClick={addItem} className="text-[11px] flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-gray-100 transition-colors" style={{ color: GOLD }}>
                 <Plus size={12} /> Add Row
               </button>
             </div>
@@ -848,7 +901,7 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
                     className="text-[13px]"
                     placeholder="Unit price"
                   />
-                  <div className="text-[13px] font-medium text-right pr-1" style={{ color: "#B48C4C" }}>
+                  <div className="text-[13px] font-medium text-right pr-1" style={{ color: GOLD }}>
                     ₦{(item.quantity * item.unitPrice).toLocaleString()}
                   </div>
                   <button
@@ -867,22 +920,22 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Totals */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Subtotal</label>
-              <div className="text-[14px] font-semibold px-3 py-2 rounded-lg" style={{ backgroundColor: "#FFFAF6", color: "#1B4D3E" }}>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Subtotal</label>
+              <div className="text-[14px] font-semibold px-3 py-2 rounded-lg" style={{ backgroundColor: MILK, color: G }}>
                 ₦{subtotal.toLocaleString()}
               </div>
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Discount (₦)</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Discount (₦)</label>
               <Input type="number" min={0} value={discount || ""} onChange={e => setDiscount(Math.max(0, parseFloat(e.target.value) || 0))} className="text-[13px]" placeholder="0" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Tax (₦)</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Tax (₦)</label>
               <Input type="number" min={0} value={tax || ""} onChange={e => setTax(Math.max(0, parseFloat(e.target.value) || 0))} className="text-[13px]" placeholder="0" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Total</label>
-              <div className="text-[14px] font-bold px-3 py-2 rounded-lg" style={{ backgroundColor: "#1B4D3E", color: "#B48C4C" }}>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Total</label>
+              <div className="text-[14px] font-bold px-3 py-2 rounded-lg" style={{ backgroundColor: G, color: GOLD }}>
                 ₦{total.toLocaleString()}
               </div>
             </div>
@@ -891,11 +944,11 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
           {/* Due Date + Notes */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Due Date</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Due Date</label>
               <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="text-[13px]" />
             </div>
             <div>
-              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: "#1B4D3E" }}>Notes</label>
+              <label className="text-[11px] font-medium uppercase tracking-wider opacity-50 mb-1 block" style={{ color: G }}>Notes</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
@@ -915,7 +968,7 @@ function CreateInvoiceModal({ onClose, onCreated }: { onClose: () => void; onCre
             onClick={handleSubmit}
             disabled={createMutation.isPending}
             className="gap-1.5 text-[12px]"
-            style={{ backgroundColor: "#1B4D3E", color: "#B48C4C" }}
+            style={{ backgroundColor: G, color: GOLD }}
           >
             {createMutation.isPending ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
             Create Invoice
@@ -935,9 +988,6 @@ function CommissionCalculator() {
     if (isNaN(num) || num <= 0) return null;
     return calculateCommission(num);
   }, [price]);
-
-  const G = "#1B4D3E";
-  const GOLD = "#B48C4C";
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -968,13 +1018,13 @@ function CommissionCalculator() {
             </div>
             <div className="p-5 rounded-2xl text-center" style={{ backgroundColor: G, border: `1px solid ${G}` }}>
               <p className="text-[10px] uppercase tracking-wider opacity-60 mb-2" style={{ color: GOLD }}>Institutional (60%)</p>
-              <p className="text-2xl font-normal" style={{ color: "#FFFAF6" }}>{formatNaira(breakdown.institutionalAmount)}</p>
+              <p className="text-2xl font-normal" style={{ color: MILK }}>{formatNaira(breakdown.institutionalAmount)}</p>
             </div>
           </div>
 
           {/* Staff Pool Tier Breakdown */}
           <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: "#FFFAF6" }}>
+            <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: MILK }}>
               <p className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Staff Pool — 5-Tier Breakdown</p>
             </div>
             <div className="divide-y divide-[#2D2D2D]/5">
@@ -984,7 +1034,7 @@ function CommissionCalculator() {
               <TierRow badge="T4" label="Facilities" sub="Cleaner, Security, Support" pct="2% of revenue" amount={breakdown.tiers.facilities} />
               <TierRow badge="T5" label="Lead Generator (BizDev)" sub="Demand layer" pct="5% of revenue" amount={breakdown.tiers.leadGenerator} sub2={`Converter (CSO): ${formatNaira(breakdown.tiers.converter)}`} />
             </div>
-            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: "#FFFAF6", borderColor: "#2D2D2D10" }}>
+            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: MILK, borderColor: "#2D2D2D10" }}>
               <span className="text-[12px] font-medium opacity-50" style={{ color: G }}>Total Staff Pool</span>
               <span className="text-[14px] font-medium" style={{ color: GOLD }}>{formatNaira(breakdown.staffPool)}</span>
             </div>
@@ -992,7 +1042,7 @@ function CommissionCalculator() {
 
           {/* Institutional Breakdown */}
           <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)] overflow-hidden">
-            <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: "#FFFAF6" }}>
+            <div className="px-5 py-3 border-b border-[#2D2D2D]/5" style={{ backgroundColor: MILK }}>
               <p className="text-[11px] font-medium uppercase tracking-wider opacity-50" style={{ color: G }}>Institutional Allocation (60%)</p>
             </div>
             <div className="divide-y divide-[#2D2D2D]/5">
@@ -1003,7 +1053,7 @@ function CommissionCalculator() {
               <TierRow badge="I5" label="RIDI Charity" sub="Scholarships, community projects" pct="3%" amount={breakdown.institutional.ridi} />
               <TierRow badge="I6" label="Shareholders" sub="Return on investment" pct="5%" amount={breakdown.institutional.shareholders} />
             </div>
-            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: "#FFFAF6", borderColor: "#2D2D2D10" }}>
+            <div className="px-5 py-3 border-t flex justify-between" style={{ backgroundColor: MILK, borderColor: "#2D2D2D10" }}>
               <span className="text-[12px] font-medium opacity-50" style={{ color: G }}>Total Institutional</span>
               <span className="text-[14px] font-medium" style={{ color: G }}>{formatNaira(breakdown.institutionalAmount)}</span>
             </div>
@@ -1026,17 +1076,17 @@ function TierRow({ badge, label, sub, sub2, pct, amount, highlight }: { badge: s
   return (
     <div className="px-5 py-3.5 flex items-center justify-between gap-4" style={{ backgroundColor: highlight ? "#2D2D2D05" : "transparent" }}>
       <div className="flex items-start gap-3 min-w-0">
-        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 mt-0.5" style={{ backgroundColor: "#2D2D2D08", color: "#1B4D3E", opacity: 0.6 }}>{badge}</span>
+        <span className="text-[10px] font-medium px-1.5 py-0.5 rounded shrink-0 mt-0.5" style={{ backgroundColor: "#2D2D2D08", color: G, opacity: 0.6 }}>{badge}</span>
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[13px] font-normal" style={{ color: "#1B4D3E" }}>{label}</span>
-            <span className="text-[11px] opacity-30" style={{ color: "#1B4D3E" }}>{pct}</span>
+            <span className="text-[13px] font-normal" style={{ color: G }}>{label}</span>
+            <span className="text-[11px] opacity-30" style={{ color: G }}>{pct}</span>
           </div>
-          <p className="text-[11px] opacity-40" style={{ color: "#1B4D3E" }}>{sub}</p>
-          {sub2 && <p className="text-[11px] opacity-30 mt-0.5" style={{ color: "#1B4D3E" }}>{sub2}</p>}
+          <p className="text-[11px] opacity-40" style={{ color: G }}>{sub}</p>
+          {sub2 && <p className="text-[11px] opacity-30 mt-0.5" style={{ color: G }}>{sub2}</p>}
         </div>
       </div>
-      <span className="text-[14px] font-normal shrink-0" style={{ color: "#B48C4C" }}>{formatNaira(amount)}</span>
+      <span className="text-[14px] font-normal shrink-0" style={{ color: GOLD }}>{formatNaira(amount)}</span>
     </div>
   );
 }
@@ -1084,11 +1134,11 @@ function CommissionList({ commissions, onRefresh }: { commissions: any[]; onRefr
   return (
     <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="p-4 border-b border-[#2D2D2D]/5">
-        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#1B4D3E" }}>All Commissions</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>All Commissions</h3>
       </div>
       {commissions.length === 0 ? (
         <div className="p-12 text-center">
-          <DollarSign size={36} className="mx-auto mb-3 opacity-20" style={{ color: "#B48C4C" }} />
+          <DollarSign size={36} className="mx-auto mb-3 opacity-20" style={{ color: GOLD }} />
           <p className="text-sm opacity-40">No commissions recorded yet.</p>
         </div>
       ) : (
@@ -1226,7 +1276,7 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
   return (
     <div className="bg-white rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
       <div className="p-4 border-b border-[#2D2D2D]/5">
-        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: "#1B4D3E" }}>Approved — Ready for Payout</h3>
+        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: G }}>Approved — Ready for Payout</h3>
       </div>
       <div className="divide-y divide-[#2D2D2D]/5">
         {commissions.map(c => {
@@ -1236,7 +1286,7 @@ function PayoutQueue({ commissions, onRefresh }: { commissions: any[]; onRefresh
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-[11px] font-bold tracking-wider px-2 py-0.5 rounded bg-[#2D2D2D]/5">{c.taskRef}</span>
-                  <span className="text-[14px] font-semibold ml-3" style={{ color: "#1B4D3E" }}>{c.clientName}</span>
+                  <span className="text-[14px] font-semibold ml-3" style={{ color: G }}>{c.clientName}</span>
                 </div>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -1285,7 +1335,7 @@ function MiniTier({ label, amount }: { label: string; amount: number }) {
   return (
     <div className="p-2 rounded-lg bg-[#FFFAF6]">
       <p className="text-[10px] uppercase tracking-wider font-bold opacity-50">{label}</p>
-      <p className="text-[13px] font-bold" style={{ color: "#1B4D3E" }}>{formatNaira(amount)}</p>
+      <p className="text-[13px] font-bold" style={{ color: G }}>{formatNaira(amount)}</p>
     </div>
   );
 }
@@ -1299,7 +1349,7 @@ function FinStatCard({ label, value, color, icon }: { label: string; value: stri
         {icon}
         <span className="text-[10px] uppercase tracking-wider font-bold opacity-60">{label}</span>
       </div>
-      <p className="text-lg font-bold" style={{ color: "#1B4D3E" }}>{value}</p>
+      <p className="text-lg font-bold" style={{ color: G }}>{value}</p>
     </div>
   );
 }

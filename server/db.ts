@@ -366,7 +366,7 @@ export async function getTaskByPhone(phoneDigits: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-export async function updateTask(id: number, data: Partial<Pick<Task, "status" | "notes" | "deadline" | "assignedTo" | "quotedPrice" | "completedAt" | "kpiApproved" | "isRework" | "reworkNote" | "subscriptionId" | "taskMonth">>) {
+export async function updateTask(id: number, data: Partial<Pick<Task, "status" | "notes" | "deadline" | "assignedTo" | "department" | "quotedPrice" | "completedAt" | "kpiApproved" | "isRework" | "reworkNote" | "subscriptionId" | "taskMonth">>) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
   await db.update(tasks).set(data).where(eq(tasks.id, id));

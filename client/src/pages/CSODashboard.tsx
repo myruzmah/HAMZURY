@@ -111,6 +111,7 @@ export default function CSODashboard() {
     { refetchInterval: 30000 },
   );
   const staffQuery        = trpc.staff.list.useQuery(undefined, { refetchInterval: 60000 });
+  const staffInternalQuery = trpc.staff.listInternal.useQuery(undefined, { refetchInterval: 60000 });
   const appointmentsQuery = trpc.systemise.appointments.useQuery(undefined, { refetchInterval: 30000 });
   const deptUnreadQuery   = trpc.deptChat.unreadCount.useQuery({ department: "CSO" }, { refetchInterval: 15000 });
 
@@ -147,6 +148,11 @@ export default function CSODashboard() {
     onError: () => toast.error("Failed to flag task"),
   });
   const [reworkNotes, setReworkNotes] = useState<Record<number, string>>({});
+
+  const taskAssignMutation = trpc.tasks.assign.useMutation({
+    onSuccess: () => { toast.success("Task assigned to staff"); tasksQuery.refetch(); },
+    onError: () => toast.error("Failed to assign task"),
+  });
 
   // Agent suggestions
   const suggestionsQuery = trpc.agents.suggestions.useQuery({ department: "cso" });
@@ -226,6 +232,7 @@ export default function CSODashboard() {
 
   const currentSection = SECTIONS.find(s => s.id === activeSection);
   const staffList = staffQuery.data || [];
+  const internalStaff = staffInternalQuery.data || [];
   const realAppointments = appointmentsQuery.data || [];
   const unreadUpdates = deptUnreadQuery.data ?? 0;
 
@@ -853,7 +860,7 @@ export default function CSODashboard() {
                   {filteredTasks.length === 0 ? (
                     <p className="text-center text-[13px] opacity-40 p-10" style={{ color: TEAL }}>No tasks found</p>
                   ) : filteredTasks.map((task: any) => (
-                    <TaskRow key={task.id} task={task} />
+                    <TaskRow key={task.id} task={task} staffMembers={internalStaff} onAssign={taskAssignMutation.mutate} />
                   ))}
                 </div>
               </div>
@@ -1000,11 +1007,20 @@ function LeadScore({ lead }: { lead: any }) {
 }
 
 // ─── TASK ROW ─────────────────────────────────────────────────────────────────
-function TaskRow({ task }: { task: any }) {
+function TaskRow({ task, staffMembers, onAssign }: { task: any; staffMembers: any[]; onAssign: (data: { id: number; assignedTo: number; department?: string }) => void }) {
   const [callNote, setCallNote] = useState("");
   const [showNote, setShowNote] = useState(false);
+  const [showAssign, setShowAssign] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState<string>("");
   const sc = STATUS_COLORS[task.status] || { bg: "#f3f4f6", text: "#6b7280" };
   const dept = DEPARTMENTS.find(d => d.value === task.department);
+  const assignedStaff = task.assignedTo ? staffMembers.find(s => s.staffId === task.assignedTo) : null;
+
+  // Filter to department leads / relevant staff
+  const deptLeads = staffMembers.filter(s =>
+    ["founder", "ceo", "cso", "systemise_head", "tech_lead", "media", "bizdev", "compliance_staff", "finance", "hr", "skills_staff"].includes(s.role)
+  );
+
   return (
     <div className="px-4 py-3 flex flex-col gap-2 hover:bg-gray-50/50 transition-colors">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -1014,6 +1030,11 @@ function TaskRow({ task }: { task: any }) {
             {dept && (
               <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded" style={{ backgroundColor: `${dept.color}12`, color: dept.color }}>
                 {dept.value}
+              </span>
+            )}
+            {assignedStaff && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
+                {assignedStaff.name}
               </span>
             )}
           </div>
@@ -1028,7 +1049,15 @@ function TaskRow({ task }: { task: any }) {
             {task.status}
           </span>
           <button
-            onClick={() => setShowNote(v => !v)}
+            onClick={() => { setShowAssign(v => !v); setShowNote(false); }}
+            className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{ backgroundColor: `${GOLD}15`, color: GOLD }}
+            title="Assign to staff"
+          >
+            <Send size={12} />
+          </button>
+          <button
+            onClick={() => { setShowNote(v => !v); setShowAssign(false); }}
             className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
             style={{ backgroundColor: `${TEAL}10`, color: TEAL }}
             title="Log a call"
@@ -1037,6 +1066,45 @@ function TaskRow({ task }: { task: any }) {
           </button>
         </div>
       </div>
+
+      {/* Assign to staff panel */}
+      {showAssign && (
+        <div className="flex gap-2 items-center pl-1 flex-wrap">
+          <select
+            value={selectedStaff}
+            onChange={e => setSelectedStaff(e.target.value)}
+            className="flex-1 min-w-[180px] px-3 py-1.5 rounded-lg border text-[12px] outline-none"
+            style={{ borderColor: `${TEAL}18`, color: TEAL, backgroundColor: MILK }}
+          >
+            <option value="">Select department lead / staff...</option>
+            {deptLeads.map(s => (
+              <option key={s.staffId} value={s.staffId}>
+                {s.name} — {s.dept} ({s.role})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => {
+              if (!selectedStaff) { toast.error("Select a staff member first"); return; }
+              onAssign({ id: task.id, assignedTo: Number(selectedStaff) });
+              setShowAssign(false);
+              setSelectedStaff("");
+            }}
+            className="text-[11px] font-bold px-3 py-1.5 rounded-lg"
+            style={{ backgroundColor: TEAL, color: GOLD }}
+          >
+            Assign
+          </button>
+          <button
+            onClick={() => { setShowAssign(false); setSelectedStaff(""); }}
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ color: TEAL, opacity: 0.4 }}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      )}
+
       {showNote && (
         <div className="flex gap-2 items-center pl-1">
           <input
