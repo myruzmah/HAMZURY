@@ -54,6 +54,7 @@ import TilzSpaFounderDashboard from "./pages/TilzSpaFounderDashboard";
 import TilzSpaFinanceDashboard from "./pages/TilzSpaFinanceDashboard";
 import TilzSpaReceptionistDashboard from "./pages/TilzSpaReceptionistDashboard";
 import TilzSpaWhatsApp from "./pages/TilzSpaWhatsApp";
+import TilzSpaDelivery from "./pages/TilzSpaDelivery";
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
@@ -185,6 +186,7 @@ function Router() {
       <Route path={"/clients/tilz-spa/dashboard/finance"} component={TilzSpaFinanceDashboard} />
       <Route path={"/clients/tilz-spa/dashboard/receptionist"} component={TilzSpaReceptionistDashboard} />
       <Route path={"/clients/tilz-spa/dashboard/whatsapp"} component={TilzSpaWhatsApp} />
+      <Route path={"/clients/tilz-spa/delivery"} component={TilzSpaDelivery} />
 
       {/* Client Portal — dashboard only, clients enter ref via Track section */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />

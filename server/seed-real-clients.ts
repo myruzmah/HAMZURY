@@ -82,24 +82,33 @@ export async function seedRealClients() {
   });
   leadsCount++;
 
+  // Main task — single task per ref, service string drives dashboard chip mapping.
+  // Includes all deliverables: completed items listed in notes [DELIVERED:...] block.
   await safeTask(db, {
     clientName: "Oge Matilda", businessName: "Tilz Spa by Tilda", phone: "08172371818",
-    service: "Full Business Architecture — Brand + Website + Social + CRM + Ops",
+    service: "Full Business Architecture — Branding + Website + Social Media Account Setup + WhatsApp Automation + Founder Dashboard + TCC + SCUML",
     department: "systemise", priority: "high", category: "Full Build",
+    status: "In Progress",
     quotedPrice: "1200000",
-    notes: "Total: ₦1,200,000. Paid: ₦500,000. Balance: ₦700,000. 4-phase build over 8 weeks.",
+    notes: [
+      "Total: ₦1,200,000. Paid: ₦500,000. Balance: ₦700,000.",
+      "",
+      "Phase 1 Deliverables:",
+      "✅ Brand Strategy Document — completed",
+      "✅ Brand Guidelines — completed",
+      "✅ Website Design & Development — completed",
+      "✅ Social Media Kit — completed",
+      "✅ Operations Manual — completed",
+      "✅ Launch & Growth Plan — completed",
+      "✅ Dashboard System (3 dashboards) — completed",
+      "✅ WhatsApp Automation Setup — completed",
+      "🔄 TCC Processing — in progress",
+      "🔄 SCUML Processing — in progress",
+      "",
+      "[DELIVERED: brand_id, website, social_setup, automation, dashboard, workspace, crm]",
+    ].join("\n"),
   });
-  await safeTask(db, {
-    clientName: "Oge Matilda", businessName: "Tilz Spa by Tilda", phone: "08172371818",
-    service: "Tax Clearance Certificate (TCC)", department: "bizdoc", category: "Tax Compliance",
-    notes: "Part of Tilz Spa package.",
-  });
-  await safeTask(db, {
-    clientName: "Oge Matilda", businessName: "Tilz Spa by Tilda", phone: "08172371818",
-    service: "SCUML Certificate", department: "bizdoc", category: "Sector Licence",
-    notes: "Part of Tilz Spa package. Standard tier ₦60,000.",
-  });
-  tasksCount += 3;
+  tasksCount += 1;
 
   // ═══════════════════════════════════════════════════════════
   // 2. YUSUF BAKORI — SCUML ₦60K (paid ₦50K)

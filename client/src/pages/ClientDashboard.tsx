@@ -1187,7 +1187,7 @@ export default function ClientDashboard() {
             type ItemState = "delivered" | "in_progress" | "paid" | "inactive";
 
             /* ── Map service to active items ── */
-            function mapServiceToItems(service: string, status: string): Record<string, ItemState> {
+            function mapServiceToItems(service: string, status: string, notes?: string | null): Record<string, ItemState> {
               const s = service.toLowerCase();
               const done = status === "Completed";
               const active: Record<string, ItemState> = {};
@@ -1228,10 +1228,23 @@ export default function ClientDashboard() {
               if (s.includes("training") || s.includes("skill") || s.includes("cohort")) active.team = done ? "delivered" : "in_progress";
               if (s.includes("contract") || s.includes("legal")) active.contracts = done ? "delivered" : "in_progress";
 
+              // Per-item delivery overrides from task notes: [DELIVERED: item1, item2, ...]
+              if (notes) {
+                const deliveredMatch = notes.match(/\[DELIVERED:\s*([^\]]+)\]/);
+                if (deliveredMatch) {
+                  const deliveredIds = deliveredMatch[1].split(",").map(id => id.trim());
+                  for (const id of deliveredIds) {
+                    if (active[id]) {
+                      active[id] = "delivered";
+                    }
+                  }
+                }
+              }
+
               return active;
             }
 
-            const activeItems = mapServiceToItems(task.service || "", task.status || "");
+            const activeItems = mapServiceToItems(task.service || "", task.status || "", task.notes);
 
             /* ── Business Strength ── */
             const pillarsWithActive = PILLARS.filter(p => p.items.some(it => activeItems[it.id]));
