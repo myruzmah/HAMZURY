@@ -7,6 +7,7 @@ import {
   Shield, Globe, Zap, TrendingUp, Clock,
   Users, Sparkles, Palette, Briefcase,
   X, UserPlus, FileCheck, Award, GraduationCap, Lock, FileText,
+  Gift,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
 import { trpc } from "@/lib/trpc";
@@ -663,6 +664,8 @@ export default function ClientDashboard() {
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [autoGreeted, setAutoGreeted] = useState(false);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
+  const [walkthroughStep, setWalkthroughStep] = useState(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
@@ -688,6 +691,11 @@ export default function ClientDashboard() {
     setSessionLoaded(true);
     if (!s) {
       window.location.href = "/";
+    } else {
+      const wtKey = `hamzury-walkthrough-${s.ref}`;
+      if (!localStorage.getItem(wtKey)) {
+        setShowWalkthrough(true);
+      }
     }
   }, []);
 
@@ -1321,6 +1329,160 @@ export default function ClientDashboard() {
                 </div>
 
 
+                {/* ═══ DELIVERY HUB ═══ */}
+                {(() => {
+                  const svc = (task.service || "").toLowerCase();
+                  const notes = (task.notes || "").toLowerCase();
+                  const hasDelivery = notes.includes("delivery") || svc.includes("full business") || svc.includes("architecture");
+                  if (!hasDelivery) return null;
+
+                  const bn = (task.businessName || "").toLowerCase();
+                  const isTilz = bn.includes("tilz");
+                  const businessSlug = isTilz ? "tilz-spa" : null;
+
+                  const deliveryDocs = [
+                    { label: "Brand Strategy", key: "brand_id" },
+                    { label: "Brand Guidelines", key: "brand_id" },
+                    { label: "Website", key: "website" },
+                    { label: "Operations Manual", key: "dashboard" },
+                    { label: "Social Media Kit", key: "social_setup" },
+                    { label: "Launch Plan", key: "content_strategy" },
+                  ];
+
+                  return (
+                    <div style={{ marginBottom: 40, animation: "fadeUp 0.6s ease-out 0.05s both" }}>
+                      <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 16 }}>Your Delivery</p>
+                      <div style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                          <div style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: `${GOLD}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <Gift size={20} style={{ color: GOLD }} />
+                          </div>
+                          <div>
+                            <p style={{ fontSize: 14, fontWeight: 500, color: DARK }}>Your brand package is ready</p>
+                            <p style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>All documents prepared for delivery</p>
+                          </div>
+                        </div>
+
+                        {businessSlug ? (
+                          <a
+                            href={`/clients/${businessSlug}/delivery`}
+                            style={{
+                              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                              width: "100%", padding: "12px 0", borderRadius: 100,
+                              backgroundColor: GOLD, color: WHITE, textDecoration: "none",
+                              fontSize: 13, fontWeight: 500, minHeight: 44, marginBottom: 20,
+                            }}
+                          >
+                            View Delivery
+                            <ArrowRight size={14} />
+                          </a>
+                        ) : (
+                          <div style={{ padding: "12px 16px", borderRadius: 12, backgroundColor: BG, marginBottom: 20 }}>
+                            <p style={{ fontSize: 13, color: MUTED, textAlign: "center" }}>Contact us for delivery access</p>
+                          </div>
+                        )}
+
+                        {deliveryDocs.map((doc, i) => {
+                          const state = activeItems[doc.key];
+                          const isDelivered = state === "delivered";
+                          return (
+                            <div key={i} style={{ padding: "10px 0", borderBottom: i < deliveryDocs.length - 1 ? `1px solid ${MUTED}10` : "none", display: "flex", alignItems: "center", gap: 10 }}>
+                              {isDelivered ? (
+                                <CheckCircle size={14} style={{ color: GREEN, flexShrink: 0 }} />
+                              ) : (
+                                <div style={{ width: 10, height: 10, borderRadius: "50%", backgroundColor: GOLD, flexShrink: 0 }} />
+                              )}
+                              <span style={{ fontSize: 13, color: isDelivered ? DARK : MUTED, fontWeight: 400 }}>{doc.label}</span>
+                            </div>
+                          );
+                        })}
+
+                        <p style={{ fontSize: 11, color: MUTED, marginTop: 16, textAlign: "center" }}>
+                          All documents delivered via WhatsApp and email
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+
+                {/* ═══ PROJECT TIMELINE ═══ */}
+                {(() => {
+                  const svc = (task.service || "").toLowerCase();
+                  const hasPaidItems = Object.keys(activeItems).length > 0;
+                  if (!hasPaidItems) return null;
+
+                  const phase1Done = activeItems["brand_id"] === "delivered";
+                  const phase2Done = activeItems["social_setup"] === "delivered";
+                  const phase3Done = activeItems["dashboard"] === "delivered" || activeItems["automation"] === "delivered";
+                  const phase4Active = activeItems["growth"] !== undefined || activeItems["team"] !== undefined;
+
+                  let currentPhase = 1;
+                  if (phase1Done) currentPhase = 2;
+                  if (phase2Done) currentPhase = 3;
+                  if (phase3Done) currentPhase = 4;
+
+                  // Default to Phase 1 in progress for Full Business Architecture
+                  if (svc.includes("full business") || svc.includes("architecture")) {
+                    if (!phase1Done) currentPhase = 1;
+                  }
+
+                  const phases = [
+                    { num: 1, name: "Brand Foundation", deliverables: "Brand, guidelines, website" },
+                    { num: 2, name: "Digital Presence", deliverables: "Social media, content, Google" },
+                    { num: 3, name: "Operations", deliverables: "Dashboards, CRM, automation" },
+                    { num: 4, name: "Growth", deliverables: "Training, retainer, scaling" },
+                  ];
+
+                  return (
+                    <div style={{ marginBottom: 40, animation: "fadeUp 0.6s ease-out 0.08s both" }}>
+                      <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 16 }}>Project Timeline</p>
+                      <div
+                        className="hide-scrollbar"
+                        style={{ overflowX: "auto", display: "flex", alignItems: "flex-start", gap: 0, padding: "8px 0" }}
+                      >
+                        {phases.map((phase, i) => {
+                          const isComplete = phase.num < currentPhase;
+                          const isCurrent = phase.num === currentPhase;
+                          const isUpcoming = phase.num > currentPhase;
+                          const circleColor = isComplete ? GREEN : isCurrent ? GOLD : GREY;
+                          const lineColorVal = isComplete ? GREEN : GREY;
+
+                          return (
+                            <div key={phase.num} style={{ display: "flex", alignItems: "flex-start", flexShrink: 0 }}>
+                              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 90 }}>
+                                <div style={{
+                                  width: 32, height: 32, borderRadius: "50%",
+                                  backgroundColor: circleColor,
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  marginBottom: 8,
+                                  animation: isCurrent ? "stagePulse 2s infinite" : "none",
+                                }}>
+                                  {isComplete ? (
+                                    <CheckCircle size={16} style={{ color: WHITE }} />
+                                  ) : (
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{phase.num}</span>
+                                  )}
+                                </div>
+                                <p style={{ fontSize: 12, fontWeight: isCurrent ? 600 : 400, color: isCurrent ? DARK : MUTED, textAlign: "center", lineHeight: 1.3 }}>
+                                  {phase.name}
+                                </p>
+                                <p style={{ fontSize: 10, color: MUTED, textAlign: "center", marginTop: 4, lineHeight: 1.3 }}>
+                                  {phase.deliverables}
+                                </p>
+                              </div>
+                              {i < phases.length - 1 && (
+                                <div style={{ width: 24, height: 2, backgroundColor: lineColorVal, marginTop: 15, flexShrink: 0 }} />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+
                 {/* ═══ SECTION 2: SERVICE CHIPS — horizontal scroll ═══ */}
                 {paidItems.length > 0 && (
                   <div style={{ marginBottom: 40, marginLeft: -20, marginRight: -20, animation: "fadeUp 0.6s ease-out 0.1s both" }}>
@@ -1669,7 +1831,7 @@ export default function ClientDashboard() {
                   const areaMap: Record<string, string[]> = { Compliance: ["compliance", "compliance_mgmt", "legal"], Brand: ["branding", "visibility"], Systems: ["tools"], Team: ["skills"], Growth: ["skills"] };
                   return (
                     <div style={{ textAlign: "center", padding: "32px 0" }}>
-                      <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 24 }}>Your business could be stronger</p>
+                      <p style={{ fontSize: 18, fontWeight: 500, color: DARK, marginBottom: 24 }}>Your Business Blueprint</p>
                       <div style={{ display: "flex", justifyContent: "center", gap: 24, marginBottom: 16, flexWrap: "wrap" }}>
                         {(["Compliance", "Brand", "Systems", "Team", "Growth"] as const).map(area => {
                           const isActive = areaMap[area]?.some(pid => PILLARS.find(p => p.id === pid)?.items.some(it => activeItems[it.id])) || false;
@@ -1749,7 +1911,7 @@ export default function ClientDashboard() {
                         );
                       })()}
 
-                      {!pitchArea && <p style={{ fontSize: 13, color: MUTED }}>Tap to explore</p>}
+                      {!pitchArea && <p style={{ fontSize: 13, color: MUTED }}>Your positioning across 5 critical business areas. Tap to strengthen.</p>}
                     </div>
                   );
                 })()}
@@ -1820,6 +1982,84 @@ export default function ClientDashboard() {
           </div>
         </>
       )}
+
+      {/* ═══ GUIDED WALKTHROUGH OVERLAY ═══ */}
+      {showWalkthrough && (() => {
+        const steps = [
+          { title: "Welcome to your dashboard", desc: "This is your business command centre. Everything about your project is here." },
+          { title: "Your Delivery", desc: "Access all your brand documents and deliverables right here." },
+          { title: "Service Status", desc: "See what's been delivered, what's in progress, and what's coming next." },
+          { title: "Payments", desc: "Track every payment and see your balance." },
+          { title: "Business Strength", desc: "See how strong your business foundation is. Tap any dot to explore." },
+          { title: "AI Advisor", desc: "Have questions? Our AI advisor is always available via the chat button." },
+        ];
+        const step = steps[walkthroughStep];
+        const isLast = walkthroughStep === steps.length - 1;
+
+        const dismiss = () => {
+          setShowWalkthrough(false);
+          setWalkthroughStep(0);
+          if (session?.ref) {
+            localStorage.setItem(`hamzury-walkthrough-${session.ref}`, "done");
+          }
+        };
+
+        return (
+          <div
+            className="fixed inset-0"
+            style={{ zIndex: 60, backgroundColor: "rgba(0,0,0,0.6)", animation: "fadeIn 0.3s ease-out" }}
+          >
+            <div
+              style={{
+                position: "absolute", bottom: 0, left: 0, right: 0,
+                backgroundColor: WHITE,
+                borderTopLeftRadius: 20, borderTopRightRadius: 20,
+                padding: 32,
+                animation: "slideUp 0.3s ease-out",
+              }}
+            >
+              <p style={{ fontSize: 11, color: MUTED, marginBottom: 12, fontWeight: 400 }}>
+                {walkthroughStep + 1} of {steps.length}
+              </p>
+              <p style={{ fontSize: 16, fontWeight: 600, color: DARK, marginBottom: 8 }}>
+                {step.title}
+              </p>
+              <p style={{ fontSize: 13, color: MUTED, lineHeight: 1.6, marginBottom: 28, fontWeight: 400 }}>
+                {step.desc}
+              </p>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <button
+                  onClick={dismiss}
+                  style={{
+                    background: "none", border: "none", fontSize: 13, color: MUTED,
+                    textDecoration: "underline", cursor: "pointer", padding: "8px 0",
+                    minHeight: 44, fontWeight: 400,
+                  }}
+                >
+                  Skip
+                </button>
+                <button
+                  onClick={() => {
+                    if (isLast) {
+                      dismiss();
+                    } else {
+                      setWalkthroughStep(walkthroughStep + 1);
+                    }
+                  }}
+                  style={{
+                    padding: "12px 32px", borderRadius: 100,
+                    backgroundColor: GOLD, color: WHITE, border: "none",
+                    fontSize: 13, fontWeight: 500, cursor: "pointer",
+                    minHeight: 44,
+                  }}
+                >
+                  {isLast ? "Get Started" : "Next"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
