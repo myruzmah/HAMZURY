@@ -1120,6 +1120,44 @@ export const appRouter = router({
       }),
   }),
 
+  // ─── Client Onboarding Form ───────────────────────────────────────────────
+  onboarding: router({
+    submit: rateLimitedProcedure
+      .input(z.object({
+        ref: z.string().min(1),
+        data: z.record(z.string()),
+      }))
+      .mutation(async ({ input }) => {
+        const refTrimmed = input.ref.trim().toUpperCase();
+        // Find the task by ref
+        const task = await getTaskByRef(refTrimmed);
+        if (!task) {
+          // Also check lead
+          const lead = await getLeadByRef(refTrimmed);
+          if (lead) {
+            // Update lead context with onboarding data
+            await updateLead(lead.id, {
+              context: `[ONBOARDING REQUIREMENTS]\n${JSON.stringify(input.data, null, 2)}`,
+            });
+            return { success: true };
+          }
+          throw new TRPCError({ code: "NOT_FOUND", message: "Reference not found" });
+        }
+        // Append onboarding data to task notes
+        const existingNotes = task.notes || "";
+        const onboardingBlock = `\n\n━━━ CLIENT REQUIREMENTS (submitted ${new Date().toISOString().split("T")[0]}) ━━━\n${Object.entries(input.data).filter(([_, v]) => v).map(([k, v]) => `• ${k}: ${v}`).join("\n")}`;
+        await updateTask(task.id, { notes: existingNotes + onboardingBlock });
+        // Log activity
+        await createActivityLog({
+          taskId: task.id,
+          userId: 0,
+          action: "client_onboarding",
+          details: `Client submitted onboarding requirements via form`,
+        });
+        return { success: true };
+      }),
+  }),
+
   // ─── WhatsApp Messaging ───────────────────────────────────────────────────
   whatsapp: router({
     sendMessage: protectedProcedure

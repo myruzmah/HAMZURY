@@ -47,6 +47,7 @@ import SkillsMilestones from "./pages/SkillsMilestones";
 import SkillsStartups from "./pages/SkillsStartups";
 import SkillsAlumni from "./pages/SkillsAlumni";
 import SkillsHALS from "./pages/SkillsHALS";
+import ClientOnboarding from "./pages/ClientOnboarding";
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
@@ -167,6 +168,9 @@ function Router() {
           <StaffWorkspace />
         </RoleGuard>
       </Route>
+      {/* Client Onboarding Form — public, ref-based */}
+      <Route path={"/start/:ref"} component={ClientOnboarding} />
+
       {/* Client Portal — dashboard only, clients enter ref via Track section */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />
       <Route path={"/client"}>{() => { window.location.href = "/"; return null; }}</Route>
