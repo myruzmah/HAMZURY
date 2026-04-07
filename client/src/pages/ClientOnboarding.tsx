@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
 import { Loader2, ChevronRight, ChevronLeft, Check, Send, Building2, Shield, Palette, Globe, Upload } from "lucide-react";
@@ -23,8 +23,9 @@ const STEPS = [
 ];
 
 export default function ClientOnboarding() {
-  const params = useParams<{ ref: string }>();
-  const ref = params.ref || "";
+  // Wildcard route captures full ref including slashes (e.g. HMZ-26/4-5623)
+  const [, params] = useRoute("/start/*");
+  const ref = (params as any)?.["*"] || window.location.pathname.replace("/start/", "") || "";
 
   const [step, setStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);

@@ -168,8 +168,8 @@ function Router() {
           <StaffWorkspace />
         </RoleGuard>
       </Route>
-      {/* Client Onboarding Form — public, ref-based */}
-      <Route path={"/start/:ref"} component={ClientOnboarding} />
+      {/* Client Onboarding Form — public, ref-based (wildcard for refs with slashes like HMZ-26/4-5623) */}
+      <Route path="/start/*" component={ClientOnboarding} />
 
       {/* Client Portal — dashboard only, clients enter ref via Track section */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />
