@@ -121,13 +121,21 @@ export default function Home() {
       setTrackLoading(false);
       if (res.data?.found) {
         const d = res.data;
-        // Go straight to client dashboard
+        // Store session for dashboard access
         localStorage.setItem("hamzury-client-session", JSON.stringify({
           ref: d.ref, phone: trackRef, name: d.clientName,
           businessName: d.businessName, service: d.service,
           status: d.status, expiresAt: Date.now() + 24 * 60 * 60 * 1000
         }));
-        window.location.href = "/client/dashboard";
+        // Show result card with status overview
+        setTrackResult({
+          ref: d.ref,
+          clientName: d.clientName || null,
+          businessName: d.businessName || null,
+          service: d.service || null,
+          status: d.status,
+          progress: (d as any).statusIndex != null ? Math.round((((d as any).statusIndex + 1) / ((d as any).statusTotal || 5)) * 100) : 20,
+        });
       } else {
         setTrackNotFound(true);
       }
