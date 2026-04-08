@@ -6,8 +6,8 @@ import {
   ArrowRight, ChevronRight,
   Shield, Globe, Zap, TrendingUp, Clock,
   Users, Sparkles, Palette, Briefcase,
-  X, FileText, Lock, Package, Bot, Layers,
-  BookOpen, Building2, FileCheck, Award, Cpu,
+  X, FileText, Lock, Package, Bot,
+  BookOpen, Building2, FileCheck, Award,
   Download, ExternalLink,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
@@ -490,13 +490,11 @@ export default function ClientDashboard() {
 
   const mkItems = (defs: { id: string; label: string }[]): LineItem[] => defs.map(d => ({ ...d, status: activeItems[d.id] === "delivered" ? "done" as const : activeItems[d.id] ? "active" as const : "pending" as const }));
 
-  const brandItems = mkItems([{ id: "brand_id", label: "Identity" }, { id: "positioning", label: "Position" }, { id: "website", label: "Website" }, { id: "content_strategy", label: "Content" }, { id: "materials", label: "Materials" }, { id: "pitch_deck", label: "Pitch" }]);
-  const workspaceItems = mkItems([{ id: "workspace", label: "Email" }, { id: "crm", label: "CRM" }, { id: "automation", label: "Automation" }, { id: "dashboard", label: "Dashboard" }, { id: "research", label: "Research" }]);
+  const brandItems = mkItems([{ id: "brand_id", label: "Identity" }, { id: "positioning", label: "Position" }, { id: "content_strategy", label: "Content" }, { id: "pitch_deck", label: "Pitch" }]);
+  const systemsItems = mkItems([{ id: "website", label: "Website" }, { id: "workspace", label: "Email" }, { id: "crm", label: "CRM" }, { id: "dashboard", label: "Dashboard" }, { id: "automation", label: "Automation" }, { id: "ai_agent", label: "AI Agent" }, { id: "research", label: "Research" }]);
   const complianceItems = mkItems([{ id: "cac", label: "CAC" }, { id: "tin", label: "TIN" }, { id: "tcc", label: "TCC" }, { id: "licence", label: "Licence" }, { id: "contracts", label: "Legal" }, { id: "annual", label: "Returns" }, { id: "scuml", label: "SCUML" }]);
-  const digitalItems = mkItems([{ id: "website", label: "Website" }, { id: "dashboard", label: "Dashboard" }, { id: "crm", label: "CRM" }, { id: "automation", label: "Automation" }, { id: "ai_agent", label: "AI Agent" }]);
-  const templateItems = mkItems([{ id: "templates", label: "Contracts" }, { id: "materials", label: "Letterhead" }, { id: "social_setup", label: "Social Kit" }, { id: "content", label: "Content" }, { id: "pitch_deck", label: "Proposals" }]);
+  const contentItems = mkItems([{ id: "materials", label: "Materials" }, { id: "templates", label: "Templates" }, { id: "social_setup", label: "Social Kit" }, { id: "content", label: "Content" }, { id: "seo", label: "SEO" }, { id: "social_mgmt", label: "Social" }, { id: "reputation", label: "Reviews" }]);
   const staffItems = mkItems([{ id: "founder", label: "Founder" }, { id: "team", label: "Team" }, { id: "ai_skills", label: "AI Skills" }, { id: "growth", label: "Growth" }]);
-  const aiItems = mkItems([{ id: "ai_agent", label: "AI Chat" }, { id: "automation", label: "Automation" }, { id: "seo", label: "SEO" }, { id: "social_mgmt", label: "Social" }, { id: "reputation", label: "Reputation" }]);
 
   const subscriptionItems: LineItem[] = (() => {
     const svcLower = (task.service || "").toLowerCase();
@@ -617,7 +615,7 @@ export default function ClientDashboard() {
 
           {/* STATUS LEGEND + PROJECT OVERVIEW */}
           {(() => {
-            const allItems = [...brandItems, ...complianceItems, ...workspaceItems, ...digitalItems, ...templateItems, ...deliveryItems.filter(d => d.id !== "pending_delivery")];
+            const allItems = [...brandItems, ...systemsItems, ...complianceItems, ...contentItems, ...staffItems, ...deliveryItems.filter(d => d.id !== "pending_delivery")];
             const delivered = allItems.filter(i => i.status === "done").length;
             const inProgress = allItems.filter(i => i.status === "active").length;
             const pending = allItems.filter(i => i.status === "pending").length;
@@ -787,8 +785,8 @@ export default function ClientDashboard() {
             }}
           </ProgressLine>
 
-          {/* 6. WORKSPACE */}
-          <ProgressLine label="Workspace & Systems" icon={Layers} items={workspaceItems} selectedId={expandedSection?.section === "wk" ? expandedSection.itemId : null} onSelect={id => id ? sel("wk", id) : setExpandedSection(null)}>
+          {/* 6. SYSTEMS & TOOLS */}
+          <ProgressLine label="Systems & Tools" icon={Globe} items={systemsItems} selectedId={expandedSection?.section === "sys" ? expandedSection.itemId : null} onSelect={id => id ? sel("sys", id) : setExpandedSection(null)}>
             {(item) => renderServiceDetail(item.id)}
           </ProgressLine>
 
@@ -797,43 +795,14 @@ export default function ClientDashboard() {
             {(item) => renderServiceDetail(item.id)}
           </ProgressLine>
 
-          {/* 8. DIGITAL */}
-          <ProgressLine label="Website, CRM & Dashboard" icon={Globe} items={digitalItems} selectedId={expandedSection?.section === "dig" ? expandedSection.itemId : null} onSelect={id => id ? sel("dig", id) : setExpandedSection(null)}>
+          {/* 8. CONTENT & MATERIALS */}
+          <ProgressLine label="Content & Materials" icon={FileText} items={contentItems} selectedId={expandedSection?.section === "cnt" ? expandedSection.itemId : null} onSelect={id => id ? sel("cnt", id) : setExpandedSection(null)}>
             {(item) => renderServiceDetail(item.id)}
           </ProgressLine>
 
-          {/* 9. TEMPLATES */}
-          <ProgressLine label="Templates & Materials" icon={FileText} items={templateItems} selectedId={expandedSection?.section === "tpl" ? expandedSection.itemId : null} onSelect={id => id ? sel("tpl", id) : setExpandedSection(null)}>
+          {/* 9. TRAINING */}
+          <ProgressLine label="Training & Growth" icon={Users} items={staffItems} selectedId={expandedSection?.section === "staff" ? expandedSection.itemId : null} onSelect={id => id ? sel("staff", id) : setExpandedSection(null)}>
             {(item) => renderServiceDetail(item.id)}
-          </ProgressLine>
-
-          {/* 10. STAFF */}
-          <ProgressLine label="Staff & Training" icon={Users} items={staffItems} selectedId={expandedSection?.section === "staff" ? expandedSection.itemId : null} onSelect={id => id ? sel("staff", id) : setExpandedSection(null)}>
-            {(item) => renderServiceDetail(item.id)}
-          </ProgressLine>
-
-          {/* 11. AI */}
-          <ProgressLine label="What AI Can Do For You" icon={Cpu} items={aiItems} selectedId={expandedSection?.section === "ai" ? expandedSection.itemId : null} onSelect={id => id ? sel("ai", id) : setExpandedSection(null)}>
-            {(item) => {
-              const sv = SERVICE_DETAILS[item.id];
-              if (!sv) return null;
-              const hasIt = !!activeItems[item.id];
-              const isInCart = cartItems.has(item.id);
-              return (<div>
-                <p style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 4 }}>{sv.pitch}</p>
-                <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBottom: 8 }}>{sv.why}</p>
-                {sv.value && <div style={{ padding: "8px 12px", borderRadius: 8, backgroundColor: `${GREEN}08`, marginBottom: 10 }}><p style={{ fontSize: 11, color: GREEN, fontWeight: 500 }}>💰 {sv.value}</p></div>}
-                <div style={{ marginBottom: 10 }}>
-                  <p style={{ fontSize: 11, color: MUTED, fontWeight: 500, marginBottom: 4 }}>Includes:</p>
-                  {sv.includes.map((inc, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 0" }}><CheckCircle size={10} style={{ color: GOLD }} /><span style={{ fontSize: 12, color: DARK }}>{inc}</span></div>)}
-                </div>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: GOLD }}>{sv.price}</span>
-                  {hasIt ? <span style={{ fontSize: 11, color: GREEN, fontWeight: 500 }}>{activeItems[item.id] === "delivered" ? "✓ Active" : "⏳ Setting Up"}</span>
-                    : <button onClick={() => toggleCart(item.id)} style={{ fontSize: 12, fontWeight: 600, padding: "8px 16px", borderRadius: 8, border: "none", backgroundColor: isInCart ? GREEN : GOLD, color: WHITE, cursor: "pointer" }}>{isInCart ? "✓ In Cart" : "Add"}</button>}
-                </div>
-              </div>);
-            }}
           </ProgressLine>
 
           {/* Cart badge */}
