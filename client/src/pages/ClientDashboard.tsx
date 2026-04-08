@@ -498,6 +498,18 @@ export default function ClientDashboard() {
   const staffItems = mkItems([{ id: "founder", label: "Founder" }, { id: "team", label: "Team" }, { id: "ai_skills", label: "AI Skills" }, { id: "growth", label: "Growth" }]);
   const aiItems = mkItems([{ id: "ai_agent", label: "AI Chat" }, { id: "automation", label: "Automation" }, { id: "seo", label: "SEO" }, { id: "social_mgmt", label: "Social" }, { id: "reputation", label: "Reputation" }]);
 
+  const subscriptionItems: LineItem[] = (() => {
+    const svcLower = (task.service || "").toLowerCase();
+    const items: LineItem[] = [];
+    if (svcLower.includes("full business") || svcLower.includes("architecture") || svcLower.includes("website") || svcLower.includes("management")) items.push({ id: "sub_website", label: "Website", status: activeItems["website"] === "delivered" ? "done" : activeItems["website"] ? "active" : "pending" });
+    if (svcLower.includes("full business") || svcLower.includes("social media management") || svcLower.includes("social")) items.push({ id: "sub_social", label: "Social", status: activeItems["social_mgmt"] === "delivered" ? "done" : activeItems["social_mgmt"] ? "active" : "pending" });
+    if (svcLower.includes("full business") || svcLower.includes("dashboard") || svcLower.includes("management")) items.push({ id: "sub_dashboard", label: "Dashboard", status: activeItems["dashboard"] === "delivered" ? "done" : activeItems["dashboard"] ? "active" : "pending" });
+    if (svcLower.includes("tax") || svcLower.includes("pro max")) items.push({ id: "sub_tax", label: "Tax", status: "active" });
+    if (svcLower.includes("full business") || svcLower.includes("crm") || svcLower.includes("lead")) items.push({ id: "sub_crm", label: "CRM", status: activeItems["crm"] === "delivered" ? "done" : activeItems["crm"] ? "active" : "pending" });
+    if (svcLower.includes("full business") || svcLower.includes("automation") || svcLower.includes("whatsapp")) items.push({ id: "sub_auto", label: "WhatsApp", status: activeItems["automation"] === "delivered" ? "done" : activeItems["automation"] ? "active" : "pending" });
+    return items.length > 0 ? items : [];
+  })();
+
   const deliveryItems: LineItem[] = (() => {
     const items: LineItem[] = [];
     Object.entries(activeItems).forEach(([id, state]) => {
@@ -681,7 +693,47 @@ export default function ClientDashboard() {
 
           {/* 5. BRAND */}
           <ProgressLine label="Brand Positioning" icon={Palette} items={brandItems} selectedId={expandedSection?.section === "brand" ? expandedSection.itemId : null} onSelect={id => id ? sel("brand", id) : setExpandedSection(null)}>
-            {(item) => renderServiceDetail(item.id)}
+            {(item) => {
+              const sv = SERVICE_DETAILS[item.id];
+              const folder = SERVICE_FOLDERS[item.id];
+              const state = activeItems[item.id];
+              if (!sv) return <p style={{ fontSize: 13, color: MUTED }}>Details coming soon.</p>;
+              const hasIt = !!state && state !== "inactive";
+              const isInCart = cartItems.has(item.id);
+              const isDelivered = state === "delivered";
+              return (
+                <div>
+                  {/* Brand header with accent bar */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <div style={{ width: 4, height: 32, borderRadius: 2, backgroundColor: isDelivered ? GREEN : state === "in_progress" ? GOLD : GREY }} />
+                    <div>
+                      <p style={{ fontSize: 14, fontWeight: 600, color: DARK, margin: 0 }}>{sv.pitch}</p>
+                      {isDelivered && <p style={{ fontSize: 11, color: GREEN, fontWeight: 500, margin: "2px 0 0" }}>✓ Delivered</p>}
+                      {state === "in_progress" && <p style={{ fontSize: 11, color: GOLD, fontWeight: 500, margin: "2px 0 0" }}>⏳ In Progress</p>}
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBottom: 12 }}>{sv.why}</p>
+                  {/* Deliverables checklist */}
+                  {folder && <div style={{ padding: "10px 14px", borderRadius: 10, backgroundColor: `${BG}`, marginBottom: 12 }}>
+                    <p style={{ fontSize: 10, fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>Deliverables</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4px 16px" }}>
+                      {folder.items.map((fi, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 0" }}>
+                          {isDelivered ? <CheckCircle size={11} style={{ color: GREEN }} /> : state === "in_progress" ? <div style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: GOLD }} /> : <Circle size={11} style={{ color: `${GREY}80` }} />}
+                          <span style={{ fontSize: 11, color: isDelivered ? DARK : `${MUTED}`, fontWeight: isDelivered ? 500 : 400 }}>{fi}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>}
+                  {/* Price + action */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: GOLD }}>{sv.price}</span>
+                    {hasIt ? <span style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, backgroundColor: isDelivered ? `${GREEN}10` : `${GOLD}10`, color: isDelivered ? GREEN : GOLD, fontWeight: 600 }}>{isDelivered ? "Completed" : "Building"}</span>
+                      : <button onClick={() => toggleCart(item.id)} style={{ fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 8, border: isInCart ? `1px solid ${GREEN}` : `1px solid ${GOLD}`, backgroundColor: isInCart ? `${GREEN}10` : "transparent", color: isInCart ? GREEN : GOLD, cursor: "pointer" }}>{isInCart ? "✓ Added" : "Add to Cart"}</button>}
+                  </div>
+                </div>
+              );
+            }}
           </ProgressLine>
 
           {/* 6. WORKSPACE */}
@@ -768,7 +820,48 @@ export default function ClientDashboard() {
             }}
           </ProgressLine>
 
-          {/* 13. REFERENCE */}
+          {/* 13. SUBSCRIPTION — Continuous Management */}
+          {subscriptionItems.length > 0 && (
+            <ProgressLine label="Continuous Updates" icon={Zap} items={subscriptionItems} selectedId={expandedSection?.section === "sub" ? expandedSection.itemId : null} onSelect={id => id ? sel("sub", id) : setExpandedSection(null)}>
+              {(item) => {
+                const SUB_INFO: Record<string, { title: string; desc: string; items: string[] }> = {
+                  sub_website: { title: "Website Management", desc: "Your website stays fresh, fast, and optimised. We handle updates, content changes, performance monitoring, and security patches.", items: ["Monthly content updates", "Performance monitoring", "Security patches", "SEO optimisation", "Bug fixes & improvements"] },
+                  sub_social: { title: "Social Media Management", desc: "Consistent posting, engagement, and growth strategy. Your brand stays visible and active across all platforms.", items: ["Daily content posting", "Engagement management", "Monthly content calendar", "Monthly performance report", "Hashtag & trend strategy"] },
+                  sub_dashboard: { title: "Dashboard Management", desc: "Your business dashboards are kept current — data updated, reports generated, and insights surfaced weekly.", items: ["Weekly data updates", "Client tracking maintenance", "Revenue reports", "Task management sync", "Custom report generation"] },
+                  sub_tax: { title: "Tax Pro Max", desc: "End-to-end tax compliance management. We file, track, and optimise your taxes so you never miss a deadline.", items: ["Quarterly tax filing", "TCC processing", "Annual returns", "Tax savings optimisation", "Portal access management"] },
+                  sub_crm: { title: "CRM & Lead Management", desc: "Your leads are tracked, nurtured, and followed up automatically. No opportunity falls through the cracks.", items: ["Lead pipeline management", "Follow-up automation", "Conversion tracking", "Monthly funnel reports", "New lead capture forms"] },
+                  sub_auto: { title: "WhatsApp Automation", desc: "Your WhatsApp stays intelligent — auto-replies updated, booking flows optimised, new sequences added as your business grows.", items: ["Auto-reply updates", "New booking flows", "Follow-up sequences", "Broadcast campaigns", "Analytics & optimisation"] },
+                };
+                const info = SUB_INFO[item.id];
+                if (!info) return null;
+                const isDone = item.status === "done";
+                return (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                      <div style={{ width: 4, height: 28, borderRadius: 2, backgroundColor: isDone ? GREEN : GOLD }} />
+                      <div>
+                        <p style={{ fontSize: 14, fontWeight: 600, color: DARK, margin: 0 }}>{info.title}</p>
+                        <p style={{ fontSize: 11, color: isDone ? GREEN : GOLD, fontWeight: 500, margin: "2px 0 0" }}>{isDone ? "✓ Active & managed" : "⏳ Being set up"}</p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBottom: 10 }}>{info.desc}</p>
+                    <div style={{ padding: "10px 14px", borderRadius: 10, backgroundColor: BG }}>
+                      <p style={{ fontSize: 10, fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>What's included</p>
+                      {info.items.map((it, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 0" }}>
+                          <CheckCircle size={10} style={{ color: isDone ? GREEN : GOLD }} />
+                          <span style={{ fontSize: 11, color: DARK }}>{it}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 10, color: MUTED, fontStyle: "italic", marginTop: 8 }}>This is a continuously managed service — we handle everything.</p>
+                  </div>
+                );
+              }}
+            </ProgressLine>
+          )}
+
+          {/* 14. REFERENCE */}
           <div style={{ textAlign: "center", padding: "24px 0 16px", borderTop: `1px solid ${GREY}20` }}>
             <p style={{ fontSize: 11, color: MUTED, marginBottom: 4 }}>Your Reference</p>
             <p style={{ fontSize: 16, fontWeight: 700, color: DARK, fontFamily: "monospace", letterSpacing: "0.05em" }}>{task.ref}</p>
