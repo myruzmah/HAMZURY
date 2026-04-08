@@ -93,7 +93,7 @@ export const tasks = mysqlTable("tasks", {
   clientName: varchar("clientName", { length: 255 }).notNull(),
   businessName: varchar("businessName", { length: 255 }),
   phone: varchar("phone", { length: 50 }),
-  service: varchar("service", { length: 100 }).notNull(),
+  service: varchar("service", { length: 500 }).notNull(),
   status: mysqlEnum("taskStatus", [
     "Not Started",
     "In Progress",
