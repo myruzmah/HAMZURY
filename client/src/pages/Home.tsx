@@ -5,7 +5,7 @@ import {
   ShieldCheck, Cpu, GraduationCap,
   ArrowRight,
   Menu, X, ChevronDown, CheckCircle,
-  TrendingUp, MessageSquare, Eye, EyeOff, Loader2,
+  TrendingUp, Eye, EyeOff, Loader2,
 } from "lucide-react";
 import { useLocation, Link } from "wouter";
 import { useState, useEffect, useRef } from "react";
@@ -204,18 +204,6 @@ export default function Home() {
             style={{ backgroundColor: WHITE, boxShadow: "0 8px 40px rgba(0,0,0,0.06)" }}
           >
             <div className="max-w-6xl mx-auto px-4 md:px-8 py-4 flex flex-col">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
-                  if (btn) btn.click();
-                }}
-                className="flex items-center gap-2 px-3 py-3.5 rounded-xl w-full text-left"
-                style={{ backgroundColor: "#B48C4C10", color: "#B48C4C" }}
-              >
-                <MessageSquare size={16} />
-                <span className="text-[13px] font-medium">Chat with us</span>
-              </button>
               {[
                   { label: "Pricing",   href: "/pricing" },
                   { label: "Team",      href: "/team" },

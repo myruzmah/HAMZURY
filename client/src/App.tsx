@@ -263,7 +263,6 @@ function FloatingChat() {
     { prefix: "/systemise", dept: "systemise" },
     { prefix: "/skills",    dept: "skills" },
     { prefix: "/hub/cso",   dept: "bizdoc" },
-    { prefix: "/",          dept: "general", exact: true },
     { prefix: "/pricing",   dept: "general" },
     { prefix: "/founder",   dept: "general" },
     { prefix: "/team",      dept: "general" },
