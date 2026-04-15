@@ -134,12 +134,17 @@ export async function syncStaffRoster(): Promise<void> {
   for (const staff of STAFF_ROSTER) {
     const existing = await getStaffUserByEmail(staff.email);
     if (existing) {
-      // Update name if it differs
-      if (existing.name !== staff.name) {
+      // Sync name AND role — role drift (e.g. legacy dept_staff → cso) was
+      // silently leaving staff with the wrong RoleGuard access on live.
+      const patch: Partial<typeof staffUsers.$inferInsert> = {};
+      if (existing.name !== staff.name)               patch.name = staff.name;
+      if (existing.hamzuryRole !== staff.hamzuryRole) patch.hamzuryRole = staff.hamzuryRole;
+      if (!existing.isActive)                         patch.isActive = true;
+      if (Object.keys(patch).length > 0) {
         await db.update(staffUsers)
-          .set({ name: staff.name })
+          .set(patch)
           .where(eq(staffUsers.email, staff.email));
-        console.log(`[sync-staff] Updated name: ${existing.name} → ${staff.name}`);
+        console.log(`[sync-staff] Patched ${staff.email}:`, patch);
       }
     } else {
       // New hire — add them
