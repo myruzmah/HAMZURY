@@ -73,19 +73,22 @@ import { trpc } from "./lib/trpc";
  * pages into the portal subdomains above when they are introduced.
  */
 const ROLE_ACCESS: Record<string, string[]> = {
-  "/hub/ceo":           ["founder", "ceo"],
-  "/cso":               ["founder", "cso", "cso_staff"],
-  "/hub/finance":       ["founder", "finance"],
-  "/hub/hr":            ["founder", "hr"],
-  "/hub/bizdev":        ["founder", "bizdev"],
-  "/hub/workspace":     ["founder", "bizdev_staff", "compliance_staff", "security_staff", "department_staff"],
-  "/bizdoc/dashboard":  ["founder", "cso", "bizdev", "bizdoc_lead"],
-  "/skills/admin":      ["founder", "skills_staff"],
-  "/ridi/dashboard":    ["founder", "skills_staff"],
-  "/media/dashboard":   ["founder", "media"],
-  "/skills/ceo":        ["founder", "ceo"],
-  "/systemise/cto":     ["founder", "ceo", "systemise_head", "tech_lead", "media"],
-  "/systemise/dashboard": ["founder", "ceo", "systemise_head", "tech_lead"],
+  // FOUNDER POLICY (2026-04): founder has NO cross-dashboard access.
+  // Each role only sees their own. If founder wants to inspect another
+  // department, they log in under that role's credentials. No bypass.
+  "/hub/ceo":             ["ceo"],
+  "/cso":                 ["cso", "cso_staff"],
+  "/hub/finance":         ["finance"],
+  "/hub/hr":              ["hr"],
+  "/hub/bizdev":          ["bizdev"],
+  "/hub/workspace":       ["bizdev_staff", "compliance_staff", "security_staff", "department_staff"],
+  "/bizdoc/dashboard":    ["cso", "bizdev", "bizdoc_lead"],
+  "/skills/admin":        ["skills_staff"],
+  "/ridi/dashboard":      ["skills_staff"],
+  "/media/dashboard":     ["media"],
+  "/skills/ceo":          ["ceo"],
+  "/systemise/cto":       ["ceo", "systemise_head", "tech_lead", "media"],
+  "/systemise/dashboard": ["ceo", "systemise_head", "tech_lead"],
 };
 
 /** Wrapper that enforces hamzuryRole-based access on /hub/* and sensitive routes */
