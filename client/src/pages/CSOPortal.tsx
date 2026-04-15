@@ -46,7 +46,7 @@ type BackOfficeTab =
   | "services" | "sources" | "cohorts" | "calendar" | "targets"
   | "templates" | "audit" | "settings";
 
-/* Phase 2 — shared dept leads (matches CEODashboard.tsx DEPT_LEADS) */
+/* Shared dept leads — used by AssignTaskModal + dashboard surfaces */
 const DEPT_LEADS: Record<string, { name: string; dept: string }[]> = {
   bizdoc: [{ name: "Abdullahi Musa", dept: "bizdoc" }],
   systemise: [{ name: "Dajot", dept: "systemise" }, { name: "Lalo", dept: "systemise" }],

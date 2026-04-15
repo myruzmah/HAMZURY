@@ -801,29 +801,6 @@ export async function updateSkillsApplicationStatus(id: number, status: string, 
   return result.length > 0 ? result[0] : undefined;
 }
 
-// ─── Skills Admin Stats ─────────────────────────────────────────────────────
-
-export async function getSkillsAdminStats() {
-  const db = await getDb();
-  if (!db) return { activeCohorts: 0, upcomingCohorts: 0, pendingApps: 0, totalStudents: 0, ridiCommunities: 28 };
-
-  const allCohorts = await db.select().from(cohorts);
-  const allApps = await db.select().from(skillsApplications);
-
-  const activeCohorts = allCohorts.filter(c => c.status === "enrolling" || c.status === "in_progress").length;
-  const upcomingCohorts = allCohorts.filter(c => c.status === "enrolling").length;
-  const pendingApps = allApps.filter(a => a.status === "submitted").length;
-  const totalStudents = allApps.filter(a => a.status === "accepted").length;
-
-  return {
-    activeCohorts,
-    upcomingCohorts,
-    pendingApps,
-    totalStudents,
-    ridiCommunities: 28,
-  };
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // AFFILIATE PORTAL
 // ═══════════════════════════════════════════════════════════════════════════════

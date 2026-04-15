@@ -22,7 +22,6 @@ import {
   listCohorts, getCohortById,
   createSkillsApplication, getSkillsApplications, getSkillsApplicationByRef, updateSkillsApplicationStatus,
   generateSKLRefNumber,
-  getSkillsAdminStats,
   createAffiliate, getAffiliateByEmail, getAffiliateById, verifyAffiliatePassword,
   getAffiliateRecordsByAffiliate, getAffiliateWithdrawals, createAffiliateWithdrawal,
   getAffiliateStats, getAllAffiliates,
@@ -2201,9 +2200,6 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
           submittedAt: new Date(),
         });
       }),
-
-    // Admin routes
-    adminStats: protectedProcedure.query(async () => getSkillsAdminStats()),
 
     applications: protectedProcedure.query(async () => getSkillsApplications()),
 
