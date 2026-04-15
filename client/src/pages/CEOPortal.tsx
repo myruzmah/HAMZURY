@@ -64,6 +64,19 @@ function monthEndISO() {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
 }
 
+/** Shared hook so every section reacts to viewport width. */
+function useIsMobile(breakpoint = 900) {
+  const [mobile, setMobile] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth < breakpoint : false
+  );
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return mobile;
+}
+
 function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
   return (
     <div style={{
@@ -117,19 +130,9 @@ export default function CEOPortal() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [active, setActive] = useState<Section>("dashboard");
 
-  const [isMobile, setIsMobile] = useState<boolean>(
-    typeof window !== "undefined" ? window.innerWidth < 900 : false
-  );
+  const isMobile = useIsMobile(900);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  useEffect(() => {
-    const onResize = () => {
-      const mobile = window.innerWidth < 900;
-      setIsMobile(mobile);
-      if (!mobile) setMobileNavOpen(false);
-    };
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  useEffect(() => { if (!isMobile) setMobileNavOpen(false); }, [isMobile]);
 
   if (loading) {
     return (
@@ -347,19 +350,23 @@ function CommandCenter({ onGoto }: { onGoto: (s: Section) => void }) {
       </SectionTitle>
 
       {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
         {kpis.map(k => (
           <button
             key={k.label}
             onClick={() => onGoto(k.section)}
             style={{
-              backgroundColor: WHITE, borderRadius: 14, padding: "16px 14px",
+              backgroundColor: WHITE, borderRadius: 14, padding: "14px 12px",
               border: `1px solid ${DARK}08`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
               textAlign: "left", cursor: "pointer", transition: "transform 0.1s",
+              minWidth: 0, overflow: "hidden",
             }}
           >
             <k.icon size={14} style={{ color: k.color, marginBottom: 8 }} />
-            <p style={{ fontSize: typeof k.value === "string" ? 15 : 22, fontWeight: 700, color: DARK, lineHeight: 1.15 }}>{k.value}</p>
+            <p style={{
+              fontSize: typeof k.value === "string" ? 14 : 20, fontWeight: 700, color: DARK, lineHeight: 1.15,
+              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+            }}>{k.value}</p>
             <p style={{ fontSize: 10, color: MUTED, marginTop: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>{k.label}</p>
           </button>
         ))}
@@ -465,6 +472,7 @@ function EscalationIcon({ type }: { type: string }) {
  * 2. DEPARTMENTS — 3-card health view
  * ═══════════════════════════════════════════════════════════════════════ */
 function DepartmentsSection() {
+  const isMobile = useIsMobile();
   const deptQuery = trpc.institutional.deptStats.useQuery(undefined, { retry: false });
   const staffQuery = trpc.staff.listInternal.useQuery(undefined, { retry: false });
 
@@ -524,6 +532,25 @@ function DepartmentsSection() {
         </SectionTitle>
         {staff.length === 0 ? (
           <EmptyState icon={Users} title="Loading staff roster…" />
+        ) : isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {staff.map((s: any) => (
+              <div key={s.staffId} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{s.name}</p>
+                  <StatusPill label={s.status} tone={s.status === "Active" ? "green" : "muted"} />
+                </div>
+                <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace" }}>
+                  {s.role} · {s.dept}
+                </p>
+                <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                  Last login: {s.lastLogin || "—"}
+                </p>
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
@@ -745,6 +772,7 @@ function CreateTargetModal({ onClose, onCreated }: { onClose: () => void; onCrea
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)",
         zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+        overflowY: "auto",
       }}
     >
       <form
@@ -752,6 +780,7 @@ function CreateTargetModal({ onClose, onCreated }: { onClose: () => void; onCrea
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "100%", maxWidth: 480,
+          maxHeight: "calc(100vh - 32px)", overflowY: "auto",
           boxShadow: "0 10px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 12,
         }}
       >
@@ -850,6 +879,7 @@ function inputStyle(): React.CSSProperties {
  * 4. STAFF OVERSIGHT — Roster, discipline, leave
  * ═══════════════════════════════════════════════════════════════════════ */
 function StaffSection() {
+  const isMobile = useIsMobile();
   const utils = trpc.useUtils();
   const staffQuery = trpc.staff.listInternal.useQuery(undefined, { retry: false });
   const disciplineQuery = trpc.discipline.list.useQuery({}, { retry: false });
@@ -885,7 +915,7 @@ function StaffSection() {
       </SectionTitle>
 
       {/* Quick stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
         <MiniStat label="Total Staff"       value={staff.length} color={GREEN} />
         <MiniStat label="Active"            value={staff.filter(s => s.status === "Active").length} color="#22C55E" />
         <MiniStat label="Open Discipline"   value={openDiscipline.length} color={RED} />
@@ -978,7 +1008,11 @@ function StaffSection() {
 
       {/* Staff roster + inline discipline action */}
       <Card>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 10, flexWrap: "wrap" }}>
+        <div style={{
+          display: "flex", alignItems: isMobile ? "stretch" : "center",
+          justifyContent: "space-between", marginBottom: 12, gap: 10,
+          flexDirection: isMobile ? "column" : "row",
+        }}>
           <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Staff Roster
           </p>
@@ -987,11 +1021,45 @@ function StaffSection() {
             placeholder="Search name, email, role…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            style={{ ...inputStyle(), width: 220 }}
+            style={{ ...inputStyle(), width: isMobile ? "100%" : 220 }}
           />
         </div>
         {filtered.length === 0 ? (
           <EmptyState icon={Users} title="No matching staff" />
+        ) : isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {filtered.map((s: any) => (
+              <div key={s.staffId} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{s.name}</p>
+                    <p style={{
+                      fontSize: 10, color: MUTED, marginTop: 2,
+                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    }}>{s.email}</p>
+                  </div>
+                  <button
+                    onClick={() => setDisciplining({ email: s.email, name: s.name })}
+                    style={{
+                      padding: "4px 10px", borderRadius: 8, backgroundColor: `${ORANGE}12`, color: ORANGE,
+                      border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer", flexShrink: 0,
+                    }}
+                  >Issue</button>
+                </div>
+                <div style={{
+                  display: "flex", gap: 10, marginTop: 6, fontSize: 10, color: MUTED, flexWrap: "wrap",
+                }}>
+                  <span style={{ fontFamily: "monospace" }}>{s.role}</span>
+                  <span>·</span>
+                  <span>{s.dept}</span>
+                  <span>·</span>
+                  <span>Last: {s.lastLogin || "—"}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
@@ -1048,12 +1116,17 @@ function StaffSection() {
 }
 
 function MiniStat({ label, value, color }: { label: string; value: number | string; color: string }) {
+  const isString = typeof value === "string";
   return (
     <div style={{
       backgroundColor: WHITE, borderRadius: 12, padding: "14px 14px",
       border: `1px solid ${DARK}08`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      minWidth: 0, overflow: "hidden",
     }}>
-      <p style={{ fontSize: 20, fontWeight: 700, color, lineHeight: 1.15 }}>{value}</p>
+      <p style={{
+        fontSize: isString ? 15 : 20, fontWeight: 700, color, lineHeight: 1.15,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      }}>{value}</p>
       <p style={{ fontSize: 10, color: MUTED, marginTop: 4, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</p>
     </div>
   );
@@ -1090,6 +1163,7 @@ function IssueDisciplineModal({
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)",
         zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+        overflowY: "auto",
       }}
     >
       <form
@@ -1097,6 +1171,7 @@ function IssueDisciplineModal({
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440,
+          maxHeight: "calc(100vh - 32px)", overflowY: "auto",
           boxShadow: "0 10px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 12,
         }}
       >
@@ -1149,6 +1224,7 @@ function IssueDisciplineModal({
  * 5. FINANCE — Allocations, AI fund, league table, commissions
  * ═══════════════════════════════════════════════════════════════════════ */
 function FinanceSection() {
+  const isMobile = useIsMobile();
   const revQuery = trpc.commissions.revenueStats.useQuery(undefined, { retry: false });
   const commissionsQuery = trpc.commissions.list.useQuery(undefined, { retry: false });
   const allocationsQuery = trpc.finance.allocations.useQuery(undefined, { retry: false });
@@ -1170,7 +1246,7 @@ function FinanceSection() {
         Finance Oversight
       </SectionTitle>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
         <MiniStat label="Revenue (Paid)"    value={fmtNaira(rev?.totalRevenue)} color={GREEN} />
         <MiniStat label="Pending Revenue"   value={fmtNaira(rev?.pendingRevenue)} color={ORANGE} />
         <MiniStat label="AI Fund Balance"   value={fmtNaira(aiFund?.balance)} color={PURPLE} />
@@ -1203,6 +1279,30 @@ function FinanceSection() {
         </p>
         {allocations.length === 0 ? (
           <EmptyState icon={DollarSign} title="No allocations yet" hint="Every confirmed payment splits 50/30/20 and lands here." />
+        ) : isMobile ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {allocations.slice(0, 12).map((a: any) => (
+              <div key={a.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{a.clientName || "—"}</p>
+                    <p style={{
+                      fontSize: 10, color: MUTED, marginTop: 2, fontFamily: "monospace",
+                      whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                    }}>{a.transactionRef}</p>
+                  </div>
+                  <StatusPill label={a.status} tone={a.status === "paid" ? "green" : a.status === "approved" ? "gold" : "muted"} />
+                </div>
+                <div style={{ display: "flex", gap: 14, marginTop: 8, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                  <span><span style={{ color: DARK, fontWeight: 600 }}>{fmtNaira(a.totalAmount)}</span> total</span>
+                  <span>{fmtNaira(a.staffPoolAmount)} pool</span>
+                  <span>{fmtNaira(a.aiFundAmount)} AI</span>
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
@@ -1286,6 +1386,7 @@ function FinanceSection() {
  * 6. CALENDAR & AUDIT
  * ═══════════════════════════════════════════════════════════════════════ */
 function CalendarAuditSection() {
+  const isMobile = useIsMobile();
   const [creating, setCreating] = useState(false);
   const utils = trpc.useUtils();
 
@@ -1360,22 +1461,39 @@ function CalendarAuditSection() {
         {audit.length === 0 ? (
           <EmptyState icon={Activity} title="No audit entries yet" />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 420, overflowY: "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 8 : 4, maxHeight: 420, overflowY: "auto" }}>
             {audit.slice(0, 60).map((a: any) => (
-              <div key={a.id} style={{
-                display: "flex", alignItems: "center", gap: 10,
-                padding: "6px 8px", fontSize: 11, borderBottom: `1px solid ${DARK}06`,
-              }}>
-                <Clock size={11} style={{ color: MUTED, flexShrink: 0 }} />
-                <span style={{ color: DARK, fontWeight: 500, whiteSpace: "nowrap" }}>{a.userName || "—"}</span>
-                <span style={{ color: GOLD, fontFamily: "monospace", fontSize: 10, whiteSpace: "nowrap" }}>{a.action}</span>
-                <span style={{ color: MUTED, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {a.details}
-                </span>
-                <span style={{ color: MUTED, fontSize: 10, whiteSpace: "nowrap", flexShrink: 0 }}>
-                  {fmtDateTime(a.createdAt)}
-                </span>
-              </div>
+              isMobile ? (
+                <div key={a.id} style={{
+                  padding: "8px 10px", fontSize: 11, borderBottom: `1px solid ${DARK}06`,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <Clock size={11} style={{ color: MUTED, flexShrink: 0 }} />
+                    <span style={{ color: DARK, fontWeight: 600 }}>{a.userName || "—"}</span>
+                    <span style={{ color: GOLD, fontFamily: "monospace", fontSize: 10 }}>{a.action}</span>
+                    <span style={{ color: MUTED, fontSize: 10, marginLeft: "auto" }}>{fmtDateTime(a.createdAt)}</span>
+                  </div>
+                  <p style={{
+                    color: MUTED, marginTop: 4, fontSize: 10, lineHeight: 1.4,
+                    wordBreak: "break-word",
+                  }}>{a.details}</p>
+                </div>
+              ) : (
+                <div key={a.id} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "6px 8px", fontSize: 11, borderBottom: `1px solid ${DARK}06`,
+                }}>
+                  <Clock size={11} style={{ color: MUTED, flexShrink: 0 }} />
+                  <span style={{ color: DARK, fontWeight: 500, whiteSpace: "nowrap" }}>{a.userName || "—"}</span>
+                  <span style={{ color: GOLD, fontFamily: "monospace", fontSize: 10, whiteSpace: "nowrap" }}>{a.action}</span>
+                  <span style={{ color: MUTED, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {a.details}
+                  </span>
+                  <span style={{ color: MUTED, fontSize: 10, whiteSpace: "nowrap", flexShrink: 0 }}>
+                    {fmtDateTime(a.createdAt)}
+                  </span>
+                </div>
+              )
             ))}
           </div>
         )}
@@ -1437,6 +1555,7 @@ function CreateEventModal({ onClose, onCreated }: { onClose: () => void; onCreat
       style={{
         position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)",
         zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+        overflowY: "auto",
       }}
     >
       <form
@@ -1444,6 +1563,7 @@ function CreateEventModal({ onClose, onCreated }: { onClose: () => void; onCreat
         onClick={(e) => e.stopPropagation()}
         style={{
           backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440,
+          maxHeight: "calc(100vh - 32px)", overflowY: "auto",
           boxShadow: "0 10px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 12,
         }}
       >
