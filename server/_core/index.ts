@@ -72,56 +72,12 @@ async function startServer() {
     next();
   });
 
-  // ─── Staff Login — role-based, env-password-gated ────────────────────────
-  app.post("/api/staff-login", async (req, res) => {
-    try {
-      const { role, password } = req.body ?? {};
-      // 2026-04 cleanup: only CSO and founder are active. Other department
-      // dashboards were removed and will be re-added one at a time.
-      const ROLE_CONFIG: Record<string, { envKey: string; name: string; openId: string; dashboard: string }> = {
-        founder: { envKey: "FOUNDER_PW",  name: "Muhammad Hamzury",  openId: "founder__admin__1", dashboard: "/" },
-        cso:     { envKey: "CSO_PW",      name: "CSO",               openId: "staff__cso__1",     dashboard: "/cso" },
-      };
-      const config = ROLE_CONFIG[role];
-      if (!config) return res.status(400).json({ error: "Invalid role." });
-      const expected = process.env[config.envKey];
-      if (!expected) return res.status(503).json({ error: `${role.toUpperCase()} access not configured on this server.` });
-      if (!password || password !== expected) return res.status(401).json({ error: "Incorrect password." });
-      const token = await sdk.createSessionToken(config.openId, { name: config.name });
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, token, { ...cookieOptions, sameSite: "lax", maxAge: 8 * 60 * 60 * 1000 });
-      res.json({ success: true, name: config.name, role, dashboard: config.dashboard });
-    } catch (err) {
-      res.status(500).json({ error: String(err) });
-    }
-  });
-
-  // ─── Founder Login — password-gated, env-controlled ─────────────────────
-  app.post("/api/founder-login", async (req, res) => {
-    try {
-      const { password } = req.body ?? {};
-      const expected = process.env.FOUNDER_PW;
-      if (!expected) {
-        return res.status(503).json({ error: "Founder access not configured on this server." });
-      }
-      if (!password || password !== expected) {
-        return res.status(401).json({ error: "Incorrect password." });
-      }
-      const openId = "founder__admin__1";
-      const token = await sdk.createSessionToken(openId, { name: "Muhammad Hamzury" });
-      const cookieOptions = getSessionCookieOptions(req);
-      res.cookie(COOKIE_NAME, token, {
-        ...cookieOptions,
-        sameSite: "lax",
-        maxAge: 8 * 60 * 60 * 1000,
-      });
-      res.json({ success: true, name: "Muhammad Hamzury", role: "admin" });
-    } catch (err) {
-      res.status(500).json({ error: String(err) });
-    }
-  });
-
-  // ─── Staff ID lookup — uses staffRef from database ──────────────────────
+  // ─── 2026-04 cleanup: /api/staff-login + /api/founder-login REMOVED.
+  // Those endpoints allowed generic role-based login via env passwords
+  // (CSO_PW, FOUNDER_PW) not tied to any real staff record. Every staff
+  // member — including the founder — now logs in via /api/login with
+  // their own Staff ID + personal password from the staffUsers table.
+  // ──────────────────────────────────────────────────────────────────────
 
   // ─── Login rate limiter (10 attempts per 15 minutes per IP) ──────────────
   const loginRateMap = new Map<string, number[]>();
