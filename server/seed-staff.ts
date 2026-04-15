@@ -42,7 +42,7 @@ const STAFF_ROSTER: {
   { name: "Yusuf Haruna",      email: "yusuf@hamzury.com",        hamzuryRole: "compliance_staff" },
   { name: "Khadija Saad",      email: "khadija@hamzury.com",      hamzuryRole: "bizdev" },           // BizDev + HR + AI Content
   { name: "Farida Munir",      email: "faree@hamzury.com",        hamzuryRole: "bizdev" },           // BizDev + Podcast
-  { name: "Maryam Ashir Lalo", email: "maryam@hamzury.com",       hamzuryRole: "cso" },              // CSO Lead (v1 restructure: replaces Tabitha)
+  { name: "Maryam Ashir Lalo", email: "cso@hamzury.com",          hamzuryRole: "cso" },              // CSO Lead — department email is the single source of login for CSO
   { name: "Abubakar Sadiq",    email: "abubakar@hamzury.com",     hamzuryRole: "finance" },          // Finance + Brand
   { name: "Sulaiman Hikma",    email: "hikma@hamzury.com",        hamzuryRole: "media" },
   { name: "Salis",             email: "salis@hamzury.com",        hamzuryRole: "media" },            // Video/Sound
@@ -107,6 +107,29 @@ export async function seedStaffUsers(): Promise<number> {
 export async function syncStaffRoster(): Promise<void> {
   const db = await getDb();
   if (!db) { console.log("[sync-staff] DB not available — skipping"); return; }
+
+  // ─── 2026-04 migration: rename CSO personal email → department email ───
+  // The CSO department now logs in via cso@hamzury.com (single source of truth).
+  // If the legacy maryam@hamzury.com row still exists, rename it in place so
+  // her staffRef, password, audit history, etc. are preserved.
+  try {
+    const legacy = await getStaffUserByEmail("maryam@hamzury.com");
+    if (legacy) {
+      const already = await getStaffUserByEmail("cso@hamzury.com");
+      if (already) {
+        // Both rows exist — delete the legacy one, keep the new cso@ row.
+        await db.delete(staffUsers).where(eq(staffUsers.email, "maryam@hamzury.com"));
+        console.log("[sync-staff] Removed legacy maryam@hamzury.com (cso@hamzury.com already present)");
+      } else {
+        await db.update(staffUsers)
+          .set({ email: "cso@hamzury.com" })
+          .where(eq(staffUsers.email, "maryam@hamzury.com"));
+        console.log("[sync-staff] Renamed maryam@hamzury.com → cso@hamzury.com");
+      }
+    }
+  } catch (err) {
+    console.log("[sync-staff] CSO email migration error:", String(err));
+  }
 
   for (const staff of STAFF_ROSTER) {
     const existing = await getStaffUserByEmail(staff.email);
