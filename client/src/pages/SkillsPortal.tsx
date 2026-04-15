@@ -642,7 +642,6 @@ export default function SkillsPortal() {
                 { label: "Startups",   href: "/skills/startups" },
                 { label: "Alumni",     href: "/skills/alumni" },
                 { label: "HALS",       href: "/skills/hals" },
-                { label: "CEO",        href: "/skills/ceo" },
                 { label: "Pricing",    href: "/pricing?tab=skills" },
                 { label: "Hamzury",    href: "/" },
               ].map(item => (

@@ -67,7 +67,7 @@ export default function AffiliatePage() {
           body: JSON.stringify({ email: email.trim(), password }),
         });
       } catch { /* best-effort */ }
-      navigate("/affiliate/dashboard");
+      navigate("/");
     },
     onError: (err: { message?: string }) => {
       setError(err.message || "Invalid credentials. Please try again.");

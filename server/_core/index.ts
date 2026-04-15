@@ -76,13 +76,11 @@ async function startServer() {
   app.post("/api/staff-login", async (req, res) => {
     try {
       const { role, password } = req.body ?? {};
+      // 2026-04 cleanup: only CSO and founder are active. Other department
+      // dashboards were removed and will be re-added one at a time.
       const ROLE_CONFIG: Record<string, { envKey: string; name: string; openId: string; dashboard: string }> = {
-        founder: { envKey: "FOUNDER_PW",  name: "Muhammad Hamzury",  openId: "founder__admin__1", dashboard: "/founder/dashboard" },
-        ceo:     { envKey: "CEO_PW",      name: "Idris Ibrahim",     openId: "staff__ceo__1",     dashboard: "/hub/ceo" },
+        founder: { envKey: "FOUNDER_PW",  name: "Muhammad Hamzury",  openId: "founder__admin__1", dashboard: "/" },
         cso:     { envKey: "CSO_PW",      name: "CSO",               openId: "staff__cso__1",     dashboard: "/cso" },
-        finance: { envKey: "FINANCE_PW",  name: "Finance",           openId: "staff__finance__1", dashboard: "/hub/finance" },
-        hr:      { envKey: "HR_PW",       name: "HR",                openId: "staff__hr__1",      dashboard: "/hub/hr" },
-        bizdev:  { envKey: "BIZDEV_PW",   name: "BizDev",            openId: "staff__bizdev__1",  dashboard: "/hub/bizdev" },
       };
       const config = ROLE_CONFIG[role];
       if (!config) return res.status(400).json({ error: "Invalid role." });
@@ -169,21 +167,11 @@ async function startServer() {
       res.cookie(COOKIE_NAME, token, { ...cookieOptions, sameSite: "lax", maxAge: 8 * 60 * 60 * 1000 });
       await db.updateStaffUserLogin(user.id);
 
+      // 2026-04 cleanup: only CSO is active. All other roles land on "/"
+      // until their dashboards are re-added one at a time.
       const ROLE_DASHBOARDS: Record<string, string> = {
-        founder:          "/founder/dashboard",
-        ceo:              "/hub/ceo",
-        cso:              "/cso",
-        finance:          "/hub/finance",
-        hr:               "/hub/hr",
-        bizdev:           "/hub/bizdev",
-        bizdev_staff:     "/hub/workspace",
-        media:            "/media/dashboard",
-        skills_staff:     "/skills/admin",
-        systemise_head:   "/systemise/cto",
-        tech_lead:        "/systemise/cto",
-        compliance_staff: "/hub/workspace",
-        security_staff:   "/hub/workspace",
-        department_staff: "/hub/workspace",
+        cso:      "/cso",
+        cso_staff: "/cso",
       };
 
       res.json({

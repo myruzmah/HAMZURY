@@ -141,7 +141,7 @@ export default function SkillsHALS() {
         body: JSON.stringify({ staffId: loginId.trim().toUpperCase(), password: loginPass }),
       });
       if (res.ok) {
-        window.location.href = "/skills/admin";
+        window.location.href = "/cso";
         return;
       }
       const studentRes = await fetch(`/api/trpc/skills.trackApplication?input=${encodeURIComponent(JSON.stringify({ ref: loginId.trim().toUpperCase() }))}`);
