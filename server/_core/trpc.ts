@@ -117,7 +117,7 @@ export const seniorProcedure = t.procedure.use(
 export const csoProcedure = t.procedure.use(
   t.middleware(async ({ ctx, next }) => {
     if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
-    const allowed = ["founder", "ceo", "cso"];
+    const allowed = ["founder", "ceo", "cso", "cso_staff"];
     if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
       throw new TRPCError({ code: "FORBIDDEN", message: "Only CSO, CEO, or Founder can perform this action." });
     }

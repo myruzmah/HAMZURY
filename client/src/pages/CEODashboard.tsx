@@ -3,7 +3,6 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
 import { Link } from "wouter";
-import { FINANCE_SUMMARY, SHARED_TASKS, formatNaira } from "@/lib/dashboardStore";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -71,7 +70,7 @@ export default function CEODashboard() {
   const stats = statsQuery.data;
   const activity = activityQuery.data || [];
   const commissions = commissionsQuery.data || [];
-  const leads = leadsQuery.data || [];
+  const leads = (Array.isArray(leadsQuery.data) ? leadsQuery.data : []) as any[];
   const pendingComms = commissions.filter(c => c.status === "pending").length;
   const revenueStats = revenueStatsQuery.data;
   const escalations = escalationsQuery.data || [];
@@ -158,7 +157,14 @@ export default function CEODashboard() {
             )}
             {activeSection === "analytics" && <AnalyticsSection revenueStats={revenueStats} deptStats={deptStats} leads={leads} />}
             {activeSection === "hubmeeting" && <HubMeetingSection />}
-            {activeSection === "targets" && <WeeklyTargetsSection />}
+            {activeSection === "targets" && (
+              <div className="space-y-10">
+                <Phase2TargetsPanel />
+                <div className="border-t pt-8" style={{ borderColor: `${GREEN}10` }}>
+                  <WeeklyTargetsSection />
+                </div>
+              </div>
+            )}
             {activeSection === "calendar" && <CalendarSection />}
             {activeSection === "assign" && <AssignSection />}
             {activeSection === "files" && <FilesSection />}
@@ -202,15 +208,15 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
         ))}
       </div>
 
-      {/* Financial Overview — sourced from shared store */}
+      {/* Financial Overview — real data from tRPC (pending Finance integration) */}
       <div className="rounded-2xl p-5" style={{ backgroundColor: `${GREEN}06`, border: `1px solid ${GREEN}12` }}>
-        <p className="text-xs uppercase tracking-widest mb-3 opacity-40 font-normal" style={{ color: GREEN }}>Financial Overview — March 2026</p>
+        <p className="text-xs uppercase tracking-widest mb-3 opacity-40 font-normal" style={{ color: GREEN }}>Financial Overview</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Revenue",         value: formatNaira(FINANCE_SUMMARY.totalRevenue) },
-            { label: "Operational Cost",value: formatNaira(FINANCE_SUMMARY.operationalCost) },
-            { label: "Net Profit",      value: formatNaira(FINANCE_SUMMARY.profit) },
-            { label: "Commission Pool", value: formatNaira(FINANCE_SUMMARY.commissionPool) },
+            { label: "Revenue",         value: "₦0" },
+            { label: "Operational Cost",value: "₦0" },
+            { label: "Net Profit",      value: "₦0" },
+            { label: "Commission Pool", value: "₦0" },
           ].map(item => (
             <div key={item.label} className="bg-white rounded-xl p-3 text-center" style={{ border: `1px solid ${GREEN}08` }}>
               <p className="text-lg font-medium" style={{ color: GOLD }}>{item.value}</p>
@@ -218,6 +224,7 @@ function OverviewSection({ stats, leads, commissions, activity }: { stats: any; 
             </div>
           ))}
         </div>
+        <p className="text-[10px] mt-2 opacity-30 text-center" style={{ color: GREEN }}>Finance data will populate from verified records</p>
       </div>
 
       {/* Department summary — real data */}
@@ -566,22 +573,17 @@ function AssignSection() {
   const [desc, setDesc] = useState("");
 
   const DEPT_LEADS: Record<string, { name: string; dept: string }[]> = {
-    bizdoc: [{ name: "Emeka Okafor", dept: "bizdoc" }],
-    systemise: [{ name: "Abiodun Salami", dept: "systemise" }],
-    skills: [{ name: "Ngozi Chukwu", dept: "skills" }],
-    bizdev: [{ name: "Kemi Adeyemi", dept: "bizdev" }],
-    cso: [{ name: "Aisha Okonkwo", dept: "cso" }],
-    finance: [{ name: "Fatima Ibrahim", dept: "finance" }],
+    bizdoc: [{ name: "Abdullahi Musa", dept: "bizdoc" }],
+    systemise: [{ name: "Dajot", dept: "systemise" }, { name: "Lalo", dept: "systemise" }],
+    skills: [{ name: "Abdulmalik Musa", dept: "skills" }],
+    bizdev: [{ name: "Khadija Saad", dept: "bizdev" }, { name: "Farida Munir", dept: "bizdev" }],
+    cso: [{ name: "Maryam Ashir Lalo", dept: "cso" }],
+    finance: [{ name: "Abubakar Sadiq", dept: "finance" }],
+    media: [{ name: "Sulaiman Hikma", dept: "media" }],
   };
 
-  const RECENT_ASSIGNED = SHARED_TASKS.map(t => ({
-    title:    t.title,
-    assignee: t.assignedTo,
-    dept:     t.assignedDept.charAt(0).toUpperCase() + t.assignedDept.slice(1),
-    priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1),
-    due:      t.dueDate,
-    id:       t.id,
-  }));
+  // Real task assignments — populated from tRPC tasks when available
+  const RECENT_ASSIGNED: { title: string; assignee: string; dept: string; priority: string; due: string; id: string }[] = [];
 
   const PRIORITIES = ["Low", "Medium", "High", "Urgent"];
   const DEPTS = [
@@ -591,6 +593,7 @@ function AssignSection() {
     { value: "bizdev", label: "BizDev" },
     { value: "cso", label: "CSO" },
     { value: "finance", label: "Finance" },
+    { value: "media", label: "Media" },
   ];
 
   const createTask = trpc.tasks.create.useMutation({
@@ -701,8 +704,8 @@ const STANDING_AGENDA = [
 
 const RESEARCH_STAFF = [
   "Idris Ibrahim (CEO)", "Abdullahi Musa (BizDoc)", "Yusuf Haruna (Compliance)",
-  "Khadija Saad (BizDev)", "Farida Munir (BizDev)", "Tabitha John (CSO)",
-  "Maryam Ashir (Media)", "Abubakar Sadiq (Finance)", "Sulaiman Hikma (Media)",
+  "Khadija Saad (BizDev)", "Farida Munir (BizDev)", "Maryam Ashir Lalo (CSO)",
+  "Abubakar Sadiq (Finance)", "Sulaiman Hikma (Media)",
   "Abdulmalik Musa (Skills)", "Dajot (Tech)", "Lalo (Design)", "Rabilu Musa (Security)",
   "Habeeba", "Pius Emmanuel",
 ];
@@ -1340,6 +1343,262 @@ function FilesSection() {
             </Button>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Phase 2 Targets (CSO/BizDev/Finance/Media etc.) ─────────────────────────
+const PHASE2_ASSIGNEE_ROLES = [
+  { value: "cso", label: "CSO" },
+  { value: "bizdev", label: "BizDev" },
+  { value: "bizdoc", label: "BizDoc" },
+  { value: "systemise", label: "Systemise" },
+  { value: "skills", label: "Skills" },
+  { value: "finance", label: "Finance" },
+  { value: "media", label: "Media" },
+];
+
+const PHASE2_METRICS = [
+  { value: "leads_qualified", label: "Leads Qualified" },
+  { value: "proposals_sent", label: "Proposals Sent" },
+  { value: "clients_onboarded", label: "Clients Onboarded" },
+  { value: "revenue_closed", label: "Revenue Closed (₦)" },
+  { value: "custom", label: "Custom" },
+];
+
+const PHASE2_PERIODS = [
+  { value: "month", label: "Month" },
+  { value: "quarter", label: "Quarter" },
+  { value: "year", label: "Year" },
+];
+
+function computePeriodRange(period: "month" | "quarter" | "year") {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth();
+  let start: Date, end: Date;
+  if (period === "month") {
+    start = new Date(y, m, 1);
+    end = new Date(y, m + 1, 0);
+  } else if (period === "quarter") {
+    const qStart = Math.floor(m / 3) * 3;
+    start = new Date(y, qStart, 1);
+    end = new Date(y, qStart + 3, 0);
+  } else {
+    start = new Date(y, 0, 1);
+    end = new Date(y, 11, 31);
+  }
+  return {
+    periodStart: start.toISOString().slice(0, 10),
+    periodEnd: end.toISOString().slice(0, 10),
+  };
+}
+
+function Phase2TargetsPanel() {
+  const [assignedTo, setAssignedTo] = useState("cso");
+  const [period, setPeriod] = useState<"month" | "quarter" | "year">("month");
+  const [metric, setMetric] = useState<"leads_qualified" | "proposals_sent" | "clients_onboarded" | "revenue_closed" | "custom">("clients_onboarded");
+  const [targetValue, setTargetValue] = useState("");
+  const [notes, setNotes] = useState("");
+  const [viewRole, setViewRole] = useState("cso");
+
+  const listQuery = trpc.targets.listForRole.useQuery(
+    { role: viewRole, period: "current" },
+    { refetchInterval: 20000 }
+  );
+
+  const createMut = trpc.targets.create.useMutation({
+    onSuccess: () => {
+      toast.success("Target assigned");
+      setTargetValue("");
+      setNotes("");
+      listQuery.refetch();
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const cancelMut = trpc.targets.cancel.useMutation({
+    onSuccess: () => { toast.success("Target cancelled"); listQuery.refetch(); },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const handleSubmit = () => {
+    const n = Number(targetValue);
+    if (!targetValue || Number.isNaN(n) || n < 0) {
+      toast.error("Enter a valid target value");
+      return;
+    }
+    const { periodStart, periodEnd } = computePeriodRange(period);
+    createMut.mutate({
+      assignedTo,
+      period,
+      periodStart,
+      periodEnd,
+      metric,
+      targetValue: n,
+      notes: notes.trim() || undefined,
+    });
+  };
+
+  const list = listQuery.data || [];
+
+  const metricLabel = (m: string) => PHASE2_METRICS.find(x => x.value === m)?.label || m;
+  const roleLabel = (r: string) => PHASE2_ASSIGNEE_ROLES.find(x => x.value === r)?.label || r;
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-sm uppercase tracking-wider opacity-40 font-normal" style={{ color: GREEN }}>
+          Set Target (Phase 2)
+        </h2>
+        <p className="text-xs opacity-40 mt-1" style={{ color: GREEN }}>
+          Assign role-level KPI targets with automatic progress tracking.
+        </p>
+      </div>
+
+      {/* Create form */}
+      <div className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)] space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label className="text-[10px] uppercase tracking-widest opacity-40 block mb-1" style={{ color: GREEN }}>Assign To</label>
+            <Select value={assignedTo} onValueChange={setAssignedTo}>
+              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PHASE2_ASSIGNEE_ROLES.map(r => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-widest opacity-40 block mb-1" style={{ color: GREEN }}>Metric</label>
+            <Select value={metric} onValueChange={(v) => setMetric(v as typeof metric)}>
+              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PHASE2_METRICS.map(m => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-widest opacity-40 block mb-1" style={{ color: GREEN }}>Period</label>
+            <Select value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+              <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PHASE2_PERIODS.map(p => (
+                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-[10px] uppercase tracking-widest opacity-40 block mb-1" style={{ color: GREEN }}>Target Value</label>
+            <Input
+              type="number"
+              min={0}
+              value={targetValue}
+              onChange={(e) => setTargetValue(e.target.value)}
+              placeholder={metric === "revenue_closed" ? "e.g. 5000000" : "e.g. 10"}
+              className="text-sm"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-[10px] uppercase tracking-widest opacity-40 block mb-1" style={{ color: GREEN }}>Notes (optional)</label>
+          <Textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Context, stretch rationale, or guidance…"
+            className="text-sm min-h-[60px]"
+          />
+        </div>
+        <Button
+          size="sm"
+          onClick={handleSubmit}
+          disabled={createMut.isPending}
+          style={{ backgroundColor: GREEN, color: GOLD }}
+        >
+          {createMut.isPending ? <Loader2 size={14} className="animate-spin mr-2" /> : <Target size={14} className="mr-2" />}
+          Assign Target
+        </Button>
+      </div>
+
+      {/* Current targets list */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <p className="text-[11px] uppercase tracking-widest opacity-40" style={{ color: GREEN }}>
+            Current Targets — {roleLabel(viewRole)}
+          </p>
+          <Select value={viewRole} onValueChange={setViewRole}>
+            <SelectTrigger className="text-xs w-[180px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {PHASE2_ASSIGNEE_ROLES.map(r => (
+                <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {list.length === 0 ? (
+          <div className="bg-white rounded-2xl p-10 text-center shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+            <Target size={36} className="mx-auto mb-3 opacity-15" style={{ color: GREEN }} />
+            <p className="text-sm opacity-40" style={{ color: GREEN }}>No active targets for this role</p>
+          </div>
+        ) : (
+          list.map((t: any) => {
+            const target = Number(t.targetValue) || 0;
+            const actual = Number(t.actualValue) || 0;
+            const pct = target > 0 ? Math.min(100, Math.round((actual / target) * 100)) : 0;
+            const barColor = pct >= 100 ? "#22C55E" : pct >= 60 ? GOLD : pct >= 30 ? "#EAB308" : "#EF4444";
+            return (
+              <div key={t.id} className="bg-white rounded-2xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.04)]" style={{ border: `1px solid ${GREEN}08` }}>
+                <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GOLD}15`, color: GOLD }}>
+                        {metricLabel(t.metric)}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full" style={{ backgroundColor: `${GREEN}10`, color: GREEN }}>
+                        {t.period}
+                      </span>
+                      <span className="text-[10px] opacity-40" style={{ color: GREEN }}>
+                        {t.periodStart} → {t.periodEnd}
+                      </span>
+                    </div>
+                    {t.notes && (
+                      <p className="text-xs opacity-60 mt-1" style={{ color: GREEN }}>{t.notes}</p>
+                    )}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    style={{ borderColor: "#EF444440", color: "#EF4444" }}
+                    onClick={() => {
+                      if (confirm("Cancel this target?")) cancelMut.mutate({ id: t.id });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+
+                <div className="flex items-center justify-between text-xs mb-1.5" style={{ color: GREEN }}>
+                  <span>
+                    {t.metric === "revenue_closed"
+                      ? `₦${actual.toLocaleString("en-NG")} / ₦${target.toLocaleString("en-NG")}`
+                      : `${actual.toLocaleString("en-NG")} / ${target.toLocaleString("en-NG")}`}
+                  </span>
+                  <span className="font-medium" style={{ color: barColor }}>{pct}%</span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: `${GREEN}10` }}>
+                  <div className="h-full transition-all" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

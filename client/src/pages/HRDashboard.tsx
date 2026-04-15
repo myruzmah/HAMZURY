@@ -6,7 +6,12 @@ import { Link } from "wouter";
 import PageMeta from "@/components/PageMeta";
 import DeptChatPanel from "@/components/DeptChatPanel";
 import AgentSuggestionCard from "@/components/AgentSuggestionCard";
-import { FINANCE_SUMMARY, formatNaira } from "@/lib/dashboardStore";
+/** formatNaira — local utility (dashboardStore removed) */
+function formatNaira(amount: number): string {
+  return `₦${amount.toLocaleString("en-NG")}`;
+}
+/** FINANCE_SUMMARY — zeroed until real finance data is wired */
+const FINANCE_SUMMARY = { totalRevenue: 0, operationalCost: 0, profit: 0, commissionPool: 0, retained: 0, mtd: { revenue: 0, cost: 0, profit: 0 } };
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -1650,7 +1655,7 @@ const POLICY_ITEMS = [
 
 const HR_DEVICE_STAFF = [
   "Idris Ibrahim", "Abdullahi Musa", "Yusuf Haruna", "Khadija Saad", "Farida Munir",
-  "Tabitha John", "Maryam Ashir", "Abubakar Sadiq", "Sulaiman Hikma", "Salis",
+  "Maryam Ashir Lalo", "Abubakar Sadiq", "Sulaiman Hikma", "Salis",
   "Abdulmalik Musa", "Dajot", "Lalo", "Rabilu Musa", "Habeeba", "Pius Emmanuel", "Abdulwafeed Tanko",
 ];
 

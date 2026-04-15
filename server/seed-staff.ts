@@ -42,8 +42,7 @@ const STAFF_ROSTER: {
   { name: "Yusuf Haruna",      email: "yusuf@hamzury.com",        hamzuryRole: "compliance_staff" },
   { name: "Khadija Saad",      email: "khadija@hamzury.com",      hamzuryRole: "bizdev" },           // BizDev + HR + AI Content
   { name: "Farida Munir",      email: "faree@hamzury.com",        hamzuryRole: "bizdev" },           // BizDev + Podcast
-  { name: "Tabitha John",      email: "tabitha@hamzury.com",      hamzuryRole: "cso" },
-  { name: "Maryam Ashir",      email: "maryam@hamzury.com",       hamzuryRole: "department_staff" }, // CSO assist + Media
+  { name: "Maryam Ashir Lalo", email: "maryam@hamzury.com",       hamzuryRole: "cso" },              // CSO Lead (v1 restructure: replaces Tabitha)
   { name: "Abubakar Sadiq",    email: "abubakar@hamzury.com",     hamzuryRole: "finance" },          // Finance + Brand
   { name: "Sulaiman Hikma",    email: "hikma@hamzury.com",        hamzuryRole: "media" },
   { name: "Salis",             email: "salis@hamzury.com",        hamzuryRole: "media" },            // Video/Sound

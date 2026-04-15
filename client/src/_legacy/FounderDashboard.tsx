@@ -7,7 +7,10 @@ import PageMeta from "@/components/PageMeta";
 import DeptChatPanel from "@/components/DeptChatPanel";
 import AgentSuggestionCard from "@/components/AgentSuggestionCard";
 import NotificationBell from "@/components/NotificationBell";
-import { FINANCE_SUMMARY, SHARED_TASKS, formatNaira } from "@/lib/dashboardStore";
+/** formatNaira — local utility (dashboardStore removed) */
+function formatNaira(amount: number): string {
+  return `₦${amount.toLocaleString("en-NG")}`;
+}
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -45,35 +48,11 @@ const DARK  = "#1D1D1F";
 
 type Section = "overview" | "command" | "analytics" | "commissions" | "staff" | "calendar" | "assign" | "files" | "vault" | "aiops";
 
-// ─── Mock Seed Data ──────────────────────────────────────────────────────────
-const MOCK_REVENUE = [
-  { month: "Oct", revenue: 2400000 },
-  { month: "Nov", revenue: 3100000 },
-  { month: "Dec", revenue: 2800000 },
-  { month: "Jan", revenue: 3750000 },
-  { month: "Feb", revenue: 4200000 },
-  { month: "Mar", revenue: 4850000 },
-];
-
-const MOCK_LEAD_SOURCES = [
-  { source: "Content", count: 18 },
-  { source: "Referrals", count: 12 },
-  { source: "Partners", count: 9 },
-  { source: "Events", count: 7 },
-];
-
-const MOCK_DEPT_PERFORMANCE = [
-  { dept: "BizDoc", completed: 24, active: 8, color: "#1B4D3E" },
-  { dept: "Systemise", completed: 11, active: 5, color: "#4285F4" },
-  { dept: "Skills", completed: 18, active: 12, color: "#B48C4C" },
-  { dept: "BizDev", completed: 7, active: 3, color: "#34A853" },
-];
-
-const MOCK_ESCALATIONS = [
-  { id: 1, type: "High-value Lead", title: "Lagos conglomerate — ₦4.2M project scope", from: "BizDev", urgency: "high", time: "2h ago" },
-  { id: 2, type: "Commission Approval", title: "3 commissions pending approval — ₦280,000 total", from: "Finance", urgency: "medium", time: "4h ago" },
-  { id: 3, type: "Brand Conflict", title: "External agency proposal does not meet brand guidelines", from: "BizDev", urgency: "medium", time: "1d ago" },
-];
+// ─── Mock data removed — dashboards now show real data or honest empty states ──
+const MOCK_REVENUE: { month: string; revenue: number }[] = [];
+const MOCK_LEAD_SOURCES: { source: string; count: number }[] = [];
+const MOCK_DEPT_PERFORMANCE: { dept: string; completed: number; active: number; color: string }[] = [];
+const MOCK_ESCALATIONS: { id: number; type: string; title: string; from: string; urgency: string; time: string }[] = [];
 
 
 const STAFF = [
@@ -405,15 +384,15 @@ function OverviewSection({ stats, leads, commissions, activity }: {
 
   return (
     <div className="space-y-8">
-      {/* Finance Snapshot — sourced from shared store */}
+      {/* Finance Snapshot — real data pending Finance integration */}
       <div className="rounded-2xl p-5" style={{ backgroundColor: "rgba(201,169,126,0.08)", border: "1px solid rgba(201,169,126,0.2)" }}>
-        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: GOLD }}>Finance Snapshot — March 2026</p>
+        <p className="text-xs uppercase tracking-widest mb-3" style={{ color: GOLD }}>Finance Snapshot</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
-            { label: "Revenue",         value: formatNaira(FINANCE_SUMMARY.totalRevenue) },
-            { label: "Costs",           value: formatNaira(FINANCE_SUMMARY.operationalCost) },
-            { label: "Net Profit",      value: formatNaira(FINANCE_SUMMARY.profit) },
-            { label: "Commission Pool", value: formatNaira(FINANCE_SUMMARY.commissionPool) },
+            { label: "Revenue",         value: formatNaira(0) },
+            { label: "Costs",           value: formatNaira(0) },
+            { label: "Net Profit",      value: formatNaira(0) },
+            { label: "Commission Pool", value: formatNaira(0) },
           ].map(item => (
             <div key={item.label} className="rounded-xl p-3 text-center" style={{ backgroundColor: "rgba(255,255,255,0.05)" }}>
               <p className="text-lg font-bold" style={{ color: GOLD }}>{item.value}</p>
@@ -881,14 +860,8 @@ function AssignSection() {
     finance:   [{ name: "Fatima Ibrahim",dept: "finance" }],
   };
 
-  const RECENT_ASSIGNED = SHARED_TASKS.map(t => ({
-    title:    t.title,
-    assignee: t.assignedTo,
-    dept:     t.assignedDept.charAt(0).toUpperCase() + t.assignedDept.slice(1),
-    priority: t.priority.charAt(0).toUpperCase() + t.priority.slice(1),
-    due:      t.dueDate,
-    id:       t.id,
-  }));
+  // Real task assignments — populated from tRPC tasks when available
+  const RECENT_ASSIGNED: { title: string; assignee: string; dept: string; priority: string; due: string; id: string }[] = [];
 
   const PRIORITIES = ["Low", "Medium", "High", "Urgent"];
   const DEPTS = [
@@ -1081,7 +1054,7 @@ const DEFAULT_DOCUMENTS: VaultDocumentV2[] = [
 const DEFAULT_ACCESS: AccessRow[] = [
   { id: "ac1", staffName: "Idris Ibrahim (CEO)", dashboard: true, bank: false, social: false, clientData: true },
   { id: "ac2", staffName: "Abdullahi Musa (BizDoc)", dashboard: true, bank: false, social: false, clientData: true },
-  { id: "ac3", staffName: "Tabitha (CSO)", dashboard: true, bank: false, social: false, clientData: true },
+  { id: "ac3", staffName: "Maryam Ashir Lalo (CSO)", dashboard: true, bank: false, social: false, clientData: true },
   { id: "ac4", staffName: "Abubakar (Finance)", dashboard: true, bank: true, social: false, clientData: false },
   { id: "ac5", staffName: "Khadija (BizDev/HR)", dashboard: true, bank: false, social: true, clientData: false },
   { id: "ac6", staffName: "Hikma (Media)", dashboard: true, bank: false, social: true, clientData: false },

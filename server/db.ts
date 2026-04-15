@@ -70,6 +70,12 @@ import {
   deptMessages, InsertDeptMessage, DeptMessage,
   agentState,
   agentSuggestions,
+  clients, InsertClient, Client,
+  clientSessions, InsertClientSession, ClientSession,
+  targets, InsertTargetV2, TargetV2,
+  calendarEvents, InsertCalendarEvent, CalendarEvent,
+  clientNotes, InsertClientNote, ClientNote,
+  contentCreators, InsertContentCreator, ContentCreator,
 } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
@@ -425,6 +431,17 @@ export async function updateLead(leadId: number, data: Partial<Omit<InsertLead, 
   await db.update(leads).set(data).where(eq(leads.id, leadId));
   const result = await db.select().from(leads).where(eq(leads.id, leadId)).limit(1);
   return result[0];
+}
+
+/** Hard-delete a lead. Nulls leadId on any linked tasks (no FK, plain column). */
+export async function deleteLead(leadId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Null leadId on any task that pointed at this lead
+  try {
+    await db.update(tasks).set({ leadId: null } as any).where(eq(tasks.leadId, leadId));
+  } catch { /* no-op if no tasks referenced */ }
+  await db.delete(leads).where(eq(leads.id, leadId));
 }
 
 /** Update lead score */
@@ -2489,4 +2506,290 @@ export async function expireOldSuggestions() {
       eq(agentSuggestions.status, "pending"),
       sql`${agentSuggestions.createdAt} < ${sevenDaysAgo}`
     ));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VERIFIED CLIENT TRUTH LAYER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Create a new verified client record */
+export async function createClient(data: InsertClient) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(clients).values(data);
+  return { id: result[0].insertId };
+}
+
+/** Get a client by their HAMZURY reference number */
+export async function getClientByRef(ref: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(clients).where(eq(clients.ref, ref)).limit(1);
+  return rows[0] || null;
+}
+
+/** Get a client by phone number */
+export async function getClientByPhone(phone: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(clients).where(eq(clients.phone, phone)).limit(1);
+  return rows[0] || null;
+}
+
+/** Get all clients, ordered by most recently updated */
+export async function getAllClients() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clients).orderBy(desc(clients.updatedAt));
+}
+
+/** Get clients filtered by status */
+export async function getClientsByStatus(status: "active" | "converted" | "unverified" | "dormant") {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clients).where(eq(clients.status, status)).orderBy(desc(clients.updatedAt));
+}
+
+/** Get clients filtered by department */
+export async function getClientsByDepartment(department: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clients).where(eq(clients.department, department)).orderBy(desc(clients.updatedAt));
+}
+
+/** Update a client record */
+export async function updateClient(id: number, data: Partial<InsertClient>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(clients).set(data).where(eq(clients.id, id));
+}
+
+/** Verify client identity: ref + phone must both match. Returns client or null. */
+export async function verifyClientIdentity(ref: string, phone: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(clients)
+    .where(and(eq(clients.ref, ref), eq(clients.phone, phone)))
+    .limit(1);
+  return rows[0] || null;
+}
+
+/** Create a server-side client session after identity verification */
+export async function createClientSession(clientId: number, phone: string): Promise<string> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const token = randomBytes(48).toString("hex");
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+  await db.insert(clientSessions).values({ clientId, token, phone, expiresAt });
+  return token;
+}
+
+/** Validate a client session token. Returns the client record or null if expired/invalid. */
+export async function validateClientSession(token: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(clientSessions)
+    .where(and(eq(clientSessions.token, token), sql`${clientSessions.expiresAt} > NOW()`))
+    .limit(1);
+  if (!rows[0]) return null;
+  // Fetch the client
+  const clientRows = await db.select().from(clients).where(eq(clients.id, rows[0].clientId)).limit(1);
+  return clientRows[0] || null;
+}
+
+/** Clean up expired client sessions */
+export async function cleanExpiredClientSessions() {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(clientSessions).where(sql`${clientSessions.expiresAt} < NOW()`);
+}
+
+/** Get all tasks linked to a client (by ref or phone) */
+export async function getTasksForClient(ref: string, phone: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(tasks)
+    .where(or(eq(tasks.ref, ref), eq(tasks.phone, phone)))
+    .orderBy(desc(tasks.updatedAt));
+}
+
+/** Get subscriptions for a client by name and phone */
+export async function getSubscriptionsForClient(clientName: string, phone: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(subscriptions)
+    .where(or(
+      eq(subscriptions.clientName, clientName),
+      eq(subscriptions.phone, phone),
+    ))
+    .orderBy(desc(subscriptions.updatedAt));
+}
+
+/** Get invoices for a client by phone */
+export async function getInvoicesForClient(phone: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(invoices)
+    .where(eq(invoices.clientPhone, phone))
+    .orderBy(desc(invoices.createdAt));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CSO PHASE 2 — Targets / Calendar / Client Notes helpers
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export async function createTargetV2(data: Omit<InsertTargetV2, "id" | "createdAt" | "updatedAt">): Promise<TargetV2 | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(targets).values(data);
+  const row = await db.select().from(targets).where(eq(targets.id, result[0].insertId)).limit(1);
+  return row[0] || null;
+}
+
+export async function getTargetsForAssignee(assignedTo: string): Promise<TargetV2[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(targets)
+    .where(eq(targets.assignedTo, assignedTo))
+    .orderBy(desc(targets.createdAt));
+}
+
+export async function getAllTargets(): Promise<TargetV2[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(targets).orderBy(desc(targets.createdAt));
+}
+
+export async function updateTargetV2(id: number, data: Partial<InsertTargetV2>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(targets).set(data).where(eq(targets.id, id));
+}
+
+/** Compute actual progress for a target based on its metric + period window. */
+export async function computeTargetActual(t: TargetV2): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const start = t.periodStart;
+  const end = t.periodEnd;
+  try {
+    if (t.metric === "leads_qualified") {
+      // Count leads moved out of "new" within the window (contacted | converted)
+      const rows = await db.select().from(leads)
+        .where(and(
+          ne(leads.status, "new"),
+          gte(leads.updatedAt, new Date(start)),
+          lte(leads.updatedAt, new Date(end + "T23:59:59")),
+        ));
+      return rows.length;
+    }
+    if (t.metric === "proposals_sent") {
+      const rows = await db.select().from(proposals)
+        .where(and(
+          ne(proposals.status, "draft"),
+          gte(proposals.createdAt, new Date(start)),
+          lte(proposals.createdAt, new Date(end + "T23:59:59")),
+        ));
+      return rows.length;
+    }
+    if (t.metric === "clients_onboarded") {
+      const rows = await db.select().from(clients)
+        .where(and(
+          eq(clients.status, "active"),
+          gte(clients.updatedAt, new Date(start)),
+          lte(clients.updatedAt, new Date(end + "T23:59:59")),
+        ));
+      return rows.length;
+    }
+    if (t.metric === "revenue_closed") {
+      const rows = await db.select().from(invoices)
+        .where(and(
+          eq(invoices.status, "paid"),
+          gte(invoices.updatedAt, new Date(start)),
+          lte(invoices.updatedAt, new Date(end + "T23:59:59")),
+        ));
+      return rows.reduce((sum, r) => sum + (r.amountPaid ?? r.total ?? 0), 0);
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+}
+
+// ─── Calendar Events ────────────────────────────────────────────────────────
+export async function createCalendarEvent(data: Omit<InsertCalendarEvent, "id" | "createdAt" | "updatedAt">): Promise<CalendarEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(calendarEvents).values(data);
+  const row = await db.select().from(calendarEvents).where(eq(calendarEvents.id, result[0].insertId)).limit(1);
+  return row[0] || null;
+}
+
+export async function listCalendarEvents(opts: { from: string; to: string; ownerId?: string; clientId?: number }): Promise<CalendarEvent[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conds = [
+    gte(calendarEvents.startAt, new Date(opts.from)),
+    lte(calendarEvents.startAt, new Date(opts.to)),
+  ];
+  if (opts.ownerId) conds.push(eq(calendarEvents.ownerId, opts.ownerId));
+  if (opts.clientId) conds.push(eq(calendarEvents.clientId, opts.clientId));
+  return db.select().from(calendarEvents).where(and(...conds)).orderBy(calendarEvents.startAt);
+}
+
+export async function updateCalendarEvent(id: number, data: Partial<InsertCalendarEvent>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(calendarEvents).set(data).where(eq(calendarEvents.id, id));
+}
+
+export async function deleteCalendarEvent(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(calendarEvents).where(eq(calendarEvents.id, id));
+}
+
+// ─── Client Notes ───────────────────────────────────────────────────────────
+export async function createClientNote(data: Omit<InsertClientNote, "id" | "createdAt">): Promise<ClientNote | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(clientNotes).values(data);
+  const row = await db.select().from(clientNotes).where(eq(clientNotes.id, result[0].insertId)).limit(1);
+  return row[0] || null;
+}
+
+export async function listClientNotes(clientId: number): Promise<ClientNote[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(clientNotes)
+    .where(eq(clientNotes.clientId, clientId))
+    .orderBy(desc(clientNotes.createdAt));
+}
+
+// ─── Content Creators (v1 restructure — Source Tracker) ────────────────────
+export async function createContentCreator(data: Omit<InsertContentCreator, "id" | "createdAt" | "updatedAt">): Promise<ContentCreator | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(contentCreators).values(data);
+  const row = await db.select().from(contentCreators).where(eq(contentCreators.id, result[0].insertId)).limit(1);
+  return row[0] || null;
+}
+
+export async function listContentCreators(): Promise<ContentCreator[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(contentCreators).orderBy(desc(contentCreators.createdAt));
+}
+
+export async function updateContentCreator(id: number, data: Partial<Omit<InsertContentCreator, "id" | "createdAt" | "updatedAt">>): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(contentCreators).set(data).where(eq(contentCreators.id, id));
+}
+
+// ─── CSO v1 audit list ─────────────────────────────────────────────────────
+export async function listAuditLogsForCso(limit = 200): Promise<AuditLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(limit);
 }

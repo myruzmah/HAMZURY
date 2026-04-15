@@ -4,7 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
-  createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead, updateLead,
+  createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead, updateLead, deleteLead,
   generateHZRefNumber, createSystemiseLead, getSystemiseLeads, getSystemiseLeadByRef,
   createAppointment, getAppointments,
   createJoinApplication, getJoinApplications,
@@ -98,10 +98,22 @@ import {
   createDeptMessage, getDeptMessages, getDeptThreads, getUnreadDeptMessageCount, markDeptMessagesRead,
   // Agent Suggestions
   getAgentSuggestions, reviewAgentSuggestion,
+  // Verified Client Truth Layer
+  createClient, getClientByRef, getAllClients, getClientsByStatus, getClientsByDepartment,
+  updateClient, verifyClientIdentity, createClientSession, validateClientSession,
+  getTasksForClient, getSubscriptionsForClient, getInvoicesForClient,
+  // CSO Phase 2
+  createTargetV2, getTargetsForAssignee, getAllTargets, updateTargetV2, computeTargetActual,
+  createCalendarEvent, listCalendarEvents, updateCalendarEvent, deleteCalendarEvent,
+  createClientNote, listClientNotes,
+  getStaffUserById, updateStaffPassword, verifyPassword,
+  // v1 restructure
+  createContentCreator, listContentCreators, updateContentCreator,
+  listAuditLogsForCso,
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
-import { clientCredentials, tasks, affiliates, deptMessages } from "../drizzle/schema";
+import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users } from "../drizzle/schema";
 import { eq } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
@@ -121,6 +133,69 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+
+    /** Update the signed-in staff user's profile (name/email/phone). */
+    updateProfile: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+        // Phase 2 decision: staffuser__ openIds carry the real staff row id; for legacy
+        // founder__/staff__ sessions we fall back to updating the users table by openId.
+        const openId = ctx.user.openId;
+        const clean: Record<string, unknown> = {};
+        if (input.name) clean.name = input.name;
+        if (input.email) clean.email = input.email.toLowerCase();
+        if (input.phone !== undefined) clean.phone = input.phone;
+        if (Object.keys(clean).length === 0) return { success: true };
+
+        if (openId.startsWith("staffuser__") && ctx.user.id > 0) {
+          await db.update(staffUsers).set(clean as any).where(eq(staffUsers.id, ctx.user.id));
+        } else {
+          await db.update(users).set(clean as any).where(eq(users.openId, openId));
+        }
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Unknown",
+          action: "profile_updated",
+          resource: "users",
+          resourceId: ctx.user.id,
+          details: `Updated fields: ${Object.keys(clean).join(", ")}`,
+        });
+        return { success: true };
+      }),
+
+    /** Change password for staffuser__ sessions. Legacy role-based sessions are env-gated. */
+    changePassword: protectedProcedure
+      .input(z.object({
+        oldPassword: z.string().min(1),
+        newPassword: z.string().min(8),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (!ctx.user.openId.startsWith("staffuser__") || ctx.user.id <= 0) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Password change is only available for email-based staff accounts." });
+        }
+        const user = await getStaffUserById(ctx.user.id);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Account not found" });
+        const valid = await verifyPassword(input.oldPassword, user.passwordHash, user.passwordSalt);
+        if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Current password is incorrect" });
+        const { hash, salt } = await hashPassword(input.newPassword);
+        await updateStaffPassword(user.id, hash, salt);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "Unknown",
+          action: "password_changed",
+          resource: "staffUsers",
+          resourceId: ctx.user.id,
+          details: "Password updated via Settings",
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── Leads (Public + Protected) ─────────────────────────────────────────────
@@ -159,7 +234,7 @@ export const appRouter = router({
             type: "assignment",
             title: "New CSO Referral Lead",
             message: `New lead from CSO referral: ${input.name} — ${input.service}${input.referralCode ? ` (code: ${input.referralCode})` : ""}`,
-            link: "/hub/cso",
+            link: "/cso",
           }).catch(err => console.error("[notification] CSO notify failed:", err));
         }
 
@@ -197,7 +272,7 @@ export const appRouter = router({
               type: "payment",
               title: "Client Paid — Send Tracking",
               message: `${input.name} claimed payment for ${input.service}. Ref: ${lead.ref}. Send tracking details and delivery timeframe.`,
-              link: "/hub/cso",
+              link: "/cso",
             }).catch(err => console.error("[notification] CSO payment notify failed:", err));
             // Audit log
             createAuditLog({
@@ -277,17 +352,64 @@ export const appRouter = router({
       }),
 
     list: protectedProcedure
-      .input(z.object({ department: z.string().optional() }).optional())
+      .input(z.object({
+        department: z.string().optional(),
+        excludeConverted: z.boolean().optional(),
+        /** v1 restructure: when true, return { new: [], qualified: [], ... } keyed by pipeline stage. */
+        groupByStage: z.boolean().optional(),
+      }).optional())
       .query(async ({ input, ctx }) => {
         const role = ctx.user.hamzuryRole;
-        // Department staff only see leads for their department
+        let all = await getLeads();
         if (role === "department_staff" && ctx.user.department) {
-          const all = await getLeads();
-          return all.filter(l => (l.assignedDepartment || "").toLowerCase() === ctx.user.department?.toLowerCase());
+          all = all.filter(l => (l.assignedDepartment || "").toLowerCase() === ctx.user.department?.toLowerCase());
+        } else if (input?.department) {
+          all = all.filter(l => (l.assignedDepartment || "").toLowerCase() === input.department!.toLowerCase());
         }
-        const all = await getLeads();
-        if (input?.department) return all.filter(l => (l.assignedDepartment || "").toLowerCase() === input.department!.toLowerCase());
+        if (input?.excludeConverted) {
+          all = all.filter(l => l.status !== "converted" && l.status !== "archived");
+        }
+        if (input?.groupByStage) {
+          const stages = ["new", "qualified", "proposal_sent", "negotiation", "onboarding", "won", "lost", "paused"] as const;
+          const grouped: Record<string, typeof all> = Object.fromEntries(stages.map(s => [s, [] as typeof all]));
+          for (const lead of all) {
+            // Backwards-compat mapping: contacted → qualified, converted → won, archived → lost
+            const mapped = lead.status === "contacted" ? "qualified"
+                         : lead.status === "converted" ? "won"
+                         : lead.status === "archived" ? "lost"
+                         : lead.status;
+            if (grouped[mapped as string]) grouped[mapped as string].push(lead);
+            else grouped["new"].push(lead); // safety
+          }
+          return grouped;
+        }
         return all;
+      }),
+
+    /** v1 restructure — single entry point to move a lead through pipeline stages. */
+    updateStage: csoProcedure
+      .input(z.object({
+        leadId: z.number(),
+        stage: z.enum(["new", "qualified", "proposal_sent", "negotiation", "onboarding", "won", "lost", "paused"]),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const lead = await updateLead(input.leadId, { status: input.stage as any });
+        await createActivityLog({
+          leadId: input.leadId,
+          userId: ctx.user.id,
+          action: "lead_stage_updated",
+          details: `Stage -> ${input.stage}${input.note ? ` · ${input.note}` : ""} (by ${ctx.user.name || ctx.user.email})`,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "lead_stage_updated",
+          resource: "leads",
+          resourceId: input.leadId,
+          details: `Stage: ${input.stage}${input.note ? ` · ${input.note}` : ""}`,
+        });
+        return lead;
       }),
 
     unassigned: protectedProcedure.query(async () => getUnassignedLeads()),
@@ -343,7 +465,12 @@ export const appRouter = router({
         context: z.string().optional(),
         assignedDepartment: z.string().optional(),
         leadScore: z.number().min(0).max(10).optional(),
-        status: z.enum(["new", "contacted", "converted", "archived"]).optional(),
+        status: z.enum([
+          "new", "qualified", "proposal_sent", "negotiation", "onboarding",
+          "won", "lost", "paused",
+          // backwards-compat
+          "contacted", "converted", "archived",
+        ]).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
         const { id, ...data } = input;
@@ -389,6 +516,28 @@ export const appRouter = router({
         const { seedSampleClients } = await import("./seed-staff");
         const result = await seedSampleClients();
         return { success: true, ...result };
+      }),
+
+    /** CSO / senior staff can hard-delete a lead. Audit-logged. */
+    delete: csoProcedure
+      .input(z.object({ id: z.number(), reason: z.string().optional() }))
+      .mutation(async ({ input, ctx }) => {
+        // Fetch lead first for audit context
+        const all = await getLeads();
+        const lead = all.find(l => l.id === input.id);
+        if (!lead) throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
+
+        await deleteLead(input.id);
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "lead_deleted",
+          resource: "leads",
+          resourceId: input.id,
+          details: `Deleted lead ${lead.ref} — ${lead.name}${lead.businessName ? ` (${lead.businessName})` : ""}${input.reason ? ` · reason: ${input.reason}` : ""}`,
+        });
+        return { success: true };
       }),
   }),
 
@@ -4038,6 +4187,722 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
           .set({ isRead: true, readAt: new Date() })
           .where(eq(deptMessages.id, input.messageId));
         return { success: true };
+      }),
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VERIFIED CLIENT TRUTH LAYER
+  // ═══════════════════════════════════════════════════════════════════════════
+  clientTruth: router({
+    /** Verify client identity (ref + phone) and create a server-side session */
+    verify: publicProcedure
+      .input(z.object({ ref: z.string().min(1), phone: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const client = await verifyClientIdentity(input.ref, input.phone);
+        if (!client) throw new TRPCError({ code: "NOT_FOUND", message: "No client found with that reference and phone number." });
+        const token = await createClientSession(client.id, input.phone);
+        return { token, client: { id: client.id, ref: client.ref, name: client.name, businessName: client.businessName, status: client.status } };
+      }),
+
+    /** Validate an existing session token and return client data */
+    session: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const client = await validateClientSession(input.token);
+        if (!client) return null;
+        return {
+          id: client.id, ref: client.ref, name: client.name, businessName: client.businessName,
+          phone: client.phone, email: client.email, status: client.status, department: client.department,
+          contractValue: client.contractValue, amountPaid: client.amountPaid, balance: client.balance,
+          currentBlocker: client.currentBlocker, nextAction: client.nextAction, dueDate: client.dueDate,
+          riskFlag: client.riskFlag, location: client.location,
+        };
+      }),
+
+    /** Get tasks linked to this client (requires valid session token) */
+    tasks: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const client = await validateClientSession(input.token);
+        if (!client) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired session." });
+        return getTasksForClient(client.ref, client.phone || "");
+      }),
+
+    /** Get subscriptions linked to this client */
+    subscriptions: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const client = await validateClientSession(input.token);
+        if (!client) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired session." });
+        return getSubscriptionsForClient(client.name, client.phone || "");
+      }),
+
+    /** Get invoices linked to this client */
+    invoices: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const client = await validateClientSession(input.token);
+        if (!client) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid or expired session." });
+        return getInvoicesForClient(client.phone || "");
+      }),
+
+    // ─── Staff-only: client management ─────────────────────────────────────
+    /** List all clients (CSO / CEO / Founder only) */
+    list: csoProcedure.query(async () => getAllClients()),
+
+    /** List clients by status */
+    byStatus: csoProcedure
+      .input(z.object({ status: z.enum(["active", "converted", "unverified", "dormant"]) }))
+      .query(async ({ input }) => getClientsByStatus(input.status)),
+
+    /** List clients by department */
+    byDepartment: protectedProcedure
+      .input(z.object({ department: z.string() }))
+      .query(async ({ input }) => getClientsByDepartment(input.department)),
+
+    /** Create a new verified client (CSO creates on conversion) */
+    create: csoProcedure
+      .input(z.object({
+        ref: z.string().min(1),
+        name: z.string().min(1),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        status: z.enum(["active", "converted", "unverified", "dormant"]).default("unverified"),
+        department: z.string().optional(),
+        csoOwner: z.string().optional(),
+        departmentOwner: z.string().optional(),
+        financeOwner: z.string().optional(),
+        contractValue: z.string().optional(),
+        amountPaid: z.string().optional(),
+        balance: z.string().optional(),
+        currentBlocker: z.string().optional(),
+        nextAction: z.string().optional(),
+        dueDate: z.string().optional(),
+        riskFlag: z.enum(["none", "low", "medium", "high", "critical"]).default("none"),
+        missingInfo: z.string().optional(),
+        location: z.string().optional(),
+        source: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => createClient(input)),
+
+    /** Update an existing client record */
+    update: csoProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        status: z.enum(["active", "converted", "unverified", "dormant"]).optional(),
+        department: z.string().optional(),
+        csoOwner: z.string().optional(),
+        departmentOwner: z.string().optional(),
+        financeOwner: z.string().optional(),
+        contractValue: z.string().optional(),
+        amountPaid: z.string().optional(),
+        balance: z.string().optional(),
+        currentBlocker: z.string().optional(),
+        nextAction: z.string().optional(),
+        dueDate: z.string().optional(),
+        riskFlag: z.enum(["none", "low", "medium", "high", "critical"]).optional(),
+        missingInfo: z.string().optional(),
+        location: z.string().optional(),
+        source: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const { id, ...data } = input;
+        await updateClient(id, data);
+        return { success: true };
+      }),
+  }),
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CSO PHASE 2 — csoActions, targets, calendar, clientNotes
+  // ═══════════════════════════════════════════════════════════════════════════
+  csoActions: router({
+    /** Assign a task to a department lead/staff with notification + email. */
+    assignTaskToDept: csoProcedure
+      .input(z.object({
+        leadId: z.number().optional(),
+        clientId: z.number().optional(),
+        department: z.enum(["bizdoc", "systemise", "skills"]),
+        assignedTo: z.string().min(1),
+        title: z.string().min(1),
+        description: z.string().optional(),
+        deadline: z.string().optional(),
+        priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // Phase 2 decision: tasks.priority enum is ["urgent","high","normal","low"];
+        // we map our 4-level input onto it (medium -> normal).
+        const priorityMap: Record<string, "urgent" | "high" | "normal" | "low"> = {
+          low: "low", medium: "normal", high: "high", urgent: "urgent",
+        };
+        // Derive clientName from leadId/clientId where possible
+        let clientName = input.assignedTo;
+        let businessName: string | undefined;
+        let phone: string | undefined;
+        if (input.clientId) {
+          const db = await getDb();
+          if (db) {
+            const rows = await db.select().from(clientCredentials).limit(0); // no-op for types
+            const client = await getAllClients().then(list => list.find(c => c.id === input.clientId));
+            if (client) { clientName = client.name; businessName = client.businessName ?? undefined; phone = client.phone ?? undefined; }
+          }
+        } else if (input.leadId) {
+          const leadsList = await getLeads();
+          const l = leadsList.find(x => x.id === input.leadId);
+          if (l) { clientName = l.name; businessName = l.businessName ?? undefined; phone = l.phone ?? undefined; }
+        }
+
+        const task = await createTask({
+          clientName,
+          service: input.title,
+          department: input.department,
+          notes: input.description,
+          deadline: input.deadline,
+          businessName,
+          phone,
+          priority: priorityMap[input.priority],
+        });
+        // Tag assignedBy via direct update (column added in 0019)
+        try {
+          const db = await getDb();
+          if (db) await db.update(tasks).set({ assignedBy: ctx.user.openId } as any).where(eq(tasks.id, task.id));
+        } catch { /* column may not exist in unmigrated env */ }
+
+        await createNotification({
+          userId: input.assignedTo,
+          type: "assignment",
+          title: "New Task from CSO",
+          message: `${input.title} (${input.department}) — due ${input.deadline || "TBC"}`,
+          link: `/${input.department}/dashboard`,
+        }).catch(() => {});
+
+        // Fire email best-effort — never block the mutation.
+        try {
+          await sendNewLeadAlert({
+            ref: task.ref,
+            clientName: `${input.assignedTo} (CSO task)`,
+            service: input.title,
+            phone: null,
+            email: null,
+            source: `CSO → ${input.department}`,
+          });
+        } catch (e) { console.warn("[csoActions.assignTask] email failed:", e); }
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "cso_task_assigned",
+          resource: "tasks",
+          resourceId: task.id,
+          details: `CSO assigned "${input.title}" to ${input.assignedTo} in ${input.department}`,
+        });
+        return { taskId: task.id, ref: task.ref };
+      }),
+
+    /** Notify the CEO of a situation — creates a notification + best-effort email. */
+    notifyCeo: csoProcedure
+      .input(z.object({
+        subject: z.string().min(1),
+        message: z.string().min(1),
+        link: z.string().optional(),
+        severity: z.enum(["info", "warning", "urgent"]).default("info"),
+        relatedClientId: z.number().optional(),
+        relatedLeadId: z.number().optional(),
+        relatedProposalId: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        await createNotification({
+          userId: "ceo",
+          type: input.severity === "urgent" ? "reminder" : "system",
+          title: `[${input.severity.toUpperCase()}] ${input.subject}`,
+          message: input.message,
+          link: input.link,
+        }).catch(() => {});
+
+        try {
+          await sendNewLeadAlert({
+            ref: `CEO-${Date.now()}`,
+            clientName: `CSO: ${ctx.user.name || ctx.user.email || "CSO"}`,
+            service: input.subject,
+            phone: null,
+            email: input.message.slice(0, 200),
+            source: `CSO notice (${input.severity})`,
+          });
+        } catch (e) { console.warn("[csoActions.notifyCeo] email failed:", e); }
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "cso_notify_ceo",
+          resource: "notifications",
+          details: `${input.severity}: ${input.subject}${input.relatedClientId ? ` (client#${input.relatedClientId})` : ""}`,
+        });
+        return { success: true };
+      }),
+
+    /** CSO manual client creation — bypasses the lead pipeline. */
+    manualCreateClient: csoProcedure
+      .input(z.object({
+        businessName: z.string().min(1),
+        contactName: z.string().min(1),
+        phone: z.string().min(1),
+        email: z.string().optional(),
+        engagementType: z.enum(["project", "subscription", "project_then_sub"]),
+        services: z.array(z.string().min(1)).min(1),
+        value: z.number().nonnegative(),
+        billingCycle: z.enum(["one_time", "monthly", "quarterly", "annual"]).optional(),
+        startDate: z.string().optional(),
+        csoOwnerId: z.string().min(1),
+        departmentOwners: z.record(z.string(), z.string()).optional(),
+        notes: z.string().optional(),
+        source: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const ref = generateRefNumber(input.phone);
+        // Pick the first department from departmentOwners map, default bizdoc
+        const deptOwners = input.departmentOwners || {};
+        const primaryDept = Object.keys(deptOwners)[0] || "bizdoc";
+        const departmentOwner = deptOwners[primaryDept] || "";
+
+        const result = await createClient({
+          ref,
+          name: input.contactName,
+          businessName: input.businessName,
+          phone: input.phone,
+          email: input.email,
+          status: "active",
+          department: primaryDept,
+          csoOwner: input.csoOwnerId,
+          departmentOwner,
+          contractValue: String(input.value),
+          amountPaid: "0",
+          balance: String(input.value),
+          nextAction: `Kickoff: ${input.services.join(", ")}`,
+          location: null as any,
+          source: input.source || "cso_manual",
+        } as any);
+        const newClientId = (result as any).id as number;
+
+        // Create subscriptions per department if engagement type includes subscription
+        if (input.engagementType !== "project" && input.billingCycle && input.billingCycle !== "one_time") {
+          for (const [dept, owner] of Object.entries(deptOwners)) {
+            try {
+              await createSubscription({
+                clientName: input.contactName,
+                businessName: input.businessName,
+                phone: input.phone,
+                email: input.email,
+                service: input.services.join(", "),
+                department: dept,
+                monthlyFee: String(input.value / (input.billingCycle === "annual" ? 12 : input.billingCycle === "quarterly" ? 3 : 1)),
+                billingDay: 1,
+                status: "active",
+                startDate: input.startDate || new Date().toISOString().slice(0, 10),
+                assignedStaffEmail: owner,
+                notesForStaff: input.notes,
+                createdBy: ctx.user.name || ctx.user.email || "CSO",
+              } as any);
+            } catch (e) { console.warn("[manualCreateClient] subscription create failed:", e); }
+          }
+        }
+
+        // Create one task per service so dept staff see work immediately
+        for (const service of input.services) {
+          const owner = Object.values(deptOwners)[0] || "";
+          const t = await createTask({
+            clientName: input.contactName,
+            businessName: input.businessName,
+            phone: input.phone,
+            service,
+            department: primaryDept,
+            notes: input.notes,
+            priority: "normal",
+          });
+          try {
+            const db = await getDb();
+            if (db) await db.update(tasks).set({ assignedBy: ctx.user.openId } as any).where(eq(tasks.id, t.id));
+          } catch { /* ignore */ }
+          if (owner) {
+            await createNotification({
+              userId: owner,
+              type: "assignment",
+              title: `New client work: ${input.businessName}`,
+              message: `${service} — started by CSO`,
+              link: `/${primaryDept}/dashboard`,
+            }).catch(() => {});
+          }
+        }
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "cso_manual_create_client",
+          resource: "clients",
+          resourceId: newClientId,
+          details: `CSO manually created client ${input.businessName} (${ref}), bypassed lead pipeline. Services: ${input.services.join(", ")}. Value: ${input.value}`,
+        });
+        return { id: newClientId, ref };
+      }),
+  }),
+
+  // ─── Targets ──────────────────────────────────────────────────────────────
+  targets: router({
+    create: founderCEOProcedure
+      .input(z.object({
+        assignedTo: z.string().min(1),
+        period: z.enum(["month", "quarter", "year"]),
+        periodStart: z.string().min(1),
+        periodEnd: z.string().min(1),
+        metric: z.enum(["leads_qualified", "proposals_sent", "clients_onboarded", "revenue_closed", "custom"]),
+        targetValue: z.number().nonnegative(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const row = await createTargetV2({
+          assignedBy: ctx.user.openId,
+          assignedByName: ctx.user.name || ctx.user.email || "CEO",
+          assignedTo: input.assignedTo,
+          period: input.period,
+          periodStart: input.periodStart,
+          periodEnd: input.periodEnd,
+          metric: input.metric,
+          targetValue: String(input.targetValue),
+          notes: input.notes,
+          status: "active",
+        });
+        await createNotification({
+          userId: input.assignedTo,
+          type: "system",
+          title: "New target assigned",
+          message: `${input.metric.replace(/_/g, " ")} — ${input.targetValue} (${input.period})`,
+          link: "/cso",
+        }).catch(() => {});
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "CEO",
+          action: "target_created",
+          resource: "targets",
+          resourceId: row?.id ?? 0,
+          details: `Target for ${input.assignedTo}: ${input.metric} = ${input.targetValue} (${input.periodStart} → ${input.periodEnd})`,
+        });
+        return row;
+      }),
+
+    listForRole: protectedProcedure
+      .input(z.object({
+        role: z.string().min(1),
+        period: z.enum(["current", "all"]).default("current"),
+      }))
+      .query(async ({ input }) => {
+        const list = await getTargetsForAssignee(input.role);
+        const today = new Date().toISOString().slice(0, 10);
+        const filtered = input.period === "current"
+          ? list.filter(t => t.periodStart <= today && t.periodEnd >= today && t.status === "active")
+          : list;
+        // Attach actual
+        const withActuals = await Promise.all(filtered.map(async t => ({
+          ...t,
+          actualValue: await computeTargetActual(t),
+        })));
+        return withActuals;
+      }),
+
+    listAll: founderCEOProcedure.query(async () => getAllTargets()),
+
+    update: founderCEOProcedure
+      .input(z.object({
+        id: z.number(),
+        targetValue: z.number().optional(),
+        notes: z.string().optional(),
+        status: z.enum(["active", "completed", "cancelled"]).optional(),
+        periodEnd: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, targetValue, ...rest } = input;
+        const data: any = { ...rest };
+        if (targetValue !== undefined) data.targetValue = String(targetValue);
+        await updateTargetV2(id, data);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "CEO",
+          action: "target_updated",
+          resource: "targets",
+          resourceId: id,
+          details: Object.keys(data).join(", "),
+        });
+        return { success: true };
+      }),
+
+    cancel: founderCEOProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await updateTargetV2(input.id, { status: "cancelled" });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "CEO",
+          action: "target_cancelled",
+          resource: "targets",
+          resourceId: input.id,
+          details: "Target cancelled",
+        });
+        return { success: true };
+      }),
+  }),
+
+  // ─── Calendar ─────────────────────────────────────────────────────────────
+  calendar: router({
+    list: protectedProcedure
+      .input(z.object({
+        from: z.string().min(1),
+        to: z.string().min(1),
+        ownerId: z.string().optional(),
+        clientId: z.number().optional(),
+      }))
+      .query(async ({ input }) => listCalendarEvents(input)),
+
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        startAt: z.string().min(1),
+        endAt: z.string().optional(),
+        allDay: z.boolean().default(false),
+        eventType: z.enum(["meeting", "follow_up", "deadline", "renewal", "internal", "other"]).default("other"),
+        visibility: z.enum(["private", "team", "public"]).default("team"),
+        clientId: z.number().optional(),
+        leadId: z.number().optional(),
+        location: z.string().optional(),
+        reminderMinutes: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const row = await createCalendarEvent({
+          title: input.title,
+          description: input.description,
+          startAt: new Date(input.startAt),
+          endAt: input.endAt ? new Date(input.endAt) : null,
+          allDay: input.allDay,
+          eventType: input.eventType,
+          ownerId: ctx.user.openId,
+          ownerName: ctx.user.name || ctx.user.email || "",
+          visibility: input.visibility,
+          clientId: input.clientId,
+          leadId: input.leadId,
+          location: input.location,
+          reminderMinutes: input.reminderMinutes,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "User",
+          action: "calendar_event_created",
+          resource: "calendar_events",
+          resourceId: row?.id ?? 0,
+          details: `${input.eventType}: ${input.title} @ ${input.startAt}`,
+        });
+        return row;
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        startAt: z.string().optional(),
+        endAt: z.string().optional(),
+        allDay: z.boolean().optional(),
+        eventType: z.enum(["meeting", "follow_up", "deadline", "renewal", "internal", "other"]).optional(),
+        visibility: z.enum(["private", "team", "public"]).optional(),
+        location: z.string().optional(),
+        reminderMinutes: z.number().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, startAt, endAt, ...rest } = input;
+        const data: any = { ...rest };
+        if (startAt) data.startAt = new Date(startAt);
+        if (endAt) data.endAt = new Date(endAt);
+        await updateCalendarEvent(id, data);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "User",
+          action: "calendar_event_updated",
+          resource: "calendar_events",
+          resourceId: id,
+          details: Object.keys(data).join(", "),
+        });
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await deleteCalendarEvent(input.id);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "User",
+          action: "calendar_event_deleted",
+          resource: "calendar_events",
+          resourceId: input.id,
+          details: "",
+        });
+        return { success: true };
+      }),
+  }),
+
+  // ─── Content Creators (v1 restructure — CSO Source Tracker) ──────────────
+  contentCreators: router({
+    list: csoProcedure.query(async () => listContentCreators()),
+
+    create: csoProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        handle: z.string().optional(),
+        platform: z.enum(["instagram", "tiktok", "x", "youtube", "blog", "other"]).default("other"),
+        code: z.string().min(1).max(32),
+        commissionRate: z.number().nonnegative().default(10),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const row = await createContentCreator({
+          name: input.name,
+          handle: input.handle,
+          platform: input.platform,
+          code: input.code.trim().toUpperCase(),
+          commissionRate: String(input.commissionRate),
+          notes: input.notes,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "content_creator_created",
+          resource: "content_creators",
+          resourceId: row?.id ?? 0,
+          details: `${input.name} (${input.code})`,
+        });
+        return row;
+      }),
+
+    update: csoProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        handle: z.string().optional(),
+        commissionRate: z.number().nonnegative().optional(),
+        status: z.enum(["active", "paused", "removed"]).optional(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, commissionRate, ...rest } = input;
+        const data: any = { ...rest };
+        if (commissionRate !== undefined) data.commissionRate = String(commissionRate);
+        await updateContentCreator(id, data);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "content_creator_updated",
+          resource: "content_creators",
+          resourceId: id,
+          details: Object.keys(data).join(", "),
+        });
+        return { success: true };
+      }),
+
+    deactivate: csoProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await updateContentCreator(input.id, { status: "paused" });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "content_creator_deactivated",
+          resource: "content_creators",
+          resourceId: input.id,
+          details: "status -> paused",
+        });
+        return { success: true };
+      }),
+  }),
+
+  // ─── Department KPIs (v1 restructure — Dashboard widgets) ─────────────────
+  deptKpis: router({
+    summary: csoProcedure.query(async () => {
+      // v1 restructure: return null when the underlying metric isn't computable yet
+      // so the UI can show "—" instead of a misleading 0.
+      const [allTasks, allSubs, allClients, allCohorts] = await Promise.all([
+        getTasks(), getSubscriptions(), getAllClients(), listCohorts(),
+      ]);
+      const deptFor = (d: string) => allTasks.filter((t: any) => (t.department || "").toLowerCase() === d);
+      const clientsFor = (d: string) => allClients.filter((c: any) => (c.department || "").toLowerCase() === d);
+      const subsFor = (d: string) => allSubs.filter((s: any) => (s.department || "").toLowerCase() === d);
+      const compute = (d: string) => {
+        const tasks = deptFor(d);
+        const inProgress = tasks.filter((t: any) => t.status === "In Progress").length;
+        const awaitingClient = tasks.filter((t: any) => t.status === "Waiting on Client").length;
+        const activeClients = clientsFor(d).filter((c: any) => c.status === "active").length;
+        const activeSubs = subsFor(d).filter((s: any) => s.status === "active").length;
+        return {
+          activeClients: activeClients || null,
+          tasksInProgress: inProgress || null,
+          awaitingClient: awaitingClient || null,
+          activeSubscriptions: activeSubs || null,
+        };
+      };
+      return {
+        bizdoc: compute("bizdoc"),
+        systemise: compute("systemise"),
+        skills: {
+          ...compute("skills"),
+          runningCohorts: allCohorts.filter((c: any) => c.status === "in_progress" || c.status === "enrolling").length || null,
+        },
+      };
+    }),
+  }),
+
+  // ─── Audit log (v1 restructure — Back Office) ─────────────────────────────
+  auditCso: router({
+    list: csoProcedure
+      .input(z.object({ limit: z.number().min(1).max(500).optional() }).optional())
+      .query(async ({ input }) => listAuditLogsForCso(input?.limit ?? 200)),
+  }),
+
+  // ─── Cohorts (v1 restructure — Back Office read view) ─────────────────────
+  // Re-uses the existing `cohorts` table maintained by Skills department.
+  // CSO has read access; skills_staff / founder can mutate via the existing Skills admin routes.
+  cohortsCso: router({
+    list: csoProcedure.query(async () => listCohorts()),
+  }),
+
+  // ─── Client Notes ─────────────────────────────────────────────────────────
+  clientNotes: router({
+    list: protectedProcedure
+      .input(z.object({ clientId: z.number() }))
+      .query(async ({ input }) => listClientNotes(input.clientId)),
+
+    create: protectedProcedure
+      .input(z.object({
+        clientId: z.number(),
+        kind: z.enum(["internal", "ceo_brief", "client_update", "risk_flag"]).default("internal"),
+        body: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const row = await createClientNote({
+          clientId: input.clientId,
+          authorId: ctx.user.openId,
+          authorName: ctx.user.name || ctx.user.email || "Staff",
+          kind: input.kind,
+          body: input.body,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "Staff",
+          action: "client_note_created",
+          resource: "client_notes",
+          resourceId: row?.id ?? 0,
+          details: `${input.kind} on client#${input.clientId}`,
+        });
+        return row;
       }),
   }),
 

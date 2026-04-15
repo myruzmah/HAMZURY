@@ -69,17 +69,8 @@ function LoadingSpinner() {
   );
 }
 
-// ─── MOCK for Cohort (no tRPC route specified, kept as local data) ──────────
-const MOCK_COHORT_STUDENTS = [
-  { id: "SKS-001", name: "Adaeze Nwosu",       program: "Business Essentials",   mergeRIDI: true },
-  { id: "SKS-002", name: "Biodun Adesanya",     program: "Digital Marketing",     mergeRIDI: false },
-  { id: "SKS-003", name: "Chiamaka Obi",        program: "Business Essentials",   mergeRIDI: true },
-  { id: "SKS-004", name: "Damilola Fashola",    program: "Web Development",       mergeRIDI: false },
-  { id: "SKS-005", name: "Emeka Okafor",        program: "Business Essentials",   mergeRIDI: true },
-  { id: "SKS-006", name: "Femi Adeleke",        program: "Digital Marketing",     mergeRIDI: false },
-  { id: "SKS-007", name: "Giwa Hassan",         program: "Web Development",       mergeRIDI: false },
-  { id: "SKS-008", name: "Hauwa Abdulkadir",    program: "Business Essentials",   mergeRIDI: true },
-];
+// Mock cohort students removed — will be populated from tRPC skills data when available
+const MOCK_COHORT_STUDENTS: { id: string; name: string; program: string; mergeRIDI: boolean }[] = [];
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function RIDIDashboard() {

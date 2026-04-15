@@ -12,7 +12,7 @@ import { getSessionCookieOptions } from "./cookies";
 import * as db from "../db";
 import { seedStaffUsers, syncStaffRoster } from "../seed-staff";
 import { runMigrations, seedTaxClients, seedMediaClients } from "../db";
-import { seedRealClients } from "../seed-real-clients";
+// import { seedRealClients } from "../seed-real-clients"; // disabled 2026-04: CSO adds clients manually
 import { invokeLLMStream } from "./llm";
 import { buildSystemPrompt } from "../config/chat-config";
 import { startAgentScheduler } from "../agents/agent-runner";
@@ -79,7 +79,7 @@ async function startServer() {
       const ROLE_CONFIG: Record<string, { envKey: string; name: string; openId: string; dashboard: string }> = {
         founder: { envKey: "FOUNDER_PW",  name: "Muhammad Hamzury",  openId: "founder__admin__1", dashboard: "/founder/dashboard" },
         ceo:     { envKey: "CEO_PW",      name: "Idris Ibrahim",     openId: "staff__ceo__1",     dashboard: "/hub/ceo" },
-        cso:     { envKey: "CSO_PW",      name: "CSO",               openId: "staff__cso__1",     dashboard: "/hub/cso" },
+        cso:     { envKey: "CSO_PW",      name: "CSO",               openId: "staff__cso__1",     dashboard: "/cso" },
         finance: { envKey: "FINANCE_PW",  name: "Finance",           openId: "staff__finance__1", dashboard: "/hub/finance" },
         hr:      { envKey: "HR_PW",       name: "HR",                openId: "staff__hr__1",      dashboard: "/hub/hr" },
         bizdev:  { envKey: "BIZDEV_PW",   name: "BizDev",            openId: "staff__bizdev__1",  dashboard: "/hub/bizdev" },
@@ -172,7 +172,7 @@ async function startServer() {
       const ROLE_DASHBOARDS: Record<string, string> = {
         founder:          "/founder/dashboard",
         ceo:              "/hub/ceo",
-        cso:              "/hub/cso",
+        cso:              "/cso",
         finance:          "/hub/finance",
         hr:               "/hub/hr",
         bizdev:           "/hub/bizdev",
@@ -325,7 +325,7 @@ async function startServer() {
 
   /**
    * POST /api/events/lead-intake
-   * Creates a new lead card in the CSODashboard from chat conversations.
+   * Creates a new lead card in the CSO Portal from chat conversations.
    * Body: { name, phone, email?, service?, source?, notes?, referralCode? }
    */
   app.post("/api/events/lead-intake", requireEventsToken, async (req, res) => {
@@ -735,9 +735,11 @@ Sitemap: ${base}/sitemap.xml
       await runMigrations();
       await seedStaffUsers();
       await syncStaffRoster();
-      await seedTaxClients();
-      await seedMediaClients();
-      await seedRealClients();
+      // 2026-04 founder decision: CSO (Maryam) adds every real client manually
+      // via the CSO Portal. Auto-seeding removed so the DB reflects truth only.
+      // await seedTaxClients();
+      // await seedMediaClients();
+      // await seedRealClients();
       // Start AI agent scheduler (background automation)
       await startAgentScheduler();
     } catch (err) {

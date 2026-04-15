@@ -127,6 +127,27 @@
       "when": 1775380718236,
       "tag": "0017_premium_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1775500000000,
+      "tag": "0018_agent_system",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1775600000000,
+      "tag": "0019_cso_phase2",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1775700000000,
+      "tag": "0020_cso_v1_restructure",
+      "breakpoints": true
     }
   ]
 }

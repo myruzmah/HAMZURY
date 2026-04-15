@@ -66,7 +66,7 @@ export default function BizDevDashboard() {
   }
   if (!user) return null;
 
-  const realLeads = leadsQuery.data || [];
+  const realLeads = (Array.isArray(leadsQuery.data) ? leadsQuery.data : []) as any[];
   const realAffiliates = affiliatesQuery.data || [];
   const realPartnerships = partnershipsQuery.data || [];
   const realBrandQa = brandQaQuery.data || [];

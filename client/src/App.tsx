@@ -8,7 +8,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import BizDocPortal from "./pages/BizDocPortal";
-import CSODashboard from "./pages/CSODashboard";
+import CSOPortal from "./pages/CSOPortal";
 import FinanceDashboard from "./pages/FinanceDashboard";
 import CEODashboard from "./pages/CEODashboard";
 import BizDevDashboard from "./pages/BizDevDashboard";
@@ -20,7 +20,6 @@ import SkillsBlueprint from "./pages/SkillsBlueprint";
 import SkillsStudent from "./pages/SkillsStudent";
 import SkillsAdmin from "./pages/SkillsAdmin";
 import FounderPage from "./pages/FounderPage";
-import FounderDashboard from "./pages/FounderDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ConsultantPage from "./pages/ConsultantPage";
@@ -48,23 +47,34 @@ import SkillsStartups from "./pages/SkillsStartups";
 import SkillsAlumni from "./pages/SkillsAlumni";
 import SkillsHALS from "./pages/SkillsHALS";
 import ClientOnboarding from "./pages/ClientOnboarding";
-import TilzSpaPortal from "./pages/TilzSpaPortal";
-import TilzSpaFounder from "./pages/TilzSpaFounder";
-import TilzSpaFounderDashboard from "./pages/TilzSpaFounderDashboard";
-import TilzSpaFinanceDashboard from "./pages/TilzSpaFinanceDashboard";
-import TilzSpaReceptionistDashboard from "./pages/TilzSpaReceptionistDashboard";
-import TilzSpaWhatsApp from "./pages/TilzSpaWhatsApp";
-import TilzSpaDelivery from "./pages/TilzSpaDelivery";
+
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
 
 // Strict role access — each person only sees their own dashboard
 // Only the founder has cross-dashboard visibility
+/**
+ * ROLE_ACCESS — protected internal portal routes.
+ *
+ * Each entry below is a CURRENT internal route. The new portal architecture
+ * will move these to portal subdomains (same codebase, separate route groups):
+ *
+ *   /hub/ceo              → ceoportal.hamzury.com
+ *   /cso                  → csoportal.hamzury.com  (LIVE — replaced /hub/cso)
+ *   /bizdoc/dashboard     → bizdocportal.hamzury.com
+ *   /systemise/dashboard  → systemiseportal.hamzury.com
+ *   /skills/admin + /ridi → innovationhubportal.hamzury.com
+ *   /hub/bizdev           → bizdevportal.hamzury.com
+ *   /hub/finance          → financeportal.hamzury.com
+ *   /hub/hr               → hrportal.hamzury.com
+ *
+ * Do not add new legacy-style dashboards under /hub/*. Build new portal
+ * pages into the portal subdomains above when they are introduced.
+ */
 const ROLE_ACCESS: Record<string, string[]> = {
-  "/founder/dashboard": ["founder"],
   "/hub/ceo":           ["founder", "ceo"],
-  "/hub/cso":           ["founder", "cso"],
+  "/cso":               ["founder", "cso", "cso_staff"],
   "/hub/finance":       ["founder", "finance"],
   "/hub/hr":            ["founder", "hr"],
   "/hub/bizdev":        ["founder", "bizdev"],
@@ -150,11 +160,15 @@ function Router() {
           <CEODashboard />
         </RoleGuard>
       </Route>
-      <Route path={"/hub/cso"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/hub/cso"]}>
-          <CSODashboard />
+      {/* CSO Portal — new portal architecture (csoportal.hamzury.com).
+          Replaced legacy /hub/cso + CSODashboard.tsx. */}
+      <Route path={"/cso"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/cso"]}>
+          <CSOPortal />
         </RoleGuard>
       </Route>
+      {/* Legacy /hub/cso redirect → /cso (so any old bookmarks still land) */}
+      <Route path={"/hub/cso"}>{() => { window.location.href = "/cso"; return null; }}</Route>
       <Route path={"/hub/finance"}>
         <RoleGuard allowedRoles={ROLE_ACCESS["/hub/finance"]}>
           <FinanceDashboard />
@@ -180,13 +194,6 @@ function Router() {
 
       {/* Client Showcase Pages */}
       {/* HAMZURY Client Portals — Verified Client Sites */}
-      <Route path={"/clients/tilz-spa"} component={TilzSpaPortal} />
-      <Route path={"/clients/tilz-spa/founder"} component={TilzSpaFounder} />
-      <Route path={"/clients/tilz-spa/dashboard/founder"} component={TilzSpaFounderDashboard} />
-      <Route path={"/clients/tilz-spa/dashboard/finance"} component={TilzSpaFinanceDashboard} />
-      <Route path={"/clients/tilz-spa/dashboard/receptionist"} component={TilzSpaReceptionistDashboard} />
-      <Route path={"/clients/tilz-spa/dashboard/whatsapp"} component={TilzSpaWhatsApp} />
-      <Route path={"/clients/tilz-spa/delivery"} component={TilzSpaDelivery} />
 
       {/* Client Portal — dashboard only, clients enter ref via Track section */}
       <Route path={"/client/dashboard"} component={ClientDashboard} />
@@ -218,11 +225,9 @@ function Router() {
 
       {/* Info Pages */}
       <Route path={"/founder"} component={FounderPage} />
-      <Route path={"/founder/dashboard"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/founder/dashboard"]}>
-          <FounderDashboard />
-        </RoleGuard>
-      </Route>
+      {/* /founder/dashboard removed — FounderDashboard moved to _legacy.
+          Founder-level visibility will be folded into the CEO Portal
+          (ceoportal.hamzury.com) once that portal is built. */}
       <Route path={"/privacy"} component={PrivacyPolicy} />
       <Route path={"/terms"} component={TermsOfService} />
       <Route path={"/consultant"} component={ConsultantPage} />
@@ -262,7 +267,7 @@ function FloatingChat() {
     { prefix: "/bizdoc",    dept: "bizdoc" },
     { prefix: "/systemise", dept: "systemise" },
     { prefix: "/skills",    dept: "skills" },
-    { prefix: "/hub/cso",   dept: "bizdoc" },
+    { prefix: "/cso",       dept: "bizdoc" },
     { prefix: "/pricing",   dept: "general" },
     { prefix: "/founder",   dept: "general" },
     { prefix: "/team",      dept: "general" },

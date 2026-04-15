@@ -36,7 +36,7 @@ export const staffUsers = mysqlTable("staffUsers", {
   passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
   passwordSalt: varchar("passwordSalt", { length: 128 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
-  hamzuryRole: mysqlEnum("staffHamzuryRole", ["founder","ceo","cso","finance","hr","bizdev","bizdev_staff","media","skills_staff","systemise_head","tech_lead","compliance_staff","security_staff","department_staff"]).notNull(),
+  hamzuryRole: mysqlEnum("staffHamzuryRole", ["founder","ceo","cso","cso_staff","finance","hr","bizdev","bizdev_staff","media","skills_staff","systemise_head","tech_lead","compliance_staff","security_staff","department_staff"]).notNull(),
   isActive: boolean("isActive").default(true).notNull(),
   firstLogin: boolean("firstLogin").default(true).notNull(),
   passwordChanged: boolean("passwordChanged").default(false).notNull(),
@@ -63,7 +63,20 @@ export const leads = mysqlTable("leads", {
   context: text("context"),
   /** Source: chat, referral, walk-in, bizdev */
   source: varchar("source", { length: 50 }).default("chat"),
-  status: mysqlEnum("leadStatus", ["new", "contacted", "converted", "archived"]).default("new").notNull(),
+  status: mysqlEnum("leadStatus", [
+    "new",
+    "qualified",
+    "proposal_sent",
+    "negotiation",
+    "onboarding",
+    "won",
+    "lost",
+    "paused",
+    // Backwards-compat values (pre-v1 restructure) — kept so existing rows stay valid.
+    "contacted",
+    "converted",
+    "archived",
+  ]).default("new").notNull(),
   /** CSO lead score 0-10 based on discovery checklist signals */
   leadScore: int("lead_score").default(0),
   /** Referral tracking */
@@ -82,6 +95,79 @@ export const leads = mysqlTable("leads", {
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = typeof leads.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VERIFIED CLIENT TRUTH LAYER
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Verified clients — the single source of truth for client identity.
+ * A client is created when a lead converts OR when staff manually registers one.
+ * Every task, invoice, and subscription should reference this table.
+ */
+export const clients = mysqlTable("clients", {
+  id: int("id").autoincrement().primaryKey(),
+  ref: varchar("ref", { length: 20 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  businessName: varchar("businessName", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  email: varchar("email", { length: 320 }),
+  /** Active = paid + open task/subscription. Converted = agreed, may not have paid.
+   *  Unverified = pipeline only. Dormant = no activity 60+ days. */
+  status: mysqlEnum("clientStatus", ["active", "converted", "unverified", "dormant"]).default("unverified").notNull(),
+  /** Primary department owning this client's current work */
+  department: varchar("department", { length: 50 }),
+  /** Lead that generated this client (nullable — manual clients have no lead) */
+  leadId: int("leadId"),
+  /** CSO who handled discovery */
+  csoOwner: varchar("csoOwner", { length: 255 }),
+  /** Department lead responsible for delivery */
+  departmentOwner: varchar("departmentOwner", { length: 255 }),
+  /** Finance staff tracking payment */
+  financeOwner: varchar("financeOwner", { length: 255 }),
+  /** Total contracted value across all services */
+  contractValue: decimal("contractValue", { precision: 12, scale: 2 }),
+  /** Total amount paid to date */
+  amountPaid: decimal("amountPaid", { precision: 12, scale: 2 }).default("0"),
+  /** Outstanding balance = contractValue - amountPaid */
+  balance: decimal("balance", { precision: 12, scale: 2 }).default("0"),
+  /** Current blocker preventing progress */
+  currentBlocker: text("currentBlocker"),
+  /** Next action required */
+  nextAction: text("nextAction"),
+  /** Due date for next action (YYYY-MM-DD) */
+  dueDate: varchar("dueDate", { length: 10 }),
+  /** Risk flag: none, low, medium, high, critical */
+  riskFlag: mysqlEnum("riskFlag", ["none", "low", "medium", "high", "critical"]).default("none").notNull(),
+  /** Free-text notes on missing critical information */
+  missingInfo: text("missingInfo"),
+  /** Location / city */
+  location: varchar("location", { length: 255 }),
+  /** How the client found HAMZURY */
+  source: varchar("source", { length: 50 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = typeof clients.$inferInsert;
+
+/**
+ * Server-side client sessions for verified dashboard access.
+ * Created when a client verifies identity (ref + phone match).
+ * Replaces the old localStorage-only approach.
+ */
+export const clientSessions = mysqlTable("client_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull().references(() => clients.id),
+  token: varchar("token", { length: 128 }).notNull().unique(),
+  phone: varchar("phone", { length: 50 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ClientSession = typeof clientSessions.$inferSelect;
+export type InsertClientSession = typeof clientSessions.$inferInsert;
 
 /**
  * Tasks created from leads or manually by staff.
@@ -130,6 +216,8 @@ export const tasks = mysqlTable("tasks", {
   priority: mysqlEnum("priority", ["urgent", "high", "normal", "low"]).default("normal"),
   /** Work category */
   category: varchar("category", { length: 50 }),
+  /** Phase 2: who assigned this task (staff openId or ref) — nullable for legacy rows */
+  assignedBy: varchar("assignedBy", { length: 100 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -1533,3 +1621,92 @@ export const spaActivityLog = mysqlTable("spa_activity_log", {
 });
 export type SpaActivityLogEntry = typeof spaActivityLog.$inferSelect;
 export type InsertSpaActivityLogEntry = typeof spaActivityLog.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CSO PORTAL — PHASE 2
+// Targets (role-level KPI), Calendar Events (shared), Client Notes (timeline)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/** Role- or user-level targets set by CEO/Founder. Metrics auto-computed by server. */
+export const targets = mysqlTable("targets", {
+  id: int("id").autoincrement().primaryKey(),
+  /** openId of assigner (CEO/Founder) */
+  assignedBy: varchar("assignedBy", { length: 100 }).notNull(),
+  assignedByName: varchar("assignedByName", { length: 255 }),
+  /** Role or specific staff id. Examples: "cso", "founder", "staff:42" */
+  assignedTo: varchar("assignedTo", { length: 100 }).notNull(),
+  period: mysqlEnum("targetPeriod", ["month", "quarter", "year"]).notNull(),
+  periodStart: varchar("periodStart", { length: 10 }).notNull(),   // YYYY-MM-DD
+  periodEnd: varchar("periodEnd", { length: 10 }).notNull(),       // YYYY-MM-DD
+  metric: mysqlEnum("targetMetric", [
+    "leads_qualified",
+    "proposals_sent",
+    "clients_onboarded",
+    "revenue_closed",
+    "custom",
+  ]).notNull(),
+  targetValue: decimal("targetValue", { precision: 14, scale: 2 }).notNull(),
+  notes: text("notes"),
+  status: mysqlEnum("targetStatusV2", ["active", "completed", "cancelled"]).default("active").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TargetV2 = typeof targets.$inferSelect;
+export type InsertTargetV2 = typeof targets.$inferInsert;
+
+/** Unified calendar events (meetings, follow-ups, deadlines, renewals). */
+export const calendarEvents = mysqlTable("calendar_events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startAt: timestamp("startAt").notNull(),
+  endAt: timestamp("endAt"),
+  allDay: boolean("allDay").default(false).notNull(),
+  eventType: mysqlEnum("eventType", ["meeting", "follow_up", "deadline", "renewal", "internal", "other"]).default("other").notNull(),
+  /** openId of owner */
+  ownerId: varchar("ownerId", { length: 100 }).notNull(),
+  ownerName: varchar("ownerName", { length: 255 }),
+  visibility: mysqlEnum("eventVisibility", ["private", "team", "public"]).default("team").notNull(),
+  clientId: int("clientId"),
+  leadId: int("leadId"),
+  location: text("location"),
+  reminderMinutes: int("reminderMinutes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CalendarEvent = typeof calendarEvents.$inferSelect;
+export type InsertCalendarEvent = typeof calendarEvents.$inferInsert;
+
+/** Timeline notes attached to a client — CSO, CEO briefs, client updates, risk flags. */
+export const clientNotes = mysqlTable("client_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  clientId: int("clientId").notNull(),
+  /** openId of author */
+  authorId: varchar("authorId", { length: 100 }).notNull(),
+  authorName: varchar("authorName", { length: 255 }),
+  kind: mysqlEnum("clientNoteKind", ["internal", "ceo_brief", "client_update", "risk_flag"]).default("internal").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ClientNote = typeof clientNotes.$inferSelect;
+export type InsertClientNote = typeof clientNotes.$inferInsert;
+
+/**
+ * v1 restructure — Content creator / affiliate registry for the CSO Source Tracker.
+ * Founder / CSO managed. Each creator has a unique short code used in lead attribution.
+ */
+export const contentCreators = mysqlTable("content_creators", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  handle: varchar("handle", { length: 255 }),
+  platform: mysqlEnum("platform", ["instagram", "tiktok", "x", "youtube", "blog", "other"]).default("other").notNull(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("10.00").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+  status: mysqlEnum("creatorStatus", ["active", "paused", "removed"]).default("active").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ContentCreator = typeof contentCreators.$inferSelect;
+export type InsertContentCreator = typeof contentCreators.$inferInsert;

@@ -112,7 +112,7 @@ export async function sendNewLeadAlert(data: {
           <tr><td style="padding:8px 12px;font-weight:bold">Source</td><td style="padding:8px 12px">${data.source}</td></tr>
         </table>
         <p style="font-size:13px;color:#86868B">
-          View in <a href="https://hamzury.com/hub/cso" style="color:#1B4D3E">CSO Dashboard</a>.
+          View in <a href="https://hamzury.com/cso" style="color:#1B4D3E">CSO Portal</a>.
         </p>
         <hr style="border:none;border-top:1px solid #E5E5EA;margin:20px 0">
         <p style="font-size:11px;color:#86868B">HAMZURY Business Services · Automated alert</p>

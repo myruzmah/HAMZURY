@@ -1,1004 +1,596 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  CheckCircle, Circle, ChevronDown, Loader2, LogOut,
-  Send, MessageSquare,
-  CreditCard, Copy,
-  ArrowRight, ChevronRight,
-  Shield, Globe, Zap, TrendingUp,
-  Users, Sparkles, Palette, Briefcase,
-  X, FileText, Lock, Package, Bot,
-  BookOpen, Building2, FileCheck, Award,
-  Download, ExternalLink,
+  LogOut, Shield, AlertTriangle, Clock, CheckCircle2,
+  Building2, Phone, Mail, MapPin, CreditCard,
+  ArrowRight, Calendar, AlertCircle, Info,
+  FileText, RefreshCw, Loader2, XCircle,
 } from "lucide-react";
 import PageMeta from "../components/PageMeta";
 import { trpc } from "@/lib/trpc";
 
 /* ══════════════════════════════════════════════════════════════════════ */
-/*  HAMZURY CLIENT DASHBOARD — Grid-Line Architecture                    */
+/*  HAMZURY VERIFIED CLIENT DASHBOARD — MVP                              */
+/*  Uses server-verified client truth layer only.                        */
+/*  No mock data. No localStorage-only auth. No fabricated states.       */
 /* ══════════════════════════════════════════════════════════════════════ */
 
 /* ── Brand Colors ── */
-const CREAM = "#FFFAF6";
-const WHITE = "#FFFFFF";
 const BG = "#FFFAF6";
+const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
 const MUTED = "#666666";
 const GOLD = "#B48C4C";
 const GREEN = "#22C55E";
 const ORANGE = "#F59E0B";
+const RED = "#EF4444";
 const GREY = "#D1D5DB";
-const CHAT_USER_BG = "#000000";
-const CHAT_BOT_BG = "#F5F5F7";
-
-/* ── Animations ── */
-const cssAnimations = `
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes slideUp {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-@keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.4); }
-  50% { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
-}
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-3px); }
-}
-.hide-scrollbar::-webkit-scrollbar { display: none; }
-.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-`;
-
-/* ── Service detail type ── */
-type ServiceDetail = {
-  pitch: string;
-  why: string;
-  how: string;
-  what: string;
-  includes: string[];
-  price: string;
-  value?: string;
-};
-
-/* ── Service detail cards ── */
-const SERVICE_DETAILS: Record<string, ServiceDetail> = {
-  cac: { pitch: "Without CAC, your business doesn't legally exist.", why: "Every serious business needs legal recognition. Without it, you cannot open a bank account, sign contracts, or bid for tenders.", how: "We handle name reservation, document preparation, and CAC filing. You never visit any office.", what: "CAC Certificate, Business Registration Number, Bank Introduction Letter.", includes: ["Name reservation", "Incorporation filing", "Certificate delivery"], price: "from ₦50,000", value: "We handle the entire filing process so you never visit CAC yourself." },
-  tin: { pitch: "No TIN means no tax clearance.", why: "Tax compliance is not optional. Without TIN, you face penalties and cannot access government contracts.", how: "We register your business with FIRS, set up VAT, and handle the first filing.", what: "TIN Number, VAT Registration, First Filing Acknowledgement.", includes: ["TIN registration with FIRS", "VAT setup", "First filing support"], price: "from ₦60,000" },
-  tcc: { pitch: "Tax Clearance is your proof of good standing.", why: "Banks and government agencies require TCC. Without it, you cannot bid for contracts or prove compliance.", how: "We review your 3-year tax history, file everything with FIRS, and collect your certificate.", what: "Tax Clearance Certificate, Filing Confirmation, Compliance Report.", includes: ["3-year tax review", "Filing and submission", "Certificate collection"], price: "from ₦60,000" },
-  licence: { pitch: "Operating without the right permit risks shutdown.", why: "Your sector has rules. Non-compliance means fines, shutdowns, or legal action against your business.", how: "We assess your sector requirements, prepare all applications, and handle the filing process.", what: "Sector-Specific Licence, Application Filing Confirmation, Compliance Guidance.", includes: ["Sector assessment", "Application filing", "Licence collection"], price: "from ₦80,000" },
-  contracts: { pitch: "If a partner or staff betrays you, are your agreements protecting you?", why: "Without proper contracts, you have no legal recourse when things go wrong with staff, partners, or clients.", how: "We draft legally sound contracts tailored to your business relationships and Nigerian law.", what: "Employment Contracts, NDAs, Partnership Agreements, Service Agreements.", includes: ["Employment contracts", "NDAs", "Partnership agreements"], price: "from ₦40,000" },
-  templates: { pitch: "Professional document templates save you time and protect your business.", why: "Unprofessional documents lose you deals. Every invoice, proposal, and contract should reflect your brand.", how: "We create branded, legally reviewed templates you can reuse across your business operations.", what: "Contract Templates, Invoice Templates, Agreement Packs, Proposal Templates.", includes: ["Contract templates", "Invoice templates", "Agreement packs"], price: "from ₦15,000" },
-  annual: { pitch: "Miss your annual returns and CAC can strike off your company.", why: "Annual returns are mandatory. Missing them means your company can be dissolved without notice.", how: "We prepare and file your annual returns with CAC, including any back-filing needed.", what: "Annual Return Filing, Status Letter, Back-Filing (if needed).", includes: ["Annual return filing", "Status letter", "Back-filing if needed"], price: "₦30,000" },
-  brand_id: { pitch: "Your brand is your first impression.", why: "Premium clients judge your business in 3 seconds. A weak brand loses them before you speak.", how: "We design your complete brand identity -- logo, colors, typography, and brand guidelines.", what: "Logo, Color Palette, Typography, Brand Guidelines Document.", includes: ["Logo design", "Color palette", "Brand guidelines"], price: "from ₦150,000" },
-  positioning: { pitch: "Positioning is how premium clients choose you over competitors.", why: "If you look like everyone else, clients choose on price. Positioning makes you the obvious choice.", how: "We analyze your market, define your value proposition, and build a messaging framework.", what: "Market Analysis, Value Proposition, Messaging Framework, Competitor Map.", includes: ["Market analysis", "Value proposition", "Messaging framework"], price: "from ₦100,000" },
-  website: { pitch: "Your website works while you sleep.", why: "If clients cannot find you online or your website looks amateur, you lose business every day.", how: "We build a professional, mobile-responsive website that converts visitors into clients.", what: "Landing Page, About, Services, Contact, Mobile View, SEO, Hosting.", includes: ["Professional website", "Mobile responsive", "SEO basics"], price: "from ₦200,000" },
-  content_strategy: { pitch: "Content without strategy is noise.", why: "Posting without a plan wastes time and confuses your audience. Strategy turns content into revenue.", how: "We build a content calendar, choose your platforms, and create an engagement plan that grows your brand.", what: "Content Calendar, Platform Strategy, Engagement Plan, Brand Voice Guide.", includes: ["Content calendar", "Platform strategy", "Engagement plan"], price: "from ₦100,000" },
-  materials: { pitch: "Business materials that match your brand.", why: "Inconsistent materials make your business look disorganized. Every touchpoint should build trust.", how: "We design branded print and digital materials that align with your identity.", what: "Business Cards, Letterhead, Presentation Template, Email Signature.", includes: ["Business cards", "Letterhead", "Presentation template"], price: "from ₦50,000" },
-  pitch_deck: { pitch: "A pitch deck that closes deals.", why: "Investors decide in minutes. A weak deck means you lose funding before you finish speaking.", how: "We design an investor-ready deck with compelling visuals, clear financials, and a strong narrative.", what: "Investor-Ready Deck, Financial Summary, Visual Storytelling, Market Opportunity.", includes: ["Investor-ready deck", "Financial summary", "Visual storytelling"], price: "from ₦80,000" },
-  social_setup: { pitch: "Set up your social media properly from day one.", why: "A poorly set up profile tells premium clients you are not serious. First impressions are permanent online.", how: "We optimize your profiles, apply your branding, and publish initial content across all platforms.", what: "Profile Optimization, Bio & Branding, Initial Content, Platform Configuration.", includes: ["Profile optimization", "Bio and branding", "Initial content"], price: "from ₦50,000" },
-  social_mgmt: { pitch: "Consistent posting builds trust. We handle it so you don't have to.", why: "Irregular posting kills trust. Your audience needs to see you consistently to remember and buy from you.", how: "We create, schedule, and manage all your social media content daily across all platforms.", what: "Daily Posting, Engagement Management, Monthly Content Calendar, Performance Report.", includes: ["Daily posting", "Engagement management", "Monthly report"], price: "₦100,000/month" },
-  content: { pitch: "Professional content that builds authority.", why: "Amateur content repels premium clients. Professional content positions you as the expert in your field.", how: "We produce photo/video content, write compelling copy, and schedule it for maximum reach.", what: "Photo/Video Content, Copywriting, Scheduling, Platform Optimization.", includes: ["Photo/video content", "Copywriting", "Scheduling"], price: "from ₦100,000" },
-  seo: { pitch: "If clients can't find you on Google, you're invisible.", why: "90% of buyers search Google before calling. If you are not on page 1, your competitors get the business.", how: "We research your keywords, optimize your pages, and set up your Google Business profile.", what: "Keyword Research, On-Page Optimization, Google Business Profile, Monthly SEO Report.", includes: ["Keyword research", "On-page optimization", "Google Business"], price: "from ₦80,000" },
-  reputation: { pitch: "What do people see when they Google your business name?", why: "One bad review or no reviews at all can cost you clients. Reputation is your silent salesperson.", how: "We manage your reviews, build trust signals, and prepare a crisis response plan.", what: "Review Management, Crisis Response Plan, Trust Signals, Online Reputation Report.", includes: ["Review management", "Crisis response", "Trust signals"], price: "from ₦60,000" },
-  crm: { pitch: "Stop losing leads in WhatsApp.", why: "Every lead you forget is revenue lost. Without a system, your team drops opportunities daily.", how: "We set up a CRM, configure your pipeline, and train your team to track every lead to conversion.", what: "CRM Setup, Pipeline Configuration, Team Training, Conversion Reports.", includes: ["CRM setup", "Pipeline configuration", "Team training"], price: "from ₦180,000" },
-  automation: { pitch: "Stop doing manually what should be automated.", why: "Every hour your team spends on repetitive tasks is money and opportunity lost.", how: "We build automated workflows for follow-ups, invoicing, lead tracking, and communications.", what: "WhatsApp Automation, Email Sequences, Task Automation, Lead Follow-up Bot.", includes: ["Workflow automation", "Email sequences", "Task automation"], price: "from ₦120,000" },
-  dashboard: { pitch: "See your business performance at a glance.", why: "If you cannot see your numbers in real time, you are making decisions blind.", how: "We build a custom dashboard that shows revenue, clients, tasks, and team performance in one screen.", what: "Custom Dashboard, Real-Time Data, KPI Tracking, Team View.", includes: ["Custom dashboard", "Real-time data", "KPI tracking"], price: "from ₦200,000" },
-  ai_agent: { pitch: "An AI that handles customer queries 24/7.", why: "Clients message at midnight. If nobody answers, they go to your competitor who does.", how: "We build and train a custom AI bot integrated with your systems to handle support, bookings, and follow-ups.", what: "Custom AI Bot, Integration Setup, Training Data, 24/7 Customer Support.", includes: ["Custom AI bot", "Integration setup", "Training data"], price: "from ₦150,000" },
-  research: { pitch: "Know your market before your competitors do.", why: "Entering a market without research is gambling. Data turns guesses into confident decisions.", how: "We conduct market research, analyze competitors, and deliver a trend report with actionable insights.", what: "Market Research Report, Competitor Analysis, Trend Report, Actionable Insights.", includes: ["Market research", "Competitor analysis", "Trend report"], price: "from ₦80,000" },
-  founder: { pitch: "Build your idea, offer, and first revenue path.", why: "Most founders waste months building the wrong thing. This program gives you structure from day one.", how: "12-week program using AI tools to validate your idea, build your offer, and generate your first revenue.", what: "12-Week Program, AI Tools Training, Capstone Project, Certificate.", includes: ["12-week program", "AI tools training", "Capstone project"], price: "₦75,000" },
-  team: { pitch: "Your systems are only as good as the people using them.", why: "Untrained teams break systems. Every tool you buy is wasted if your people cannot use it properly.", how: "We design a custom curriculum, run practical exercises, and certify your team on completion.", what: "Custom Curriculum, Practical Exercises, Certification, Progress Tracking.", includes: ["Custom curriculum", "Practical exercises", "Certification"], price: "Custom pricing" },
-  ai_skills: { pitch: "AI is changing business. Learn it before your competitors do.", why: "Businesses using AI are moving 10x faster. Every month you wait, the gap widens.", how: "We teach AI tools mastery, prompt engineering, and real business applications you can use immediately.", what: "AI Tools Mastery, Prompt Engineering, Business Application, Certificate.", includes: ["AI tools mastery", "Prompt engineering", "Business application"], price: "₦55,000" },
-  growth: { pitch: "Scaling without structure breaks businesses.", why: "Growth without systems creates chaos. More clients without more structure means lower quality and burnout.", how: "We design your growth strategy, expansion plan, and management systems to handle 10x capacity.", what: "Growth Strategy, Expansion Plan, Management Systems, Capacity Blueprint.", includes: ["Growth strategy", "Expansion planning", "Management systems"], price: "Custom pricing" },
-  nda: { pitch: "Protect your business relationships with proper NDAs.", why: "Sharing ideas without an NDA is like handing your playbook to a stranger.", how: "We draft customized NDAs reviewed for Nigerian law and tailored to your business relationships.", what: "NDA Drafting, Customization, Legal Review, Signed Document.", includes: ["NDA drafting", "Customization", "Legal review"], price: "from ₦30,000" },
-  board_res: { pitch: "Board resolutions formalize your company's major decisions.", why: "Without documented resolutions, major business decisions have no legal backing.", how: "We draft resolutions, prepare minutes templates, and support the filing process.", what: "Resolution Drafting, Minutes Template, Filing Support.", includes: ["Resolution drafting", "Minutes template", "Filing support"], price: "from ₦25,000" },
-  ip: { pitch: "Your brand name and ideas are assets. Protect them.", why: "If someone registers your brand name before you, you lose the right to use it.", how: "We search for conflicts, file your trademark application, and deliver your certificate.", what: "Trademark Search, Application Filing, Certificate Delivery.", includes: ["Trademark search", "Application filing", "Certificate delivery"], price: "₦75,000" },
-  workspace: { pitch: "Set up your team's digital workspace.", why: "Scattered tools and personal emails make your business look unprofessional and hard to manage.", how: "We set up business email, cloud storage, collaboration tools, and onboard your entire team.", what: "Business Email, Cloud Storage, Collaboration Tools, Document Management, Calendar.", includes: ["Google Workspace or Microsoft 365", "Email setup", "Team onboarding"], price: "from ₦50,000" },
-  monthly_filing: { pitch: "We file your taxes every month so you never miss a deadline.", why: "Late tax filing means penalties, interest, and blocked accounts.", how: "We collect your records, review statements, complete questionnaires, file with FIRS, and deliver your report.", what: "Monthly FIRS Filing, VAT Returns, PAYE Processing, Monthly Report.", includes: ["Monthly FIRS filing", "VAT returns", "PAYE processing"], price: "Included in ₦150,000/year" },
-  renewal_dates: { pitch: "Your licences and registrations have expiry dates. We track every one.", why: "Expired permits mean fines and operational shutdowns.", how: "We track all your renewal dates and alert you well before any deadline.", what: "CAC Annual Returns Date, Licence Renewal Dates, Permit Expiry Alerts.", includes: ["CAC annual returns date", "Licence renewal dates", "Permit expiry alerts"], price: "Included" },
-  scuml: { pitch: "SCUML certificate is required for opening corporate bank accounts.", why: "Banks will not open your corporate account without SCUML.", how: "We handle EFCC registration and SCUML certificate collection so your bank account is ready.", what: "EFCC Registration, SCUML Certificate, Bank Account Readiness Letter.", includes: ["EFCC registration", "SCUML certificate", "Bank account readiness"], price: "₦45,000" },
-  tcc_cert: { pitch: "Tax Clearance Certificate -- proof your business is compliant.", why: "TCC is required for government contracts, bank facilities, and proving your business is in good standing.", how: "We review your 3-year tax records, submit to FIRS, and collect your certificate annually.", what: "3-Year Tax Review, FIRS Submission, Certificate Delivery.", includes: ["3-year tax review", "FIRS submission", "Certificate delivery"], price: "Included" },
-  financial_report: { pitch: "Monthly and annual financial reports showing your compliance status.", why: "Without clear financial reports, you cannot prove compliance or make informed business decisions.", how: "We compile your filing summaries and deliver monthly and annual financial statements.", what: "Monthly Filing Summary, Annual Financial Statement, Tax Position Report.", includes: ["Monthly filing summary", "Annual financial statement", "Tax position report"], price: "Included" },
-  acknowledgement: { pitch: "Every filing comes with an official acknowledgement from FIRS.", why: "Without filing receipts, you have no proof of compliance. In a dispute, proof is everything.", how: "We file, collect the official acknowledgement, and store it for your records.", what: "Filing Receipt, Submission Confirmation, Record Keeping.", includes: ["Filing receipt", "Submission confirmation", "Record keeping"], price: "Included" },
-  online_always: { pitch: "Learn at your own pace. Our online programs are always open.", why: "Waiting for a cohort means losing months. Start building your skills now.", how: "Self-paced modules on our HALS platform with full access and certificate on completion.", what: "Self-Paced Modules, HALS Access, Certificate on Completion.", includes: ["Self-paced modules", "HALS access", "Certificate on completion"], price: "from ₦45,000" },
-  physical_cohort: { pitch: "Limited seats. Next cohort filling fast.", why: "Online learning is flexible but in-person training builds stronger skills and real connections.", how: "3-week intensive in Abuja with hands-on projects, networking, and direct mentorship.", what: "3-Week Intensive, Hands-On Projects, Networking, Certificate.", includes: ["3-week intensive", "Hands-on projects", "Networking", "Certificate"], price: "from ₦55,000" },
-};
-
-/* ── Service Folder Breakdown ── */
-const SERVICE_FOLDERS: Record<string, { label: string; items: string[] }> = {
-  cac: { label: "CAC Registration", items: ["Name Reservation", "Incorporation Filing", "Certificate of Incorporation", "Certified True Copy (CTC)", "Post-Incorporation Docs"] },
-  scuml: { label: "SCUML Certificate", items: ["EFCC Registration", "SCUML Certificate", "Bank Account Opening Letter"] },
-  tin: { label: "TIN Registration", items: ["FIRS TIN Application", "VAT Registration", "First Tax Filing Setup"] },
-  tcc: { label: "Tax Clearance", items: ["3-Year Tax Review", "FIRS Application", "Tax Clearance Certificate Delivery"] },
-  licence: { label: "Sector Licence", items: ["Sector Assessment", "Application Filing", "Licence Collection & Delivery"] },
-  annual: { label: "Annual Returns", items: ["Annual Return Filing", "Status Letter", "Back-Filing (if needed)"] },
-  brand_id: { label: "Complete Branding", items: ["Logo Design", "Color Palette", "Brand Guidelines", "Business Card Design", "Letterhead", "Social Media Templates"] },
-  positioning: { label: "Positioning", items: ["Market Analysis", "Value Proposition", "Messaging Framework", "Competitor Mapping"] },
-  website: { label: "Website", items: ["Landing Page / Index", "About Page", "Services Page", "Contact Page", "Mobile Responsive", "SEO Setup", "Domain & Hosting"] },
-  content_strategy: { label: "Content Strategy", items: ["Content Calendar", "Platform Strategy", "Engagement Plan", "Brand Voice Guide"] },
-  materials: { label: "Business Materials", items: ["Business Cards", "Letterhead", "Presentation Template", "Email Signature"] },
-  pitch_deck: { label: "Pitch Deck", items: ["Investor-Ready Deck", "Financial Summary", "Visual Storytelling", "Market Opportunity Slide"] },
-  social_setup: { label: "Social Media Setup", items: ["Instagram Account Setup", "Facebook Page Setup", "Twitter/X Setup", "LinkedIn Setup", "TikTok Setup", "Bio & Branding Applied"] },
-  social_mgmt: { label: "Social Media Management", items: ["Daily Content Posting", "Engagement Management", "Monthly Content Calendar", "Monthly Performance Report"] },
-  content: { label: "Content Creation", items: ["Photo/Video Content", "Copywriting", "Scheduling", "Platform Optimization"] },
-  seo: { label: "Search Visibility", items: ["Keyword Research", "On-Page Optimization", "Google Business Profile", "Monthly SEO Report"] },
-  reputation: { label: "Online Reputation", items: ["Review Management", "Crisis Response Plan", "Trust Signals Setup"] },
-  crm: { label: "Lead Generation & Management", items: ["Lead Capture Forms", "Follow-up Automation", "Pipeline Tracking", "Conversion Reports"] },
-  automation: { label: "WhatsApp Automation", items: ["WhatsApp Business Setup", "Auto-Reply Messages", "Lead Capture Bot", "Appointment Booking", "Follow-up Sequences"] },
-  dashboard: { label: "Founder Dashboard", items: ["Business Overview Panel", "Client Tracking", "Revenue Dashboard", "Task Management", "Team View"] },
-  ai_agent: { label: "AI Agent", items: ["Custom AI Bot", "Integration Setup", "Training Data", "24/7 Customer Support"] },
-  research: { label: "Research Tools", items: ["Market Research", "Competitor Analysis", "Trend Report"] },
-  workspace: { label: "Digital Workspace", items: ["Business Email Creation", "Cloud Storage Setup", "Team Collaboration Tools", "Document Management", "Calendar Setup"] },
-  contracts: { label: "Contracts & Legal", items: ["Employment Contracts", "NDAs", "Partnership Agreements", "Service Agreements"] },
-  templates: { label: "Document Templates", items: ["Contract Templates", "Invoice Templates", "Agreement Packs", "Proposal Templates"] },
-  nda: { label: "NDAs & Agreements", items: ["NDA Drafting", "Customization", "Legal Review"] },
-  board_res: { label: "Board Resolutions", items: ["Resolution Drafting", "Minutes Template", "Filing Support"] },
-  ip: { label: "IP & Trademark", items: ["Trademark Search", "Application Filing", "Certificate Delivery"] },
-  monthly_filing: { label: "Monthly Tax Filing", items: ["Login & Data Collection", "Statement of Account Review", "Questionnaire Completion", "FIRS Filing", "Monthly Report Delivery"] },
-  renewal_dates: { label: "Renewal Dates & Tracking", items: ["CAC Annual Returns Date", "Licence Renewal Dates", "Permit Expiry Alerts"] },
-  tcc_cert: { label: "TCC Certificate", items: ["3-Year Tax Review", "FIRS Application", "Certificate Collection & Delivery"] },
-  financial_report: { label: "Financial Report", items: ["Monthly Filing Summary", "Annual Financial Statement", "Tax Position Report"] },
-  acknowledgement: { label: "Filing Acknowledgement", items: ["Filing Receipt", "Submission Confirmation", "Record Keeping"] },
-  founder: { label: "Founder Program", items: ["12-Week Program", "AI Tools Training", "Capstone Project", "Certificate"] },
-  team: { label: "Team Training", items: ["Custom Curriculum", "Practical Exercises", "Certification", "Progress Tracking"] },
-  ai_skills: { label: "AI Skills", items: ["AI Tools Mastery", "Prompt Engineering", "Business Application"] },
-  online_always: { label: "Online (Always Open)", items: ["Self-Paced Modules", "HALS Access", "Certificate on Completion"] },
-  physical_cohort: { label: "Physical Cohort", items: ["3-Week Intensive", "Hands-On Projects", "Networking", "Certificate"] },
-  growth: { label: "Growth Strategy", items: ["Growth Strategy", "Expansion Planning", "Management Systems"] },
-};
 
 /* ── Utilities ── */
-function formatNaira(amount: number) {
-  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(amount);
-}
-function formatDate(date: string | Date) {
-  return new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" });
-}
-
-/* ── Session ── */
-interface ClientSession { ref: string; phone?: string; expiresAt: number; }
-
-function loadClientSession(): ClientSession | null {
-  try {
-    const raw = localStorage.getItem("hamzury-client-session");
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as ClientSession;
-    if (parsed.expiresAt && Date.now() > parsed.expiresAt) { localStorage.removeItem("hamzury-client-session"); return null; }
-    return parsed;
-  } catch { return null; }
+function formatNaira(amount: string | number | null | undefined) {
+  if (!amount) return "—";
+  const n = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (isNaN(n) || n === 0) return "—";
+  return new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", minimumFractionDigits: 0 }).format(n);
 }
 
-/* ── Chat persistence ── */
-type ChatMsg = { role: "user" | "assistant"; content: string };
-function loadChatMessages(ref: string): ChatMsg[] { try { const r = localStorage.getItem(`hamzury-dashboard-chat-${ref}`); return r ? JSON.parse(r) : []; } catch { return []; } }
-function saveChatMessages(ref: string, msgs: ChatMsg[]) { try { localStorage.setItem(`hamzury-dashboard-chat-${ref}`, JSON.stringify(msgs.slice(-50))); } catch {} }
-
-/* ── Map service → active items ── */
-type ItemState = "delivered" | "in_progress" | "paid" | "inactive";
-function mapServiceToItems(service: string, status: string, notes?: string): Record<string, ItemState> {
-  const s = service.toLowerCase();
-  const done = status === "Completed";
-  const map: Record<string, ItemState> = {};
-  const add = (id: string) => { if (!map[id]) map[id] = done ? "delivered" : "in_progress"; };
-  if (s.includes("full business") || s.includes("architecture")) { ["tin", "brand_id", "website", "social_setup", "social_mgmt", "dashboard", "crm", "automation", "workspace"].forEach(add); }
-  if (s.includes("scuml")) add("scuml");
-  if (s.includes("branding") || s.includes("brand")) add("brand_id");
-  if (s.includes("website") || s.includes("webpage")) add("website");
-  if (s.includes("social media account")) add("social_setup");
-  if (s.includes("social media management")) add("social_mgmt");
-  if (s.includes("lead generation")) add("crm");
-  if (s.includes("founder dashboard")) add("dashboard");
-  if (s.includes("whatsapp automation")) add("automation");
-  if (s.includes("management") || s.includes("subscription") || s.includes("tax management")) { ["monthly_filing", "renewal_dates", "tcc_cert", "financial_report", "acknowledgement"].forEach(add); }
-  if (s.includes("cac") || s.includes("registration")) add("cac");
-  if (s.includes("tax") && !s.includes("whatsapp")) add("tin");
-  if (s.includes("tcc")) add("tcc");
-  if (s.includes("licence") || s.includes("nafdac")) add("licence");
-  if (s.includes("automation") || s.includes("crm")) { add("automation"); add("crm"); }
-  if (s.includes("training") || s.includes("skill") || s.includes("cohort")) add("team");
-  if (s.includes("contract") || s.includes("legal")) add("contracts");
-  if (notes) { const m = notes.match(/\[DELIVERED:\s*([^\]]+)\]/i); if (m) m[1].split(",").map(x => x.trim()).forEach(id => { if (id) map[id] = "delivered"; }); }
-  return map;
+function formatDate(date: string | null | undefined) {
+  if (!date) return "—";
+  try { return new Date(date).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return date; }
 }
 
-/* ── Founder Quotes ── */
-const FOUNDER_QUOTES = [
-  "The businesses that win aren't the loudest — they're the most structured. You're building yours right.",
-  "Every document filed, every system built, every brand element designed — these are the walls of your empire.",
-  "Most businesses fail not because of a bad product, but because of a weak foundation. Yours is being built properly.",
-  "Structure is the difference between a business that survives and one that scales. You chose to scale.",
-  "The moment you decided to structure your business, you separated yourself from 90% of your competitors.",
-];
-
-/* ── Requirements form fields ── */
-const REQ_SECTIONS = [
-  { id: "business", label: "Business", icon: Building2, why: "We need your business details to register and position your company correctly.",
-    fields: [
-      { key: "businessName1", label: "Preferred Business Name", placeholder: "1st choice name", required: true },
-      { key: "businessName2", label: "2nd Choice Name", placeholder: "Alternative name" },
-      { key: "businessName3", label: "3rd Choice Name", placeholder: "Backup name" },
-      { key: "businessAddress", label: "Registered Address", placeholder: "Full address", required: true },
-      { key: "businessNature", label: "Nature of Business", placeholder: "What does your business do?" },
-      { key: "businessEmail", label: "Business Email", placeholder: "email@business.com" },
-    ] },
-  { id: "registration", label: "Directors", icon: FileCheck, why: "Director details are required for CAC registration and legal documentation.",
-    fields: [
-      { key: "director1Name", label: "Director 1 Full Name", placeholder: "Legal name", required: true },
-      { key: "director1Phone", label: "Director 1 Phone", placeholder: "080..." },
-      { key: "director1IdType", label: "ID Type", placeholder: "Select", select: ["NIN", "International Passport", "Voter's Card", "Driver's License"] },
-      { key: "director1IdNumber", label: "ID Number", placeholder: "ID number" },
-      { key: "director2Name", label: "Director 2 (optional)", placeholder: "Leave blank if sole" },
-      { key: "sharesplit", label: "Share Split", placeholder: "Select", select: ["100/0 (Sole)", "60/40", "50/50", "70/30", "80/20", "Other"] },
-    ] },
-  { id: "brand", label: "Brand", icon: Palette, why: "Your brand preferences guide our design team to create an identity that represents you.",
-    fields: [
-      { key: "brandNames", label: "Brand Names to Trademark", placeholder: "Names you want protected", required: true },
-      { key: "hasLogo", label: "Have a logo?", placeholder: "Select", select: ["No", "Yes — I'll send it", "Yes — want a new one"] },
-      { key: "colorPreference", label: "Color Preferences", placeholder: "Colors you like" },
-      { key: "targetAudience", label: "Target Audience", placeholder: "Who are your ideal clients?" },
-      { key: "brandPersonality", label: "Brand Personality", placeholder: "Select", select: ["Premium & Authoritative", "Friendly & Approachable", "Bold & Disruptive", "Clean & Minimal", "Warm & Trustworthy"] },
-    ] },
-  { id: "digital", label: "Digital", icon: Globe, why: "Knowing your current digital presence helps us set up or improve your online channels.",
-    fields: [
-      { key: "instagram", label: "Instagram", placeholder: "@yourbusiness" },
-      { key: "whatsapp", label: "WhatsApp Business", placeholder: "080..." },
-      { key: "currentWebsite", label: "Current Website", placeholder: "www..." },
-      { key: "servicesOffered", label: "Services You Offer", placeholder: "List your main services", textarea: true },
-    ] },
-  { id: "notes", label: "Notes", icon: FileText, why: "Anything else you want us to know — preferences, deadlines, special requests.",
-    fields: [
-      { key: "additionalNotes", label: "Additional Notes", placeholder: "Anything else?", textarea: true },
-    ] },
-] as const;
-
-/* ── Process steps per service (for sub-circles) ── */
-const SERVICE_STEPS: Record<string, { label: string; detail: string }[]> = {
-  cac: [{ label: "Name Search", detail: "Checking name availability with CAC." }, { label: "Documents", detail: "Preparing incorporation documents." }, { label: "Filing", detail: "Submitting to CAC portal." }, { label: "Certificate", detail: "Certificate of Incorporation delivered." }],
-  tin: [{ label: "Application", detail: "Registering with FIRS." }, { label: "VAT Setup", detail: "Setting up VAT registration." }, { label: "TIN Issued", detail: "TIN number delivered." }],
-  tcc: [{ label: "Tax Review", detail: "Reviewing 3 years of tax records." }, { label: "FIRS Filing", detail: "Submitting to FIRS." }, { label: "Certificate", detail: "Tax Clearance Certificate delivered." }],
-  licence: [{ label: "Assessment", detail: "Sector requirements assessed." }, { label: "Application", detail: "Filing the licence application." }, { label: "Issued", detail: "Licence collected and delivered." }],
-  contracts: [{ label: "Drafting", detail: "Drafting legal agreements." }, { label: "Review", detail: "Legal review and revision." }, { label: "Signed", detail: "Final documents delivered." }],
-  annual: [{ label: "Preparation", detail: "Preparing annual return filing." }, { label: "Filing", detail: "Submitted to CAC." }, { label: "Confirmed", detail: "Status letter received." }],
-  scuml: [{ label: "EFCC Reg", detail: "Registering with EFCC." }, { label: "Certificate", detail: "SCUML certificate collected." }],
-  brand_id: [{ label: "Research", detail: "Studying your market and competitors." }, { label: "Concepts", detail: "Logo and brand concepts created." }, { label: "Refinement", detail: "Revisions based on your feedback." }, { label: "Delivered", detail: "Full brand kit delivered." }],
-  positioning: [{ label: "Analysis", detail: "Market and competitor analysis." }, { label: "Framework", detail: "Messaging framework built." }, { label: "Delivered", detail: "Positioning strategy delivered." }],
-  website: [{ label: "Wireframe", detail: "Page structure and layout planned." }, { label: "Design", detail: "Visual design and branding applied." }, { label: "Build", detail: "Development and content integration." }, { label: "Launch", detail: "Domain connected, site live." }],
-  content_strategy: [{ label: "Audit", detail: "Current content assessed." }, { label: "Calendar", detail: "Content calendar built." }, { label: "Delivered", detail: "Strategy document delivered." }],
-  pitch_deck: [{ label: "Story", detail: "Narrative and flow designed." }, { label: "Design", detail: "Visual slides created." }, { label: "Delivered", detail: "Investor-ready deck delivered." }],
-  workspace: [{ label: "Setup", detail: "Email and cloud accounts created." }, { label: "Config", detail: "Team access configured." }, { label: "Live", detail: "Workspace fully operational." }],
-  crm: [{ label: "Setup", detail: "CRM platform configured." }, { label: "Pipeline", detail: "Lead stages and automation set." }, { label: "Training", detail: "Team trained on the system." }],
-  automation: [{ label: "Flows", detail: "Automation workflows designed." }, { label: "Build", detail: "Bots and sequences built." }, { label: "Live", detail: "Automation running." }],
-  dashboard: [{ label: "Design", detail: "Dashboard layout planned." }, { label: "Build", detail: "Data integrations connected." }, { label: "Live", detail: "Dashboard accessible." }],
-  ai_agent: [{ label: "Training", detail: "AI trained on your data." }, { label: "Testing", detail: "Bot tested with real queries." }, { label: "Live", detail: "AI agent serving customers." }],
-  research: [{ label: "Collection", detail: "Data gathered from market." }, { label: "Analysis", detail: "Insights compiled." }, { label: "Report", detail: "Research report delivered." }],
-  materials: [{ label: "Design", detail: "Materials designed to brand." }, { label: "Review", detail: "Revisions applied." }, { label: "Delivered", detail: "Print-ready files delivered." }],
-  templates: [{ label: "Drafting", detail: "Templates created." }, { label: "Review", detail: "Legal review completed." }, { label: "Delivered", detail: "Ready-to-use templates delivered." }],
-  social_setup: [{ label: "Profiles", detail: "Accounts created and branded." }, { label: "Content", detail: "Initial posts published." }, { label: "Live", detail: "All platforms active." }],
-  content: [{ label: "Shoot", detail: "Photo/video content produced." }, { label: "Edit", detail: "Content edited and polished." }, { label: "Published", detail: "Content live on platforms." }],
-  seo: [{ label: "Audit", detail: "Current ranking assessed." }, { label: "Optimize", detail: "On-page SEO applied." }, { label: "Tracking", detail: "Monthly SEO reporting active." }],
-  social_mgmt: [{ label: "Calendar", detail: "Monthly content planned." }, { label: "Posting", detail: "Daily content going out." }, { label: "Reporting", detail: "Performance reports delivered." }],
-  reputation: [{ label: "Audit", detail: "Online presence assessed." }, { label: "Strategy", detail: "Review management plan set." }, { label: "Active", detail: "Ongoing reputation management." }],
-  founder: [{ label: "Enrolled", detail: "Program access granted." }, { label: "Learning", detail: "Modules in progress." }, { label: "Capstone", detail: "Final project submitted." }, { label: "Certified", detail: "Certificate issued." }],
-  team: [{ label: "Curriculum", detail: "Custom training designed." }, { label: "Training", detail: "Sessions in progress." }, { label: "Certified", detail: "Team certified." }],
-  ai_skills: [{ label: "Enrolled", detail: "Program access granted." }, { label: "Learning", detail: "AI modules in progress." }, { label: "Certified", detail: "Certificate issued." }],
-  growth: [{ label: "Assessment", detail: "Current capacity evaluated." }, { label: "Strategy", detail: "Growth plan built." }, { label: "Executing", detail: "Expansion in progress." }],
+/* ── Risk badge colors ── */
+const RISK_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  none:     { bg: `${GREEN}15`, text: GREEN,  label: "On Track" },
+  low:      { bg: `${GREEN}15`, text: GREEN,  label: "Low Risk" },
+  medium:   { bg: `${ORANGE}15`, text: ORANGE, label: "Needs Attention" },
+  high:     { bg: `${RED}15`,    text: RED,    label: "High Risk" },
+  critical: { bg: `${RED}25`,    text: RED,    label: "Critical" },
 };
 
-/* ══════════════════════════════════════════════════════════════════════ */
-/*  PROGRESS LINE — Core visual component                               */
-/* ══════════════════════════════════════════════════════════════════════ */
+/* ── Status badge colors ── */
+const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  active:     { bg: `${GREEN}15`, text: GREEN,  label: "Active" },
+  converted:  { bg: `${GOLD}20`,  text: GOLD,   label: "Converted" },
+  unverified: { bg: `${GREY}40`,  text: MUTED,  label: "Unverified" },
+  dormant:    { bg: `${RED}15`,    text: RED,    label: "Dormant" },
+};
 
-type LineItem = { id: string; label: string; status: "done" | "active" | "pending"; };
+/* ── Task status colors ── */
+const TASK_STATUS: Record<string, { bg: string; text: string }> = {
+  "Not Started":       { bg: `${GREY}40`,   text: MUTED },
+  "In Progress":       { bg: `${GOLD}20`,   text: GOLD },
+  "Waiting on Client": { bg: `${ORANGE}15`, text: ORANGE },
+  "Submitted":         { bg: `${GREEN}15`,  text: GREEN },
+  "Completed":         { bg: `${GREEN}20`,  text: GREEN },
+};
 
-/* ── SubLine — nested mini circles inside expanded sections ── */
-type SubItem = { id: string; label: string; status: "done" | "active" | "pending"; detail?: string; };
-
-function SubLine({ items, selectedId, onSelect }: { items: SubItem[]; selectedId: string | null; onSelect: (id: string | null) => void; }) {
-  const activeCount = items.filter(i => i.status !== "pending").length;
-  return (
-    <div>
-      {/* Scrollable sub-circles */}
-      <div className="hide-scrollbar" style={{ overflowX: "auto", padding: "4px 0 8px" }}>
-        <div style={{ position: "relative", minWidth: Math.max(items.length * 56, 200), height: 20, margin: "0 4px" }}>
-          <div style={{ position: "absolute", top: 7, left: 4, right: 4, height: 2, backgroundColor: `${GREY}50`, borderRadius: 1 }} />
-          <div style={{ position: "absolute", top: 7, left: 4, height: 2, width: items.length > 1 ? `${(Math.max(0, activeCount - 1) / (items.length - 1)) * 100}%` : "0%", backgroundColor: GREEN, borderRadius: 1, transition: "width 0.5s ease" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
-            {items.map(item => {
-              const isDone = item.status === "done";
-              const isActive = item.status === "active";
-              const isSel = selectedId === item.id;
-              return (
-                <button key={item.id} onClick={() => onSelect(isSel ? null : item.id)} title={item.label}
-                  style={{ width: 16, height: 16, borderRadius: 8, border: "none", backgroundColor: isDone ? GREEN : isActive ? GOLD : WHITE, boxShadow: isSel ? `0 0 0 2px ${GOLD}40` : isDone || isActive ? "none" : `inset 0 0 0 1.5px ${GREY}`, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
-                  {isDone && <CheckCircle size={9} style={{ color: WHITE }} />}
-                  {isActive && <div style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: WHITE }} />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        {/* Sub-labels */}
-        <div style={{ display: "flex", justifyContent: "space-between", minWidth: Math.max(items.length * 56, 200), padding: "2px 4px 0" }}>
-          {items.map(item => (
-            <span key={item.id} style={{ fontSize: 8, color: selectedId === item.id ? GOLD : MUTED, fontWeight: selectedId === item.id ? 600 : 400, textAlign: "center", width: `${100 / items.length}%`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {item.label}
-            </span>
-          ))}
-        </div>
-      </div>
-      {/* Sub-detail expand */}
-      {selectedId && (() => {
-        const item = items.find(i => i.id === selectedId);
-        if (!item?.detail) return null;
-        return (
-          <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 8, backgroundColor: `${BG}`, animation: "fadeUp 0.2s ease", fontSize: 12, color: DARK, lineHeight: 1.6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              {item.status === "done" ? <CheckCircle size={11} style={{ color: GREEN }} /> : item.status === "active" ? <div style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: GOLD }} /> : <Circle size={11} style={{ color: GREY }} />}
-              <span style={{ fontSize: 11, fontWeight: 600, color: item.status === "done" ? GREEN : item.status === "active" ? GOLD : MUTED }}>{item.status === "done" ? "Completed" : item.status === "active" ? "In Progress" : "Upcoming"}</span>
-            </div>
-            {item.detail}
-          </div>
-        );
-      })()}
-    </div>
-  );
-}
-
-function ProgressLine({ label, icon: Icon, items, selectedId, onSelect, children }: {
-  label: string; icon: React.ElementType; items: LineItem[];
-  selectedId: string | null; onSelect: (id: string | null) => void;
-  children?: (item: LineItem) => React.ReactNode;
+/* ── InfoRow component ── */
+function InfoRow({ icon: Icon, label, value, muted }: {
+  icon: React.ElementType; label: string; value: string | React.ReactNode; muted?: boolean;
 }) {
-  const doneCount = items.filter(i => i.status === "done").length;
-  const activeCount = items.filter(i => i.status !== "pending").length;
-  const pct = items.length > 0 ? Math.round((doneCount / items.length) * 100) : 0;
-
   return (
-    <div style={{ marginBottom: 32 }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: activeCount > 0 ? `${GREEN}15` : `${GREY}30`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon size={15} style={{ color: activeCount > 0 ? GREEN : MUTED }} />
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: DARK, letterSpacing: "0.01em" }}>{label}</span>
-        </div>
-        <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}>
-          {doneCount} of {items.length}{pct > 0 ? ` · ${pct}%` : ""}
-        </span>
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "8px 0" }}>
+      <Icon size={14} style={{ color: GOLD, marginTop: 2, flexShrink: 0 }} />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: "0.05em", color: MUTED, marginBottom: 2 }}>{label}</p>
+        <p style={{ fontSize: 14, color: muted ? MUTED : DARK, fontWeight: 500, wordBreak: "break-word" }}>{value || "—"}</p>
       </div>
-
-      {/* Line with circles */}
-      <div style={{ position: "relative", padding: "0 8px" }}>
-        <div style={{ position: "absolute", top: 9, left: 8, right: 8, height: 2, backgroundColor: `${GREY}60`, borderRadius: 1 }} />
-        <div style={{ position: "absolute", top: 9, left: 8, height: 2, width: items.length > 1 ? `${(Math.max(0, activeCount - 1) / (items.length - 1)) * 100}%` : "0%", backgroundColor: GREEN, borderRadius: 1, transition: "width 0.6s ease" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
-          {items.map((item) => {
-            const isDone = item.status === "done";
-            const isActive = item.status === "active";
-            const isSelected = selectedId === item.id;
-            return (
-              <button key={item.id} onClick={() => onSelect(isSelected ? null : item.id)} title={item.label}
-                style={{ width: 20, height: 20, borderRadius: 10, border: "none", backgroundColor: isDone ? GREEN : isActive ? GOLD : WHITE, boxShadow: isSelected ? `0 0 0 3px ${GOLD}40` : isDone || isActive ? "none" : `inset 0 0 0 2px ${GREY}`, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", justifyContent: "center", animation: isActive ? "pulse-dot 2s infinite" : "none", padding: 0 }}>
-                {isDone && <CheckCircle size={12} style={{ color: WHITE }} />}
-                {isActive && <div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: WHITE }} />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Labels */}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 8px 0" }}>
-        {items.map((item) => (
-          <span key={item.id} style={{ fontSize: 9, color: selectedId === item.id ? GOLD : MUTED, fontWeight: selectedId === item.id ? 600 : 400, textAlign: "center", width: `${100 / items.length}%`, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {item.label}
-          </span>
-        ))}
-      </div>
-
-      {/* Expanded detail */}
-      {selectedId && children && (() => {
-        const item = items.find(i => i.id === selectedId);
-        if (!item) return null;
-        return (
-          <div style={{ marginTop: 12, padding: 16, borderRadius: 12, backgroundColor: WHITE, border: `1px solid ${GREY}30`, animation: "fadeUp 0.3s ease" }}>
-            {children(item)}
-          </div>
-        );
-      })()}
     </div>
   );
 }
 
+/* ── Missing data indicator ── */
+function MissingField({ label }: { label: string }) {
+  return (
+    <span style={{ fontSize: 12, color: ORANGE, fontStyle: "italic", display: "flex", alignItems: "center", gap: 4 }}>
+      <AlertCircle size={11} /> {label}
+    </span>
+  );
+}
+
+/* ── Card wrapper ── */
+function Card({ title, icon: Icon, children }: {
+  title: string; icon: React.ElementType; children: React.ReactNode;
+}) {
+  return (
+    <div style={{
+      backgroundColor: WHITE, borderRadius: 16, padding: "20px 20px 16px",
+      border: `1px solid ${DARK}08`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        <Icon size={15} style={{ color: GOLD }} />
+        <h3 style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: DARK }}>{title}</h3>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 /* ══════════════════════════════════════════════════════════════════════ */
-/*  MAIN DASHBOARD                                                       */
+/*  LOGIN GATE                                                           */
+/* ══════════════════════════════════════════════════════════════════════ */
+
+function LoginGate({ onVerified }: { onVerified: (token: string) => void }) {
+  const [ref, setRef] = useState("");
+  const [phone, setPhone] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const verifyMutation = trpc.clientTruth.verify.useMutation();
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!ref.trim() || !phone.trim()) { setError("Both fields are required."); return; }
+    setLoading(true);
+    try {
+      const result = await verifyMutation.mutateAsync({ ref: ref.trim(), phone: phone.trim() });
+      // Store token in localStorage for session persistence across refreshes
+      localStorage.setItem("hamzury-client-token", result.token);
+      onVerified(result.token);
+    } catch (err: any) {
+      setError(err?.message || "No client found with that reference and phone number.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ backgroundColor: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <PageMeta title="Client Dashboard — HAMZURY" />
+      <form onSubmit={handleSubmit} style={{
+        backgroundColor: WHITE, borderRadius: 24, padding: "48px 32px", maxWidth: 400, width: "100%",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.06)", textAlign: "center",
+      }}>
+        <div style={{ marginBottom: 8 }}>
+          <span style={{ fontSize: 24, fontWeight: 700, color: DARK, letterSpacing: 1 }}>HAMZURY</span>
+        </div>
+        <p style={{ fontSize: 13, color: GOLD, fontWeight: 600, marginBottom: 32 }}>Client Dashboard</p>
+
+        <div style={{ marginBottom: 16, textAlign: "left" }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: DARK, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Reference Number
+          </label>
+          <input
+            type="text" value={ref} onChange={e => setRef(e.target.value)}
+            placeholder="HMZ-26/4-1818" required
+            style={{
+              width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${DARK}12`,
+              fontSize: 14, color: DARK, backgroundColor: BG, outline: "none", boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <div style={{ marginBottom: 24, textAlign: "left" }}>
+          <label style={{ fontSize: 11, fontWeight: 600, color: DARK, display: "block", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Phone Number
+          </label>
+          <input
+            type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+            placeholder="08012345678" required
+            style={{
+              width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${DARK}12`,
+              fontSize: 14, color: DARK, backgroundColor: BG, outline: "none", boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        {error && (
+          <p style={{ color: RED, fontSize: 13, marginBottom: 16, fontWeight: 500, display: "flex", alignItems: "center", gap: 6, justifyContent: "center" }}>
+            <XCircle size={14} /> {error}
+          </p>
+        )}
+
+        <button type="submit" disabled={loading} style={{
+          width: "100%", padding: "13px 0", borderRadius: 12, border: "none",
+          backgroundColor: DARK, color: BG, fontSize: 14, fontWeight: 700,
+          cursor: loading ? "wait" : "pointer", letterSpacing: 0.5, opacity: loading ? 0.7 : 1,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        }}>
+          {loading ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />}
+          {loading ? "Verifying..." : "Access Dashboard"}
+        </button>
+
+        <p style={{ marginTop: 24, fontSize: 11, color: `${DARK}30` }}>
+          Enter the reference number and phone number provided by HAMZURY.
+        </p>
+      </form>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  MAIN DASHBOARD VIEW                                                  */
+/* ══════════════════════════════════════════════════════════════════════ */
+
+function DashboardView({ token, onLogout }: { token: string; onLogout: () => void }) {
+  // Fetch client data via verified session
+  const clientQuery = trpc.clientTruth.session.useQuery(
+    { token },
+    { retry: 1, refetchOnWindowFocus: false },
+  );
+
+  // Fetch tasks via verified session
+  const tasksQuery = trpc.clientTruth.tasks.useQuery(
+    { token },
+    { retry: 1, refetchOnWindowFocus: false },
+  );
+
+  // Fetch subscriptions via verified session
+  const subsQuery = trpc.clientTruth.subscriptions.useQuery(
+    { token },
+    { retry: 1, refetchOnWindowFocus: false },
+  );
+
+  // Fetch invoices via verified session
+  const invoicesQuery = trpc.clientTruth.invoices.useQuery(
+    { token },
+    { retry: 1, refetchOnWindowFocus: false },
+  );
+
+  // Handle invalid/expired session
+  if (clientQuery.isLoading) {
+    return (
+      <div style={{ backgroundColor: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <Loader2 size={24} style={{ color: GOLD }} className="animate-spin" />
+          <p style={{ marginTop: 12, fontSize: 13, color: MUTED }}>Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!clientQuery.data) {
+    return (
+      <div style={{ backgroundColor: BG, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div style={{ textAlign: "center", maxWidth: 360 }}>
+          <AlertTriangle size={32} style={{ color: RED, marginBottom: 12 }} />
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, marginBottom: 8 }}>Session Expired</h2>
+          <p style={{ fontSize: 13, color: MUTED, marginBottom: 20 }}>Your session has expired or is invalid. Please log in again.</p>
+          <button onClick={onLogout} style={{
+            padding: "10px 24px", borderRadius: 10, border: "none", backgroundColor: DARK,
+            color: BG, fontSize: 13, fontWeight: 600, cursor: "pointer",
+          }}>
+            Log In Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const c = clientQuery.data;
+  const tasks = tasksQuery.data || [];
+  const subs = subsQuery.data || [];
+  const invoices = invoicesQuery.data || [];
+
+  const statusInfo = STATUS_COLORS[c.status] || STATUS_COLORS.unverified;
+  const riskInfo = RISK_COLORS[c.riskFlag || "none"] || RISK_COLORS.none;
+
+  const completedTasks = tasks.filter((t: any) => t.status === "Completed").length;
+  const inProgressTasks = tasks.filter((t: any) => t.status === "In Progress").length;
+  const totalTasks = tasks.length;
+
+  return (
+    <div style={{ backgroundColor: BG, minHeight: "100vh" }}>
+      <PageMeta title={`${c.name} — HAMZURY Dashboard`} />
+
+      {/* ── Header ── */}
+      <header style={{
+        backgroundColor: WHITE, borderBottom: `1px solid ${DARK}06`, padding: "14px 20px",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        position: "sticky", top: 0, zIndex: 50,
+      }}>
+        <div>
+          <span style={{ fontSize: 16, fontWeight: 700, color: DARK, letterSpacing: 0.5 }}>HAMZURY</span>
+          <span style={{ fontSize: 11, color: GOLD, marginLeft: 8, fontWeight: 600 }}>Client Portal</span>
+        </div>
+        <button onClick={onLogout} style={{
+          display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+          borderRadius: 8, border: `1px solid ${DARK}10`, backgroundColor: "transparent",
+          fontSize: 12, color: MUTED, cursor: "pointer", fontWeight: 500,
+        }}>
+          <LogOut size={13} /> Sign Out
+        </button>
+      </header>
+
+      {/* ── Content ── */}
+      <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 16px 60px" }}>
+
+        {/* ── Client Identity Card ── */}
+        <Card title="Client Identity" icon={Building2}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: DARK, marginBottom: 2 }}>
+                {c.businessName || c.name}
+              </h2>
+              {c.businessName && <p style={{ fontSize: 13, color: MUTED }}>{c.name}</p>}
+            </div>
+            <div style={{
+              padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600,
+              backgroundColor: statusInfo.bg, color: statusInfo.text,
+            }}>
+              {statusInfo.label}
+            </div>
+          </div>
+          <div style={{ borderTop: `1px solid ${DARK}06`, paddingTop: 8 }}>
+            <InfoRow icon={FileText} label="Reference" value={
+              <span style={{ fontFamily: "monospace", fontSize: 13, color: GOLD, fontWeight: 600 }}>{c.ref}</span>
+            } />
+            <InfoRow icon={Phone} label="Phone" value={c.phone || <MissingField label="Not on file" />} />
+            <InfoRow icon={Mail} label="Email" value={c.email || <MissingField label="Not on file" />} />
+            {c.location && <InfoRow icon={MapPin} label="Location" value={c.location} />}
+            {c.department && (
+              <InfoRow icon={Shield} label="Department" value={
+                c.department === "bizdoc" ? "BizDoc — Business Documentation" :
+                c.department === "systemise" ? "Systemise — Technology & Branding" :
+                c.department === "skills" ? "Skills — Training & Development" :
+                c.department
+              } />
+            )}
+          </div>
+        </Card>
+
+        {/* ── Status & Risk Summary ── */}
+        <div style={{ marginTop: 16, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div style={{
+            backgroundColor: WHITE, borderRadius: 14, padding: 16, textAlign: "center",
+            border: `1px solid ${DARK}06`,
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: 16, margin: "0 auto 8px",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              backgroundColor: riskInfo.bg,
+            }}>
+              {(c.riskFlag === "high" || c.riskFlag === "critical")
+                ? <AlertTriangle size={16} style={{ color: riskInfo.text }} />
+                : <CheckCircle2 size={16} style={{ color: riskInfo.text }} />
+              }
+            </div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: riskInfo.text }}>{riskInfo.label}</p>
+            <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>Risk Status</p>
+          </div>
+
+          <div style={{
+            backgroundColor: WHITE, borderRadius: 14, padding: 16, textAlign: "center",
+            border: `1px solid ${DARK}06`,
+          }}>
+            <p style={{ fontSize: 24, fontWeight: 700, color: GOLD }}>{completedTasks}/{totalTasks}</p>
+            <p style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>Tasks Completed</p>
+            {inProgressTasks > 0 && (
+              <p style={{ fontSize: 11, color: ORANGE, marginTop: 4 }}>{inProgressTasks} in progress</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── Payment Summary ── */}
+        <div style={{ marginTop: 16 }}>
+          <Card title="Payment Summary" icon={CreditCard}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 8 }}>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Contract</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: DARK }}>{formatNaira(c.contractValue)}</p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Paid</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: GREEN }}>{formatNaira(c.amountPaid)}</p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>Balance</p>
+                <p style={{ fontSize: 15, fontWeight: 700, color: c.balance && parseFloat(c.balance) > 0 ? ORANGE : GREEN }}>
+                  {formatNaira(c.balance)}
+                </p>
+              </div>
+            </div>
+            {!c.contractValue && !c.amountPaid && (
+              <p style={{ fontSize: 12, color: ORANGE, fontStyle: "italic", textAlign: "center", padding: "8px 0" }}>
+                <AlertCircle size={12} style={{ display: "inline", marginRight: 4 }} />
+                Payment details are being confirmed by HAMZURY Finance.
+              </p>
+            )}
+          </Card>
+        </div>
+
+        {/* ── Next Action ── */}
+        {(c.nextAction || c.dueDate || c.currentBlocker) && (
+          <div style={{ marginTop: 16 }}>
+            <Card title="Next Steps" icon={ArrowRight}>
+              {c.nextAction && <InfoRow icon={ArrowRight} label="Next Action" value={c.nextAction} />}
+              {c.dueDate && <InfoRow icon={Calendar} label="Due Date" value={formatDate(c.dueDate)} />}
+              {c.currentBlocker && (
+                <div style={{
+                  marginTop: 8, padding: "10px 12px", borderRadius: 10,
+                  backgroundColor: `${ORANGE}10`, border: `1px solid ${ORANGE}20`,
+                }}>
+                  <p style={{ fontSize: 10, fontWeight: 600, color: ORANGE, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4 }}>
+                    Current Blocker
+                  </p>
+                  <p style={{ fontSize: 13, color: DARK }}>{c.currentBlocker}</p>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {/* ── Services / Tasks ── */}
+        <div style={{ marginTop: 16 }}>
+          <Card title="Services" icon={FileText}>
+            {tasks.length === 0 ? (
+              <p style={{ fontSize: 13, color: MUTED, fontStyle: "italic", textAlign: "center", padding: "16px 0" }}>
+                No services recorded yet. Your HAMZURY team will update this as work begins.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {tasks.map((task: any) => {
+                  const ts = TASK_STATUS[task.status] || TASK_STATUS["Not Started"];
+                  return (
+                    <div key={task.id} style={{
+                      padding: "12px 14px", borderRadius: 12, border: `1px solid ${DARK}06`,
+                      backgroundColor: `${DARK}02`,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: DARK, marginBottom: 3 }}>{task.service}</p>
+                          {task.businessName && (
+                            <p style={{ fontSize: 11, color: MUTED }}>{task.businessName}</p>
+                          )}
+                        </div>
+                        <span style={{
+                          padding: "3px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                          backgroundColor: ts.bg, color: ts.text, whiteSpace: "nowrap", flexShrink: 0,
+                        }}>
+                          {task.status}
+                        </span>
+                      </div>
+                      {(task.expectedDelivery || task.quotedPrice) && (
+                        <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+                          {task.expectedDelivery && (
+                            <span style={{ fontSize: 11, color: MUTED, display: "flex", alignItems: "center", gap: 4 }}>
+                              <Calendar size={11} /> Est. {formatDate(task.expectedDelivery)}
+                            </span>
+                          )}
+                          {task.quotedPrice && (
+                            <span style={{ fontSize: 11, color: MUTED, display: "flex", alignItems: "center", gap: 4 }}>
+                              <CreditCard size={11} /> {formatNaira(task.quotedPrice)}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {task.department && (
+                        <span style={{ fontSize: 10, color: GOLD, marginTop: 6, display: "inline-block" }}>
+                          {task.department === "bizdoc" ? "BizDoc" : task.department === "systemise" ? "Systemise" : task.department === "skills" ? "Skills" : task.department}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </div>
+
+        {/* ── Subscriptions ── */}
+        {subs.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Card title="Subscriptions" icon={RefreshCw}>
+              {subs.map((sub: any) => (
+                <div key={sub.id} style={{
+                  padding: "12px 14px", borderRadius: 12, border: `1px solid ${DARK}06`,
+                  backgroundColor: `${DARK}02`, marginBottom: 8,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: DARK }}>{sub.service}</p>
+                    <span style={{
+                      padding: "3px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                      backgroundColor: sub.status === "active" ? `${GREEN}15` : `${RED}15`,
+                      color: sub.status === "active" ? GREEN : RED,
+                    }}>
+                      {sub.status}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: 16, marginTop: 8 }}>
+                    <span style={{ fontSize: 12, color: MUTED }}>
+                      {formatNaira(sub.monthlyFee)}/month
+                    </span>
+                    <span style={{ fontSize: 12, color: MUTED }}>
+                      Billing day: {sub.billingDay}
+                    </span>
+                    <span style={{ fontSize: 12, color: MUTED }}>
+                      Since {sub.startDate}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {/* ── Invoices ── */}
+        {invoices.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <Card title="Invoices" icon={FileText}>
+              {invoices.map((inv: any) => (
+                <div key={inv.id} style={{
+                  padding: "10px 14px", borderRadius: 10, border: `1px solid ${DARK}06`,
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  marginBottom: 6,
+                }}>
+                  <div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: DARK, fontFamily: "monospace" }}>
+                      {inv.invoiceNumber}
+                    </span>
+                    <span style={{ fontSize: 11, color: MUTED, marginLeft: 8 }}>
+                      {formatNaira(inv.total)}
+                    </span>
+                  </div>
+                  <span style={{
+                    padding: "2px 8px", borderRadius: 10, fontSize: 10, fontWeight: 600,
+                    backgroundColor: inv.status === "paid" ? `${GREEN}15` : inv.status === "overdue" ? `${RED}15` : `${GOLD}15`,
+                    color: inv.status === "paid" ? GREEN : inv.status === "overdue" ? RED : GOLD,
+                  }}>
+                    {inv.status}
+                  </span>
+                </div>
+              ))}
+            </Card>
+          </div>
+        )}
+
+        {/* ── Contact HAMZURY ── */}
+        <div style={{
+          marginTop: 24, textAlign: "center", padding: "20px 16px",
+          backgroundColor: WHITE, borderRadius: 16, border: `1px solid ${DARK}06`,
+        }}>
+          <p style={{ fontSize: 12, color: MUTED, marginBottom: 8 }}>
+            Questions about your project?
+          </p>
+          <a
+            href="https://wa.me/2348067149356"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "10px 24px", borderRadius: 10, backgroundColor: DARK,
+              color: BG, fontSize: 13, fontWeight: 600, textDecoration: "none",
+            }}
+          >
+            <Phone size={14} /> Contact HAMZURY
+          </a>
+          <p style={{ fontSize: 10, color: `${DARK}25`, marginTop: 12 }}>
+            CSO: Maryam Ashir Lalo — 08067149356
+          </p>
+        </div>
+
+        {/* ── Footer ── */}
+        <p style={{ textAlign: "center", fontSize: 10, color: `${DARK}20`, marginTop: 24 }}>
+          Powered by HAMZURY — Structure Builds Empires
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════ */
+/*  ROOT COMPONENT                                                       */
 /* ══════════════════════════════════════════════════════════════════════ */
 
 export default function ClientDashboard() {
-  const [session, setSession] = useState<ClientSession | null>(null);
-  const [sessionLoaded, setSessionLoaded] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<{ section: string; itemId: string } | null>(null);
-  const [subSelected, setSubSelected] = useState<string | null>(null);
-  const [copiedAcct, setCopiedAcct] = useState(false);
-  const [claimedInvoices, setClaimedInvoices] = useState<Set<string>>(new Set());
-  const [reqForm, setReqForm] = useState<Record<string, string>>({});
-  const [reqSubmitted, setReqSubmitted] = useState(false);
-  const [reqSubmitting, setReqSubmitting] = useState(false);
-  const [cartItems, setCartItems] = useState<Set<string>>(new Set());
-  const [showCart, setShowCart] = useState(false);
-  const [chatMessages, setChatMessages] = useState<ChatMsg[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-  const [mobileChatOpen, setMobileChatOpen] = useState(false);
-  const [autoGreeted, setAutoGreeted] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-  const [quoteIdx] = useState(() => Math.floor(Math.random() * FOUNDER_QUOTES.length));
+  const [token, setToken] = useState<string | null>(null);
 
-  useEffect(() => { const s = loadClientSession(); setSession(s); setSessionLoaded(true); if (!s) window.location.href = "/"; }, []);
+  // Check for existing session on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("hamzury-client-token");
+    if (stored) setToken(stored);
+  }, []);
 
-  const { data, isLoading, isError } = trpc.tracking.fullLookup.useQuery(
-    { ref: session?.ref ?? "", phone: session?.phone },
-    { enabled: !!session?.ref, retry: false, refetchInterval: 30000 }
-  );
-  const { data: bankDetails } = trpc.invoices.bankDetails.useQuery(undefined, { staleTime: Infinity });
-  const claimMutation = trpc.invoices.claimPayment.useMutation({ onSuccess: (_, v) => setClaimedInvoices(p => new Set(p).add(v.invoiceNumber)) });
-  const submitMutation = trpc.onboarding.submit.useMutation({ onSuccess: () => { setReqSubmitted(true); setReqSubmitting(false); }, onError: () => setReqSubmitting(false) });
-
-  function handleLogout() { localStorage.removeItem("hamzury-client-session"); if (session?.ref) localStorage.removeItem(`hamzury-dashboard-chat-${session.ref}`); window.location.href = "/client"; }
-  const sel = (section: string, itemId: string) => { setSubSelected(null); setExpandedSection(p => p?.section === section && p?.itemId === itemId ? null : { section, itemId }); };
-  const toggleCart = (id: string) => setCartItems(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
-
-  useEffect(() => { if (!session?.ref) return; const saved = loadChatMessages(session.ref); if (saved.length > 0) { setChatMessages(saved); setAutoGreeted(true); } }, [session?.ref]);
-  useEffect(() => { if (session?.ref && chatMessages.length > 0) saveChatMessages(session.ref, chatMessages); }, [chatMessages, session?.ref]);
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatMessages]);
-
-  const handleChatSend = useCallback(async (text?: string) => {
-    const msg = (text || chatInput).trim();
-    if (!msg || chatLoading) return;
-    setChatInput("");
-    const userMsg: ChatMsg = { role: "user", content: msg };
-    setChatMessages(prev => [...prev, userMsg, { role: "assistant", content: "" }]);
-    setChatLoading(true);
-    try {
-      const allMsgs = [...chatMessages, userMsg];
-      const history = allMsgs.slice(-10).map(h => ({ role: h.role, content: h.content }));
-      const olderMsgs = allMsgs.slice(0, -10);
-      const chatMemory = olderMsgs.length > 0 ? olderMsgs.map(m => `${m.role === "user" ? "Client" : "Advisor"}: ${m.content.slice(0, 100)}`).join(" | ") : undefined;
-      const response = await fetch("/api/chat/dashboard-message", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history, tone_preference: "Friendly", chat_memory: chatMemory,
-          task_context: data ? { clientName: data.task?.clientName, businessName: data.task?.businessName, service: data.task?.service, department: data.task?.department, status: data.task?.status, progress: data.task?.progress, checklist: data.checklist?.slice(0, 15).map((c: any) => ({ label: c.label, completed: !!c.checked })), recentActivity: data.activity?.slice(0, 5).map((a: any) => a.action) } : undefined }),
-      });
-      if (!response.ok || !response.body) throw new Error("fail");
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullText = "", buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n"); buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          const d = line.slice(6).trim();
-          if (d === "[DONE]") continue;
-          try { const p = JSON.parse(d); const delta = p.choices?.[0]?.delta?.content; if (delta) { fullText += delta; setChatMessages(prev => { const u = [...prev]; u[u.length - 1] = { role: "assistant", content: fullText }; return u; }); } } catch {}
-        }
-      }
-      setChatMessages(prev => { const u = [...prev]; u[u.length - 1] = { role: "assistant", content: fullText || "Our team will answer that directly." }; return u; });
-    } catch { setChatMessages(prev => { const u = [...prev]; u[u.length - 1] = { role: "assistant", content: "Connection issue. Please try again." }; return u; }); }
-    finally { setChatLoading(false); }
-  }, [chatInput, chatLoading, chatMessages, data]);
-
-  if (sessionLoaded && !session) { window.location.href = "/"; return null; }
-  if (sessionLoaded && session && !isLoading && (isError || !data || !data.found)) { localStorage.removeItem("hamzury-client-session"); window.location.href = "/"; return null; }
-  if (!sessionLoaded || !session || isLoading || !data || !data.found) {
-    return (<div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: WHITE }}><Loader2 className="animate-spin" size={20} style={{ color: DARK }} /><p className="text-[13px] mt-3" style={{ color: MUTED }}>Loading...</p></div>);
+  function handleLogout() {
+    localStorage.removeItem("hamzury-client-token");
+    setToken(null);
   }
 
-  /* ── Data extraction ── */
-  const task = data.task;
-  const checklist = data.checklist || [];
-  const invoiceSummary = data.invoiceSummary;
-  const isBizdoc = (task.department || "").toLowerCase() === "bizdoc";
-  const activeBankDetails = bankDetails ? isBizdoc && bankDetails.bizdoc?.configured ? bankDetails.bizdoc : bankDetails.general : null;
-  const activeItems = mapServiceToItems(task.service || "", task.status || "", task.notes || "");
-  const firstName = (task.clientName || "").split(" ")[0];
-  const businessName = task.businessName || task.clientName || "Your Business";
-
-  /* Auto-greeting */
-  if (!autoGreeted && chatMessages.length === 0) {
-    const svc = task.service || "", st = task.status || "", pct = task.progress || 0;
-    let g = `Hi ${firstName}.`;
-    if (svc.toLowerCase().includes("full business") || svc.toLowerCase().includes("architecture")) g += ` ${businessName} is set up for a full business architecture — compliance and brand setup are in progress. ${pct}% of your structure is in place.`;
-    else if (svc) g += ` Your ${svc.toLowerCase()} is currently ${st.toLowerCase()}. ${pct}% complete.`;
-    g += ` Anything you'd like to know?`;
-    setTimeout(() => { setChatMessages([{ role: "assistant", content: g }]); setAutoGreeted(true); }, 0);
+  if (!token) {
+    return <LoginGate onVerified={setToken} />;
   }
 
-  /* Parse existing requirements */
-  const existingReqs = (() => {
-    const notes = task.notes || "";
-    const match = notes.match(/━━━ CLIENT REQUIREMENTS[^━]*━━━([\s\S]*?)━━━/);
-    if (!match) return null;
-    const parsed: Record<string, string> = {};
-    match[1].split("\n").forEach((line: string) => { const b = line.match(/•\s*([^:]+):\s*(.*)/); if (b) parsed[b[1].trim()] = b[2].trim(); });
-    return Object.keys(parsed).length > 0 ? parsed : null;
-  })();
-  const hasSubmittedReqs = reqSubmitted || !!existingReqs;
-
-  /* Delivery link */
-  const deliveryLink = (task.businessName || "").toLowerCase().includes("tilz") ? "/clients/tilz-spa/delivery" : null;
-
-  /* ── Section data ── */
-  const svc = (task.service || "").toLowerCase();
-  const isFullBuild = svc.includes("full business") || svc.includes("architecture");
-
-  const timelineItems: LineItem[] = (() => {
-    if (isFullBuild) {
-      const brandDone = ["brand_id", "positioning"].some(id => activeItems[id] === "delivered");
-      const digitalDone = ["website", "social_setup"].some(id => activeItems[id] === "delivered");
-      const opsDone = ["dashboard", "crm", "automation"].some(id => activeItems[id] === "delivered");
-      const brandActive = ["brand_id", "positioning"].some(id => activeItems[id] === "in_progress");
-      const digitalActive = ["website", "social_setup"].some(id => activeItems[id] === "in_progress");
-      const opsActive = ["dashboard", "crm", "automation"].some(id => activeItems[id] === "in_progress");
-      return [
-        { id: "brand_phase", label: "Brand", status: brandDone ? "done" : brandActive ? "active" : "pending" as const },
-        { id: "digital_phase", label: "Digital", status: digitalDone ? "done" : digitalActive ? "active" : brandDone ? "active" : "pending" as const },
-        { id: "ops_phase", label: "Operations", status: opsDone ? "done" : opsActive ? "active" : digitalDone ? "active" : "pending" as const },
-        { id: "growth_phase", label: "Growth", status: task.status === "Completed" ? "done" : opsDone ? "active" : "pending" as const },
-      ];
-    }
-    if (checklist.length > 0) {
-      const firstUnchecked = checklist.findIndex((x: any) => !x.checked);
-      return checklist.slice(0, 6).map((c: any, i: number) => ({ id: `cl_${i}`, label: (c.label || "").split(" ").slice(0, 2).join(" "), status: c.checked ? "done" as const : i === firstUnchecked ? "active" as const : "pending" as const }));
-    }
-    const p = task.progress || 0;
-    return [
-      { id: "start", label: "Started", status: "done" as const },
-      { id: "progress", label: "In Progress", status: p > 30 ? "done" as const : "active" as const },
-      { id: "review", label: "Review", status: p > 70 ? "done" as const : p > 50 ? "active" as const : "pending" as const },
-      { id: "complete", label: "Complete", status: task.status === "Completed" ? "done" as const : "pending" as const },
-    ];
-  })();
-
-  const reqItems: LineItem[] = REQ_SECTIONS.map(s => {
-    if (hasSubmittedReqs) return { id: s.id, label: s.label, status: "done" as const };
-    const filled = s.fields.filter(f => (reqForm[f.key] || "").trim().length > 0).length;
-    return { id: s.id, label: s.label, status: filled === s.fields.length ? "done" as const : filled > 0 ? "active" as const : "pending" as const };
-  });
-
-  const paymentItems: LineItem[] = !invoiceSummary?.invoices?.length
-    ? [{ id: "no_inv", label: "Invoice", status: "pending" }]
-    : invoiceSummary.invoices.map((inv: any) => ({ id: inv.number || `inv_${inv.id}`, label: inv.status === "paid" ? "Paid" : "Due", status: inv.status === "paid" ? "done" as const : "active" as const }));
-
-  const mkItems = (defs: { id: string; label: string }[]): LineItem[] => defs.map(d => ({ ...d, status: activeItems[d.id] === "delivered" ? "done" as const : activeItems[d.id] ? "active" as const : "pending" as const }));
-
-  /* Generate sub-items for a service's process steps based on its state */
-  const getSubItems = (serviceId: string): SubItem[] => {
-    const steps = SERVICE_STEPS[serviceId];
-    if (!steps) return [];
-    const state = activeItems[serviceId];
-    if (state === "delivered") return steps.map((s, i) => ({ id: `${serviceId}_${i}`, label: s.label, status: "done" as const, detail: s.detail }));
-    if (state === "in_progress") {
-      const mid = Math.max(1, Math.floor(steps.length * 0.5));
-      return steps.map((s, i) => ({ id: `${serviceId}_${i}`, label: s.label, status: i < mid ? "done" as const : i === mid ? "active" as const : "pending" as const, detail: s.detail }));
-    }
-    return steps.map((s, i) => ({ id: `${serviceId}_${i}`, label: s.label, status: i === 0 && state === "paid" ? "active" as const : "pending" as const, detail: s.detail }));
-  };
-
-  const brandItems = mkItems([{ id: "brand_id", label: "Identity" }, { id: "positioning", label: "Position" }, { id: "content_strategy", label: "Content" }, { id: "pitch_deck", label: "Pitch" }]);
-  const systemsItems = mkItems([{ id: "website", label: "Website" }, { id: "workspace", label: "Email" }, { id: "crm", label: "CRM" }, { id: "dashboard", label: "Dashboard" }, { id: "automation", label: "Automation" }, { id: "ai_agent", label: "AI Agent" }, { id: "research", label: "Research" }]);
-  const complianceItems = mkItems([{ id: "cac", label: "CAC" }, { id: "tin", label: "TIN" }, { id: "tcc", label: "TCC" }, { id: "licence", label: "Licence" }, { id: "contracts", label: "Legal" }, { id: "annual", label: "Returns" }, { id: "scuml", label: "SCUML" }]);
-  const contentItems = mkItems([{ id: "materials", label: "Materials" }, { id: "templates", label: "Templates" }, { id: "social_setup", label: "Social Kit" }, { id: "content", label: "Content" }, { id: "seo", label: "SEO" }, { id: "social_mgmt", label: "Social" }, { id: "reputation", label: "Reviews" }]);
-  const staffItems = mkItems([{ id: "founder", label: "Founder" }, { id: "team", label: "Team" }, { id: "ai_skills", label: "AI Skills" }, { id: "growth", label: "Growth" }]);
-
-  const subscriptionItems: LineItem[] = (() => {
-    const svcLower = (task.service || "").toLowerCase();
-    const items: LineItem[] = [];
-    if (svcLower.includes("full business") || svcLower.includes("architecture") || svcLower.includes("website") || svcLower.includes("management")) items.push({ id: "sub_website", label: "Website", status: activeItems["website"] === "delivered" ? "done" : activeItems["website"] ? "active" : "pending" });
-    if (svcLower.includes("full business") || svcLower.includes("social media management") || svcLower.includes("social")) items.push({ id: "sub_social", label: "Social", status: activeItems["social_mgmt"] === "delivered" ? "done" : activeItems["social_mgmt"] ? "active" : "pending" });
-    if (svcLower.includes("full business") || svcLower.includes("dashboard") || svcLower.includes("management")) items.push({ id: "sub_dashboard", label: "Dashboard", status: activeItems["dashboard"] === "delivered" ? "done" : activeItems["dashboard"] ? "active" : "pending" });
-    if (svcLower.includes("tax") || svcLower.includes("pro max")) items.push({ id: "sub_tax", label: "Tax", status: "active" });
-    if (svcLower.includes("full business") || svcLower.includes("crm") || svcLower.includes("lead")) items.push({ id: "sub_crm", label: "CRM", status: activeItems["crm"] === "delivered" ? "done" : activeItems["crm"] ? "active" : "pending" });
-    if (svcLower.includes("full business") || svcLower.includes("automation") || svcLower.includes("whatsapp")) items.push({ id: "sub_auto", label: "WhatsApp", status: activeItems["automation"] === "delivered" ? "done" : activeItems["automation"] ? "active" : "pending" });
-    return items.length > 0 ? items : [];
-  })();
-
-  const deliveryItems: LineItem[] = (() => {
-    const items: LineItem[] = [];
-    Object.entries(activeItems).forEach(([id, state]) => {
-      const folder = SERVICE_FOLDERS[id];
-      if (!folder) return;
-      items.push({ id, label: folder.label.split(" ").slice(0, 2).join(" "), status: state === "delivered" ? "done" : state === "in_progress" ? "active" : "pending" });
-    });
-    return items.length > 0 ? items : [{ id: "pending_delivery", label: "Awaiting", status: "pending" }];
-  })();
-
-  const cartTotal = (() => { let t = 0; cartItems.forEach(id => { const s = SERVICE_DETAILS[id]; if (s) { const n = parseInt((s.price || "").replace(/[^0-9]/g, "")); if (n) t += n; } }); return t; })();
-
-  function handleSubmitReqs() { if (!session?.ref || reqSubmitting) return; setReqSubmitting(true); submitMutation.mutate({ ref: session.ref.toUpperCase(), data: reqForm }); }
-
-  function handleCheckout() {
-    const names = Array.from(cartItems).map(id => SERVICE_DETAILS[id]?.what?.split(",")[0] || id).join(", ");
-    setMobileChatOpen(true); setShowCart(false);
-    setTimeout(() => handleChatSend(`I want to activate these services: ${names}. Total estimate: ${formatNaira(cartTotal)}. How do I pay?`), 300);
-  }
-
-
-
-  /* ── Chat Panel ── */
-  const ChatPanel = ({ isMobile = false }: { isMobile?: boolean }) => (
-    <div className={`flex flex-col ${isMobile ? "h-[70vh]" : "h-full"}`} style={{ backgroundColor: WHITE }}>
-      <div className="flex items-center justify-between px-5 py-4 shrink-0" style={{ boxShadow: "0 1px 0 rgba(0,0,0,0.04)" }}>
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: BG }}><Sparkles size={14} style={{ color: GOLD }} /></div>
-          <p className="text-[14px]" style={{ color: DARK, fontWeight: 500 }}>Advisor</p>
-        </div>
-        {isMobile && <button onClick={() => setMobileChatOpen(false)} style={{ minHeight: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "none", cursor: "pointer" }}><X size={18} style={{ color: MUTED }} /></button>}
-      </div>
-      <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3" style={{ minHeight: 0 }}>
-        {chatMessages.length === 0 && <div className="flex flex-col items-center justify-center h-full text-center px-4"><Sparkles size={24} style={{ color: MUTED, opacity: 0.3 }} className="mb-3" /><p className="text-[13px]" style={{ color: MUTED }}>Ask anything about your business.</p></div>}
-        {chatMessages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div className="max-w-[85%] rounded-2xl px-4 py-3" style={{ backgroundColor: msg.role === "user" ? CHAT_USER_BG : CHAT_BOT_BG, color: msg.role === "user" ? WHITE : DARK, borderBottomRightRadius: msg.role === "user" ? 6 : 18, borderBottomLeftRadius: msg.role === "user" ? 18 : 6 }}>
-              {msg.content ? <p className="text-[13px] leading-relaxed whitespace-pre-wrap" style={{ fontWeight: 400 }}>{msg.content}</p>
-                : <div className="flex items-center gap-1.5 py-1"><div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: MUTED }} /><div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: MUTED, animationDelay: "150ms" }} /><div className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: MUTED, animationDelay: "300ms" }} /></div>}
-            </div>
-          </div>
-        ))}
-        <div ref={chatEndRef} />
-      </div>
-      <div className="shrink-0 px-4 py-3 flex items-center gap-2" style={{ boxShadow: "0 -1px 0 rgba(0,0,0,0.04)" }}>
-        <input type="text" value={chatInput} onChange={e => setChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }} placeholder="Type a message..." className="flex-1 text-[13px] bg-transparent focus:outline-none py-3 px-4 rounded-full" style={{ color: DARK, backgroundColor: BG, fontWeight: 400, minHeight: 44 }} disabled={chatLoading} />
-        <button onClick={() => handleChatSend()} disabled={!chatInput.trim() || chatLoading} className="flex items-center justify-center shrink-0 transition-all hover:opacity-80 disabled:opacity-30 rounded-full" style={{ backgroundColor: GOLD, color: WHITE, width: 44, height: 44 }}>
-          {chatLoading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
-        </button>
-      </div>
-    </div>
-  );
-
-  /* ════════════════════════════════════════════════════════════════════ */
-  /*  RENDER                                                             */
-  /* ════════════════════════════════════════════════════════════════════ */
-
-  return (
-    <div className="min-h-screen" style={{ backgroundColor: BG }}>
-      <style>{cssAnimations}</style>
-      <PageMeta title={`${businessName} | HAMZURY`} description="Your business dashboard." />
-
-      {/* HEADER */}
-      <nav className="sticky top-0 z-30 flex items-center justify-between" style={{ height: 48, padding: "0 20px", backgroundColor: `${WHITE}f2`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 0.5px 0 rgba(0,0,0,0.06)" }}>
-        <a href="/" className="text-[13px] tracking-tight" style={{ color: DARK, fontWeight: 600, letterSpacing: "0.02em" }}>HAMZURY</a>
-        <button onClick={handleLogout} className="text-[13px] transition-opacity hover:opacity-60" style={{ color: MUTED, fontWeight: 400, minHeight: 44, display: "flex", alignItems: "center" }}>Exit</button>
-      </nav>
-
-      <div style={{ height: "calc(100vh - 48px)", overflowY: "auto", WebkitOverflowScrolling: "touch" as any }}>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "0 20px", paddingBottom: 140 }}>
-
-          {/* 1. WELCOME */}
-          <div style={{ paddingTop: 40, paddingBottom: 20, textAlign: "center" }}>
-            <h1 style={{ fontSize: 28, fontWeight: 700, color: DARK, letterSpacing: "-0.02em", marginBottom: 6 }}>Welcome, {firstName}</h1>
-            <p style={{ fontSize: 20, fontWeight: 500, color: GOLD, marginBottom: 16 }}>{businessName}</p>
-            <p style={{ fontSize: 13, color: MUTED, fontStyle: "italic", lineHeight: 1.7, maxWidth: 360, margin: "0 auto", marginBottom: 8 }}>"{FOUNDER_QUOTES[quoteIdx]}"</p>
-            <p style={{ fontSize: 11, color: `${MUTED}80`, fontWeight: 500, letterSpacing: "0.04em" }}>— Muhammad Hamzury</p>
-          </div>
-
-          {/* PROJECT OVERVIEW — Legend + Stats + Phase Timeline */}
-          {(() => {
-            const allItems = [...brandItems, ...systemsItems, ...complianceItems, ...contentItems, ...staffItems, ...deliveryItems.filter(d => d.id !== "pending_delivery")];
-            const delivered = allItems.filter(i => i.status === "done").length;
-            const inProgress = allItems.filter(i => i.status === "active").length;
-            const pending = allItems.filter(i => i.status === "pending").length;
-            const total = allItems.length;
-            const pct = total > 0 ? Math.round((delivered / total) * 100) : 0;
-            const phaseDesc: Record<string, string> = { brand_phase: "Brand identity, logo, guidelines, positioning.", digital_phase: "Website, social media, content strategy.", ops_phase: "Dashboards, CRM, automation, workspace.", growth_phase: "Training, scaling, ongoing management." };
-            return (
-              <div style={{ marginBottom: 28 }}>
-                {/* Legend */}
-                <div style={{ display: "flex", justifyContent: "center", gap: 20, marginBottom: 20 }}>
-                  {[
-                    { color: GREEN, label: "Delivered" },
-                    { color: GOLD, label: "In Progress" },
-                    { color: GREY, label: "Not Started", hollow: true },
-                  ].map(s => (
-                    <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <div style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.hollow ? "transparent" : s.color, border: s.hollow ? `2px solid ${GREY}` : "none" }} />
-                      <span style={{ fontSize: 11, color: MUTED, fontWeight: 500 }}>{s.label}</span>
-                    </div>
-                  ))}
-                </div>
-                {/* Overview card */}
-                <div style={{ padding: "20px 24px", borderRadius: 16, backgroundColor: WHITE, border: `1px solid ${GREY}20`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: DARK }}>Project Overview</span>
-                    <span style={{ fontSize: 22, fontWeight: 700, color: pct >= 80 ? GREEN : pct >= 40 ? GOLD : DARK }}>{pct}%</span>
-                  </div>
-                  {/* Progress bar */}
-                  <div style={{ height: 6, borderRadius: 3, backgroundColor: `${GREY}30`, marginBottom: 16, overflow: "hidden" }}>
-                    <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${GREEN}, ${GREEN}cc)`, width: `${pct}%`, transition: "width 0.8s ease" }} />
-                  </div>
-                  {/* Stats row */}
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-                    {[
-                      { n: delivered, label: "Delivered", color: GREEN },
-                      { n: inProgress, label: "Building", color: GOLD },
-                      { n: pending, label: "Upcoming", color: MUTED },
-                    ].map(s => (
-                      <div key={s.label} style={{ textAlign: "center", flex: 1 }}>
-                        <p style={{ fontSize: 20, fontWeight: 700, color: s.color, marginBottom: 2 }}>{s.n}</p>
-                        <p style={{ fontSize: 10, color: MUTED, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Phase timeline — embedded */}
-                  <div style={{ borderTop: `1px solid ${GREY}20`, paddingTop: 14 }}>
-                    <p style={{ fontSize: 10, fontWeight: 600, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>Project Phases</p>
-                    <div style={{ position: "relative", padding: "0 4px" }}>
-                      <div style={{ position: "absolute", top: 7, left: 4, right: 4, height: 2, backgroundColor: `${GREY}50`, borderRadius: 1 }} />
-                      {(() => { const ac = timelineItems.filter(i => i.status !== "pending").length; return <div style={{ position: "absolute", top: 7, left: 4, height: 2, width: timelineItems.length > 1 ? `${(Math.max(0, ac - 1) / (timelineItems.length - 1)) * 100}%` : "0%", backgroundColor: GREEN, borderRadius: 1, transition: "width 0.5s ease" }} />; })()}
-                      <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
-                        {timelineItems.map(item => {
-                          const isDone = item.status === "done";
-                          const isActive = item.status === "active";
-                          return (
-                            <div key={item.id} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                              <div style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: isDone ? GREEN : isActive ? GOLD : WHITE, boxShadow: isDone || isActive ? "none" : `inset 0 0 0 1.5px ${GREY}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                                {isDone && <CheckCircle size={9} style={{ color: WHITE }} />}
-                                {isActive && <div style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: WHITE }} />}
-                              </div>
-                              <span style={{ fontSize: 9, color: isDone ? GREEN : isActive ? GOLD : MUTED, fontWeight: 500 }}>{item.label}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {task.deadline && <p style={{ fontSize: 10, color: GOLD, fontWeight: 500, marginTop: 10, textAlign: "center" }}>Target completion: {formatDate(task.deadline)}</p>}
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {/* 3. REQUIREMENTS — sub-circles per field */}
-          <ProgressLine label="Requirements" icon={FileCheck} items={reqItems} selectedId={expandedSection?.section === "req" ? expandedSection.itemId : null} onSelect={id => id ? sel("req", id) : setExpandedSection(null)}>
-            {(item) => {
-              const sec = REQ_SECTIONS.find(s => s.id === item.id);
-              if (!sec) return null;
-              const fieldSubs: SubItem[] = sec.fields.map(f => {
-                const val = hasSubmittedReqs ? (existingReqs?.[f.key] || existingReqs?.[f.label] || "") : (reqForm[f.key] || "");
-                return { id: f.key, label: f.label.split(" ").slice(0, 2).join(" "), status: val.trim() ? "done" as const : "pending" as const, detail: f.label };
-              });
-              return (
-                <div>
-                  <p style={{ fontSize: 12, color: MUTED, marginBottom: 10, lineHeight: 1.5 }}>{sec.why}</p>
-                  <SubLine items={fieldSubs} selectedId={subSelected} onSelect={setSubSelected} />
-                  {/* Show form/value for selected sub-field */}
-                  {subSelected && (() => {
-                    const f = sec.fields.find(f => f.key === subSelected);
-                    if (!f) return null;
-                    if (hasSubmittedReqs) {
-                      const val = existingReqs?.[f.key] || existingReqs?.[f.label] || "";
-                      return val ? <div style={{ marginTop: 8, padding: "10px 12px", borderRadius: 8, backgroundColor: `${GREEN}08` }}><span style={{ fontSize: 11, color: MUTED }}>{f.label}:</span> <span style={{ fontSize: 12, color: DARK, fontWeight: 500 }}>{val}</span></div> : null;
-                    }
-                    return (
-                      <div style={{ marginTop: 8 }}>
-                        <label style={{ fontSize: 11, color: MUTED, fontWeight: 500, display: "block", marginBottom: 4 }}>{f.label} {"required" in f && f.required && <span style={{ color: GOLD }}>*</span>}</label>
-                        {"select" in f && f.select ? (
-                          <select value={reqForm[f.key] || ""} onChange={e => setReqForm(p => ({ ...p, [f.key]: e.target.value }))} style={{ width: "100%", fontSize: 13, padding: "10px 12px", borderRadius: 8, border: `1px solid ${GREY}60`, backgroundColor: WHITE, color: DARK, outline: "none" }}>
-                            <option value="">{f.placeholder}</option>
-                            {f.select.map(o => <option key={o} value={o}>{o}</option>)}
-                          </select>
-                        ) : "textarea" in f && f.textarea ? (
-                          <textarea value={reqForm[f.key] || ""} onChange={e => setReqForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} rows={3} style={{ width: "100%", fontSize: 13, padding: "10px 12px", borderRadius: 8, border: `1px solid ${GREY}60`, backgroundColor: WHITE, color: DARK, outline: "none", resize: "vertical", fontFamily: "inherit" }} />
-                        ) : (
-                          <input type="text" value={reqForm[f.key] || ""} onChange={e => setReqForm(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} style={{ width: "100%", fontSize: 13, padding: "10px 12px", borderRadius: 8, border: `1px solid ${GREY}60`, backgroundColor: WHITE, color: DARK, outline: "none" }} />
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {sec.id === "notes" && !hasSubmittedReqs && <button onClick={handleSubmitReqs} disabled={reqSubmitting || !reqForm.businessName1} style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", backgroundColor: reqSubmitting ? GREY : GOLD, color: WHITE, fontSize: 13, fontWeight: 600, cursor: reqSubmitting ? "default" : "pointer", marginTop: 12 }}>{reqSubmitting ? "Submitting..." : "Submit Requirements"}</button>}
-                </div>
-              );
-            }}
-          </ProgressLine>
-
-          {/* 4. PAYMENT */}
-          <ProgressLine label="Payment" icon={CreditCard} items={paymentItems} selectedId={expandedSection?.section === "pay" ? expandedSection.itemId : null} onSelect={id => id ? sel("pay", id) : setExpandedSection(null)}>
-            {(item) => {
-              if (!invoiceSummary) return <p style={{ fontSize: 12, color: MUTED }}>No invoices yet. Payment details will appear here.</p>;
-              const inv = invoiceSummary.invoices.find((i: any) => (i.number || `inv_${i.id}`) === item.id);
-              const paid = invoiceSummary.paid || 0, total = invoiceSummary.total || 0, remaining = total - paid;
-              return (<div>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div><p style={{ fontSize: 11, color: MUTED }}>Paid</p><p style={{ fontSize: 18, fontWeight: 700, color: GREEN }}>{formatNaira(paid)}</p></div>
-                  {remaining > 0 && <div style={{ textAlign: "right" }}><p style={{ fontSize: 11, color: MUTED }}>Remaining</p><p style={{ fontSize: 18, fontWeight: 700, color: ORANGE }}>{formatNaira(remaining)}</p></div>}
-                </div>
-                {inv && <div style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: `${GREY}15`, marginBottom: 10 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 11, color: MUTED, fontFamily: "monospace" }}>{inv.number}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 4, backgroundColor: inv.status === "paid" ? `${GREEN}15` : `${ORANGE}15`, color: inv.status === "paid" ? GREEN : ORANGE }}>{inv.status === "paid" ? "PAID" : "PENDING"}</span>
-                  </div>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{formatNaira(inv.total)}</p>
-                  {inv.dueDate && <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Due: {formatDate(inv.dueDate)}</p>}
-                </div>}
-                {remaining > 0 && activeBankDetails?.configured && <div style={{ padding: 12, borderRadius: 8, border: `1px solid ${GOLD}30`, marginTop: 8 }}>
-                  <p style={{ fontSize: 11, color: MUTED, marginBottom: 6 }}>Bank Details</p>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{activeBankDetails.bankName}</p>
-                  <p style={{ fontSize: 12, color: MUTED }}>{activeBankDetails.accountName}</p>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: DARK, fontFamily: "monospace" }}>{activeBankDetails.accountNumber}</span>
-                    <button onClick={() => { navigator.clipboard.writeText(activeBankDetails.accountNumber); setCopiedAcct(true); setTimeout(() => setCopiedAcct(false), 2000); }} style={{ border: "none", background: "none", cursor: "pointer", padding: 4 }}>{copiedAcct ? <CheckCircle size={14} style={{ color: GREEN }} /> : <Copy size={14} style={{ color: MUTED }} />}</button>
-                  </div>
-                  {inv && !claimedInvoices.has(inv.number) && <button onClick={() => claimMutation.mutate({ invoiceNumber: inv.number, clientName: task.clientName })} disabled={claimMutation.isPending} style={{ width: "100%", marginTop: 10, padding: "10px", borderRadius: 8, border: `1px solid ${GREEN}`, backgroundColor: `${GREEN}10`, color: GREEN, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{claimMutation.isPending ? "Confirming..." : "I've Paid"}</button>}
-                  {inv && claimedInvoices.has(inv.number) && <p style={{ fontSize: 12, color: GREEN, fontWeight: 500, marginTop: 8, textAlign: "center" }}>✓ Payment notification sent.</p>}
-                </div>}
-              </div>);
-            }}
-          </ProgressLine>
-
-          {/* 5–9. ALL SERVICE SECTIONS — unified SubLine render */}
-          {([
-            { key: "brand", label: "Brand & Identity", icon: Palette, items: brandItems },
-            { key: "sys", label: "Systems & Tools", icon: Globe, items: systemsItems },
-            { key: "comp", label: "Documents & Compliance", icon: Shield, items: complianceItems },
-            { key: "cnt", label: "Content & Materials", icon: FileText, items: contentItems },
-            { key: "staff", label: "Training & Growth", icon: Users, items: staffItems },
-          ] as const).map(sec => (
-            <ProgressLine key={sec.key} label={sec.label} icon={sec.icon} items={sec.items} selectedId={expandedSection?.section === sec.key ? expandedSection.itemId : null} onSelect={id => id ? sel(sec.key, id) : setExpandedSection(null)}>
-              {(item) => {
-                const sv = SERVICE_DETAILS[item.id];
-                const state = activeItems[item.id];
-                const hasIt = !!state && state !== "inactive";
-                const isInCart = cartItems.has(item.id);
-                const isDelivered = state === "delivered";
-                const subs = getSubItems(item.id);
-                return (
-                  <div>
-                    {/* Header with accent */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <div style={{ width: 4, height: 28, borderRadius: 2, backgroundColor: isDelivered ? GREEN : state === "in_progress" ? GOLD : GREY }} />
-                      <div>
-                        <p style={{ fontSize: 13, fontWeight: 600, color: DARK, margin: 0 }}>{sv?.pitch || item.label}</p>
-                        <p style={{ fontSize: 11, color: isDelivered ? GREEN : state === "in_progress" ? GOLD : MUTED, fontWeight: 500, margin: "2px 0 0" }}>{isDelivered ? "✓ Delivered" : state === "in_progress" ? "⏳ In Progress" : "Upcoming"}</p>
-                      </div>
-                    </div>
-                    {sv && <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBottom: 10 }}>{sv.why}</p>}
-                    {/* Process sub-circles */}
-                    {subs.length > 0 && <SubLine items={subs} selectedId={subSelected} onSelect={setSubSelected} />}
-                    {/* Price + action */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-                      {sv && <span style={{ fontSize: 13, fontWeight: 600, color: GOLD }}>{sv.price}</span>}
-                      {hasIt ? <span style={{ fontSize: 11, padding: "4px 12px", borderRadius: 6, backgroundColor: isDelivered ? `${GREEN}10` : `${GOLD}10`, color: isDelivered ? GREEN : GOLD, fontWeight: 600 }}>{isDelivered ? "Completed" : "Building"}</span>
-                        : sv ? <button onClick={() => toggleCart(item.id)} style={{ fontSize: 12, fontWeight: 500, padding: "6px 14px", borderRadius: 8, border: isInCart ? `1px solid ${GREEN}` : `1px solid ${GOLD}`, backgroundColor: isInCart ? `${GREEN}10` : "transparent", color: isInCart ? GREEN : GOLD, cursor: "pointer" }}>{isInCart ? "✓ Added" : "Add to Cart"}</button> : null}
-                    </div>
-                  </div>
-                );
-              }}
-            </ProgressLine>
-          ))}
-
-          {/* Cart badge */}
-          {cartItems.size > 0 && <div style={{ position: "sticky", bottom: 80, zIndex: 20, display: "flex", justifyContent: "center", marginBottom: -20 }}>
-            <button onClick={() => setShowCart(!showCart)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 24px", borderRadius: 50, border: "none", backgroundColor: DARK, color: WHITE, cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.2)", fontSize: 13, fontWeight: 600 }}>
-              <Package size={16} /> {cartItems.size} service{cartItems.size > 1 ? "s" : ""} · {formatNaira(cartTotal)} <ChevronRight size={14} />
-            </button>
-          </div>}
-
-          {showCart && cartItems.size > 0 && <div style={{ padding: 16, borderRadius: 12, backgroundColor: WHITE, border: `1px solid ${GREY}30`, marginBottom: 24, animation: "fadeUp 0.3s ease" }}>
-            <p style={{ fontSize: 14, fontWeight: 600, color: DARK, marginBottom: 12 }}>Your Selection</p>
-            {Array.from(cartItems).map(id => { const sv = SERVICE_DETAILS[id]; if (!sv) return null; return (<div key={id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${GREY}15` }}><div><p style={{ fontSize: 12, fontWeight: 500, color: DARK }}>{sv.what?.split(",")[0]}</p><p style={{ fontSize: 11, color: GOLD }}>{sv.price}</p></div><button onClick={() => toggleCart(id)} style={{ border: "none", background: "none", cursor: "pointer", padding: 4 }}><X size={14} style={{ color: MUTED }} /></button></div>); })}
-            <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button onClick={handleCheckout} style={{ flex: 1, padding: "12px", borderRadius: 10, border: "none", backgroundColor: GREEN, color: WHITE, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Checkout · {formatNaira(cartTotal)}</button>
-              <button onClick={() => { setMobileChatOpen(true); setShowCart(false); setTimeout(() => handleChatSend("I'm interested in some services but not sure where to start. What do you recommend?"), 300); }} style={{ padding: "12px 16px", borderRadius: 10, border: `1px solid ${GREY}`, backgroundColor: "transparent", color: MUTED, fontSize: 12, fontWeight: 500, cursor: "pointer" }}>Help me</button>
-            </div>
-          </div>}
-
-          {/* 12. DELIVERY */}
-          <ProgressLine label="Delivery" icon={Package} items={deliveryItems} selectedId={expandedSection?.section === "del" ? expandedSection.itemId : null} onSelect={id => id ? sel("del", id) : setExpandedSection(null)}>
-            {(item) => {
-              const state = activeItems[item.id];
-              const folder = SERVICE_FOLDERS[item.id];
-              const isDelivered = state === "delivered";
-              return (<div>
-                {folder && <div style={{ marginBottom: 10 }}>
-                  <p style={{ fontSize: 13, fontWeight: 500, color: DARK, marginBottom: 6 }}>{folder.label}</p>
-                  {folder.items.map((fi, i) => <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0" }}>{isDelivered ? <CheckCircle size={12} style={{ color: GREEN }} /> : <Circle size={12} style={{ color: GREY }} />}<span style={{ fontSize: 12, color: isDelivered ? DARK : `${MUTED}80` }}>{fi}</span></div>)}
-                </div>}
-                {isDelivered && deliveryLink && <a href={deliveryLink} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "10px", borderRadius: 10, backgroundColor: GREEN, color: WHITE, fontSize: 13, fontWeight: 600, textDecoration: "none", marginTop: 8 }}><Download size={14} /> View & Download</a>}
-                {isDelivered && !deliveryLink && <p style={{ fontSize: 12, color: GREEN, fontWeight: 500, marginTop: 6 }}>✓ Delivered — accessible in your files.</p>}
-                {!isDelivered && state === "in_progress" && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}><div style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD, animation: "pulse-dot 2s infinite" }} /><span style={{ fontSize: 12, color: GOLD, fontWeight: 500 }}>In progress — you'll be notified when ready.</span></div>}
-                {!isDelivered && !state && <p style={{ fontSize: 12, color: MUTED, fontStyle: "italic" }}>Soon — this deliverable is queued.</p>}
-              </div>);
-            }}
-          </ProgressLine>
-
-          {/* 13. SUBSCRIPTION — Continuous Management */}
-          {subscriptionItems.length > 0 && (() => {
-            const SUB_INFO: Record<string, { title: string; desc: string; monthly: { month: string; tasks: string[] }[] }> = {
-              sub_website: { title: "Website Management", desc: "Your website stays fresh, fast, and optimised.", monthly: [
-                { month: "Jan", tasks: ["Initial setup & launch"] }, { month: "Feb", tasks: ["Content updates", "Speed optimisation"] }, { month: "Mar", tasks: ["SEO review", "Security patches"] },
-                { month: "Apr", tasks: ["Performance report", "Bug fixes"] }, { month: "May", tasks: ["New features", "Content refresh"] }, { month: "Jun", tasks: ["Mid-year audit"] },
-              ]},
-              sub_social: { title: "Social Media Management", desc: "Consistent posting and engagement across all platforms.", monthly: [
-                { month: "Jan", tasks: ["Account setup & branding"] }, { month: "Feb", tasks: ["Content calendar launched", "Daily posting begins"] }, { month: "Mar", tasks: ["Engagement strategy", "First report"] },
-                { month: "Apr", tasks: ["Hashtag optimisation", "Growth review"] }, { month: "May", tasks: ["Campaign planning", "Content refresh"] }, { month: "Jun", tasks: ["Mid-year analytics"] },
-              ]},
-              sub_dashboard: { title: "Dashboard Management", desc: "Dashboards kept current with weekly data and insights.", monthly: [
-                { month: "Jan", tasks: ["Dashboard setup"] }, { month: "Feb", tasks: ["Data pipeline live", "First weekly report"] }, { month: "Mar", tasks: ["KPI tracking tuned"] },
-                { month: "Apr", tasks: ["Custom reports added"] }, { month: "May", tasks: ["Team views configured"] }, { month: "Jun", tasks: ["Mid-year review"] },
-              ]},
-              sub_tax: { title: "Tax Pro Max", desc: "End-to-end tax compliance — we file, track, and optimise.", monthly: [
-                { month: "Jan", tasks: ["Tax calendar set"] }, { month: "Feb", tasks: ["First monthly filing"] }, { month: "Mar", tasks: ["Q1 review & filing"] },
-                { month: "Apr", tasks: ["Monthly filing", "TCC check"] }, { month: "May", tasks: ["Monthly filing"] }, { month: "Jun", tasks: ["Q2 review & annual prep"] },
-              ]},
-              sub_crm: { title: "CRM & Leads", desc: "Leads tracked, nurtured, and followed up automatically.", monthly: [
-                { month: "Jan", tasks: ["CRM configured"] }, { month: "Feb", tasks: ["Pipeline stages set", "Automation live"] }, { month: "Mar", tasks: ["First funnel report"] },
-                { month: "Apr", tasks: ["Follow-up sequences tuned"] }, { month: "May", tasks: ["New capture forms"] }, { month: "Jun", tasks: ["Conversion review"] },
-              ]},
-              sub_auto: { title: "WhatsApp Automation", desc: "Auto-replies, booking flows, and sequences kept intelligent.", monthly: [
-                { month: "Jan", tasks: ["WhatsApp setup"] }, { month: "Feb", tasks: ["Auto-replies live", "Booking flow built"] }, { month: "Mar", tasks: ["Follow-up sequences"] },
-                { month: "Apr", tasks: ["Broadcast campaign"] }, { month: "May", tasks: ["Flow optimisation"] }, { month: "Jun", tasks: ["Analytics review"] },
-              ]},
-            };
-            const now = new Date();
-            const currentMonth = now.getMonth(); // 0-indexed
-            return (
-              <ProgressLine label="Continuous Updates" icon={Zap} items={subscriptionItems} selectedId={expandedSection?.section === "sub" ? expandedSection.itemId : null} onSelect={id => id ? sel("sub", id) : setExpandedSection(null)}>
-                {(item) => {
-                  const info = SUB_INFO[item.id];
-                  if (!info) return null;
-                  const isDone = item.status === "done";
-                  const monthSubs: SubItem[] = info.monthly.map((m, i) => ({
-                    id: `${item.id}_m${i}`,
-                    label: m.month,
-                    status: i < currentMonth ? "done" as const : i === currentMonth ? "active" as const : "pending" as const,
-                    detail: m.tasks.join(" · "),
-                  }));
-                  return (
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <div style={{ width: 4, height: 28, borderRadius: 2, backgroundColor: isDone ? GREEN : GOLD }} />
-                        <div>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: DARK, margin: 0 }}>{info.title}</p>
-                          <p style={{ fontSize: 11, color: isDone ? GREEN : GOLD, fontWeight: 500, margin: "2px 0 0" }}>{isDone ? "✓ Active & managed" : "⏳ Being set up"}</p>
-                        </div>
-                      </div>
-                      <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBottom: 10 }}>{info.desc}</p>
-                      {/* Monthly timeline sub-circles */}
-                      <SubLine items={monthSubs} selectedId={subSelected} onSelect={setSubSelected} />
-                      <p style={{ fontSize: 10, color: MUTED, fontStyle: "italic", marginTop: 6 }}>Continuously managed — we handle everything.</p>
-                    </div>
-                  );
-                }}
-              </ProgressLine>
-            );
-          })()}
-
-          {/* 14. REFERENCE */}
-          <div style={{ textAlign: "center", padding: "24px 0 16px", borderTop: `1px solid ${GREY}20` }}>
-            <p style={{ fontSize: 11, color: MUTED, marginBottom: 4 }}>Your Reference</p>
-            <p style={{ fontSize: 16, fontWeight: 700, color: DARK, fontFamily: "monospace", letterSpacing: "0.05em" }}>{task.ref}</p>
-            <p style={{ fontSize: 10, color: `${MUTED}80`, marginTop: 4 }}>All your documents and invoices use this reference.</p>
-          </div>
-
-        </div>
-      </div>
-
-      {/* CHAT BUTTON */}
-      {!mobileChatOpen && <button onClick={() => setMobileChatOpen(true)} style={{ position: "fixed", bottom: 24, right: 24, zIndex: 40, width: 56, height: 56, borderRadius: 28, border: "none", backgroundColor: GOLD, color: WHITE, cursor: "pointer", boxShadow: "0 4px 20px rgba(180,140,76,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}><MessageSquare size={22} /></button>}
-
-      {/* CHAT PANEL */}
-      {mobileChatOpen && <>
-        <div onClick={() => setMobileChatOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 40, backgroundColor: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }} />
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 50, maxWidth: 480, margin: "0 auto", borderRadius: "20px 20px 0 0", overflow: "hidden", boxShadow: "0 -8px 40px rgba(0,0,0,0.12)", animation: "slideUp 0.3s ease" }}>
-          <ChatPanel isMobile />
-        </div>
-      </>}
-    </div>
-  );
+  return <DashboardView token={token} onLogout={handleLogout} />;
 }
