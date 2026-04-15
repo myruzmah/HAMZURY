@@ -9,6 +9,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Home from "./pages/Home";
 import BizDocPortal from "./pages/BizDocPortal";
 import CSOPortal from "./pages/CSOPortal";
+import CEOPortal from "./pages/CEOPortal";
 import SystemisePortal from "./pages/SystemisePortal";
 import SkillsPortal from "./pages/SkillsPortal";
 import SkillsPrograms from "./pages/SkillsPrograms";
@@ -50,6 +51,7 @@ import { trpc } from "./lib/trpc";
  */
 const ROLE_ACCESS: Record<string, string[]> = {
   "/cso": ["cso", "cso_staff"],
+  "/ceo": ["ceo", "founder"],
 };
 
 /** Wrapper that enforces hamzuryRole-based access on /hub/* and sensitive routes */
@@ -112,8 +114,15 @@ function Router() {
       {/* Legacy /hub/cso redirect → /cso */}
       <Route path={"/hub/cso"}>{() => { window.location.href = "/cso"; return null; }}</Route>
 
+      {/* CEO Executive Portal */}
+      <Route path={"/ceo"}>
+        <RoleGuard allowedRoles={ROLE_ACCESS["/ceo"]}>
+          <CEOPortal />
+        </RoleGuard>
+      </Route>
+      <Route path={"/hub/ceo"}>{() => { window.location.href = "/ceo"; return null; }}</Route>
+
       {/* Deprecated staff dashboards — redirect to home (2026-04 cleanup) */}
-      <Route path={"/hub/ceo"}>{() => { window.location.href = "/"; return null; }}</Route>
       <Route path={"/hub/finance"}>{() => { window.location.href = "/"; return null; }}</Route>
       <Route path={"/hub/hr"}>{() => { window.location.href = "/"; return null; }}</Route>
       <Route path={"/hub/bizdev"}>{() => { window.location.href = "/"; return null; }}</Route>
