@@ -37,7 +37,7 @@ const STAFF_ROSTER: {
     | "tech_lead" | "compliance_staff" | "security_staff" | "department_staff";
 }[] = [
   { name: "Muhammad Hamzury",  email: "founder@hamzury.com",      hamzuryRole: "founder" },
-  { name: "Idris Ibrahim",     email: "idris@hamzury.com",        hamzuryRole: "ceo" },
+  { name: "Idris Ibrahim",     email: "ceo@hamzury.com",          hamzuryRole: "ceo" },              // CEO Lead — department email is the single source of login for CEO
   { name: "Abdullahi Musa",    email: "abdullahi@hamzury.com",    hamzuryRole: "bizdev" },           // BizDoc dept lead
   { name: "Yusuf Haruna",      email: "yusuf@hamzury.com",        hamzuryRole: "compliance_staff" },
   { name: "Khadija Saad",      email: "khadija@hamzury.com",      hamzuryRole: "bizdev" },           // BizDev + HR + AI Content
@@ -129,6 +129,27 @@ export async function syncStaffRoster(): Promise<void> {
     }
   } catch (err) {
     console.log("[sync-staff] CSO email migration error:", String(err));
+  }
+
+  // ─── 2026-04 migration: rename CEO personal email → department email ───
+  // The CEO department now logs in via ceo@hamzury.com (single source of truth).
+  // Rename idris@hamzury.com in place so staffRef, password, audit history are preserved.
+  try {
+    const legacy = await getStaffUserByEmail("idris@hamzury.com");
+    if (legacy) {
+      const already = await getStaffUserByEmail("ceo@hamzury.com");
+      if (already) {
+        await db.delete(staffUsers).where(eq(staffUsers.email, "idris@hamzury.com"));
+        console.log("[sync-staff] Removed legacy idris@hamzury.com (ceo@hamzury.com already present)");
+      } else {
+        await db.update(staffUsers)
+          .set({ email: "ceo@hamzury.com" })
+          .where(eq(staffUsers.email, "idris@hamzury.com"));
+        console.log("[sync-staff] Renamed idris@hamzury.com → ceo@hamzury.com");
+      }
+    }
+  } catch (err) {
+    console.log("[sync-staff] CEO email migration error:", String(err));
   }
 
   for (const staff of STAFF_ROSTER) {
