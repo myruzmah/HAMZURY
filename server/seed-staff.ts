@@ -40,7 +40,7 @@ const STAFF_ROSTER: {
   { name: "Idris Ibrahim",     email: "ceo@hamzury.com",          hamzuryRole: "ceo" },              // CEO Lead — department email is the single source of login for CEO
   { name: "Abdullahi Musa",    email: "abdullahi@hamzury.com",    hamzuryRole: "bizdev" },           // BizDoc dept lead
   { name: "Yusuf Haruna",      email: "yusuf@hamzury.com",        hamzuryRole: "compliance_staff" },
-  { name: "Khadija Saad",      email: "khadija@hamzury.com",      hamzuryRole: "bizdev" },           // BizDev + HR + AI Content
+  { name: "Khadija Saad",      email: "bizdev@hamzury.com",       hamzuryRole: "bizdev" },           // BizDev Lead — department email is the single source of login for BizDev
   { name: "Farida Munir",      email: "faree@hamzury.com",        hamzuryRole: "bizdev" },           // BizDev + Podcast
   { name: "Maryam Ashir Lalo", email: "cso@hamzury.com",          hamzuryRole: "cso" },              // CSO Lead — department email is the single source of login for CSO
   { name: "Abubakar Sadiq",    email: "abubakar@hamzury.com",     hamzuryRole: "finance" },          // Finance + Brand
@@ -150,6 +150,27 @@ export async function syncStaffRoster(): Promise<void> {
     }
   } catch (err) {
     console.log("[sync-staff] CEO email migration error:", String(err));
+  }
+
+  // ─── 2026-04 migration: rename BizDev personal email → department email ───
+  // The BizDev department now logs in via bizdev@hamzury.com (single source of truth).
+  // Rename khadija@hamzury.com in place so staffRef, password, audit history are preserved.
+  try {
+    const legacy = await getStaffUserByEmail("khadija@hamzury.com");
+    if (legacy) {
+      const already = await getStaffUserByEmail("bizdev@hamzury.com");
+      if (already) {
+        await db.delete(staffUsers).where(eq(staffUsers.email, "khadija@hamzury.com"));
+        console.log("[sync-staff] Removed legacy khadija@hamzury.com (bizdev@hamzury.com already present)");
+      } else {
+        await db.update(staffUsers)
+          .set({ email: "bizdev@hamzury.com" })
+          .where(eq(staffUsers.email, "khadija@hamzury.com"));
+        console.log("[sync-staff] Renamed khadija@hamzury.com → bizdev@hamzury.com");
+      }
+    }
+  } catch (err) {
+    console.log("[sync-staff] BizDev email migration error:", String(err));
   }
 
   for (const staff of STAFF_ROSTER) {

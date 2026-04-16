@@ -480,7 +480,7 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
       </SectionTitle>
 
       {/* KPI grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
         {kpis.map(k => (
           <button
             key={k.label}
@@ -499,7 +499,7 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
       </div>
 
       {/* Trend chart — leads per month + revenue per month (recharts) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 16 }}>
         <Card>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -738,7 +738,7 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
             CSO Rhythm — Today's Standing Work
           </p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
           {[
             { title: "Lead acknowledgement", detail: "All new leads acknowledged within 4 business hours." },
             { title: "Daily lead summary", detail: "Send end-of-day summary of new leads to CEO." },
@@ -932,7 +932,7 @@ function QualificationSection({ selectedId, onBack }: { selectedId: number | nul
         Qualification — {lead.businessName || lead.name}
       </SectionTitle>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 14 }}>
         <Card>
           <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Lead Record</p>
           <InfoRow label="Reference" value={<span style={{ fontFamily: "monospace", color: GOLD }}>{lead.ref}</span>} />
@@ -1090,7 +1090,7 @@ function OnboardingSection() {
         Onboarding Queue
       </SectionTitle>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 14 }}>
         <Card>
           <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
             Accepted Proposals Awaiting Onboarding
@@ -1284,13 +1284,13 @@ function ClientCard({
           </div>
           <p style={{ fontSize: 11, fontFamily: "monospace", color: GOLD, marginBottom: 8 }}>{c.ref}</p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginBottom: 10 }}>
             <MetaCell label="Department" value={c.department || "—"} />
             <MetaCell label="Contract" value={fmtNaira(c.contractValue)} />
             <MetaCell label="Balance" value={fmtNaira(c.balance)} warn={c.balance && parseFloat(c.balance) > 0} />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10 }}>
             <MetaCell label="CSO Owner" value={c.csoOwner || "—"} />
             <MetaCell label="Dept Owner" value={c.departmentOwner || "—"} />
             <MetaCell label="Finance Owner" value={c.financeOwner || "—"} />
@@ -1505,7 +1505,7 @@ function ReferralsSection() {
         Referral Source Visibility
       </SectionTitle>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14 }}>
         <Card>
           <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
             By Source
@@ -1925,7 +1925,7 @@ function SettingsSection({ currentUser }: { currentUser: any }) {
         Settings
       </SectionTitle>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 14 }}>
         <Card>
           <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>Profile</p>
           <Field label="Full name" value={name} onChange={setName} />
@@ -2006,7 +2006,7 @@ function Field({ label, value, onChange, type = "text" }: {
 function ModalShell({ title, onClose, children, width = 560 }: {
   title: string; onClose: () => void; children: React.ReactNode; width?: number;
 }) {
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 700;
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 900;
   return (
     <div
       onClick={onClose}
@@ -2095,13 +2095,13 @@ function AddClientModal({ onClose, onCreated, currentUser: _cu }: { onClose: () 
 
   return (
     <ModalShell title="Add Client (CSO Manual)" onClose={onClose} width={640}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <Field label="Business name *" value={form.businessName} onChange={(v) => setForm({ ...form, businessName: v })} />
         <Field label="Contact name *" value={form.contactName} onChange={(v) => setForm({ ...form, contactName: v })} />
         <Field label="Phone *" value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
         <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} />
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <SelectField
           label="Engagement type *"
           value={form.engagementType}
@@ -2125,12 +2125,12 @@ function AddClientModal({ onClose, onCreated, currentUser: _cu }: { onClose: () 
         />
       </div>
       <Field label="Services (comma-separated) *" value={form.servicesRaw} onChange={(v) => setForm({ ...form, servicesRaw: v })} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <Field label="Contract value (NGN) *" value={form.value} onChange={(v) => setForm({ ...form, value: v })} />
         <Field label="Start date" type="date" value={form.startDate} onChange={(v) => setForm({ ...form, startDate: v })} />
       </div>
       <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 12, marginBottom: 4 }}>Department owners (leave blank to skip)</p>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <SelectField
           label="BizDoc owner"
           value={form.bizdocOwner}
@@ -2223,7 +2223,7 @@ function AssignTaskModal({ clientId, leadId, onClose }: { clientId?: number; lea
       />
       <Field label="Task title *" value={title} onChange={setTitle} />
       <Field label="Description" value={desc} onChange={setDesc} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <Field label="Deadline" type="date" value={deadline} onChange={setDeadline} />
         <SelectField
           label="Priority"
@@ -2336,7 +2336,7 @@ function AddEventModal({ defaultDate, onClose, onCreated }: { defaultDate: strin
     <ModalShell title="Add Event" onClose={onClose}>
       <Field label="Title *" value={title} onChange={setTitle} />
       <Field label="Description" value={desc} onChange={setDesc} />
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <Field label="Date *" type="date" value={date} onChange={setDate} />
         <Field label="Time" type="time" value={time} onChange={setTime} />
       </div>

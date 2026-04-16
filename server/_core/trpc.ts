@@ -124,3 +124,15 @@ export const csoProcedure = t.procedure.use(
     return next({ ctx: { ...ctx, user: ctx.user } });
   }),
 );
+
+/** BizDev + senior — for growth ops (manual lead capture, partner outreach, affiliate ops) */
+export const bizdevProcedure = t.procedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    const allowed = ["founder", "ceo", "bizdev", "bizdev_staff"];
+    if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only BizDev or senior can perform this action." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);

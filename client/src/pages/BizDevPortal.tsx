@@ -32,7 +32,7 @@ const PURPLE = "#8B5CF6";
 type Section =
   | "dashboard" | "affiliates" | "leads" | "partnerships"
   | "campaigns" | "grants" | "sponsorships" | "tasks"
-  | "calendar" | "backoffice";
+  | "targets" | "calendar" | "backoffice";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -188,6 +188,7 @@ export default function BizDevPortal() {
     { key: "leads",        icon: TrendingUp,      label: "Leads & Sources" },
     { key: "affiliates",   icon: Award,           label: "Affiliates" },
     { key: "partnerships", icon: Handshake,       label: "Partnerships" },
+    { key: "targets",      icon: TargetIcon,      label: "Targets from CEO" },
     { key: "campaigns",    icon: Megaphone,       label: "Campaigns" },
     { key: "grants",       icon: Gift,            label: "Grants" },
     { key: "sponsorships", icon: DollarSign,      label: "Sponsorships" },
@@ -333,6 +334,7 @@ export default function BizDevPortal() {
             {active === "leads"        && <LeadsSection />}
             {active === "affiliates"   && <AffiliatesSection />}
             {active === "partnerships" && <PartnershipsSection />}
+            {active === "targets"      && <WeeklyTargetsInboxSection />}
             {active === "tasks"        && <TasksSection />}
             {active === "calendar"     && <CalendarSection />}
             {active === "campaigns"    && <ComingSoonCard
@@ -464,9 +466,19 @@ function DashboardSection({ onGoto }: { onGoto: (s: Section) => void }) {
  * ═══════════════════════════════════════════════════════════════════════ */
 function LeadsSection() {
   const isMobile = useIsMobile();
+  const utils = trpc.useUtils();
   const listQuery = trpc.leads.list.useQuery(undefined, { retry: false });
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+
+  const sendMut = trpc.leads.sendToCso.useMutation({
+    onSuccess: () => {
+      toast.success("Lead sent to CSO");
+      utils.leads.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message || "Could not send lead"),
+  });
 
   const all = (listQuery.data || []) as any[];
   const statusFiltered = filter === "all" ? all : all.filter(l => l.status === filter);
@@ -498,9 +510,21 @@ function LeadsSection() {
 
   return (
     <div>
-      <SectionTitle sub="All leads with source attribution — see which channel converts best.">
-        Leads & Sources
-      </SectionTitle>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <SectionTitle sub="All leads with source attribution — see which channel converts best.">
+          Leads & Sources
+        </SectionTitle>
+        <button
+          onClick={() => setCreating(true)}
+          style={{
+            padding: "8px 14px", borderRadius: 10, backgroundColor: GREEN, color: WHITE,
+            border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          <Plus size={14} /> Add Lead
+        </button>
+      </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 16 }}>
         <MiniStat label="New"        value={counts.new}       color={BLUE} />
@@ -560,44 +584,79 @@ function LeadsSection() {
         </div>
       </Card>
 
+      {creating && (
+        <AddLeadModal
+          onClose={() => setCreating(false)}
+          onCreated={() => { setCreating(false); utils.leads.list.invalidate(); }}
+        />
+      )}
+
       {filtered.length === 0 ? (
-        <Card><EmptyState icon={TrendingUp} title="No leads match." /></Card>
+        <Card><EmptyState icon={TrendingUp} title="No leads match." hint="Click ‘Add Lead’ to capture one manually." /></Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.slice(0, 60).map(l => (
-            <Card key={l.id} style={{ padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>
-                    {l.name || l.contactName || "Unknown"}
-                  </p>
-                  <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{l.businessName || "—"}</p>
-                  <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap", fontSize: 10, color: MUTED }}>
-                    {l.email && <span>{l.email}</span>}
-                    {l.phone && <span>{l.phone}</span>}
+          {filtered.slice(0, 60).map(l => {
+            const alreadyWithCso = (l.assignedDepartment || "").toLowerCase() === "cso";
+            return (
+              <Card key={l.id} style={{ padding: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>
+                      {l.name || l.contactName || "Unknown"}
+                    </p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{l.businessName || "—"}</p>
+                    <div style={{ display: "flex", gap: 10, marginTop: 6, flexWrap: "wrap", fontSize: 10, color: MUTED }}>
+                      {l.email && <span>{l.email}</span>}
+                      {l.phone && <span>{l.phone}</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0, alignItems: "flex-start" }}>
+                    <StatusPill label={l.status} tone={STATUS_TONE[l.status] || "muted"} />
+                    {(l.referralSourceType || l.source) && (
+                      <span style={{
+                        padding: "3px 9px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                        backgroundColor: `${GOLD}20`, color: GOLD, textTransform: "uppercase", letterSpacing: "0.04em",
+                      }}>{l.referralSourceType || l.source}</span>
+                    )}
                   </div>
                 </div>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", flexShrink: 0 }}>
-                  <StatusPill label={l.status} tone={STATUS_TONE[l.status] || "muted"} />
-                  {(l.referralSourceType || l.source) && (
-                    <span style={{
-                      padding: "3px 9px", borderRadius: 12, fontSize: 10, fontWeight: 600,
-                      backgroundColor: `${GOLD}20`, color: GOLD, textTransform: "uppercase", letterSpacing: "0.04em",
-                    }}>{l.referralSourceType || l.source}</span>
+                {(l.notes || l.referrerName) && (
+                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${DARK}06`, fontSize: 11, color: MUTED }}>
+                    {l.referrerName && <p>Referred by <strong style={{ color: DARK }}>{l.referrerName}</strong></p>}
+                    {l.notes && <p style={{ marginTop: 4, fontStyle: "italic" }}>{l.notes.slice(0, 140)}</p>}
+                  </div>
+                )}
+                <div style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  marginTop: 8, paddingTop: 8, borderTop: `1px solid ${DARK}06`, gap: 8, flexWrap: "wrap",
+                }}>
+                  <p style={{ fontSize: 10, color: MUTED }}>
+                    {fmtDate(l.createdAt)}
+                    {l.assignedDepartment && <> · <span style={{ color: GOLD, fontWeight: 600 }}>assigned: {l.assignedDepartment}</span></>}
+                  </p>
+                  {alreadyWithCso ? (
+                    <span style={{ fontSize: 10, color: GREEN, fontWeight: 600 }}>✓ With CSO</span>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        const note = prompt(`Send ${l.name || "this lead"} to CSO — add a note (optional)?`);
+                        if (note === null) return;
+                        sendMut.mutate({ leadId: l.id, note: note || undefined });
+                      }}
+                      disabled={sendMut.isPending}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8, backgroundColor: `${GOLD}15`, color: GOLD,
+                        border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}
+                    >
+                      <Send size={10} /> Send to CSO
+                    </button>
                   )}
                 </div>
-              </div>
-              {(l.notes || l.referrerName) && (
-                <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${DARK}06`, fontSize: 11, color: MUTED }}>
-                  {l.referrerName && <p>Referred by <strong style={{ color: DARK }}>{l.referrerName}</strong></p>}
-                  {l.notes && <p style={{ marginTop: 4, fontStyle: "italic" }}>{l.notes.slice(0, 140)}</p>}
-                </div>
-              )}
-              <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
-                {fmtDate(l.createdAt)}
-              </p>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
@@ -1144,3 +1203,290 @@ function NewEventModal({ onClose, onCreated }: { onClose: () => void; onCreated:
     </div>
   );
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * ADD LEAD MODAL — BizDev captures a lead (can send to CSO immediately)
+ * ═══════════════════════════════════════════════════════════════════════ */
+function AddLeadModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [name, setName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [service, setService] = useState("");
+  const [source, setSource] = useState("partner");
+  const [referrerName, setReferrerName] = useState("");
+  const [notes, setNotes] = useState("");
+  const [sendToCsoNow, setSendToCsoNow] = useState(true);
+
+  const createMut = trpc.leads.createFromBizDev.useMutation({
+    onSuccess: (r) => {
+      toast.success(sendToCsoNow
+        ? `Lead ${r.ref} captured and sent to CSO`
+        : `Lead ${r.ref} captured`);
+      onCreated();
+    },
+    onError: (e) => toast.error(e.message || "Could not create lead"),
+  });
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) { toast.error("Name required"); return; }
+    if (!service.trim()) { toast.error("Service required"); return; }
+    createMut.mutate({
+      name: name.trim(),
+      businessName: businessName.trim() || undefined,
+      phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+      service: service.trim(),
+      source,
+      referrerName: referrerName.trim() || undefined,
+      notes: notes.trim() || undefined,
+      sendToCsoNow,
+    });
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)",
+      zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+      overflowY: "auto",
+    }}>
+      <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{
+        backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "100%", maxWidth: 480,
+        maxHeight: "calc(100vh - 32px)", overflowY: "auto",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 12,
+      }}>
+        <div>
+          <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK }}>Capture Lead</h3>
+          <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+            Capture a new prospect from outreach. Default flow: sent to CSO for qualification.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <Field label="Name">
+            <input value={name} onChange={e => setName(e.target.value)} style={inputStyle()} placeholder="Jane Adebayo" />
+          </Field>
+          <Field label="Business (optional)">
+            <input value={businessName} onChange={e => setBusinessName(e.target.value)} style={inputStyle()} />
+          </Field>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <Field label="Phone">
+            <input value={phone} onChange={e => setPhone(e.target.value)} style={inputStyle()} placeholder="08…" />
+          </Field>
+          <Field label="Email">
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} style={inputStyle()} />
+          </Field>
+        </div>
+
+        <Field label="Service interested in">
+          <input value={service} onChange={e => setService(e.target.value)} style={inputStyle()}
+            placeholder="CAC registration, Website, Full Architecture…" />
+        </Field>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <Field label="Source">
+            <select value={source} onChange={e => setSource(e.target.value)} style={inputStyle()}>
+              <option value="partner">Partner</option>
+              <option value="campaign">Campaign</option>
+              <option value="cold_outreach">Cold outreach</option>
+              <option value="referral">Referral</option>
+              <option value="event">Event</option>
+              <option value="other">Other</option>
+            </select>
+          </Field>
+          <Field label="Referrer (optional)">
+            <input value={referrerName} onChange={e => setReferrerName(e.target.value)} style={inputStyle()} />
+          </Field>
+        </div>
+
+        <Field label="Notes (context, next step)">
+          <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3}
+            style={{ ...inputStyle(), resize: "vertical" }} />
+        </Field>
+
+        <label style={{
+          display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
+          backgroundColor: BG, borderRadius: 8, cursor: "pointer",
+        }}>
+          <input
+            type="checkbox"
+            checked={sendToCsoNow}
+            onChange={e => setSendToCsoNow(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: GREEN }}
+          />
+          <div style={{ minWidth: 0 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: DARK }}>Send to CSO for qualification</span>
+            <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+              CSO will be notified immediately. Uncheck to keep the lead in BizDev only.
+            </p>
+          </div>
+        </label>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+          <button type="button" onClick={onClose}
+            style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "transparent", color: MUTED,
+              border: `1px solid ${DARK}15`, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+          <button type="submit" disabled={createMut.isPending}
+            style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: GREEN, color: WHITE,
+              border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6 }}>
+            {createMut.isPending ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+            {sendToCsoNow ? "Capture & Send to CSO" : "Capture Lead"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * WEEKLY TARGETS INBOX — BizDev sees targets from CEO, submits outcomes
+ * ═══════════════════════════════════════════════════════════════════════ */
+function WeeklyTargetsInboxSection() {
+  const utils = trpc.useUtils();
+  const listQuery = trpc.weeklyTargets.list.useQuery(undefined, { retry: false });
+
+  const all = ((listQuery.data || []) as any[]).filter(t =>
+    t.department === "bizdev" || t.department === "bizdoc"
+  );
+
+  const STATUS_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted" | "orange"> = {
+    issued: "blue", submitted: "gold", approved: "green", revision_requested: "orange",
+  };
+  const OUTCOME_TONE: Record<string, "green" | "gold" | "red"> = {
+    hit: "green", partial: "gold", missed: "red",
+  };
+
+  const pending = all.filter(t => t.status === "issued" || t.status === "revision_requested");
+  const awaiting = all.filter(t => t.status === "submitted");
+  const done = all.filter(t => t.status === "approved");
+
+  const submitMut = trpc.weeklyTargets.submit.useMutation({
+    onSuccess: () => { toast.success("Outcome submitted"); utils.weeklyTargets.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const submit = (targetId: number) => {
+    const note = prompt("Describe the outcome — what was actually achieved this week?");
+    if (!note) return;
+    submitMut.mutate({ id: targetId, submissionNote: note });
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Weekly commitments the CEO has issued to BizDev. Submit your outcome by the deadline.">
+        Targets from CEO
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Pending"          value={pending.length}  color={BLUE} />
+        <MiniStat label="Awaiting Review"  value={awaiting.length} color={GOLD} />
+        <MiniStat label="Approved"         value={done.length}     color={GREEN} />
+      </div>
+
+      {pending.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Action Required — Submit Outcome
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {pending.map((t: any) => (
+              <div key={t.id} style={{
+                padding: "10px 12px", backgroundColor: `${GOLD}08`,
+                borderRadius: 10, border: `1px solid ${GOLD}30`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: DARK }}>{t.targetType}</p>
+                      <StatusPill label={t.status} tone={STATUS_TONE[t.status] || "muted"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: DARK, marginTop: 6, lineHeight: 1.5 }}>{t.description}</p>
+                    {t.reviewNote && (
+                      <p style={{ fontSize: 11, color: ORANGE, marginTop: 6, padding: "6px 8px",
+                        backgroundColor: WHITE, borderRadius: 6, fontStyle: "italic" }}>
+                        <strong>CEO revision note:</strong> {t.reviewNote}
+                      </p>
+                    )}
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
+                      Week of {fmtDate(t.weekOf)} · Deadline {t.deadline} · Issued by {t.assignedBy}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => submit(t.id)}
+                    disabled={submitMut.isPending}
+                    style={{
+                      padding: "6px 12px", borderRadius: 8, backgroundColor: GREEN, color: WHITE,
+                      border: "none", fontSize: 11, fontWeight: 600, cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 4, flexShrink: 0,
+                    }}
+                  >
+                    <Send size={11} /> Submit Outcome
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {awaiting.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Awaiting CEO Review
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {awaiting.map((t: any) => (
+              <div key={t.id} style={{
+                padding: "8px 10px", backgroundColor: BG, borderRadius: 8,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: DARK }}>{t.targetType}</p>
+                  {t.submissionNote && (
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 2, fontStyle: "italic" }}>
+                      {t.submissionNote.slice(0, 120)}
+                    </p>
+                  )}
+                </div>
+                <StatusPill label="submitted" tone="gold" />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {done.length > 0 && (
+        <Card>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Completed — Last {Math.min(done.length, 20)}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {done.slice(0, 20).map((t: any) => (
+              <div key={t.id} style={{
+                padding: "8px 10px", backgroundColor: BG, borderRadius: 8,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: DARK }}>{t.targetType}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{fmtDate(t.weekOf)}</p>
+                </div>
+                {t.outcome && <StatusPill label={t.outcome} tone={OUTCOME_TONE[t.outcome] || "muted"} />}
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {all.length === 0 && (
+        <Card>
+          <EmptyState icon={TargetIcon} title="No targets yet" hint="Weekly targets from the CEO will land here." />
+        </Card>
+      )}
+    </div>
+  );
+}
+

@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
   createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead, updateLead, deleteLead,
@@ -348,6 +348,84 @@ export const appRouter = router({
           link: `/${input.department === "bizdoc" ? "bizdoc" : input.department}/dashboard`,
         }).catch(() => {});
         return { ref: lead.ref, leadId: lead.id, taskId: task.id };
+      }),
+
+    /** BizDev captures a lead from outreach — defaults to CSO queue for qualification. */
+    createFromBizDev: bizdevProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        businessName: z.string().optional(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+        service: z.string().min(1),
+        notes: z.string().optional(),
+        source: z.string().optional(), // e.g. "partner", "campaign", "cold_outreach"
+        referralCode: z.string().optional(),
+        referrerName: z.string().optional(),
+        sendToCsoNow: z.boolean().default(true),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const ref = generateRefNumber(input.phone);
+        const lead = await createLead({
+          ref,
+          name: input.name,
+          businessName: input.businessName,
+          phone: input.phone,
+          email: input.email,
+          service: input.service,
+          source: input.source || "bizdev",
+          assignedDepartment: input.sendToCsoNow ? "cso" : null,
+          assignedBy: input.sendToCsoNow ? ctx.user.id : null,
+          assignedAt: input.sendToCsoNow ? new Date() : null,
+          context: input.notes,
+          referralCode: input.referralCode,
+          referrerName: input.referrerName,
+          referralSourceType: "BizDev",
+          leadOwner: "BizDev",
+          notifyCso: input.sendToCsoNow,
+        } as any);
+        const task = await createTaskFromLead(lead);
+        await createActivityLog({
+          leadId: lead.id,
+          taskId: task.id,
+          action: "lead_bizdev_captured",
+          details: `BizDev captured lead: ${input.name} — ${input.service}${input.sendToCsoNow ? " · sent to CSO" : ""} by ${ctx.user.name || ctx.user.email}`,
+        });
+        if (input.sendToCsoNow) {
+          await createNotification({
+            userId: "cso",
+            type: "assignment",
+            title: "New Lead from BizDev",
+            message: `${input.name} — ${input.service}. Source: ${input.source || "bizdev outreach"}. Please qualify.`,
+            link: "/cso",
+          }).catch(() => {});
+        }
+        return { ref: lead.ref, leadId: lead.id, taskId: task.id };
+      }),
+
+    /** BizDev hands an existing lead off to the CSO queue for qualification. */
+    sendToCso: bizdevProcedure
+      .input(z.object({
+        leadId: z.number(),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const lead = await assignLead(input.leadId, "cso", ctx.user.id);
+        await updateTaskDepartmentByLeadId(input.leadId, "cso");
+        await createActivityLog({
+          leadId: input.leadId,
+          userId: ctx.user.id,
+          action: "lead_handed_to_cso",
+          details: `BizDev handed off lead to CSO${input.note ? `: ${input.note}` : ""} (by ${ctx.user.name || ctx.user.email})`,
+        });
+        await createNotification({
+          userId: "cso",
+          type: "assignment",
+          title: "Lead from BizDev — Qualify",
+          message: `Lead ${lead?.ref || input.leadId} handed over. ${input.note || "Please qualify and assign service."}`,
+          link: "/cso",
+        }).catch(() => {});
+        return { success: true };
       }),
 
     list: protectedProcedure
