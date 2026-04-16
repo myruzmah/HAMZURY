@@ -113,7 +113,7 @@ import {
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
 import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users } from "../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
 import { invokeLLM } from "./_core/llm";
@@ -2801,6 +2801,32 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         await deleteClientCredential(input.credentialId);
         return { success: true };
       }),
+
+    /** CEO vault — lists every stored credential (masked). Audit-logged on each use. */
+    listAll: founderCEOProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db.select().from(clientCredentials).orderBy(desc(clientCredentials.createdAt));
+      await createAuditLog({
+        userId: ctx.user.id,
+        userName: ctx.user.name || ctx.user.email || "CEO",
+        action: "credential_vault_viewed",
+        resource: "client_credentials",
+        details: `CEO vault opened — ${rows.length} entries`,
+      });
+      return rows.map(c => ({
+        id: c.id,
+        platform: c.platform,
+        loginUrl: c.loginUrl,
+        username: c.username,
+        passwordMasked: maskPassword(12),
+        taskId: c.taskId,
+        subscriptionId: c.subscriptionId,
+        notes: c.notes,
+        addedBy: c.addedBy,
+        createdAt: c.createdAt,
+      }));
+    }),
   }),
 
   // ─── Pricing (Service Price List) ───────────────────────────────────────────

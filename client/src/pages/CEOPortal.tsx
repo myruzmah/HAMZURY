@@ -9,6 +9,8 @@ import {
   AlertTriangle, CheckCircle2, Clock, TrendingUp, AlertCircle,
   Menu, X, Plus, Shield, Wallet, Briefcase, FileText, UserCheck,
   Settings as SettingsIcon, RefreshCw, Activity, Trash2, Send,
+  Bell, Key, Eye, EyeOff, Megaphone, Inbox, CheckCheck, ChevronRight,
+  Folder,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
@@ -36,7 +38,8 @@ const BLUE = "#3B82F6";
 const PURPLE = "#8B5CF6";
 
 type Section =
-  | "dashboard" | "departments" | "targets" | "staff" | "finance" | "calendar";
+  | "dashboard" | "departments" | "targets" | "staff" | "finance" | "calendar"
+  | "clients" | "weekly" | "vault" | "content" | "inbox";
 
 /* Utilities */
 function fmtNaira(v: string | number | null | undefined): string {
@@ -145,11 +148,16 @@ export default function CEOPortal() {
 
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",   icon: LayoutDashboard, label: "Command Center" },
+    { key: "clients",     icon: Folder,          label: "Active Clients" },
     { key: "departments", icon: Building2,       label: "Departments" },
     { key: "targets",     icon: TargetIcon,      label: "Targets & Alerts" },
+    { key: "weekly",      icon: CheckCheck,      label: "Weekly Targets" },
     { key: "staff",       icon: Users,           label: "Staff Oversight" },
     { key: "finance",     icon: DollarSign,      label: "Finance" },
+    { key: "content",     icon: Megaphone,       label: "Content Ops" },
+    { key: "vault",       icon: Key,             label: "Credentials Vault" },
     { key: "calendar",    icon: CalendarIcon,    label: "Calendar & Audit" },
+    { key: "inbox",       icon: Inbox,           label: "Notifications" },
   ];
 
   return (
@@ -300,11 +308,16 @@ export default function CEOPortal() {
             maxWidth: 1200, margin: "0 auto",
           }}>
             {active === "dashboard"   && <CommandCenter onGoto={setActive} />}
+            {active === "clients"     && <ClientsSection />}
             {active === "departments" && <DepartmentsSection />}
             {active === "targets"     && <TargetsSection />}
+            {active === "weekly"      && <WeeklyTargetsSection />}
             {active === "staff"       && <StaffSection />}
             {active === "finance"     && <FinanceSection />}
+            {active === "content"     && <ContentOpsSection />}
+            {active === "vault"       && <CredentialsVaultSection />}
             {active === "calendar"    && <CalendarAuditSection />}
+            {active === "inbox"       && <NotificationsSection />}
           </div>
         </div>
       </main>
@@ -1612,6 +1625,732 @@ function CreateEventModal({ onClose, onCreated }: { onClose: () => void; onCreat
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 7. ACTIVE CLIENTS — Deep-dive by task/client
+ * ═══════════════════════════════════════════════════════════════════════ */
+function ClientsSection() {
+  const isMobile = useIsMobile();
+  const tasksQuery = trpc.tasks.list.useQuery(undefined, { retry: false });
+  const [openRef, setOpenRef] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+
+  const all = (tasksQuery.data || []) as any[];
+  const filtered = all.filter(t =>
+    !search ||
+    t.clientName?.toLowerCase().includes(search.toLowerCase()) ||
+    t.businessName?.toLowerCase().includes(search.toLowerCase()) ||
+    t.ref?.toLowerCase().includes(search.toLowerCase()) ||
+    t.service?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const STATUS_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted" | "orange"> = {
+    "Not Started": "muted",
+    "In Progress": "blue",
+    "Waiting on Client": "orange",
+    "Submitted": "gold",
+    "Completed": "green",
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Every active engagement. Click a row to see tasks, invoices, and activity.">
+        Active Clients
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{
+          display: "flex", gap: 10,
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
+          justifyContent: "space-between", flexWrap: "wrap",
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {filtered.length} Client{filtered.length === 1 ? "" : "s"}
+          </p>
+          <input
+            type="search"
+            placeholder="Search name, business, ref, service…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ ...inputStyle(), width: isMobile ? "100%" : 280 }}
+          />
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card><EmptyState icon={Folder} title="No active clients match." /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map(t => (
+            <div key={t.ref} style={{
+              backgroundColor: WHITE, borderRadius: 12, border: `1px solid ${DARK}08`,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.04)", overflow: "hidden",
+            }}>
+              <button
+                onClick={() => setOpenRef(openRef === t.ref ? null : t.ref)}
+                style={{
+                  width: "100%", padding: "12px 14px", background: "transparent",
+                  border: "none", cursor: "pointer", textAlign: "left",
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>
+                      {t.clientName || "—"}
+                    </p>
+                    <StatusPill label={t.status || "—"} tone={STATUS_TONE[t.status] || "muted"} />
+                  </div>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace" }}>
+                    {t.ref} · {t.businessName || t.service}
+                  </p>
+                </div>
+                <ChevronRight
+                  size={14}
+                  style={{
+                    color: MUTED, flexShrink: 0,
+                    transform: openRef === t.ref ? "rotate(90deg)" : "rotate(0)",
+                    transition: "transform 0.2s",
+                  }}
+                />
+              </button>
+
+              {openRef === t.ref && <ClientDeepDive ref_={t.ref} />}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ClientDeepDive({ ref_ }: { ref_: string }) {
+  const q = trpc.tracking.fullLookup.useQuery({ ref: ref_ }, { retry: false });
+  const d = q.data;
+
+  if (q.isLoading) {
+    return (
+      <div style={{ padding: "14px 16px", borderTop: `1px solid ${DARK}06` }}>
+        <Loader2 size={14} className="animate-spin" style={{ color: GOLD }} />
+      </div>
+    );
+  }
+  if (!d || !("task" in d) || !d.task) {
+    return (
+      <div style={{ padding: "14px 16px", borderTop: `1px solid ${DARK}06`, fontSize: 11, color: MUTED }}>
+        Details unavailable.
+      </div>
+    );
+  }
+
+  const task: any = d.task;
+  const checklist: any[] = (d as any).checklist || [];
+  const activity: any[] = (d as any).activity || [];
+  const inv: any = (d as any).invoiceSummary;
+
+  return (
+    <div style={{ padding: "14px 16px", borderTop: `1px solid ${DARK}06`, backgroundColor: BG }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 12 }}>
+        <Metric label="Service"   value={task.service || "—"} />
+        <Metric label="Dept"      value={task.department || "—"} />
+        <Metric label="Deadline"  value={task.expectedDelivery || fmtDate(task.deadline)} />
+        <Metric label="Invoiced"  value={fmtNaira(inv?.total)} />
+        <Metric label="Paid"      value={fmtNaira(inv?.paid)} />
+        <Metric label="Balance"   value={fmtNaira(inv?.balance)} />
+      </div>
+
+      {checklist.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 6 }}>
+            Checklist — {checklist.filter((c: any) => c.done).length}/{checklist.length}
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {checklist.slice(0, 8).map((c: any, i: number) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                {c.done
+                  ? <CheckCircle2 size={11} style={{ color: GREEN, flexShrink: 0 }} />
+                  : <Clock size={11} style={{ color: MUTED, flexShrink: 0 }} />}
+                <span style={{ color: c.done ? MUTED : DARK, textDecoration: c.done ? "line-through" : "none" }}>
+                  {c.label}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activity.length > 0 && (
+        <div>
+          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 6 }}>
+            Recent Activity
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {activity.slice(0, 5).map((a: any) => (
+              <div key={a.id} style={{ fontSize: 11, color: MUTED, display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ color: DARK }}>{a.details || a.action}</span>
+                <span style={{ flexShrink: 0 }}>{fmtDateTime(a.createdAt)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 8. WEEKLY TARGETS REVIEW
+ * ═══════════════════════════════════════════════════════════════════════ */
+function WeeklyTargetsSection() {
+  const utils = trpc.useUtils();
+  const listQuery = trpc.weeklyTargets.list.useQuery(undefined, { retry: false });
+  const [creating, setCreating] = useState(false);
+
+  const rows = ((listQuery.data || []) as any[]);
+  const submitted = rows.filter(r => r.status === "submitted");
+  const issued    = rows.filter(r => r.status === "issued");
+  const approved  = rows.filter(r => r.status === "approved");
+
+  const reviewMut = trpc.weeklyTargets.review.useMutation({
+    onSuccess: () => { toast.success("Target reviewed"); utils.weeklyTargets.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const STATUS_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted" | "orange"> = {
+    issued: "muted", submitted: "blue", approved: "green", revision_requested: "orange",
+  };
+  const OUTCOME_TONE: Record<string, "green" | "gold" | "red"> = { hit: "green", partial: "gold", missed: "red" };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <SectionTitle sub="Issue weekly commitments, review submissions, mark outcomes.">
+          Weekly Targets
+        </SectionTitle>
+        <button
+          onClick={() => setCreating(true)}
+          style={{
+            padding: "8px 14px", borderRadius: 10, backgroundColor: GREEN, color: WHITE,
+            border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}
+        >
+          <Plus size={14} /> Issue Target
+        </button>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Awaiting Review" value={submitted.length} color={BLUE} />
+        <MiniStat label="Issued"          value={issued.length}    color={MUTED} />
+        <MiniStat label="Approved"        value={approved.length}  color={GREEN} />
+        <MiniStat label="Total"           value={rows.length}      color={GOLD} />
+      </div>
+
+      {submitted.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Awaiting Your Review
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {submitted.map((t: any) => (
+              <div key={t.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
+                      {t.department?.toUpperCase()} · {t.targetType}
+                    </p>
+                    <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}>{t.description}</p>
+                    {t.submissionNote && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 6, fontStyle: "italic",
+                        padding: "6px 8px", backgroundColor: WHITE, borderRadius: 6 }}>
+                        <strong>Submitted:</strong> {t.submissionNote}
+                      </p>
+                    )}
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>
+                      Week of {fmtDate(t.weekOf)} · Deadline {t.deadline}
+                    </p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
+                  <button
+                    onClick={() => reviewMut.mutate({ id: t.id, status: "approved", outcome: "hit" })}
+                    disabled={reviewMut.isPending}
+                    style={{ padding: "5px 10px", borderRadius: 8, backgroundColor: "#22C55E15", color: "#22C55E",
+                      border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                  >Hit ✓</button>
+                  <button
+                    onClick={() => reviewMut.mutate({ id: t.id, status: "approved", outcome: "partial" })}
+                    disabled={reviewMut.isPending}
+                    style={{ padding: "5px 10px", borderRadius: 8, backgroundColor: `${GOLD}15`, color: GOLD,
+                      border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                  >Partial</button>
+                  <button
+                    onClick={() => reviewMut.mutate({ id: t.id, status: "approved", outcome: "missed" })}
+                    disabled={reviewMut.isPending}
+                    style={{ padding: "5px 10px", borderRadius: 8, backgroundColor: `${RED}10`, color: RED,
+                      border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                  >Missed</button>
+                  <button
+                    onClick={() => {
+                      const note = prompt("What revision is required?");
+                      if (!note) return;
+                      reviewMut.mutate({ id: t.id, status: "revision_requested", reviewNote: note });
+                    }}
+                    disabled={reviewMut.isPending}
+                    style={{ padding: "5px 10px", borderRadius: 8, backgroundColor: `${ORANGE}15`, color: ORANGE,
+                      border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer" }}
+                  >Request Revision</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          All Targets — {rows.length}
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={CheckCheck} title="No weekly targets yet" hint="Click ‘Issue Target’ to set the first one." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.slice(0, 40).map((t: any) => (
+              <div key={t.id} style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10,
+                padding: "8px 10px", backgroundColor: BG, borderRadius: 8, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: DARK }}>
+                    {t.department?.toUpperCase()} · {t.targetType}
+                  </p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {fmtDate(t.weekOf)} · {t.description?.slice(0, 60)}
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                  <StatusPill label={t.status} tone={STATUS_TONE[t.status] || "muted"} />
+                  {t.outcome && <StatusPill label={t.outcome} tone={OUTCOME_TONE[t.outcome] || "muted"} />}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      {creating && (
+        <IssueWeeklyTargetModal
+          onClose={() => setCreating(false)}
+          onIssued={() => { setCreating(false); utils.weeklyTargets.list.invalidate(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function IssueWeeklyTargetModal({ onClose, onIssued }: { onClose: () => void; onIssued: () => void }) {
+  const [department, setDepartment] = useState("bizdoc");
+  const [targetType, setTargetType] = useState("Sales");
+  const [description, setDescription] = useState("");
+  const [weekOf, setWeekOf] = useState(todayISO());
+  const [deadline, setDeadline] = useState("Friday 2pm");
+
+  const createMut = trpc.weeklyTargets.create.useMutation({
+    onSuccess: () => { toast.success("Weekly target issued"); onIssued(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!description.trim()) { toast.error("Description required"); return; }
+    createMut.mutate({ department, targetType, description, weekOf, deadline });
+  };
+
+  return (
+    <div onClick={onClose} style={{
+      position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)",
+      zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16,
+      overflowY: "auto",
+    }}>
+      <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{
+        backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "100%", maxWidth: 440,
+        maxHeight: "calc(100vh - 32px)", overflowY: "auto",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.2)", display: "flex", flexDirection: "column", gap: 12,
+      }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK }}>Issue Weekly Target</h3>
+
+        <Field label="Department">
+          <select value={department} onChange={e => setDepartment(e.target.value)} style={inputStyle()}>
+            <option value="bizdoc">BizDoc</option>
+            <option value="systemise">Systemise</option>
+            <option value="skills">Skills</option>
+            <option value="media">Media</option>
+            <option value="bizdev">BizDev</option>
+            <option value="finance">Finance</option>
+            <option value="hr">HR</option>
+          </select>
+        </Field>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <Field label="Target type">
+            <input value={targetType} onChange={e => setTargetType(e.target.value)} style={inputStyle()} />
+          </Field>
+          <Field label="Week of">
+            <input type="date" value={weekOf} onChange={e => setWeekOf(e.target.value)} style={inputStyle()} />
+          </Field>
+        </div>
+
+        <Field label="What must be achieved">
+          <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
+            style={{ ...inputStyle(), resize: "vertical" }} />
+        </Field>
+
+        <Field label="Deadline">
+          <input value={deadline} onChange={e => setDeadline(e.target.value)} style={inputStyle()} />
+        </Field>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
+          <button type="button" onClick={onClose}
+            style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: "transparent", color: MUTED,
+              border: `1px solid ${DARK}15`, fontSize: 12, cursor: "pointer" }}>Cancel</button>
+          <button type="submit" disabled={createMut.isPending}
+            style={{ padding: "8px 14px", borderRadius: 10, backgroundColor: GREEN, color: WHITE,
+              border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+            {createMut.isPending ? "Issuing…" : "Issue"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 9. CREDENTIALS VAULT — All stored logins, reveal one at a time (audit-logged)
+ * ═══════════════════════════════════════════════════════════════════════ */
+function CredentialsVaultSection() {
+  const isMobile = useIsMobile();
+  const utils = trpc.useUtils();
+  const listQuery = trpc.credentials.listAll.useQuery(undefined, { retry: false });
+  const [revealed, setRevealed] = useState<Record<number, { username: string; password: string; loginUrl?: string | null } | null>>({});
+  const [search, setSearch] = useState("");
+
+  const rows = (listQuery.data || []) as any[];
+  const filtered = rows.filter(r =>
+    !search ||
+    r.platform?.toLowerCase().includes(search.toLowerCase()) ||
+    r.username?.toLowerCase().includes(search.toLowerCase()) ||
+    r.notes?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const revealMut = trpc.credentials.reveal.useMutation({
+    onSuccess: (data, vars) => { setRevealed(r => ({ ...r, [vars.credentialId]: data })); },
+    onError: (e) => toast.error(e.message || "Reveal failed"),
+  });
+  const deleteMut = trpc.credentials.delete.useMutation({
+    onSuccess: () => { toast.success("Credential deleted"); utils.credentials.listAll.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const toggle = (id: number) => {
+    if (revealed[id]) {
+      setRevealed(r => ({ ...r, [id]: null }));
+    } else {
+      revealMut.mutate({ credentialId: id });
+    }
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="AES-256-encrypted vault for 3rd-party logins. Every reveal is audit-logged.">
+        Credentials Vault
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{
+          display: "flex", gap: 10,
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
+          justifyContent: "space-between", flexWrap: "wrap",
+        }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            {filtered.length} Credential{filtered.length === 1 ? "" : "s"}
+          </p>
+          <input
+            type="search"
+            placeholder="Search platform, username, notes…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            style={{ ...inputStyle(), width: isMobile ? "100%" : 280 }}
+          />
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card><EmptyState icon={Key} title="Vault empty." hint="Credentials added from client pages appear here." /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.map((c: any) => {
+            const r = revealed[c.id];
+            return (
+              <Card key={c.id} style={{ padding: 14 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{c.platform}</p>
+                      {c.taskId && <StatusPill label={`Task #${c.taskId}`} tone="muted" />}
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2, fontFamily: "monospace" }}>{c.username}</p>
+                    {c.loginUrl && (
+                      <a href={c.loginUrl} target="_blank" rel="noreferrer"
+                        style={{ fontSize: 10, color: BLUE, marginTop: 4, display: "inline-block",
+                          wordBreak: "break-all" }}>
+                        {c.loginUrl}
+                      </a>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                    <button
+                      onClick={() => toggle(c.id)}
+                      disabled={revealMut.isPending}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8, backgroundColor: r ? `${GOLD}20` : `${GREEN}15`,
+                        color: r ? GOLD : GREEN, border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 4,
+                      }}
+                    >
+                      {r ? <><EyeOff size={11} /> Hide</> : <><Eye size={11} /> Reveal</>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (!confirm(`Delete credential for ${c.platform}?`)) return;
+                        deleteMut.mutate({ credentialId: c.id });
+                      }}
+                      disabled={deleteMut.isPending}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8, backgroundColor: `${RED}10`, color: RED,
+                        border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      }}
+                    ><Trash2 size={11} /></button>
+                  </div>
+                </div>
+
+                {r && (
+                  <div style={{
+                    marginTop: 10, padding: "10px 12px", backgroundColor: `${GOLD}08`,
+                    borderRadius: 8, border: `1px dashed ${GOLD}40`,
+                  }}>
+                    <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 6 }}>
+                      Decrypted — audit-logged
+                    </p>
+                    <div style={{ fontFamily: "monospace", fontSize: 12, color: DARK, wordBreak: "break-all" }}>
+                      <div><strong>user:</strong> {r.username}</div>
+                      <div style={{ marginTop: 4 }}><strong>pass:</strong> {r.password}</div>
+                    </div>
+                  </div>
+                )}
+
+                {c.notes && (
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 8, fontStyle: "italic" }}>{c.notes}</p>
+                )}
+                <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
+                  Added by {c.addedBy} · {fmtDate(c.createdAt)}
+                </p>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 10. CONTENT OPS — Social posts pipeline by status
+ * ═══════════════════════════════════════════════════════════════════════ */
+function ContentOpsSection() {
+  const listQuery = trpc.content.list.useQuery({ limit: 100 }, { retry: false });
+  const rows = (listQuery.data || []) as any[];
+
+  const byStatus = {
+    draft:     rows.filter(r => r.status === "draft"),
+    scheduled: rows.filter(r => r.status === "scheduled"),
+    posted:    rows.filter(r => r.status === "posted"),
+    failed:    rows.filter(r => r.status === "failed"),
+  };
+
+  const STATUS_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted" | "orange"> = {
+    draft: "muted", scheduled: "blue", posted: "green", failed: "red",
+  };
+
+  const PLATFORM_COLOR: Record<string, string> = {
+    instagram: "#E1306C", tiktok: "#000000", twitter: "#1DA1F2", linkedin: "#0A66C2",
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Content pipeline across all departments. Draft → Scheduled → Posted.">
+        Content Ops
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Drafts"     value={byStatus.draft.length}     color={MUTED} />
+        <MiniStat label="Scheduled"  value={byStatus.scheduled.length} color={BLUE} />
+        <MiniStat label="Posted"     value={byStatus.posted.length}    color={GREEN} />
+        <MiniStat label="Failed"     value={byStatus.failed.length}    color={RED} />
+      </div>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Recent Posts — {rows.length}
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={Megaphone} title="No content yet" hint="Draft posts appear here as the media team creates them." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.slice(0, 30).map((p: any) => (
+              <div key={p.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{
+                      padding: "2px 8px", borderRadius: 10, fontSize: 9, fontWeight: 700,
+                      backgroundColor: `${PLATFORM_COLOR[p.platform] || MUTED}15`,
+                      color: PLATFORM_COLOR[p.platform] || MUTED,
+                      textTransform: "uppercase", letterSpacing: "0.04em",
+                    }}>{p.platform}</span>
+                    <StatusPill label={p.status} tone={STATUS_TONE[p.status] || "muted"} />
+                    <span style={{ fontSize: 10, color: MUTED }}>{p.department}</span>
+                  </div>
+                  <span style={{ fontSize: 10, color: MUTED }}>
+                    {p.scheduledFor ? fmtDateTime(p.scheduledFor) : fmtDateTime(p.createdAt)}
+                  </span>
+                </div>
+                <p style={{ fontSize: 11, color: DARK, marginTop: 6, lineHeight: 1.5, wordBreak: "break-word" }}>
+                  {p.caption?.slice(0, 220)}{p.caption?.length > 220 ? "…" : ""}
+                </p>
+                {p.hashtags && (
+                  <p style={{ fontSize: 10, color: GOLD, marginTop: 4, fontFamily: "monospace" }}>{p.hashtags}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 11. NOTIFICATIONS INBOX
+ * ═══════════════════════════════════════════════════════════════════════ */
+function NotificationsSection() {
+  const utils = trpc.useUtils();
+  const listQuery = trpc.notifications.list.useQuery(undefined, { retry: false });
+  const unreadQuery = trpc.notifications.unreadCount.useQuery(undefined, { retry: false });
+
+  const rows = (listQuery.data || []) as any[];
+  const unread = (unreadQuery.data as any) ?? 0;
+  const unreadCount = typeof unread === "number" ? unread : (Array.isArray(unread) ? unread.length : 0);
+
+  const markReadMut = trpc.notifications.markRead.useMutation({
+    onSuccess: () => {
+      utils.notifications.list.invalidate();
+      utils.notifications.unreadCount.invalidate();
+    },
+  });
+  const markAllMut = trpc.notifications.markAllRead.useMutation({
+    onSuccess: () => {
+      toast.success("All notifications marked read");
+      utils.notifications.list.invalidate();
+      utils.notifications.unreadCount.invalidate();
+    },
+  });
+
+  const PRIORITY_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted"> = {
+    low: "muted", normal: "blue", high: "gold", urgent: "red",
+  };
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <SectionTitle sub={`${unreadCount} unread · ${rows.length} total`}>
+          Notifications
+        </SectionTitle>
+        {unreadCount > 0 && (
+          <button
+            onClick={() => markAllMut.mutate()}
+            disabled={markAllMut.isPending}
+            style={{
+              padding: "8px 14px", borderRadius: 10, backgroundColor: `${GOLD}15`, color: GOLD,
+              border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6,
+            }}
+          >
+            <CheckCheck size={13} /> Mark all read
+          </button>
+        )}
+      </div>
+
+      {rows.length === 0 ? (
+        <Card><EmptyState icon={Bell} title="Inbox zero" hint="High-priority system alerts appear here." /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {rows.map((n: any) => {
+            const isRead = !!n.readAt;
+            return (
+              <div key={n.id} style={{
+                padding: "12px 14px", borderRadius: 10,
+                backgroundColor: isRead ? WHITE : `${GOLD}06`,
+                border: `1px solid ${isRead ? `${DARK}08` : `${GOLD}30`}`,
+                display: "flex", gap: 10, alignItems: "flex-start",
+              }}>
+                <div style={{
+                  width: 8, height: 8, borderRadius: 4, marginTop: 6, flexShrink: 0,
+                  backgroundColor: isRead ? "transparent" : GOLD,
+                }} />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 12, fontWeight: isRead ? 500 : 700, color: DARK }}>{n.title}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      {n.priority && n.priority !== "normal" && (
+                        <StatusPill label={n.priority} tone={PRIORITY_TONE[n.priority] || "muted"} />
+                      )}
+                      <span style={{ fontSize: 10, color: MUTED }}>{fmtDateTime(n.createdAt)}</span>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 4, lineHeight: 1.5, wordBreak: "break-word" }}>
+                    {n.message}
+                  </p>
+                  <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                    {n.link && (
+                      <a href={n.link} style={{
+                        fontSize: 10, color: GOLD, textDecoration: "none", fontWeight: 600,
+                      }}>Open →</a>
+                    )}
+                    {!isRead && (
+                      <button
+                        onClick={() => markReadMut.mutate({ id: n.id })}
+                        disabled={markReadMut.isPending}
+                        style={{
+                          background: "none", border: "none", color: MUTED, fontSize: 10,
+                          cursor: "pointer", padding: 0,
+                        }}
+                      >Mark read</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
