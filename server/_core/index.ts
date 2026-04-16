@@ -126,8 +126,12 @@ async function startServer() {
       // 2026-04 cleanup: only CSO is active. All other roles land on "/"
       // until their dashboards are re-added one at a time.
       const ROLE_DASHBOARDS: Record<string, string> = {
-        cso:      "/cso",
-        cso_staff: "/cso",
+        cso:          "/cso",
+        cso_staff:    "/cso",
+        ceo:          "/ceo",
+        founder:      "/ceo",
+        bizdev:       "/bizdev",
+        bizdev_staff: "/bizdev",
       };
 
       res.json({
