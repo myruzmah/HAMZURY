@@ -816,7 +816,7 @@ function CompetitionSection() {
           <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
             New Challenge
           </p>
-          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
             <input placeholder="Challenge title" value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })} style={inputBox()} />
             <input type="date" value={form.deadline}
