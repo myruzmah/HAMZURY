@@ -1990,6 +1990,11 @@ export default function ChatWidget({ department = "general", open: externalOpen,
 
   // Feedback
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [contactMenuOpen, setContactMenuOpen] = useState(false);
+
+  /** HAMZURY contact numbers from Brand Bible */
+  const CONTACT_PHONE    = "2349130700056";       // international format, no +
+  const CONTACT_WHATSAPP = "2349130700056";
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackMsg, setFeedbackMsg] = useState("");
 
@@ -2018,33 +2023,99 @@ export default function ChatWidget({ department = "general", open: externalOpen,
         </div>
       )}
 
-      {/* Floating buttons */}
+      {/* Floating contact stack — main bubble + expandable 3-option menu */}
       {!isControlled && (
-        <div className="fixed bottom-4 right-4 z-[60] flex items-center gap-2">
-          <button
-            onClick={() => setFeedbackOpen(v => !v)}
-            className="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border"
-            style={{ backgroundColor: "white", borderColor: "rgba(45,45,45,0.1)", color: GOLD }}
-            title="Rate us"
-          >
-            <Star size={18} />
-          </button>
-          <button
-            data-chat-trigger
-            onClick={() => {
-              setBubbleNotes([]);
-              if (isOpen) close();
-              else { setInternalOpen(true); setShowBadge(false); }
-            }}
-            className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 relative"
-            style={{ backgroundColor: DEPT_BRAND[department].header, color: DEPT_BRAND[department].accent }}
-          >
-            {isOpen ? <Minus size={22} /> : <MessageSquare size={22} />}
-            {!isOpen && showBadge && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">1</span>
-            )}
-          </button>
-        </div>
+        <>
+          {/* Expanded contact options (reveal above main bubble) */}
+          {contactMenuOpen && !isOpen && (
+            <div className="fixed bottom-[84px] right-4 z-[60] flex flex-col items-end gap-2.5 animate-in fade-in slide-in-from-bottom-2">
+              {/* WhatsApp */}
+              <a
+                href={`https://wa.me/${CONTACT_WHATSAPP}?text=${encodeURIComponent("Hello HAMZURY — I'd like to talk.")}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setContactMenuOpen(false)}
+                className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-full shadow-lg transition-transform hover:scale-[1.03]"
+                style={{ backgroundColor: "#25D366", color: "#FFFFFF" }}
+                title="WhatsApp us"
+              >
+                <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.18)" }}>
+                  {/* WhatsApp glyph */}
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+                    <path d="M20.52 3.48A11.86 11.86 0 0 0 12.03 0C5.5 0 .2 5.3.2 11.82c0 2.08.55 4.11 1.58 5.9L0 24l6.44-1.69a11.8 11.8 0 0 0 5.59 1.42h.01c6.52 0 11.83-5.3 11.83-11.82 0-3.16-1.23-6.13-3.35-8.43Zm-8.49 18.2h-.01a9.76 9.76 0 0 1-4.97-1.36l-.36-.21-3.82 1 1.02-3.72-.23-.38a9.77 9.77 0 0 1-1.5-5.19c0-5.4 4.4-9.8 9.81-9.8 2.62 0 5.08 1.02 6.93 2.87a9.75 9.75 0 0 1 2.87 6.94c0 5.4-4.4 9.85-9.74 9.85Zm5.38-7.36c-.29-.15-1.74-.86-2.01-.96-.27-.1-.47-.15-.67.15-.2.29-.77.96-.95 1.16-.17.2-.35.22-.64.07-.29-.15-1.23-.45-2.35-1.45a8.8 8.8 0 0 1-1.63-2.02c-.17-.29-.02-.45.13-.6.13-.13.29-.35.44-.52.14-.17.19-.29.29-.49.1-.2.05-.37-.02-.52-.07-.15-.67-1.62-.92-2.22-.24-.58-.49-.5-.67-.51l-.57-.01a1.1 1.1 0 0 0-.8.37c-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.22 3.08.15.2 2.1 3.2 5.09 4.49.71.3 1.27.48 1.7.62.72.23 1.37.2 1.89.12.58-.09 1.77-.73 2.02-1.43.25-.7.25-1.3.17-1.43-.07-.13-.27-.2-.56-.35Z"/>
+                  </svg>
+                </span>
+                <span className="text-[12px] font-medium">WhatsApp</span>
+              </a>
+              {/* Call */}
+              <a
+                href={`tel:+${CONTACT_PHONE}`}
+                onClick={() => setContactMenuOpen(false)}
+                className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-full shadow-lg transition-transform hover:scale-[1.03]"
+                style={{ backgroundColor: "#1F2937", color: "#FFFFFF" }}
+                title="Call us"
+              >
+                <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.18)" }}>
+                  <Phone size={13} strokeWidth={2.2} />
+                </span>
+                <span className="text-[12px] font-medium">Call</span>
+              </a>
+              {/* Chat */}
+              <button
+                data-chat-trigger
+                onClick={() => {
+                  setContactMenuOpen(false);
+                  setBubbleNotes([]);
+                  setInternalOpen(true);
+                  setShowBadge(false);
+                }}
+                className="flex items-center gap-2 pl-3 pr-4 py-2 rounded-full shadow-lg transition-transform hover:scale-[1.03]"
+                style={{ backgroundColor: DEPT_BRAND[department].header, color: DEPT_BRAND[department].accent }}
+                title="Chat with us"
+              >
+                <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(255,255,255,0.18)" }}>
+                  <MessageSquare size={13} strokeWidth={2.2} />
+                </span>
+                <span className="text-[12px] font-medium">Chat</span>
+              </button>
+            </div>
+          )}
+
+          {/* Bottom row: Rate + main Contact bubble */}
+          <div className="fixed bottom-4 right-4 z-[60] flex items-center gap-2">
+            <button
+              onClick={() => setFeedbackOpen(v => !v)}
+              className="w-10 h-10 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110 border"
+              style={{ backgroundColor: "white", borderColor: "rgba(45,45,45,0.1)", color: GOLD }}
+              title="Rate us"
+            >
+              <Star size={18} />
+            </button>
+            <button
+              data-chat-trigger
+              onClick={() => {
+                if (isOpen) { close(); return; }
+                // First tap on a closed-but-notes state: open chat directly
+                if (bubbleNotes.length > 0) {
+                  setBubbleNotes([]);
+                  setInternalOpen(true);
+                  setShowBadge(false);
+                  return;
+                }
+                // Otherwise: toggle the 3-option contact menu
+                setContactMenuOpen(v => !v);
+              }}
+              className="w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 relative"
+              style={{ backgroundColor: DEPT_BRAND[department].header, color: DEPT_BRAND[department].accent }}
+              aria-label={isOpen ? "Close chat" : contactMenuOpen ? "Hide options" : "Contact us"}
+            >
+              {isOpen || contactMenuOpen ? <X size={22} /> : <MessageSquare size={22} />}
+              {!isOpen && !contactMenuOpen && showBadge && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">1</span>
+              )}
+            </button>
+          </div>
+        </>
       )}
 
       {/* Feedback popup */}

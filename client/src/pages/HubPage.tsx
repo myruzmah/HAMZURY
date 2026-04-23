@@ -135,41 +135,86 @@ type CalEvent = {
   chatContext: string;
 };
 
+/**
+ * HUB 2026 Calendar — operational rhythm from PHASE7_HUB/CALENDAR/HUB_Calendar.ics
+ *
+ * Weekly cadence (not individual dates — shown as reference to students):
+ *   Mon–Wed 8:00–10:30am · Main-programme teaching
+ *   Mon–Wed 11:00am–2:00pm · Hall gathering (Entrepreneurship / Content / AI)
+ *   Thu–Sat 8:00–10:30am · Kids programme
+ *   Thu–Sat 11:00am–2:00pm · Kids hall gathering
+ *
+ * Monthly milestones (captured below):
+ *   · 1st of every month — New Cohort Resumption (orientation)
+ *   · First Monday of every month — Team Competition Challenge announced
+ *     (Teams: AI · Cyber · Quantum · Robotics)
+ *   · Mid-month — Programme-specific cohort starts
+ *   · End of programme — Programme graduation
+ */
 const CALENDAR_EVENTS: Record<string, CalEvent[]> = {
-  // ── Q1 (Jan–Mar) — passed ──
-  "2026-01-12": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Q1 Classes Began", detail: "Q1 cohort started. First cohort of the year.", chatContext: "Q1 has passed. I'd like to join the next available cohort." }],
-  "2026-02-09": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q1 Project Phase", detail: "Q1 students worked on real projects.", chatContext: "Q1 has passed. Tell me about the next project phase." }],
-  "2026-03-16": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Q1 Graduation + 3-Day Seminar", detail: "Q1 graduation ceremony and 3-day seminar & workshop for all Q1 students.", chatContext: "Q1 has passed. When is the next graduation?" }],
-  // ── Q2 (Apr–Jun) ──
-  "2026-04-07": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "Q2 Orientation Day", detail: "Welcome session. Meet instructors, tour facilities, get your schedule.", chatContext: "I'd like to attend Q2 Orientation on April 7th." }],
-  "2026-04-14": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Q2 Cohort 1 — Classes Begin", detail: "All programs start: Web Dev, Data Analysis, Robotics, Cybersecurity, AI Automation, Kids Coding.", chatContext: "Q2 classes start April 14th. I'd like to enroll." }],
-  "2026-04-17": [{ type: "Classes", color: CAL_COLORS.cohort, title: "Basic Computer Skills Starts", detail: "Thu–Fri–Sat basic skills classes. 3-week programme.", chatContext: "I want to join Basic Computer Skills starting April 17th." }],
-  "2026-05-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "RIDI Scholarship Admissions Open", detail: "RIDI scholarship applications now open for May intake. Training students to build functional businesses with AI. Sponsored students also help market Hamzury Skills.", chatContext: "I'd like to apply for the RIDI Scholarship for the May intake. Please tell me about the programme and how to apply." }],
-  "2026-05-05": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q2 Project Phase Begins", detail: "Students build capstone projects. IT students placed in real departments.", chatContext: "Tell me about the Q2 project phase starting May 5th." }],
-  "2026-05-12": [{ type: "Executive", color: CAL_COLORS.executive, title: "Executive Circle — Q2", detail: "Premium 1-week intensive for founders and executives.", chatContext: "I'm interested in the Executive Circle starting May 12th." }],
-  "2026-05-26": [{ type: "Project Start", color: CAL_COLORS.project, title: "Kids Coding Showcase", detail: "Kids present Scratch games and projects to parents.", chatContext: "Tell me about the Kids Coding Showcase on May 26th." }],
-  "2026-06-02": [{ type: "Classes", color: CAL_COLORS.cohort, title: "Q2 Final Assessments", detail: "Final assessments, project presentations, portfolio reviews.", chatContext: "What should students prepare for Q2 finals?" }],
-  "2026-06-08": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Q2 Graduation + 3-Day Seminar", detail: "Graduation ceremony, 3-day seminar & workshop for all Q2 cohort students. Certificates, project awards, alumni induction.", chatContext: "I'd like to attend the Q2 graduation on June 8th." }],
-  "2026-06-15": [{ type: "Executive", color: CAL_COLORS.executive, title: "Q2 Internal Programme", detail: "End-of-quarter internal programme for all Q2 cohort students. Review, feedback, next steps.", chatContext: "Tell me about the Q2 internal programme." }],
-  // ── Q3 (Jul–Sep) ──
-  "2026-07-06": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "Q3 Orientation Day", detail: "Welcome session for Q3 cohort. All programs open for enrollment.", chatContext: "I'd like to attend Q3 Orientation on July 6th." }],
-  "2026-07-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Q3 Cohort 1 — Classes Begin", detail: "Q3 cohort starts. All programs accept new students.", chatContext: "Q3 classes start July 13th. I'd like to enroll." }],
-  "2026-07-16": [{ type: "Classes", color: CAL_COLORS.cohort, title: "Basic Computer Skills — Q3", detail: "New intake for basic skills (Thu–Fri–Sat).", chatContext: "I want to join Basic Computer Skills starting July 16th." }],
-  "2026-08-03": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q3 Project Phase", detail: "Hands-on project building with mentor guidance.", chatContext: "Tell me about the Q3 project phase." }],
-  "2026-08-17": [{ type: "Executive", color: CAL_COLORS.executive, title: "Executive Circle — Q3", detail: "Premium intensive for senior leaders.", chatContext: "I'm interested in the Q3 Executive Circle." }],
-  "2026-09-01": [{ type: "Classes", color: CAL_COLORS.cohort, title: "Q3 Final Assessments", detail: "Final assessments and project demos.", chatContext: "What should Q3 students prepare for finals?" }],
-  "2026-09-08": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Q3 Graduation + 3-Day Seminar", detail: "Graduation, 3-day seminar & workshop. Certificates, awards, alumni induction.", chatContext: "Tell me about the Q3 graduation." }],
-  "2026-09-15": [{ type: "Executive", color: CAL_COLORS.executive, title: "Q3 Internal Programme", detail: "End-of-quarter internal programme for all Q3 cohort students.", chatContext: "Tell me about the Q3 internal programme." }],
-  // ── Q4 (Oct–Dec) ──
-  "2026-10-05": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "Q4 Orientation Day", detail: "Welcome session for final 2026 cohort.", chatContext: "I'd like to attend Q4 Orientation." }],
-  "2026-10-12": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Q4 Cohort 1 — Classes Begin", detail: "Last cohort of 2026. All programs accept students.", chatContext: "Q4 classes start October 12th — last chance in 2026." }],
-  "2026-10-15": [{ type: "Classes", color: CAL_COLORS.cohort, title: "Basic Computer Skills — Q4", detail: "Final 2026 intake for basic skills.", chatContext: "I want to join Basic Computer Skills in October." }],
-  "2026-11-02": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q4 Project Phase", detail: "Final projects. Market-ready deliverables.", chatContext: "Tell me about the Q4 project phase." }],
-  "2026-11-16": [{ type: "Executive", color: CAL_COLORS.executive, title: "Executive Circle — Q4", detail: "Year-end executive intensive. 2027 planning.", chatContext: "I'm interested in the Q4 Executive Circle." }],
-  "2026-11-30": [{ type: "Classes", color: CAL_COLORS.cohort, title: "Q4 Final Assessments", detail: "Final assessments and capstone presentations.", chatContext: "What should Q4 students prepare for finals?" }],
-  "2026-12-07": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Q4 Graduation + 3-Day Seminar", detail: "Q4 graduation and seminar. Certificates and awards.", chatContext: "Tell me about the Q4 graduation." }],
-  "2026-12-14": [{ type: "Executive", color: CAL_COLORS.executive, title: "Year-End: 2-Day Workshop + Showcase", detail: "All 2026 students (online + offline) gather for a 2-day workshop: project showcase, pitching, and scaling strategies. The biggest event of the year.", chatContext: "Tell me about the year-end workshop and project showcase in December." }],
-  "2026-12-21": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "2027 Early Bird Orientation", detail: "Preview 2027 programs. Early registrants get priority placement.", chatContext: "I'd like to attend the 2027 Early Bird Orientation." }],
+  // ── APRIL 2026 ──
+  "2026-04-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "April Cohort Resumption", detail: "New students start today. Orientation + welcome session for all April intakes across every programme.", chatContext: "I'd like to join the April cohort. Please tell me what to prepare." }],
+  "2026-04-06": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of the month. New challenge released to all four teams — AI, Cyber, Quantum, Robotics.", chatContext: "Tell me about the HUB team competition and how I can join." }],
+  "2026-04-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Digital Dominance — New Cohort", detail: "4-week social media programme begins. ₦80,000. Mon–Wed 8am–2pm. Google Digital Marketing Certificate.", chatContext: "I want to enrol in Digital Dominance starting April 13th." }],
+  "2026-04-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Money Mastery — New Cohort", detail: "4-week financial literacy programme begins. ₦90,000. Personal finance, investing, wealth building.", chatContext: "I want to enrol in Money Mastery starting April 20th." }],
+  "2026-04-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Business Builders Graduation", detail: "3-week Business Builders Academy ends. Final pitches + Google Business Certificate.", chatContext: "When is the next Business Builders Academy cohort?" }],
+
+  // ── MAY 2026 ──
+  "2026-05-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "May Cohort Resumption", detail: "New students welcome + orientation. All 8 programmes open for enrolment today.", chatContext: "I'd like to join the May cohort." }],
+  "2026-05-04": [
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge for AI · Cyber · Quantum · Robotics teams.", chatContext: "Tell me about the May team competition." },
+    { type: "Classes Start", color: CAL_COLORS.cohort, title: "Code Craft Bootcamp Starts", detail: "12-week full-stack programme. ₦300,000. Python → Web → Backend → Final project. Coursera Certificate.", chatContext: "I want to enrol in Code Craft Bootcamp starting May 4th." },
+  ],
+  "2026-05-11": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Compliance Mastery Starts", detail: "6-week programme with Bizdoc partnership. ₦120,000. CAC, tax, NAFDAC, PENCOM.", chatContext: "I want to enrol in Compliance Mastery." }],
+  "2026-05-18": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "MetFix Hardware & Robotics", detail: "8-week hardware + robotics track. ₦180k physical / ₦80k online. Arduino, circuits, competition.", chatContext: "I want to enrol in MetFix Hardware & Robotics." }],
+  "2026-05-28": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Digital Dominance Graduation", detail: "4-week cohort ends. Final social media showcase + certificate ceremony.", chatContext: "When is the next Digital Dominance cohort?" }],
+
+  // ── JUNE 2026 ──
+  "2026-06-01": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "June Cohort Resumption", detail: "New students start + orientation. Summer intakes open.", chatContext: "I'd like to join the June cohort." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of June. New challenge released.", chatContext: "Tell me about the June team competition." },
+  ],
+  "2026-06-15": [{ type: "Project Start", color: CAL_COLORS.project, title: "Code Craft — Web Development Block", detail: "Code Craft students enter the HTML/CSS/JS block. Portfolio site is due by end of block.", chatContext: "Tell me more about Code Craft Bootcamp." }],
+  "2026-06-22": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Compliance Mastery Graduation", detail: "6-week programme ends. Students graduate with full compliance roadmap + Professional Compliance Certificate.", chatContext: "When is the next Compliance Mastery cohort?" }],
+  "2026-06-29": [{ type: "Project Start", color: CAL_COLORS.project, title: "Team Competition Mid-Year Judging", detail: "All four teams present Q2 challenge outputs. Awards, points, team photos.", chatContext: "Tell me about the team competition mid-year judging." }],
+
+  // ── JULY 2026 ──
+  "2026-07-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "July Cohort Resumption", detail: "New students welcome. All programmes open for July intake.", chatContext: "I'd like to join the July cohort." }],
+  "2026-07-06": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New month, new challenge.", chatContext: "Tell me about the July team competition." }],
+  "2026-07-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "MetFix Physical Track", detail: "Physical MetFix Hardware cohort begins at HUB workshop. ₦180,000. Abuja only.", chatContext: "I want to enrol in MetFix physical track." }],
+  "2026-07-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Business Builders Academy", detail: "3-week business foundations programme. ₦150,000. Google Business Certificate.", chatContext: "I want to enrol in Business Builders Academy." }],
+  "2026-07-27": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Mid-Point Review", detail: "Week 6 milestone. Students present portfolio sites for peer + instructor review.", chatContext: "Tell me about the Code Craft mid-point review." }],
+
+  // ── AUGUST 2026 ──
+  "2026-08-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "August Cohort Resumption", detail: "New students orientation + welcome.", chatContext: "I'd like to join the August cohort." }],
+  "2026-08-03": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. August challenge released.", chatContext: "Tell me about the August team competition." }],
+  "2026-08-10": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Kids Programme — August Cohort", detail: "Basic Computer Skills (Kids, 8–15). Thu–Sat, 2 weeks. ₦25,000.", chatContext: "I want to enrol my child in the August kids programme." }],
+  "2026-08-17": [{ type: "Project Start", color: CAL_COLORS.project, title: "MetFix Robotics Build", detail: "MetFix students begin robot design + programming phase.", chatContext: "Tell me about MetFix robotics." }],
+  "2026-08-31": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Money Mastery Graduation", detail: "Students present their 10-year wealth plans. Financial Literacy Certificate.", chatContext: "When is the next Money Mastery cohort?" }],
+
+  // ── SEPTEMBER 2026 ──
+  "2026-09-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "September Cohort Resumption", detail: "New students orientation. Back-to-school intake — extra capacity.", chatContext: "I'd like to join the September cohort." }],
+  "2026-09-07": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge.", chatContext: "Tell me about the September team competition." }],
+  "2026-09-21": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "MetFix + Robotics Graduation", detail: "8-week programme ends. Robot showcase + Hardware Engineering Certificate.", chatContext: "When is the next MetFix cohort?" }],
+  "2026-09-28": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q3 Team Competition Finals", detail: "All four teams compete. Annual rankings updated.", chatContext: "Tell me about Q3 team competition finals." }],
+
+  // ── OCTOBER 2026 ──
+  "2026-10-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "October Cohort Resumption", detail: "New students welcome. Q4 intakes open.", chatContext: "I'd like to join the October cohort." }],
+  "2026-10-05": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of October.", chatContext: "Tell me about the October team competition." }],
+  "2026-10-19": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Final 2026 Digital Dominance Cohort", detail: "Last Digital Dominance cohort of 2026. 4 weeks.", chatContext: "I want to join the final 2026 Digital Dominance cohort." }],
+  "2026-10-26": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Bootcamp Graduation", detail: "12-week full-stack programme ends. Final project demo day + Coursera Certificate.", chatContext: "When is the next Code Craft Bootcamp?" }],
+
+  // ── NOVEMBER 2026 ──
+  "2026-11-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "November Cohort Resumption", detail: "Final standard intakes of 2026.", chatContext: "I'd like to join the November cohort." }],
+  "2026-11-02": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of November.", chatContext: "Tell me about the November team competition." }],
+  "2026-11-16": [{ type: "Project Start", color: CAL_COLORS.project, title: "Year-End Project Phase", detail: "All ongoing programmes enter capstone project phase. Market-ready deliverables.", chatContext: "Tell me about the year-end project phase." }],
+  "2026-11-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "November Programme Graduations", detail: "Digital Dominance, Money Mastery, Kids programme graduations + certificate ceremony.", chatContext: "Tell me about November graduations." }],
+
+  // ── DECEMBER 2026 ──
+  "2026-12-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "December Cohort Resumption", detail: "Last cohort of 2026. Short-run programmes only (Digital Dominance, Money Mastery, Online Academy).", chatContext: "I'd like to join the December cohort — last chance in 2026." }],
+  "2026-12-07": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition — Year-End Championship", detail: "First Monday of December. Annual team championship begins.", chatContext: "Tell me about the year-end team competition championship." }],
+  "2026-12-14": [{ type: "Executive", color: CAL_COLORS.executive, title: "Year-End Workshop + Showcase (2 Days)", detail: "All 2026 students gather. Team championship finals, project showcase, pitching, 2027 planning. The biggest event of the year.", chatContext: "Tell me about the year-end workshop and showcase in December." }],
+  "2026-12-21": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "2027 Early Bird Orientation", detail: "Preview 2027 programmes. Early registrants get priority placement + 10% discount.", chatContext: "I'd like to attend the 2027 Early Bird Orientation." }],
 };
 
 const CALENDAR_MONTHS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
