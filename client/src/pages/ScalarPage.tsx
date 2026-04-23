@@ -1,12 +1,18 @@
 import { PublicShell, Hero, Section, PackageCard, FinalCta } from "./_divisions/DivisionLayout";
+import { getDivision } from "@/brand";
+
+const D = getDivision("scalar");
+
 
 export default function ScalarPage() {
   return (
     <PublicShell
+      accent={D.accent}
       title="Scalar — Web & Automation | HAMZURY"
       description="Websites that work. Systems that scale. Custom web, CRM integration, WhatsApp automation, AI chatbots."
     >
       <Hero
+        accent={D.accent}
         category="Web & Automation"
         name="Scalar"
         tagline="Websites that work. Systems that scale."
@@ -16,6 +22,7 @@ export default function ScalarPage() {
       />
 
       <Section
+        accent={D.accent}
         eyebrow="Problem"
         title="Your business is running on WhatsApp and a Google Sheet"
         subtitle="That's fine at zero. It stops being fine at ₦5M/month."
@@ -41,7 +48,7 @@ export default function ScalarPage() {
         </div>
       </Section>
 
-      <Section eyebrow="Solution" title="A real website + the systems behind it" narrow>
+      <Section accent={D.accent} eyebrow="Solution" title="A real website + the systems behind it" narrow>
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
           {[
             "Professional, mobile-first website",
@@ -58,20 +65,21 @@ export default function ScalarPage() {
               border: "1px solid #00000008", fontSize: 14,
               display: "flex", alignItems: "center", gap: 10,
             }}>
-              <span style={{ color: "#1E3A8A", fontWeight: 700 }}>✓</span>
+              <span style={{ color: D.accent, fontWeight: 700 }}>✓</span>
               {item}
             </li>
           ))}
         </ul>
       </Section>
 
-      <Section eyebrow="Packages" title="From first website to full operations system">
+      <Section accent={D.accent} eyebrow="Packages" title="From first website to full operations system">
         <div id="packages" style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: 16, alignItems: "stretch",
         }}>
           <PackageCard
+            accent={D.accent}
             name="Presence"
             price="₦300,000"
             cadence="one-time"
@@ -85,6 +93,7 @@ export default function ScalarPage() {
             onSelect={{ label: "Get Presence", href: "/scalar/assessment?tier=a" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Growth"
             price="₦500,000"
             cadence="one-time"
@@ -98,6 +107,7 @@ export default function ScalarPage() {
             onSelect={{ label: "Start Growth", href: "/scalar/assessment?tier=b" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Automate"
             price="₦1,000,000"
             cadence="one-time"
@@ -112,6 +122,7 @@ export default function ScalarPage() {
             onSelect={{ label: "Automate", href: "/scalar/assessment?tier=c" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Platform"
             price="₦2,000,000"
             cadence="one-time + retainer"
@@ -128,6 +139,7 @@ export default function ScalarPage() {
       </Section>
 
       <FinalCta
+        accent={D.accent}
         headline="Stop duct-taping your operations together."
         subline="Tell us what's broken. We'll show you what to build — no jargon, no oversell."
         cta={{ label: "Start Scalar Assessment", href: "/scalar/assessment" }}

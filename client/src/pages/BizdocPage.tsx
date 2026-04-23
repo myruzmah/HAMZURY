@@ -1,21 +1,27 @@
 import { PublicShell, Hero, Section, PackageCard, FinalCta } from "./_divisions/DivisionLayout";
+import { getDivision } from "@/brand";
+
+const D = getDivision("bizdoc");
 
 export default function BizdocPage() {
   return (
     <PublicShell
       title="Bizdoc — Tax & Compliance | HAMZURY"
       description="We handle FIRS so you can handle business. CAC registration, tax clearance, monthly compliance. Built to last."
+      accent={D.accent}
     >
       <Hero
         category="Tax & Compliance"
         name="Bizdoc"
         tagline="We handle FIRS so you can handle business."
         subline="CAC registration, tax clearance, monthly VAT/PAYE/WHT, annual returns — under one roof."
+        accent={D.accent}
         primaryCta={{ label: "See Packages", href: "#packages" }}
         secondaryCta={{ label: "Start Assessment", href: "/bizdoc/assessment" }}
       />
 
       <Section
+        accent={D.accent}
         eyebrow="Problem"
         title="Tax paperwork is quietly killing Nigerian businesses"
         subtitle="Three things every founder learns the hard way."
@@ -43,7 +49,7 @@ export default function BizdocPage() {
         </div>
       </Section>
 
-      <Section eyebrow="Solution" title="One team. Every compliance document. Every month." narrow>
+      <Section accent={D.accent} eyebrow="Solution" title="One team. Every compliance document. Every month." narrow>
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
           {[
             "CAC Ltd / BN registration",
@@ -60,7 +66,7 @@ export default function BizdocPage() {
               border: "1px solid #00000008", fontSize: 14,
               display: "flex", alignItems: "center", gap: 10,
             }}>
-              <span style={{ color: "#1E3A8A", fontWeight: 700 }}>✓</span>
+              <span style={{ color: D.accent, fontWeight: 700 }}>✓</span>
               {item}
             </li>
           ))}
@@ -77,6 +83,7 @@ export default function BizdocPage() {
           gap: 16, alignItems: "stretch",
         }}>
           <PackageCard
+            accent={D.accent}
             name="Starter"
             price="₦90,000"
             cadence="one-time"
@@ -90,6 +97,7 @@ export default function BizdocPage() {
             onSelect={{ label: "Start Here", href: "/bizdoc/assessment?tier=a" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Compliant"
             price="₦150,000"
             cadence="one-time"
@@ -102,6 +110,7 @@ export default function BizdocPage() {
             onSelect={{ label: "Get Compliant", href: "/bizdoc/assessment?tier=b" }}
           />
           <PackageCard
+            accent={D.accent}
             name="ProMax (yearly)"
             price="₦300,000"
             cadence="12 months managed"
@@ -116,6 +125,7 @@ export default function BizdocPage() {
             onSelect={{ label: "Go ProMax", href: "/bizdoc/assessment?tier=c" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Enterprise"
             price="₦500,000"
             cadence="12 months managed"
@@ -132,6 +142,7 @@ export default function BizdocPage() {
       </Section>
 
       <FinalCta
+        accent={D.accent}
         headline="Don't guess what you need. Let us prescribe it."
         subline="Answer a few questions. Our compliance team reads your answers and sends back the exact package — no upsell, no guesswork."
         cta={{ label: "Start Bizdoc Assessment", href: "/bizdoc/assessment" }}

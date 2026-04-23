@@ -1,12 +1,18 @@
 import { PublicShell, Hero, Section, PackageCard, FinalCta } from "./_divisions/DivisionLayout";
+import { getDivision } from "@/brand";
+
+const D = getDivision("hub");
+
 
 export default function HubPage() {
   return (
     <PublicShell
+      accent={D.accent}
       title="HUB — Tech Training | HAMZURY"
       description="Tech skills that get you paid. Web development, graphics, data, marketing, Microsoft Office, QuickBooks — with job-placement support."
     >
       <Hero
+        accent={D.accent}
         category="Tech Training"
         name="HUB"
         tagline="Tech skills that get you paid."
@@ -16,6 +22,7 @@ export default function HubPage() {
       />
 
       <Section
+        accent={D.accent}
         eyebrow="Problem"
         title="Most tech training ends at the certificate"
         subtitle="And that's exactly why graduates still can't find work."
@@ -41,7 +48,7 @@ export default function HubPage() {
         </div>
       </Section>
 
-      <Section eyebrow="Programmes" title="Six programmes. Real portfolios. Job support." narrow>
+      <Section accent={D.accent} eyebrow="Programmes" title="Six programmes. Real portfolios. Job support." narrow>
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
           {[
             "Code Craft — Full-stack web development",
@@ -56,20 +63,21 @@ export default function HubPage() {
               border: "1px solid #00000008", fontSize: 14,
               display: "flex", alignItems: "center", gap: 10,
             }}>
-              <span style={{ color: "#1E3A8A", fontWeight: 700 }}>✓</span>
+              <span style={{ color: D.accent, fontWeight: 700 }}>✓</span>
               {item}
             </li>
           ))}
         </ul>
       </Section>
 
-      <Section eyebrow="Packages" title="Individual, certification, team, corporate">
+      <Section accent={D.accent} eyebrow="Packages" title="Individual, certification, team, corporate">
         <div id="programmes" style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: 16, alignItems: "stretch",
         }}>
           <PackageCard
+            accent={D.accent}
             name="Single Course"
             price="₦50k – ₦100k"
             cadence="4 – 6 weeks"
@@ -82,6 +90,7 @@ export default function HubPage() {
             onSelect={{ label: "Enrol", href: "/hub/enroll?tier=a" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Certification"
             price="₦200k – ₦400k"
             cadence="8 – 12 weeks"
@@ -96,6 +105,7 @@ export default function HubPage() {
             onSelect={{ label: "Certify", href: "/hub/enroll?tier=b" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Team Training"
             price="₦500,000"
             cadence="one-time"
@@ -109,6 +119,7 @@ export default function HubPage() {
             onSelect={{ label: "Train Team", href: "/hub/enroll?tier=c" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Corporate"
             price="₦1M+"
             cadence="retainer"
@@ -125,6 +136,7 @@ export default function HubPage() {
       </Section>
 
       <FinalCta
+        accent={D.accent}
         headline="Train for the job, not the certificate."
         subline="Tell us where you are and where you want to be. We'll match you to the right programme — and walk you through to placement."
         cta={{ label: "Start HUB Enrollment", href: "/hub/enroll" }}

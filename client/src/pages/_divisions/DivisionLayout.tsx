@@ -1,31 +1,41 @@
 /**
- * Shared layout used by the 4 division landing pages + the homepage.
- * Apple-minimal. Navy/Brown/Cream. "Built to Last".
+ * Shared public-site shell + primitives.
+ *
+ * Each division passes its own `accent` colour from brand.ts → DIVISIONS.
+ * Home + About + Contact use institution navy (default).
+ *
+ * Brand Bible v1.0 — Milk bg, Inter font, 8px grid, ONE accent per surface.
  */
 import { Link } from "wouter";
-import { PUBLIC, TYPE, RADIUS, SHADOW, DIVISIONS, CONTACT, BRAND_TAGLINE } from "@/brand";
+import {
+  PUBLIC, TYPE, RADIUS, SHADOW, SPACE,
+  DIVISIONS, CONTACT, BRAND_TAGLINE,
+} from "@/brand";
 import PageMeta from "@/components/PageMeta";
 
+/* ═══════════════════════════════════════════════════════════════════════
+ * SHELL — nav + content + footer
+ * ═══════════════════════════════════════════════════════════════════════ */
 export function PublicShell({
-  title,
-  description,
-  children,
+  title, description, accent, children,
 }: {
   title: string;
   description: string;
+  /** Division accent colour — from DIVISIONS[].accent. Default: institution navy. */
+  accent?: string;
   children: React.ReactNode;
 }) {
+  const color = accent || PUBLIC.navy;
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundColor: PUBLIC.cream,
+      backgroundColor: PUBLIC.milk,
       color: PUBLIC.dark,
       fontFamily: TYPE.body,
-      fontSize: 16,
-      lineHeight: 1.6,
+      fontSize: 16, lineHeight: 1.6,
     }}>
       <PageMeta title={title} description={description} />
-      <TopNav />
+      <TopNav accent={color} />
       <main>{children}</main>
       <SiteFooter />
     </div>
@@ -35,17 +45,17 @@ export function PublicShell({
 /* ═══════════════════════════════════════════════════════════════════════
  * NAV — minimal, Apple-style
  * ═══════════════════════════════════════════════════════════════════════ */
-function TopNav() {
+function TopNav({ accent }: { accent: string }) {
   return (
     <header style={{
       position: "sticky", top: 0, zIndex: 30,
-      backgroundColor: `${PUBLIC.cream}F0`,
+      backgroundColor: `${PUBLIC.milk}F0`,
       backdropFilter: "blur(12px)",
       borderBottom: `1px solid ${PUBLIC.hairline}`,
     }}>
       <div style={{
         maxWidth: 1200, margin: "0 auto",
-        padding: "14px 24px",
+        padding: `${SPACE.sm}px ${SPACE.md}px`,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <Link href="/" style={{
@@ -60,9 +70,7 @@ function TopNav() {
             HAMZURY
           </span>
         </Link>
-        <nav style={{
-          display: "flex", gap: 28, alignItems: "center",
-        }}>
+        <nav style={{ display: "flex", gap: 28, alignItems: "center" }}>
           {DIVISIONS.map(d => (
             <Link
               key={d.key}
@@ -75,7 +83,7 @@ function TopNav() {
           ))}
           <Link href="/contact" style={{
             fontSize: 13, color: PUBLIC.white,
-            backgroundColor: PUBLIC.navy, textDecoration: "none",
+            backgroundColor: accent, textDecoration: "none",
             padding: "8px 16px", borderRadius: RADIUS.pill, fontWeight: 500,
           }}>
             Contact
@@ -92,8 +100,8 @@ function TopNav() {
 function SiteFooter() {
   return (
     <footer style={{
-      marginTop: 80,
-      padding: "48px 24px 32px",
+      marginTop: SPACE.xxl,
+      padding: `${SPACE.xl}px ${SPACE.md}px ${SPACE.lg}px`,
       borderTop: `1px solid ${PUBLIC.hairline}`,
       backgroundColor: PUBLIC.white,
     }}>
@@ -101,7 +109,7 @@ function SiteFooter() {
         <div style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: 32, marginBottom: 32,
+          gap: SPACE.lg, marginBottom: SPACE.lg,
         }}>
           <div>
             <img src="/hamzury-mark.png" alt="HAMZURY" style={{ height: 28, marginBottom: 12 }} />
@@ -112,12 +120,12 @@ function SiteFooter() {
           </div>
           <FooterCol title="Services" items={DIVISIONS.map(d => ({ label: d.name, href: d.path }))} />
           <FooterCol title="Company" items={[
-            { label: "About", href: "/about" },
+            { label: "About",   href: "/about" },
             { label: "Contact", href: "/contact" },
           ]} />
           <FooterCol title="Legal" items={[
             { label: "Privacy", href: "/privacy" },
-            { label: "Terms", href: "/terms" },
+            { label: "Terms",   href: "/terms" },
           ]} />
           <div>
             <p style={{ fontSize: 11, color: PUBLIC.muted, textTransform: "uppercase", letterSpacing: 0.06, fontWeight: 600, marginBottom: 10 }}>
@@ -127,17 +135,17 @@ function SiteFooter() {
               {CONTACT.address}
             </p>
             <p style={{ fontSize: 12, color: PUBLIC.muted, marginTop: 8, lineHeight: 1.6 }}>
-              {CONTACT.hours.weekdays}<br/>
-              {CONTACT.hours.saturday}
+              {CONTACT.hours.weekdays}<br/>{CONTACT.hours.saturday}
             </p>
           </div>
         </div>
         <div style={{
-          paddingTop: 24, borderTop: `1px solid ${PUBLIC.hairline}`,
-          display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8,
+          paddingTop: SPACE.md, borderTop: `1px solid ${PUBLIC.hairline}`,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          flexWrap: "wrap", gap: 8,
         }}>
           <p style={{ fontSize: 12, color: PUBLIC.muted }}>
-            © {new Date().getFullYear()} HAMZURY. All rights reserved.
+            © {new Date().getFullYear()} HAMZURY. Built to Last.
           </p>
           <p style={{ fontSize: 12, color: PUBLIC.muted }}>
             {CONTACT.general}
@@ -168,32 +176,34 @@ function FooterCol({ title, items }: { title: string; items: { label: string; hr
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * REUSABLE PIECES for division landing pages
+ * HERO
  * ═══════════════════════════════════════════════════════════════════════ */
-
 export function Hero({
-  category, name, tagline, subline, primaryCta, secondaryCta,
+  category, name, tagline, subline, accent,
+  primaryCta, secondaryCta,
 }: {
   category: string;
   name: string;
   tagline: string;
   subline?: string;
+  accent?: string;
   primaryCta?: { label: string; href: string };
   secondaryCta?: { label: string; href: string };
 }) {
+  const color = accent || PUBLIC.navy;
   return (
     <section style={{
-      padding: "96px 24px 80px",
-      maxWidth: 1200, margin: "0 auto",
-      textAlign: "center",
+      padding: `${SPACE.huge}px ${SPACE.md}px ${SPACE.xxl}px`,
+      maxWidth: 1200, margin: "0 auto", textAlign: "center",
     }}>
       <p style={{
-        fontSize: 12, color: PUBLIC.navy, fontWeight: 600,
+        fontSize: 12, color, fontWeight: 600,
         textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
       }}>{category}</p>
       <h1 style={{
-        fontFamily: TYPE.display, fontSize: "clamp(40px, 6vw, 68px)",
-        fontWeight: 700, lineHeight: 1.05, letterSpacing: -1.5,
+        fontFamily: TYPE.display,
+        fontSize: "clamp(40px, 6vw, 68px)", fontWeight: 700,
+        lineHeight: 1.05, letterSpacing: -1.5,
         color: PUBLIC.dark, marginBottom: 18,
       }}>
         {name}
@@ -211,11 +221,14 @@ export function Hero({
           lineHeight: 1.6,
         }}>{subline}</p>
       )}
-      <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginTop: subline ? 0 : 36 }}>
+      <div style={{
+        display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap",
+        marginTop: subline ? 0 : 36,
+      }}>
         {primaryCta && (
           <Link href={primaryCta.href} style={{
             padding: "14px 28px", borderRadius: RADIUS.pill,
-            backgroundColor: PUBLIC.navy, color: PUBLIC.white,
+            backgroundColor: color, color: PUBLIC.white,
             fontSize: 15, fontWeight: 500, textDecoration: "none",
             letterSpacing: -0.1,
           }}>
@@ -227,7 +240,7 @@ export function Hero({
             padding: "14px 28px", borderRadius: RADIUS.pill,
             backgroundColor: "transparent", color: PUBLIC.dark,
             fontSize: 15, fontWeight: 500, textDecoration: "none",
-            border: `1px solid ${PUBLIC.dark}20`, letterSpacing: -0.1,
+            border: `1px solid ${PUBLIC.dark}25`, letterSpacing: -0.1,
           }}>
             {secondaryCta.label}
           </Link>
@@ -237,8 +250,11 @@ export function Hero({
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+ * SECTION — generic content wrapper
+ * ═══════════════════════════════════════════════════════════════════════ */
 export function Section({
-  eyebrow, title, subtitle, children, bg, narrow,
+  eyebrow, title, subtitle, children, bg, narrow, accent,
 }: {
   eyebrow?: string;
   title: string;
@@ -246,10 +262,12 @@ export function Section({
   children?: React.ReactNode;
   bg?: string;
   narrow?: boolean;
+  accent?: string;
 }) {
+  const color = accent || PUBLIC.navy;
   return (
     <section style={{
-      padding: "80px 24px",
+      padding: `${SPACE.xxl}px ${SPACE.md}px`,
       backgroundColor: bg || "transparent",
     }}>
       <div style={{
@@ -258,7 +276,7 @@ export function Section({
         <div style={{ textAlign: "center", marginBottom: 56 }}>
           {eyebrow && (
             <p style={{
-              fontSize: 12, color: PUBLIC.navy, fontWeight: 600,
+              fontSize: 12, color, fontWeight: 600,
               textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
             }}>{eyebrow}</p>
           )}
@@ -283,8 +301,11 @@ export function Section({
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+ * PACKAGE CARD
+ * ═══════════════════════════════════════════════════════════════════════ */
 export function PackageCard({
-  name, price, cadence, features, popular, onSelect,
+  name, price, cadence, features, popular, onSelect, accent,
 }: {
   name: string;
   price: string;
@@ -292,13 +313,15 @@ export function PackageCard({
   features: string[];
   popular?: boolean;
   onSelect?: { label: string; href: string };
+  accent?: string;
 }) {
+  const color = accent || PUBLIC.navy;
   return (
     <div style={{
       backgroundColor: PUBLIC.white,
       borderRadius: RADIUS.lg,
       padding: "32px 28px",
-      border: `1px solid ${popular ? PUBLIC.navy : PUBLIC.hairline}`,
+      border: `1px solid ${popular ? color : PUBLIC.hairline}`,
       boxShadow: popular ? SHADOW.raised : SHADOW.card,
       position: "relative",
       display: "flex", flexDirection: "column",
@@ -307,7 +330,7 @@ export function PackageCard({
         <span style={{
           position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)",
           padding: "4px 12px", borderRadius: RADIUS.pill,
-          backgroundColor: PUBLIC.navy, color: PUBLIC.white,
+          backgroundColor: color, color: PUBLIC.white,
           fontSize: 10, fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.08,
         }}>
           Most Popular
@@ -333,9 +356,7 @@ export function PackageCard({
             fontSize: 14, color: PUBLIC.dark, lineHeight: 1.6,
             padding: "6px 0", display: "flex", alignItems: "flex-start", gap: 10,
           }}>
-            <span style={{
-              color: PUBLIC.navy, fontWeight: 700, flexShrink: 0, marginTop: 2,
-            }}>✓</span>
+            <span style={{ color, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>✓</span>
             <span>{f}</span>
           </li>
         ))}
@@ -343,7 +364,7 @@ export function PackageCard({
       {onSelect && (
         <a href={onSelect.href} style={{
           padding: "12px 20px", borderRadius: RADIUS.pill,
-          backgroundColor: popular ? PUBLIC.navy : "transparent",
+          backgroundColor: popular ? color : "transparent",
           color: popular ? PUBLIC.white : PUBLIC.dark,
           border: popular ? "none" : `1px solid ${PUBLIC.dark}25`,
           fontSize: 13, fontWeight: 500, textDecoration: "none", textAlign: "center",
@@ -356,19 +377,23 @@ export function PackageCard({
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+ * FINAL CTA
+ * ═══════════════════════════════════════════════════════════════════════ */
 export function FinalCta({
-  headline, subline, cta,
+  headline, subline, cta, accent,
 }: {
   headline: string;
   subline: string;
   cta: { label: string; href: string };
+  accent?: string;
 }) {
+  const color = accent || PUBLIC.navy;
   return (
     <section style={{
-      padding: "96px 24px",
-      backgroundColor: PUBLIC.navy,
-      color: PUBLIC.white,
-      textAlign: "center",
+      padding: `${SPACE.huge}px ${SPACE.md}px`,
+      backgroundColor: color,
+      color: PUBLIC.white, textAlign: "center",
     }}>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <h2 style={{
@@ -386,7 +411,7 @@ export function FinalCta({
         </p>
         <a href={cta.href} style={{
           padding: "14px 32px", borderRadius: RADIUS.pill,
-          backgroundColor: PUBLIC.white, color: PUBLIC.navy,
+          backgroundColor: PUBLIC.white, color,
           fontSize: 15, fontWeight: 600, textDecoration: "none",
           display: "inline-block", letterSpacing: -0.1,
         }}>

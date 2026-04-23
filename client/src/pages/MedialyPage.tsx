@@ -1,12 +1,18 @@
 import { PublicShell, Hero, Section, PackageCard, FinalCta } from "./_divisions/DivisionLayout";
+import { getDivision } from "@/brand";
+
+const D = getDivision("medialy");
+
 
 export default function MedialyPage() {
   return (
     <PublicShell
+      accent={D.accent}
       title="Medialy — Social Media | HAMZURY"
       description="Social media that actually brings clients. Content strategy, daily posts, community management, analytics."
     >
       <Hero
+        accent={D.accent}
         category="Social Media"
         name="Medialy"
         tagline="Social media that actually brings clients."
@@ -16,6 +22,7 @@ export default function MedialyPage() {
       />
 
       <Section
+        accent={D.accent}
         eyebrow="Problem"
         title="You post twice. You go silent. You wonder why it's not working."
         subtitle="You're not lazy. You're just doing your actual job."
@@ -41,7 +48,7 @@ export default function MedialyPage() {
         </div>
       </Section>
 
-      <Section eyebrow="Solution" title="A content team that shows up every day" narrow>
+      <Section accent={D.accent} eyebrow="Solution" title="A content team that shows up every day" narrow>
         <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
           {[
             "Monthly content strategy + calendar",
@@ -58,20 +65,21 @@ export default function MedialyPage() {
               border: "1px solid #00000008", fontSize: 14,
               display: "flex", alignItems: "center", gap: 10,
             }}>
-              <span style={{ color: "#1E3A8A", fontWeight: 700 }}>✓</span>
+              <span style={{ color: D.accent, fontWeight: 700 }}>✓</span>
               {item}
             </li>
           ))}
         </ul>
       </Section>
 
-      <Section eyebrow="Packages" title="From setup to full management">
+      <Section accent={D.accent} eyebrow="Packages" title="From setup to full management">
         <div id="packages" style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: 16, alignItems: "stretch",
         }}>
           <PackageCard
+            accent={D.accent}
             name="Setup"
             price="₦50,000"
             cadence="one-time"
@@ -85,6 +93,7 @@ export default function MedialyPage() {
             onSelect={{ label: "Get Setup", href: "/medialy/assessment?tier=a" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Manage"
             price="₦150,000"
             cadence="/ month"
@@ -98,6 +107,7 @@ export default function MedialyPage() {
             onSelect={{ label: "Start Manage", href: "/medialy/assessment?tier=b" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Accelerate"
             price="₦300,000"
             cadence="/ month"
@@ -112,6 +122,7 @@ export default function MedialyPage() {
             onSelect={{ label: "Accelerate", href: "/medialy/assessment?tier=c" }}
           />
           <PackageCard
+            accent={D.accent}
             name="Authority"
             price="₦500,000"
             cadence="/ month"
@@ -128,6 +139,7 @@ export default function MedialyPage() {
       </Section>
 
       <FinalCta
+        accent={D.accent}
         headline="Let consistency do the heavy lifting."
         subline="Tell us your business and audience. We'll build the posting rhythm that turns followers into clients."
         cta={{ label: "Start Medialy Assessment", href: "/medialy/assessment" }}
