@@ -164,13 +164,66 @@ function resolveProgramme(raw: string | null | undefined): string | null {
   return LEGACY_MAP[raw] ?? null;
 }
 
-/* ─── Teams from PHASE7_HUB/TEAM_COMPETITION ─── */
+/* ─── Teams from PHASE7_HUB/TEAM_COMPETITION/Team_Competition_Rules.txt ─── */
 const TEAMS = [
   { key: "ai",       name: "AI Team",       color: PURPLE },
   { key: "cyber",    name: "Cyber Team",    color: BLUE },
   { key: "quantum",  name: "Quantum Team",  color: GOLD },
   { key: "robotics", name: "Robotics Team", color: ORANGE },
 ] as const;
+
+/* ─── Judging criteria from Team_Competition_Rules.txt ─── */
+const JUDGING_CRITERIA = [
+  { label: "Innovation",        weight: 30 },
+  { label: "Technical skill",   weight: 30 },
+  { label: "Presentation",      weight: 20 },
+  { label: "Team collaboration", weight: 20 },
+];
+
+/* ─── Monthly cycle from Team_Competition_Rules.txt ─── */
+const COMP_CYCLE = [
+  { week: "Week 1", label: "Challenge announced (first Monday)" },
+  { week: "Weeks 2–3", label: "Teams execute + build" },
+  { week: "Week 4", label: "Presentations + judging" },
+];
+
+/* ─── Social media posting rules from Student_Content_Posting_Guide.txt ─── */
+const SOCIAL_RULES = {
+  minPerWeek: 1,
+  recommended: "2–3 posts per week",
+  platforms: ["Instagram", "LinkedIn", "TikTok"],
+  tag: "@HamzuryHUB",
+  hashtags: ["#HamzuryHUB", "#TechEducationNG"],
+  weeklyThemes: [
+    "Week 1 — Introduction & goals",
+    "Week 2 — First project",
+    "Week 3 — AI tools learned",
+    "Week 4 — Team collaboration",
+  ],
+  consequence: "100% compliance required to earn HUB certificate",
+};
+
+/* ─── Certification requirements from HUB_Complete_Operations_Guide.txt ─── */
+const CERT_REQUIREMENTS = [
+  "All LMS modules completed",
+  "All assignments submitted + graded",
+  "Programme-specific international certification (Google / Coursera)",
+  "100% weekly social media posting verified",
+  "Team competition participation",
+  "Final project approved",
+  "80%+ attendance",
+];
+
+/* ─── HUB success targets from Operations Guide ─── */
+const SUCCESS_TARGETS = [
+  { label: "Enrollments / month",          target: 50  },
+  { label: "Programme completion rate",    target: 85  },
+  { label: "Certification rate",           target: 90  },
+  { label: "Student satisfaction",         target: 95  },
+  { label: "Social-media compliance",      target: 100 },
+  { label: "Team-competition participation", target: 100 },
+  { label: "Alumni employed in 6 months",  target: 70  },
+];
 
 /* ═══════════════════════════════════════════════════════════════════════ */
 export default function HubAdminPortal() {
@@ -787,6 +840,63 @@ function CompetitionSection() {
         </button>
       </div>
 
+      {/* Rules block — from Team_Competition_Rules.txt */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Competition Rules · Monthly Cycle
+        </p>
+
+        <div style={{
+          display: "grid", gap: 10,
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", marginBottom: 14,
+        }}>
+          {COMP_CYCLE.map(c => (
+            <div key={c.week} style={{
+              padding: "10px 12px", backgroundColor: BG, borderRadius: 8, border: `1px solid ${DARK}06`,
+            }}>
+              <p style={{ fontSize: 10, color: NAVY, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                {c.week}
+              </p>
+              <p style={{ fontSize: 11, color: DARK, marginTop: 4, lineHeight: 1.5 }}>
+                {c.label}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 8 }}>
+          Judging Criteria
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+          {JUDGING_CRITERIA.map(j => (
+            <span key={j.label} style={{
+              padding: "5px 10px", borderRadius: 999, backgroundColor: `${NAVY}08`,
+              fontSize: 11, color: DARK,
+            }}>
+              {j.label} <strong style={{ color: NAVY }}>{j.weight}%</strong>
+            </span>
+          ))}
+        </div>
+
+        <p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 8 }}>
+          Prizes
+        </p>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: 11, color: DARK, lineHeight: 1.7 }}>
+          <li>· <strong>Monthly</strong> — Team recognition + small prize · Individual certificate of excellence</li>
+          <li>· <strong>Annual</strong> — Winning team trophy + grand prize · Top 3 individuals earn course scholarships</li>
+        </ul>
+
+        <p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginTop: 14, marginBottom: 8 }}>
+          Scoring
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          <span style={{ padding: "5px 10px", borderRadius: 999, backgroundColor: `${GOLD}15`, fontSize: 11, color: GOLD, fontWeight: 600 }}>🥇 1st = 100 pts</span>
+          <span style={{ padding: "5px 10px", borderRadius: 999, backgroundColor: `${DARK}08`, fontSize: 11, color: DARK, fontWeight: 600 }}>🥈 2nd = 75 pts</span>
+          <span style={{ padding: "5px 10px", borderRadius: 999, backgroundColor: `${ORANGE}15`, fontSize: 11, color: ORANGE, fontWeight: 600 }}>🥉 3rd = 50 pts</span>
+          <span style={{ padding: "5px 10px", borderRadius: 999, backgroundColor: `${DARK}05`, fontSize: 11, color: MUTED, fontWeight: 600 }}>Participation = 25 pts</span>
+        </div>
+      </Card>
+
       {/* Leaderboard */}
       <Card style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
@@ -994,6 +1104,57 @@ function SocialSection() {
         <MiniStat label="Verified this week" value={verifiedThisWeek} color={GREEN_OK} />
         <MiniStat label="Total logged" value={rows.length} color={GOLD} />
       </div>
+
+      {/* Posting rules from Student_Content_Posting_Guide.txt */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Posting Rules
+        </p>
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+          <div style={{ padding: "10px 12px", backgroundColor: BG, borderRadius: 8 }}>
+            <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Minimum</p>
+            <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>
+              {SOCIAL_RULES.minPerWeek} post / week
+            </p>
+            <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>Recommended: {SOCIAL_RULES.recommended}</p>
+          </div>
+          <div style={{ padding: "10px 12px", backgroundColor: BG, borderRadius: 8 }}>
+            <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Platforms (pick best)</p>
+            <p style={{ fontSize: 11, color: DARK }}>
+              {SOCIAL_RULES.platforms.join(" · ")}
+            </p>
+          </div>
+          <div style={{ padding: "10px 12px", backgroundColor: BG, borderRadius: 8 }}>
+            <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Required Tag</p>
+            <p style={{ fontSize: 12, color: NAVY, fontWeight: 600, fontFamily: "monospace" }}>{SOCIAL_RULES.tag}</p>
+          </div>
+          <div style={{ padding: "10px 12px", backgroundColor: BG, borderRadius: 8 }}>
+            <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>Hashtags</p>
+            <p style={{ fontSize: 11, color: NAVY, fontFamily: "monospace" }}>
+              {SOCIAL_RULES.hashtags.join(" ")}
+            </p>
+          </div>
+        </div>
+
+        <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginTop: 14, marginBottom: 8 }}>
+          Weekly themes (rotating)
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SOCIAL_RULES.weeklyThemes.map(t => (
+            <span key={t} style={{
+              padding: "5px 10px", borderRadius: 999, backgroundColor: `${NAVY}08`,
+              fontSize: 11, color: DARK,
+            }}>{t}</span>
+          ))}
+        </div>
+
+        <p style={{
+          marginTop: 14, padding: "8px 10px", fontSize: 11, color: ORANGE,
+          backgroundColor: `${ORANGE}08`, borderRadius: 8, borderLeft: `3px solid ${ORANGE}`,
+        }}>
+          <strong style={{ color: DARK }}>Consequence:</strong> {SOCIAL_RULES.consequence}.
+        </p>
+      </Card>
 
       <Card style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
@@ -1272,7 +1433,49 @@ Built to Last.`;
       <SectionTitle sub="Ready-to-paste weekly snapshot for CEO/Founder.">
         Reports
       </SectionTitle>
+
+      {/* HUB success targets from Operations Guide */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Success Targets
+        </p>
+        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+          {SUCCESS_TARGETS.map(t => (
+            <div key={t.label} style={{
+              padding: "8px 10px", backgroundColor: BG, borderRadius: 8,
+              display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6,
+            }}>
+              <span style={{ fontSize: 11, color: DARK, minWidth: 0, flex: 1 }}>{t.label}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: NAVY, whiteSpace: "nowrap" }}>
+                {t.target}{t.label.includes("month") ? "+" : "%"}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Certification requirements from Operations Guide */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Certification Requirements
+        </p>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 6 }}>
+          {CERT_REQUIREMENTS.map(r => (
+            <li key={r} style={{
+              fontSize: 12, color: DARK, padding: "6px 10px", backgroundColor: BG, borderRadius: 8,
+              display: "flex", alignItems: "center", gap: 8,
+            }}>
+              <CheckCircle2 size={12} style={{ color: NAVY, flexShrink: 0 }} />
+              {r}
+            </li>
+          ))}
+        </ul>
+      </Card>
+
       <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Weekly Report — Copy & Send
+        </p>
         <pre style={{
           fontFamily: "ui-monospace, 'SF Mono', monospace",
           fontSize: 11, color: DARK, backgroundColor: BG,
