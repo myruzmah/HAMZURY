@@ -28,6 +28,7 @@ import CEOPortal from "./pages/CEOPortal";
 import BizDevPortal from "./pages/BizDevPortal";
 import FinancePortal from "./pages/FinancePortal";
 import HRPortal from "./pages/HRPortal";
+import BizdocOpsPortal from "./pages/BizdocOpsPortal";
 
 /* ── Public/client surfaces ── */
 import ClientDashboard from "./pages/ClientDashboard";
@@ -49,8 +50,9 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "/cso":     ["cso", "cso_staff"],
   "/ceo":     ["ceo", "founder"],
   "/bizdev":  ["bizdev", "bizdev_staff", "ceo", "founder"],
-  "/finance": ["finance", "ceo", "founder"],
-  "/hr":      ["hr", "ceo", "founder"],
+  "/finance":    ["finance", "ceo", "founder"],
+  "/hr":         ["hr", "ceo", "founder"],
+  "/bizdoc/ops": ["compliance_staff", "bizdev", "ceo", "founder"],
 };
 
 function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactNode }) {
@@ -136,6 +138,9 @@ function Router() {
       </Route>
       <Route path="/hr">
         <RoleGuard allowedRoles={ROLE_ACCESS["/hr"]}><HRPortal /></RoleGuard>
+      </Route>
+      <Route path="/bizdoc/ops">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/bizdoc/ops"]}><BizdocOpsPortal /></RoleGuard>
       </Route>
 
       {/* ═══ Legacy staff redirects ═══ */}

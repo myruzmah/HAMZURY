@@ -1,4 +1,4 @@
-import { Shield, Award, Briefcase } from "lucide-react";
+import { Shield, Award, Briefcase, Factory, Receipt } from "lucide-react";
 import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
 
 const cfg: DivisionPortalConfig = {
@@ -71,20 +71,44 @@ const cfg: DivisionPortalConfig = {
       ],
     },
     {
-      id: "subscriptions", title: "Subscription Packages", icon: Shield,
+      id: "tax-services", title: "Tax Services", icon: Receipt,
       items: [
-        { name: "Tax ProMax Update", context: "Tax ProMax Update", tag: "₦150K/YEAR" },
-        { name: "Tax + CAC + SCUML Management", context: "Tax CAC SCUML Management", tag: "₦300K/YEAR" },
-        { name: "Full Compliance Management", context: "Full Compliance Management", tag: "₦500K/YEAR" },
+        { name: "Monthly VAT Filing", context: "Monthly VAT Filing", tag: "₦50K/MO" },
+        { name: "Withholding Tax (WHT) Filing", context: "WHT Filing", tag: "₦20K/MO" },
+        { name: "PAYE Setup + Monthly Management", context: "PAYE Setup + Management", tag: "₦100K + ₦30K/MO" },
+        { name: "Corporate Income Tax (CIT)", context: "Corporate Income Tax", tag: "₦150K/YR" },
+        { name: "Tax Clearance Certificate (TCC)", context: "Tax Clearance Certificate", tag: "₦150K" },
+        { name: "Tax Audit Support", context: "Tax Audit Support", tag: "₦300K–₦1M" },
       ],
     },
     {
-      id: "renewals", title: "Renewals & Documents", icon: Award,
+      id: "compliance-management", title: "Compliance Management", icon: Shield,
       items: [
-        { name: "Tax & Contract Documents (TCC, ITF, NSITF, BPP)", context: "Tax Contract Documents" },
+        { name: "CAC Registration (BN / Ltd / NGO)", context: "CAC Registration", tag: "₦150K" },
+        { name: "NAFDAC Registration (Food / Drug / Cosmetics)", context: "NAFDAC Registration", tag: "₦500K–₦2M" },
+        { name: "SON Certification (Product)", context: "SON Certification", tag: "₦300K–₦1M" },
+        { name: "PENCOM Compliance (Quarterly)", context: "PENCOM Compliance", tag: "₦80K/Q" },
+        { name: "FIRS Full Compliance Package", context: "FIRS Full Compliance", tag: "₦200–₦500K/YR" },
         { name: "SCUML Certificate", context: "SCUML Certificate" },
-        { name: "Licences & Permits", context: "Sector Licences" },
-        { name: "Legal & Template Documents", context: "Legal Documents" },
+        { name: "Monthly Advisory Retainer", context: "Monthly Advisory Retainer", tag: "₦50K/MO" },
+      ],
+    },
+    {
+      id: "industry-specific", title: "Industry-Specific Packages", icon: Factory,
+      items: [
+        { name: "Healthcare (NAFDAC + MDCAN/PPDRA + Pharmacy Licence)", context: "Healthcare Compliance Package", tag: "₦800K–₦3M" },
+        { name: "Manufacturing (SON + Factory + Environmental)", context: "Manufacturing Compliance Package", tag: "₦1M–₦5M" },
+        { name: "Food & Beverage (NAFDAC + SON + Halal)", context: "Food Beverage Compliance Package", tag: "₦800K–₦2.5M" },
+        { name: "Mining & Extraction (Licence + EIA + CDA)", context: "Mining Extraction Package", tag: "₦2M–₦10M" },
+      ],
+    },
+    {
+      id: "advisory", title: "Advisory & Reviews", icon: Award,
+      items: [
+        { name: "Tax Planning & Optimisation", context: "Tax Planning Optimisation", tag: "₦200K–₦500K" },
+        { name: "Compliance Health Check (full audit)", context: "Compliance Health Check", tag: "₦100K" },
+        { name: "Legal & Template Documents", context: "Legal Templates" },
+        { name: "Annual Returns Filing", context: "Annual Returns" },
       ],
     },
   ],

@@ -134,6 +134,7 @@ async function startServer() {
         bizdev_staff: "/bizdev",
         finance:      "/finance",
         hr:           "/hr",
+        compliance_staff: "/bizdoc/ops",
       };
 
       res.json({

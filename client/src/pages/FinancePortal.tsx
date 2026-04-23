@@ -631,7 +631,7 @@ function AllocationsSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * 5. COMMISSIONS
+ * 5. COMMISSIONS — 40/60 + CSO 18% model (per Finance Operations Guide)
  * ═══════════════════════════════════════════════════════════════════════ */
 function CommissionsSection() {
   const utils = trpc.useUtils();
@@ -643,13 +643,22 @@ function CommissionsSection() {
   const paid = rows.filter(c => c.status === "paid");
 
   const approveMut = trpc.commissions.updateStatus.useMutation({
-    onSuccess: () => { toast.success("Commission approved"); utils.commissions.list.invalidate(); },
+    onSuccess: () => { toast.success("Commission status updated"); utils.commissions.list.invalidate(); },
     onError: (e: any) => toast.error(e.message),
   });
 
+  // ── Live calculator (40/60 + CSO 18%) ───────────────────────────────────
+  const [calcAmount, setCalcAmount] = useState<string>("");
+  const [calcCso, setCalcCso] = useState<boolean>(false);
+  const amount = parseFloat(calcAmount) || 0;
+  const divisionShare = amount * 0.40;
+  const sharedPool = amount * 0.60;
+  const csoCut = calcCso ? amount * 0.18 : 0;
+  const divisionNet = divisionShare - csoCut;
+
   return (
     <div>
-      <SectionTitle sub="Commissions from confirmed payments — CSO 18%, affiliates by tier, staff pool splits.">
+      <SectionTitle sub="HAMZURY model: 40% division · 60% shared pool. If CSO brought the client, CSO earns 18% of the total (deducted from the division's 40%).">
         Commissions
       </SectionTitle>
 
@@ -660,42 +669,144 @@ function CommissionsSection() {
         <MiniStat label="Total"    value={rows.length}     color={MUTED} />
       </div>
 
+      {/* Live calculator */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Commission Calculator
+        </p>
+        <div style={{
+          display: "grid", gap: 12,
+          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        }}>
+          <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <span style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+              Revenue Amount (₦)
+            </span>
+            <input
+              type="number"
+              value={calcAmount}
+              onChange={e => setCalcAmount(e.target.value)}
+              placeholder="e.g. 500000"
+              style={{
+                padding: "10px 12px", borderRadius: 10, border: `1px solid ${DARK}15`,
+                fontSize: 14, color: DARK, backgroundColor: WHITE, outline: "none",
+                fontFamily: "monospace",
+              }}
+            />
+          </label>
+          <label style={{
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "10px 12px", borderRadius: 10, backgroundColor: BG,
+            cursor: "pointer", border: `1px solid ${DARK}08`,
+          }}>
+            <input
+              type="checkbox"
+              checked={calcCso}
+              onChange={e => setCalcCso(e.target.checked)}
+              style={{ width: 16, height: 16, accentColor: GREEN }}
+            />
+            <span style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>
+              CSO brought this client (18% to CSO)
+            </span>
+          </label>
+        </div>
+
+        {amount > 0 && (
+          <div style={{
+            marginTop: 14, padding: "14px 16px", backgroundColor: `${GREEN}06`,
+            borderRadius: 12, border: `1px solid ${GREEN}20`,
+          }}>
+            <div style={{
+              display: "grid", gap: 8,
+              gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+            }}>
+              <Breakdown label="Total revenue"     value={fmtNaira(amount)}        color={DARK} />
+              <Breakdown label="Shared pool (60%)" value={fmtNaira(sharedPool)}    color={GOLD} />
+              <Breakdown label="Division (40%)"    value={fmtNaira(divisionShare)} color={BLUE} />
+              {calcCso && (
+                <>
+                  <Breakdown label="CSO cut (18%)"    value={fmtNaira(csoCut)}      color={PURPLE} />
+                  <Breakdown label="Division net"     value={fmtNaira(divisionNet)} color={GREEN} />
+                </>
+              )}
+            </div>
+            <p style={{ fontSize: 10, color: MUTED, marginTop: 10, lineHeight: 1.6 }}>
+              Example from ops guide: Medialy earns ₦500,000. Division gets ₦200,000 (40%).
+              If CSO brought the client: CSO earns ₦90,000 (18% of ₦500,000), deducted from
+              division's 40% → Medialy nets ₦110,000.
+            </p>
+          </div>
+        )}
+      </Card>
+
+      {/* Records list */}
       <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Commission Records
+        </p>
         {rows.length === 0 ? (
           <EmptyState icon={Award} title="No commissions yet" />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {rows.slice(0, 60).map((c: any) => (
-              <div key={c.id} style={{
-                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
-                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
-              }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
-                    {c.clientName || "—"} <span style={{ color: MUTED, fontWeight: 400 }}>· {c.service || c.taskRef}</span>
-                  </p>
-                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                    Quoted {fmtNaira(c.quotedPrice)} · Commission {fmtNaira(c.commissionAmount)} · {fmtDate(c.createdAt)}
-                  </p>
+            {rows.slice(0, 60).map((c: any) => {
+              const quoted = parseFloat(c.quotedPrice || 0);
+              return (
+                <div key={c.id} style={{
+                  padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+                }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
+                      {c.clientName || "—"} <span style={{ color: MUTED, fontWeight: 400 }}>· {c.service || c.taskRef}</span>
+                    </p>
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                      Quoted {fmtNaira(quoted)} · Division 40% = {fmtNaira(quoted * 0.4)} · CSO 18% = {fmtNaira(quoted * 0.18)} · {fmtDate(c.createdAt)}
+                    </p>
+                  </div>
+                  <StatusPill label={c.status} tone={c.status === "paid" ? "green" : c.status === "approved" ? "blue" : "gold"} />
+                  {c.status === "pending" && (
+                    <button
+                      onClick={() => approveMut.mutate({ id: c.id, status: "approved" })}
+                      disabled={approveMut.isPending}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8,
+                        backgroundColor: `${GREEN}15`, color: GREEN, border: "none",
+                        fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      }}>
+                      Approve
+                    </button>
+                  )}
+                  {c.status === "approved" && (
+                    <button
+                      onClick={() => approveMut.mutate({ id: c.id, status: "paid" })}
+                      disabled={approveMut.isPending}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8,
+                        backgroundColor: `${BLUE}15`, color: BLUE, border: "none",
+                        fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      }}>
+                      Mark Paid
+                    </button>
+                  )}
                 </div>
-                <StatusPill label={c.status} tone={c.status === "paid" ? "green" : c.status === "approved" ? "blue" : "gold"} />
-                {c.status === "pending" && (
-                  <button
-                    onClick={() => approveMut.mutate({ id: c.id, status: "approved" })}
-                    disabled={approveMut.isPending}
-                    style={{
-                      padding: "5px 10px", borderRadius: 8,
-                      backgroundColor: `${GREEN}15`, color: GREEN, border: "none",
-                      fontSize: 10, fontWeight: 600, cursor: "pointer",
-                    }}>
-                    Approve
-                  </button>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+function Breakdown({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div>
+      <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, marginBottom: 4 }}>
+        {label}
+      </p>
+      <p style={{ fontSize: 14, fontWeight: 700, color, fontFamily: "ui-monospace, monospace" }}>
+        {value}
+      </p>
     </div>
   );
 }
@@ -746,110 +857,229 @@ function AIFundSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * 7. REPORTS (summary — copy-paste into WhatsApp/email)
+ * 7. REPORTS — Monthly Financial Report (per Finance Operations Guide)
+ *    Sections: Revenue · Expenses · P&L · Cash Flow · Outstanding
  * ═══════════════════════════════════════════════════════════════════════ */
 function ReportsSection() {
-  const rev = trpc.commissions.revenueStats.useQuery(undefined, { retry: false });
-  const allocations = trpc.finance.allocations.useQuery(undefined, { retry: false });
-  const aiFund = trpc.finance.aiFund.useQuery(undefined, { retry: false });
+  const invoicesQ = trpc.invoices.list.useQuery(undefined, { retry: false });
+  const commissionsQ = trpc.commissions.list.useQuery(undefined, { retry: false });
 
-  const r = rev.data;
-  const allocs = ((allocations.data || []) as any[]);
-  const thisMonth = useMemo(() => {
-    const now = new Date();
-    return allocs.filter(a => {
-      if (!a.createdAt) return false;
-      const d = new Date(a.createdAt);
+  const invoices = ((invoicesQ.data || []) as any[]);
+  const commissions = ((commissionsQ.data || []) as any[]);
+
+  // Expenses input — manual (no expenses backend yet)
+  const [expFixed,     setExpFixed]     = useState<string>("");
+  const [expVariable,  setExpVariable]  = useState<string>("");
+  const [openingBal,   setOpeningBal]   = useState<string>("");
+
+  // Month scope
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
+
+  const paidThisMonth = invoices.filter(i => {
+    if (i.status !== "paid") return false;
+    if (!i.paidAt) return false;
+    const d = new Date(i.paidAt);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  });
+  const unpaid = invoices.filter(i => i.status === "sent" || i.status === "draft");
+  const overdue = unpaid.filter(i => {
+    if (!i.dueDate) return false;
+    try { return new Date(i.dueDate) < new Date(); } catch { return false; }
+  });
+
+  // Revenue by division (from task.department on invoice's linked task — best-effort)
+  const byDept: Record<string, number> = {};
+  for (const i of paidThisMonth) {
+    const d = (i.department || "general").toLowerCase();
+    byDept[d] = (byDept[d] || 0) + parseFloat(i.total || 0);
+  }
+
+  const totalRevenue     = paidThisMonth.reduce((s, i) => s + parseFloat(i.total || 0), 0);
+  const commissionsPaid  = commissions
+    .filter(c => {
+      if (c.status !== "paid") return false;
+      if (!c.paidAt) return false;
+      const d = new Date(c.paidAt);
       return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    });
-  }, [allocs]);
+    })
+    .reduce((s, c) => s + parseFloat(c.commissionAmount || 0), 0);
 
-  const monthRev = thisMonth.reduce((s, a) => s + parseFloat(a.totalAmount || 0), 0);
-  const monthStaff = thisMonth.reduce((s, a) => s + parseFloat(a.humanStaffAmount || 0), 0);
-  const monthAi = thisMonth.reduce((s, a) => s + parseFloat(a.aiFundAmount || 0), 0);
-  const monthAff = thisMonth.reduce((s, a) => s + parseFloat(a.affiliatePoolAmount || 0), 0);
+  const fixedCosts    = parseFloat(expFixed) || 0;
+  const variableCosts = parseFloat(expVariable) || 0;
+  const totalExpenses = fixedCosts + variableCosts + commissionsPaid;
+  const netProfit     = totalRevenue - totalExpenses;
 
-  const reportText = `HAMZURY · Finance Summary
-${new Date().toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
+  const opening = parseFloat(openingBal) || 0;
+  const closing = opening + totalRevenue - totalExpenses;
 
-REVENUE
- · Total (paid):     ${fmtNaira(r?.totalRevenue)}
- · Pending:          ${fmtNaira(r?.pendingRevenue)}
- · This month:       ${fmtNaira(monthRev)}
+  const outstandingTotal = unpaid.reduce((s, i) => s + parseFloat(i.total || 0), 0);
+  const overdueTotal     = overdue.reduce((s, i) => s + parseFloat(i.total || 0), 0);
 
-ALLOCATIONS (this month)
- · Staff pool:       ${fmtNaira(monthStaff)}
- · AI fund:          ${fmtNaira(monthAi)}
- · Affiliate pool:   ${fmtNaira(monthAff)}
+  const report = `HAMZURY · Monthly Financial Report
+${monthLabel}
 
-AI FUND BALANCE
- · Current:          ${fmtNaira(aiFund.data?.balance)}
+1. REVENUE SUMMARY
+────────────────────────────────────────
+ · Total revenue (paid):   ${fmtNaira(totalRevenue)}
+ · Invoice count:          ${paidThisMonth.length}
+${Object.entries(byDept).map(([d, v]) => ` ·   ${d.padEnd(20)} ${fmtNaira(v)}`).join("\n")}
 
-Built to Last.`;
+2. EXPENSE SUMMARY
+────────────────────────────────────────
+ · Fixed costs:            ${fmtNaira(fixedCosts)}
+ · Variable costs:         ${fmtNaira(variableCosts)}
+ · Commissions paid out:   ${fmtNaira(commissionsPaid)}
+ · TOTAL EXPENSES:         ${fmtNaira(totalExpenses)}
+
+3. PROFIT / LOSS
+────────────────────────────────────────
+ · Revenue:                ${fmtNaira(totalRevenue)}
+ · Expenses:               ${fmtNaira(totalExpenses)}
+ · NET:                    ${fmtNaira(netProfit)}  ${netProfit >= 0 ? "✓" : "⚠"}
+
+4. CASH FLOW
+────────────────────────────────────────
+ · Opening balance:        ${fmtNaira(opening)}
+ · Inflows (paid):         ${fmtNaira(totalRevenue)}
+ · Outflows (expenses):    ${fmtNaira(totalExpenses)}
+ · CLOSING BALANCE:        ${fmtNaira(closing)}
+
+5. OUTSTANDING INVOICES
+────────────────────────────────────────
+ · Unpaid count:           ${unpaid.length}
+ · Unpaid total:           ${fmtNaira(outstandingTotal)}
+ · Overdue count:          ${overdue.length}
+ · Overdue total:          ${fmtNaira(overdueTotal)}
+
+Built to Last.
+Distribution: CEO (full), Founder (summary), Division leads (their lines).`;
 
   const copy = () => {
-    navigator.clipboard.writeText(reportText).then(
-      () => toast.success("Report copied to clipboard"),
+    navigator.clipboard.writeText(report).then(
+      () => toast.success("Monthly report copied"),
       () => toast.error("Couldn't copy — select manually"),
     );
   };
 
   return (
     <div>
-      <SectionTitle sub="Ready-to-paste finance summary. Send to CEO via WhatsApp or email.">
+      <SectionTitle sub={`Monthly Financial Report — ${monthLabel}. Ready to paste to CEO/Founder.`}>
         Reports
       </SectionTitle>
 
-      <Card style={{ marginBottom: 12 }}>
+      {/* Expenses + opening balance inputs (manual, no backend yet) */}
+      <Card style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Current Summary
+          Expenses & Cash (enter for this month)
+        </p>
+        <p style={{ fontSize: 11, color: MUTED, marginBottom: 12 }}>
+          Revenue + commissions are pulled from the system automatically. Expenses + opening bank balance are entered here for now — we'll add an Expenses table in the next build.
+        </p>
+        <div style={{
+          display: "grid", gap: 12,
+          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+        }}>
+          <FinInput label="Fixed costs (rent, utilities, salaries) ₦"
+            value={expFixed} onChange={setExpFixed} />
+          <FinInput label="Variable costs (software, etc.) ₦"
+            value={expVariable} onChange={setExpVariable} />
+          <FinInput label="Opening bank balance ₦"
+            value={openingBal} onChange={setOpeningBal} />
+        </div>
+      </Card>
+
+      {/* Snapshot KPIs */}
+      <div style={{
+        display: "grid", gap: 10, marginBottom: 16,
+        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+      }}>
+        <MiniStat label="Revenue"      value={fmtNaira(totalRevenue)}   color={GREEN} />
+        <MiniStat label="Expenses"     value={fmtNaira(totalExpenses)}  color={ORANGE} />
+        <MiniStat label="Net P/L"      value={fmtNaira(netProfit)}      color={netProfit >= 0 ? GREEN : RED} />
+        <MiniStat label="Closing cash" value={fmtNaira(closing)}        color={BLUE} />
+        <MiniStat label="Overdue"      value={fmtNaira(overdueTotal)}   color={RED} />
+      </div>
+
+      {/* Full report text */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Full Report — Copy & Send
         </p>
         <pre style={{
           fontFamily: "ui-monospace, 'SF Mono', monospace",
-          fontSize: 11,
-          color: DARK,
-          backgroundColor: BG,
-          padding: "14px 16px",
-          borderRadius: 10,
+          fontSize: 11, color: DARK, backgroundColor: BG,
+          padding: "14px 16px", borderRadius: 10,
           border: `1px solid ${DARK}06`,
-          whiteSpace: "pre-wrap",
-          lineHeight: 1.6,
-          margin: 0,
-        }}>{reportText}</pre>
+          whiteSpace: "pre-wrap", lineHeight: 1.7, margin: 0,
+        }}>{report}</pre>
         <button onClick={copy}
           style={{
             marginTop: 12, padding: "8px 14px", borderRadius: 10,
-            backgroundColor: GREEN, color: WHITE,
-            border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            backgroundColor: GREEN, color: WHITE, border: "none",
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
             display: "flex", alignItems: "center", gap: 6,
           }}>
-          <Send size={12} /> Copy Report
+          <Send size={12} /> Copy Monthly Report
         </button>
       </Card>
 
+      {/* Outstanding invoices detail */}
       <Card>
         <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          This Month · Payment List ({thisMonth.length})
+          Outstanding Invoices — Needs Follow-up
         </p>
-        {thisMonth.length === 0 ? (
-          <EmptyState icon={Wallet} title="No payments this month yet" />
+        {unpaid.length === 0 ? (
+          <EmptyState icon={CheckCircle2} title="All invoices settled — clean books." />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {thisMonth.map((a: any) => (
-              <div key={a.id} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "8px 10px", backgroundColor: BG, borderRadius: 8, gap: 10, flexWrap: "wrap",
-              }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 11, fontWeight: 600, color: DARK }}>{a.clientName || "—"}</p>
-                  <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>{a.transactionRef}</p>
+            {unpaid.slice(0, 30).map((i: any) => {
+              const isOverdue = i.dueDate && new Date(i.dueDate) < new Date();
+              return (
+                <div key={i.id} style={{
+                  padding: "10px 12px",
+                  backgroundColor: isOverdue ? `${RED}06` : BG,
+                  borderRadius: 10,
+                  border: `1px solid ${isOverdue ? `${RED}20` : `${DARK}06`}`,
+                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+                }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK, fontFamily: "monospace" }}>{i.invoiceNumber}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                      {i.clientName} · Due {fmtDate(i.dueDate)}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: isOverdue ? RED : GOLD }}>
+                    {fmtNaira(i.total)}
+                  </span>
+                  <StatusPill label={isOverdue ? "overdue" : i.status} tone={isOverdue ? "red" : "gold"} />
                 </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: GREEN }}>{fmtNaira(a.totalAmount)}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>
     </div>
+  );
+}
+
+function FinInput({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <span style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+        {label}
+      </span>
+      <input
+        type="number"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder="0"
+        style={{
+          padding: "10px 12px", borderRadius: 10, border: `1px solid ${DARK}15`,
+          fontSize: 13, color: DARK, backgroundColor: WHITE, outline: "none",
+          fontFamily: "monospace",
+        }}
+      />
+    </label>
   );
 }
