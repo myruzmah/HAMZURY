@@ -1,152 +1,95 @@
-import { PublicShell, Hero, Section, PackageCard, FinalCta } from "./_divisions/DivisionLayout";
-import { getDivision } from "@/brand";
+import { Shield, Award, Briefcase } from "lucide-react";
+import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
 
-const D = getDivision("bizdoc");
+const cfg: DivisionPortalConfig = {
+  name:              "BIZDOC",
+  pageTitle:         "Bizdoc — Tax & Compliance | HAMZURY",
+  pageDescription:   "We handle FIRS so you can handle business. CAC, tax, licences — one team.",
+  splashTagline:     "Every filing. Every licence. Handled.",
+  heroHeading:       "Every filing. Every licence.",
+  heroHighlight:     "Handled.",
+  heroSub:           "CAC registration. Tax compliance. Sector licences. Legal documents. So you can operate, win contracts, and scale.",
+  packagesEyebrow:   "RECOMMENDED",
+  packagesTitle:     "Start Right. Stay Compliant.",
+  packagesSub:       "Choose the package that matches where your business is right now.",
+  servicesEyebrow:   "OUR SERVICES",
+  servicesTitle:     "Every layer your business needs.",
+  accent:            "#1B4D3E",
+  highlight:         "#B48C4C",
+  path:              "/bizdoc",
+  footerLabel:       "BIZDOC CONSULT",
+  motivationalDept:  "bizdoc",
+  navLinks: [
+    { label: "Scalar",  href: "/scalar" },
+    { label: "Medialy", href: "/medialy" },
+    { label: "HUB",     href: "/hub" },
+    { label: "About",   href: "/about" },
+    { label: "Contact", href: "/contact" },
+    { label: "HAMZURY", href: "/" },
+  ],
+  packages: [
+    {
+      id: "starter", label: "STARTER",
+      price: "₦90,000", sub: "One-time setup",
+      items: ["CAC Ltd Registration", "TIN Issuance", "Letterhead + Business Cards", "3 Document Templates"],
+      context: "Bizdoc Starter Package",
+    },
+    {
+      id: "compliant", label: "COMPLIANT",
+      price: "₦150,000", sub: "One-time setup",
+      items: ["Everything in Starter", "SCUML Certificate", "Document Handover", "Compliance Checklist"],
+      context: "Bizdoc Compliant Package",
+    },
+    {
+      id: "promax", label: "PROMAX",
+      price: "₦300,000", sub: "12 months managed",
+      items: ["Everything in Compliant", "1-Year Tax Management", "Monthly VAT/PAYE/WHT", "Annual Return Filed", "TCC Renewal Included"],
+      badge: "POPULAR",
+      context: "Bizdoc ProMax Package",
+    },
+    {
+      id: "enterprise", label: "ENTERPRISE",
+      price: "₦500,000", sub: "12 months full compliance",
+      items: ["Everything in ProMax", "PENCOM, NSITF, ITF", "BPP Registration", "Industry Licences", "Dedicated Compliance Officer"],
+      note: "Best after 1 year of operations",
+      dark: true,
+      context: "Bizdoc Enterprise Package",
+    },
+  ],
+  serviceCategories: [
+    {
+      id: "registration", title: "Registration & Modification", icon: Briefcase,
+      items: [
+        { name: "CAC Business Name (BN)", context: "CAC Business Name" },
+        { name: "CAC Private Limited Company (Ltd)", context: "CAC Limited Company" },
+        { name: "CAC NGO / Trusteeship", context: "CAC NGO Registration" },
+        { name: "Director / Shareholder Changes", context: "Director Shareholder Changes" },
+        { name: "Address Updates", context: "Address Updates" },
+        { name: "Name Changes", context: "Name Changes" },
+        { name: "Share Allotments", context: "Share Allotments" },
+        { name: "Annual Returns", context: "Annual Returns" },
+      ],
+    },
+    {
+      id: "subscriptions", title: "Subscription Packages", icon: Shield,
+      items: [
+        { name: "Tax ProMax Update", context: "Tax ProMax Update", tag: "₦150K/YEAR" },
+        { name: "Tax + CAC + SCUML Management", context: "Tax CAC SCUML Management", tag: "₦300K/YEAR" },
+        { name: "Full Compliance Management", context: "Full Compliance Management", tag: "₦500K/YEAR" },
+      ],
+    },
+    {
+      id: "renewals", title: "Renewals & Documents", icon: Award,
+      items: [
+        { name: "Tax & Contract Documents (TCC, ITF, NSITF, BPP)", context: "Tax Contract Documents" },
+        { name: "SCUML Certificate", context: "SCUML Certificate" },
+        { name: "Licences & Permits", context: "Sector Licences" },
+        { name: "Legal & Template Documents", context: "Legal Documents" },
+      ],
+    },
+  ],
+};
 
 export default function BizdocPage() {
-  return (
-    <PublicShell
-      title="Bizdoc — Tax & Compliance | HAMZURY"
-      description="We handle FIRS so you can handle business. CAC registration, tax clearance, monthly compliance. Built to last."
-      accent={D.accent}
-    >
-      <Hero
-        category="Tax & Compliance"
-        name="Bizdoc"
-        tagline="We handle FIRS so you can handle business."
-        subline="CAC registration, tax clearance, monthly VAT/PAYE/WHT, annual returns — under one roof."
-        accent={D.accent}
-        primaryCta={{ label: "See Packages", href: "#packages" }}
-        secondaryCta={{ label: "Start Assessment", href: "/bizdoc/assessment" }}
-      />
-
-      <Section
-        accent={D.accent}
-        eyebrow="Problem"
-        title="Tax paperwork is quietly killing Nigerian businesses"
-        subtitle="Three things every founder learns the hard way."
-      >
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: 20,
-        }}>
-          {[
-            { t: "Missed deadlines cost more than the filing", b: "FIRS penalties compound. One missed annual return becomes ₦250k in late fees before you finish lunch." },
-            { t: "You can't bid for contracts without TCC", b: "No Tax Clearance Certificate = disqualified. Most founders only realise when they're halfway through a proposal." },
-            { t: "Regulatory bodies multiply fast", b: "SCUML, PENCOM, NSITF, ITF, BPP — each one assumes you already handled the others. Nobody tells you which apply to you." },
-          ].map((c, i) => (
-            <div key={i} style={{
-              padding: "28px 24px",
-              backgroundColor: "#FFFFFF",
-              borderRadius: 16,
-              border: "1px solid #00000008",
-            }}>
-              <p style={{ fontSize: 15, fontWeight: 600, marginBottom: 8, lineHeight: 1.35 }}>{c.t}</p>
-              <p style={{ fontSize: 14, color: "#666", lineHeight: 1.65 }}>{c.b}</p>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      <Section accent={D.accent} eyebrow="Solution" title="One team. Every compliance document. Every month." narrow>
-        <ul style={{ listStyle: "none", padding: 0, display: "grid", gap: 12, gridTemplateColumns: "1fr 1fr" }}>
-          {[
-            "CAC Ltd / BN registration",
-            "TIN + Tax Clearance Certificate",
-            "Monthly VAT, PAYE, WHT filings",
-            "Annual returns (on time, every year)",
-            "PENCOM, NSITF, ITF, BPP registrations",
-            "SCUML certificate",
-            "Industry-specific licences (NAFDAC, SON, etc.)",
-            "Change-of-name, share allotment, board resolutions",
-          ].map((item, i) => (
-            <li key={i} style={{
-              padding: "12px 16px", backgroundColor: "#FFFFFF", borderRadius: 12,
-              border: "1px solid #00000008", fontSize: 14,
-              display: "flex", alignItems: "center", gap: 10,
-            }}>
-              <span style={{ color: D.accent, fontWeight: 700 }}>✓</span>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </Section>
-
-      <Section
-        eyebrow="Packages"
-        title="Pick what you need. Pay once. Stay compliant."
-      >
-        <div id="packages" style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-          gap: 16, alignItems: "stretch",
-        }}>
-          <PackageCard
-            accent={D.accent}
-            name="Starter"
-            price="₦90,000"
-            cadence="one-time"
-            features={[
-              "CAC Ltd registration",
-              "TIN issuance",
-              "Business letterhead",
-              "Business cards",
-              "3 document templates",
-            ]}
-            onSelect={{ label: "Start Here", href: "/bizdoc/assessment?tier=a" }}
-          />
-          <PackageCard
-            accent={D.accent}
-            name="Compliant"
-            price="₦150,000"
-            cadence="one-time"
-            features={[
-              "Everything in Starter",
-              "SCUML certificate",
-              "Document handover",
-              "Compliance checklist",
-            ]}
-            onSelect={{ label: "Get Compliant", href: "/bizdoc/assessment?tier=b" }}
-          />
-          <PackageCard
-            accent={D.accent}
-            name="ProMax (yearly)"
-            price="₦300,000"
-            cadence="12 months managed"
-            popular
-            features={[
-              "Everything in Compliant",
-              "1-year tax management",
-              "Monthly VAT/PAYE/WHT",
-              "Annual return filed for you",
-              "TCC renewal included",
-            ]}
-            onSelect={{ label: "Go ProMax", href: "/bizdoc/assessment?tier=c" }}
-          />
-          <PackageCard
-            accent={D.accent}
-            name="Enterprise"
-            price="₦500,000"
-            cadence="12 months managed"
-            features={[
-              "Everything in ProMax",
-              "PENCOM, NSITF, ITF, BPP",
-              "Industry-specific licences",
-              "Dedicated compliance officer",
-              "Quarterly reviews",
-            ]}
-            onSelect={{ label: "Go Enterprise", href: "/bizdoc/assessment?tier=d" }}
-          />
-        </div>
-      </Section>
-
-      <FinalCta
-        accent={D.accent}
-        headline="Don't guess what you need. Let us prescribe it."
-        subline="Answer a few questions. Our compliance team reads your answers and sends back the exact package — no upsell, no guesswork."
-        cta={{ label: "Start Bizdoc Assessment", href: "/bizdoc/assessment" }}
-      />
-    </PublicShell>
-  );
+  return <DivisionPortalTemplate cfg={cfg} />;
 }
