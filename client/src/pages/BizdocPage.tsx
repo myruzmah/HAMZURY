@@ -1,4 +1,4 @@
-import { Shield, Award, Briefcase, Factory, Receipt } from "lucide-react";
+import { Shield, Award, Briefcase, Factory, Receipt, FileCheck } from "lucide-react";
 import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
 
 const cfg: DivisionPortalConfig = {
@@ -56,40 +56,55 @@ const cfg: DivisionPortalConfig = {
       context: "Bizdoc Enterprise Package",
     },
   ],
+  /* ─────────────────────────────────────────────────────────────────
+   * Services arranged as a LADDER, mirroring the client onboarding form:
+   *   Package A (₦90k)  = Registration (CAC + TIN)
+   *   Package B (₦150k) = A + Certificates (SCUML)
+   *   Package C (₦300k) = B + Tax Management (monthly VAT/PAYE/WHT, annual)
+   *   Package D (₦500k) = C + Full Compliance (PENCOM, NSITF, ITF, BPP, FIRS)
+   * Plus standalone add-ons (Industry packages, Advisory).
+   * ─────────────────────────────────────────────────────────────────*/
   serviceCategories: [
     {
-      id: "registration", title: "Registration & Modification", icon: Briefcase,
+      id: "registration", title: "Step 1 · Registration & Setup", icon: Briefcase,
       items: [
-        { name: "CAC Business Name (BN)", context: "CAC Business Name" },
-        { name: "CAC Private Limited Company (Ltd)", context: "CAC Limited Company" },
+        { name: "CAC Business Name (BN)", context: "CAC Business Name", tag: "PKG A" },
+        { name: "CAC Private Limited Company (Ltd)", context: "CAC Limited Company", tag: "PKG A" },
         { name: "CAC NGO / Trusteeship", context: "CAC NGO Registration" },
+        { name: "TIN Registration", context: "TIN Registration", tag: "PKG A" },
         { name: "Director / Shareholder Changes", context: "Director Shareholder Changes" },
-        { name: "Address Updates", context: "Address Updates" },
-        { name: "Name Changes", context: "Name Changes" },
+        { name: "Address / Name Changes", context: "Address Name Changes" },
         { name: "Share Allotments", context: "Share Allotments" },
-        { name: "Annual Returns", context: "Annual Returns" },
       ],
     },
     {
-      id: "tax-services", title: "Tax Services", icon: Receipt,
+      id: "certificates", title: "Step 2 · Certificates & Clearance", icon: FileCheck,
       items: [
-        { name: "Monthly VAT Filing", context: "Monthly VAT Filing", tag: "₦50K/MO" },
-        { name: "Withholding Tax (WHT) Filing", context: "WHT Filing", tag: "₦20K/MO" },
-        { name: "PAYE Setup + Monthly Management", context: "PAYE Setup + Management", tag: "₦100K + ₦30K/MO" },
-        { name: "Corporate Income Tax (CIT)", context: "Corporate Income Tax", tag: "₦150K/YR" },
+        { name: "SCUML Certificate", context: "SCUML Certificate", tag: "PKG B" },
         { name: "Tax Clearance Certificate (TCC)", context: "Tax Clearance Certificate", tag: "₦150K" },
+        { name: "ITF Certificate", context: "ITF Certificate" },
+        { name: "NSITF Certificate", context: "NSITF Certificate" },
+        { name: "BPP Registration", context: "BPP Registration" },
+      ],
+    },
+    {
+      id: "tax-management", title: "Step 3 · Monthly Tax Management", icon: Receipt,
+      items: [
+        { name: "Monthly VAT Filing", context: "Monthly VAT Filing", tag: "₦50K/MO · PKG C" },
+        { name: "Withholding Tax (WHT) Filing", context: "WHT Filing", tag: "₦20K/MO · PKG C" },
+        { name: "PAYE Setup + Monthly Management", context: "PAYE Setup + Management", tag: "₦100K + ₦30K/MO · PKG C" },
+        { name: "Corporate Income Tax (CIT)", context: "Corporate Income Tax", tag: "₦150K/YR" },
+        { name: "Annual Returns Filing", context: "Annual Returns" },
         { name: "Tax Audit Support", context: "Tax Audit Support", tag: "₦300K–₦1M" },
       ],
     },
     {
-      id: "compliance-management", title: "Compliance Management", icon: Shield,
+      id: "full-compliance", title: "Step 4 · Full Compliance Management", icon: Shield,
       items: [
-        { name: "CAC Registration (BN / Ltd / NGO)", context: "CAC Registration", tag: "₦150K" },
+        { name: "FIRS Full Compliance Package", context: "FIRS Full Compliance", tag: "₦200–₦500K/YR · PKG D" },
+        { name: "PENCOM Compliance (Quarterly)", context: "PENCOM Compliance", tag: "₦80K/Q · PKG D" },
         { name: "NAFDAC Registration (Food / Drug / Cosmetics)", context: "NAFDAC Registration", tag: "₦500K–₦2M" },
         { name: "SON Certification (Product)", context: "SON Certification", tag: "₦300K–₦1M" },
-        { name: "PENCOM Compliance (Quarterly)", context: "PENCOM Compliance", tag: "₦80K/Q" },
-        { name: "FIRS Full Compliance Package", context: "FIRS Full Compliance", tag: "₦200–₦500K/YR" },
-        { name: "SCUML Certificate", context: "SCUML Certificate" },
         { name: "Monthly Advisory Retainer", context: "Monthly Advisory Retainer", tag: "₦50K/MO" },
       ],
     },
@@ -108,7 +123,6 @@ const cfg: DivisionPortalConfig = {
         { name: "Tax Planning & Optimisation", context: "Tax Planning Optimisation", tag: "₦200K–₦500K" },
         { name: "Compliance Health Check (full audit)", context: "Compliance Health Check", tag: "₦100K" },
         { name: "Legal & Template Documents", context: "Legal Templates" },
-        { name: "Annual Returns Filing", context: "Annual Returns" },
       ],
     },
   ],
