@@ -1,4 +1,4 @@
-import { Shield, Award, Briefcase, Factory, Receipt, FileCheck } from "lucide-react";
+import { Shield, Award, Factory, Receipt } from "lucide-react";
 import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
 
 const cfg: DivisionPortalConfig = {
@@ -57,72 +57,66 @@ const cfg: DivisionPortalConfig = {
     },
   ],
   /* ─────────────────────────────────────────────────────────────────
-   * Services arranged as a LADDER, mirroring the client onboarding form:
-   *   Package A (₦90k)  = Registration (CAC + TIN)
-   *   Package B (₦150k) = A + Certificates (SCUML)
-   *   Package C (₦300k) = B + Tax Management (monthly VAT/PAYE/WHT, annual)
-   *   Package D (₦500k) = C + Full Compliance (PENCOM, NSITF, ITF, BPP, FIRS)
-   * Plus standalone add-ons (Industry packages, Advisory).
+   * 4 service lines — exact structure from
+   * PHASE6_BIZDOC_REBUILD/SERVICE_CATALOGUE/BIZDOC_COMPLETE_SERVICE_CATALOGUE.txt
+   *   1. Tax Services
+   *   2. Compliance Services
+   *   3. Advisory Services
+   *   4. Industry-Specific Packages
    * ─────────────────────────────────────────────────────────────────*/
   serviceCategories: [
     {
-      id: "registration", title: "Step 1 · Registration & Setup", icon: Briefcase,
+      id: "tax-services", title: "Tax Services", icon: Receipt,
       items: [
-        { name: "CAC Business Name (BN)", context: "CAC Business Name", tag: "PKG A" },
-        { name: "CAC Private Limited Company (Ltd)", context: "CAC Limited Company", tag: "PKG A" },
-        { name: "CAC NGO / Trusteeship", context: "CAC NGO Registration" },
-        { name: "TIN Registration", context: "TIN Registration", tag: "PKG A" },
-        { name: "Director / Shareholder Changes", context: "Director Shareholder Changes" },
-        { name: "Address / Name Changes", context: "Address Name Changes" },
-        { name: "Share Allotments", context: "Share Allotments" },
-      ],
-    },
-    {
-      id: "certificates", title: "Step 2 · Certificates & Clearance", icon: FileCheck,
-      items: [
-        { name: "SCUML Certificate", context: "SCUML Certificate", tag: "PKG B" },
+        { name: "Monthly VAT Filing", context: "Monthly VAT Filing", tag: "₦50K/MO" },
+        { name: "Withholding Tax (WHT) Filing", context: "WHT Filing", tag: "₦20K/MO" },
+        { name: "Corporate Income Tax (CIT) — Annual", context: "Corporate Income Tax", tag: "₦150K/YR" },
+        { name: "PAYE Setup + Monthly Management", context: "PAYE Setup + Management", tag: "₦100K + ₦30K/MO" },
         { name: "Tax Clearance Certificate (TCC)", context: "Tax Clearance Certificate", tag: "₦150K" },
-        { name: "ITF Certificate", context: "ITF Certificate" },
-        { name: "NSITF Certificate", context: "NSITF Certificate" },
-        { name: "BPP Registration", context: "BPP Registration" },
-      ],
-    },
-    {
-      id: "tax-management", title: "Step 3 · Monthly Tax Management", icon: Receipt,
-      items: [
-        { name: "Monthly VAT Filing", context: "Monthly VAT Filing", tag: "₦50K/MO · PKG C" },
-        { name: "Withholding Tax (WHT) Filing", context: "WHT Filing", tag: "₦20K/MO · PKG C" },
-        { name: "PAYE Setup + Monthly Management", context: "PAYE Setup + Management", tag: "₦100K + ₦30K/MO · PKG C" },
-        { name: "Corporate Income Tax (CIT)", context: "Corporate Income Tax", tag: "₦150K/YR" },
-        { name: "Annual Returns Filing", context: "Annual Returns" },
         { name: "Tax Audit Support", context: "Tax Audit Support", tag: "₦300K–₦1M" },
       ],
     },
     {
-      id: "full-compliance", title: "Step 4 · Full Compliance Management", icon: Shield,
+      id: "compliance-services", title: "Compliance Services", icon: Shield,
       items: [
-        { name: "FIRS Full Compliance Package", context: "FIRS Full Compliance", tag: "₦200–₦500K/YR · PKG D" },
-        { name: "PENCOM Compliance (Quarterly)", context: "PENCOM Compliance", tag: "₦80K/Q · PKG D" },
+        { name: "CAC Registration — BN / Ltd / NGO", context: "CAC Registration", tag: "₦150K" },
         { name: "NAFDAC Registration (Food / Drug / Cosmetics)", context: "NAFDAC Registration", tag: "₦500K–₦2M" },
         { name: "SON Certification (Product)", context: "SON Certification", tag: "₦300K–₦1M" },
-        { name: "Monthly Advisory Retainer", context: "Monthly Advisory Retainer", tag: "₦50K/MO" },
+        { name: "PENCOM Compliance (Quarterly)", context: "PENCOM Compliance", tag: "₦80K/Q" },
+        { name: "FIRS Full Compliance Package", context: "FIRS Full Compliance", tag: "₦200K–₦500K/YR" },
+      ],
+    },
+    {
+      id: "advisory", title: "Advisory Services", icon: Award,
+      items: [
+        { name: "Tax Planning & Optimisation", context: "Tax Planning Optimisation", tag: "₦200K–₦500K" },
+        { name: "Compliance Health Check (full audit + remediation plan)", context: "Compliance Health Check", tag: "₦100K" },
+        { name: "Monthly Advisory Retainer (unlimited email/phone + tax Qs)", context: "Monthly Advisory Retainer", tag: "₦50K/MO" },
       ],
     },
     {
       id: "industry-specific", title: "Industry-Specific Packages", icon: Factory,
       items: [
-        { name: "Healthcare (NAFDAC + MDCAN/PPDRA + Pharmacy Licence)", context: "Healthcare Compliance Package", tag: "₦800K–₦3M" },
-        { name: "Manufacturing (SON + Factory + Environmental)", context: "Manufacturing Compliance Package", tag: "₦1M–₦5M" },
-        { name: "Food & Beverage (NAFDAC + SON + Halal)", context: "Food Beverage Compliance Package", tag: "₦800K–₦2.5M" },
-        { name: "Mining & Extraction (Licence + EIA + CDA)", context: "Mining Extraction Package", tag: "₦2M–₦10M" },
-      ],
-    },
-    {
-      id: "advisory", title: "Advisory & Reviews", icon: Award,
-      items: [
-        { name: "Tax Planning & Optimisation", context: "Tax Planning Optimisation", tag: "₦200K–₦500K" },
-        { name: "Compliance Health Check (full audit)", context: "Compliance Health Check", tag: "₦100K" },
-        { name: "Legal & Template Documents", context: "Legal Templates" },
+        {
+          name: "Healthcare Compliance — NAFDAC + MDCAN/PPDRA Licences + Pharmacy Premises Licence",
+          context: "Healthcare Compliance Package",
+          tag: "₦800K–₦3M",
+        },
+        {
+          name: "Manufacturing Compliance — SON Certification + Environmental Permits + Factory Registration",
+          context: "Manufacturing Compliance Package",
+          tag: "₦1M–₦5M",
+        },
+        {
+          name: "Food & Beverage — NAFDAC Registration + SON Certification + Halal (if applicable)",
+          context: "Food Beverage Compliance Package",
+          tag: "₦800K–₦2.5M",
+        },
+        {
+          name: "Mining & Extraction — Mining Licence + Environmental Impact Assessment + Community Development Plan",
+          context: "Mining Extraction Package",
+          tag: "₦2M–₦10M",
+        },
       ],
     },
   ],
