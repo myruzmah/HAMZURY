@@ -119,17 +119,50 @@ function inputBox(): React.CSSProperties {
   };
 }
 
-/* ─── HUB 8 programmes from PHASE7_HUB/PROGRAMS ─── */
+/**
+ * HUB 8 programmes — data-only from PHASE7_HUB/PROGRAMS/8_Programs_Complete_Syllabus.txt
+ * Schedule pulled from HUB_Calendar.ics (Mon-Wed main, Thu-Sat kids).
+ */
 const PROGRAMMES = [
-  { key: "business-builders",   name: "Business Builders Academy",  weeks: 3,  price: 150000 },
-  { key: "digital-dominance",   name: "Digital Dominance",          weeks: 4,  price: 80000 },
-  { key: "code-craft",          name: "Code Craft Bootcamp",        weeks: 12, price: 300000 },
-  { key: "compliance-mastery",  name: "Compliance Mastery",         weeks: 6,  price: 120000 },
-  { key: "money-mastery",       name: "Money Mastery",              weeks: 4,  price: 90000 },
-  { key: "basic-kids",          name: "Basic Computer Skills — Kids", weeks: 2, price: 25000 },
-  { key: "metfix",              name: "MetFix Hardware & Robotics", weeks: 8,  price: 180000 },
-  { key: "online-academy",      name: "Online Academy (self-paced)", weeks: 0, price: 25000 },
+  { key: "business-builders",   name: "Business Builders Academy",    weeks: 3,  price: 150000, schedule: "Mon–Wed · 8am–2pm", cert: "Google Business Certificate" },
+  { key: "digital-dominance",   name: "Digital Dominance",            weeks: 4,  price: 80000,  schedule: "Mon–Wed · 8am–2pm", cert: "Google Digital Marketing" },
+  { key: "code-craft",          name: "Code Craft Bootcamp",          weeks: 12, price: 300000, schedule: "Mon–Wed · 8am–2pm", cert: "Coursera Programming Certificate" },
+  { key: "compliance-mastery",  name: "Compliance Mastery",           weeks: 6,  price: 120000, schedule: "Mon–Wed · 8am–2pm", cert: "Professional Compliance Certificate" },
+  { key: "money-mastery",       name: "Money Mastery",                weeks: 4,  price: 90000,  schedule: "Mon–Wed · 8am–2pm", cert: "Financial Literacy Certificate" },
+  { key: "basic-kids",          name: "Basic Computer Skills — Kids", weeks: 2,  price: 25000,  schedule: "Thu–Sat · 8am–2pm", cert: "Computer Literacy Certificate" },
+  { key: "metfix",              name: "MetFix Hardware & Robotics",   weeks: 8,  price: 180000, schedule: "Mon–Wed · 8am–2pm", cert: "Hardware Engineering Certificate" },
+  { key: "online-academy",      name: "Online Academy (self-paced)",  weeks: 0,  price: 25000,  schedule: "Self-paced · LMS only", cert: "Course completion certificates" },
 ];
+
+/**
+ * Maps old DB programme labels → new programme names so legacy applications
+ * can still be counted under the right cohort. Unmatched legacy items fall
+ * into an "Unmatched Legacy" group shown separately.
+ */
+const LEGACY_MAP: Record<string, string> = {
+  "Basic Computer Skills":           "Basic Computer Skills — Kids",
+  "Basic Computer Skills - Kids":    "Basic Computer Skills — Kids",
+  "Kids Coding Programme":           "Basic Computer Skills — Kids",
+  "Website Development":             "Code Craft Bootcamp",
+  "Data Analysis":                   "Online Academy (self-paced)",
+  "AI & Business Automation":        "Digital Dominance",
+  "Cybersecurity Fundamentals":      "Online Academy (self-paced)",
+  "Robotics & Creative Tech":        "MetFix Hardware & Robotics",
+  "AI Lead Generation":              "Digital Dominance",
+  "Faceless Content Creation":       "Digital Dominance",
+  "Executive Strategy Circle":       "Business Builders Academy",
+  "Staff Digital Skills Training":   "Online Academy (self-paced)",
+  "IT Internship":                   "Code Craft Bootcamp",
+  "Business Operations Internship":  "Business Builders Academy",
+  "Clarity Session (Free)":          "Online Academy (self-paced)",
+};
+
+function resolveProgramme(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const exact = PROGRAMMES.find(p => p.name === raw);
+  if (exact) return exact.name;
+  return LEGACY_MAP[raw] ?? null;
+}
 
 /* ─── Teams from PHASE7_HUB/TEAM_COMPETITION ─── */
 const TEAMS = [
@@ -300,7 +333,11 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
   const apps = ((appsQ.data || []) as any[]);
 
-  const accepted = apps.filter(a => a.status === "accepted").length;
+  // Only count applications that map to a NEW programme. Legacy ones are
+  // counted separately so the dashboard reflects the rebrand, not the history.
+  const acceptedApps = apps.filter(a => a.status === "accepted");
+  const accepted = acceptedApps.filter(a => resolveProgramme(a.program)).length;
+  const legacyAccepted = acceptedApps.length - accepted;
   const pending  = apps.filter(a => a.status === "submitted" || a.status === "under_review").length;
   const waitlisted = apps.filter(a => a.status === "waitlisted").length;
 
@@ -314,12 +351,12 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const daysToComp = Math.ceil((nextFirstMonday.getTime() - today.getTime()) / 86400000);
 
   const kpis = [
-    { label: "Pending Applications", value: pending,     icon: Clock,       color: GOLD,   section: "enrollments" as Section },
-    { label: "Accepted Students",    value: accepted,    icon: CheckCircle2, color: GREEN_OK, section: "enrollments" as Section },
-    { label: "Waitlisted",           value: waitlisted,  icon: AlertCircle, color: ORANGE, section: "enrollments" as Section },
-    { label: "Next Cohort In",       value: `${daysToNext}d`, icon: CalendarDays, color: BLUE,  section: "calendar" as Section },
-    { label: "Next Comp Challenge",  value: `${daysToComp}d`, icon: Trophy,  color: PURPLE, section: "competition" as Section },
-    { label: "Programmes",           value: PROGRAMMES.length, icon: GraduationCap, color: NAVY, section: "cohorts" as Section },
+    { label: "Pending Applications",   value: pending,           icon: Clock,        color: GOLD,     section: "enrollments" as Section },
+    { label: "Accepted (New Cohorts)", value: accepted,          icon: CheckCircle2, color: GREEN_OK, section: "cohorts" as Section },
+    { label: "Legacy (Pre-Rebrand)",   value: legacyAccepted,    icon: AlertCircle,  color: MUTED,    section: "cohorts" as Section },
+    { label: "Waitlisted",             value: waitlisted,        icon: AlertCircle,  color: ORANGE,   section: "enrollments" as Section },
+    { label: "Next Cohort In",         value: `${daysToNext}d`,  icon: CalendarDays, color: BLUE,     section: "calendar" as Section },
+    { label: "Next Comp Challenge",    value: `${daysToComp}d`,  icon: Trophy,       color: PURPLE,   section: "competition" as Section },
   ];
 
   return (
@@ -493,18 +530,30 @@ function EnrollmentsSection() {
 /* ═══════════════════════════════════════════════════════════════════════ */
 function CohortsSection() {
   const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
-  const apps = ((appsQ.data || []) as any[]).filter(a => a.status === "accepted");
+  const accepted = ((appsQ.data || []) as any[]).filter(a => a.status === "accepted");
 
-  // Group by programme
+  // Group accepted applications by resolved (new) programme name
   const byProgramme: Record<string, any[]> = {};
-  for (const a of apps) {
-    const k = a.program || "Other";
-    (byProgramme[k] = byProgramme[k] || []).push(a);
+  const unmatched: any[] = [];
+  for (const a of accepted) {
+    const resolved = resolveProgramme(a.program);
+    if (resolved) {
+      (byProgramme[resolved] = byProgramme[resolved] || []).push(a);
+    } else {
+      unmatched.push(a);
+    }
+  }
+
+  // Legacy-name breakdown for the "Unmatched" card
+  const legacyByName: Record<string, number> = {};
+  for (const a of unmatched) {
+    const k = a.program || "(no programme)";
+    legacyByName[k] = (legacyByName[k] || 0) + 1;
   }
 
   return (
     <div>
-      <SectionTitle sub="Students grouped by programme. All 8 HUB programmes shown.">
+      <SectionTitle sub="Students grouped by programme. All 8 HUB programmes from PHASE7_HUB/PROGRAMS. Legacy applications from before the rebrand are shown separately at the bottom.">
         Active Cohorts
       </SectionTitle>
 
@@ -520,8 +569,10 @@ function CohortsSection() {
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{p.name}</p>
                   <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                    {p.weeks ? `${p.weeks} weeks` : "Self-paced"} · ₦{p.price.toLocaleString("en-NG")}
-                    {p.weeks ? `+` : ""} · Mon – Wed · 8:00 am – 2:00 pm
+                    {p.weeks ? `${p.weeks} weeks` : "Self-paced"} · ₦{p.price.toLocaleString("en-NG")} · {p.schedule}
+                  </p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontStyle: "italic" }}>
+                    {p.cert}
                   </p>
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
@@ -549,6 +600,33 @@ function CohortsSection() {
             </Card>
           );
         })}
+
+        {unmatched.length > 0 && (
+          <Card style={{ borderStyle: "dashed", borderColor: `${MUTED}40` }}>
+            <p style={{
+              fontSize: 11, color: MUTED, fontWeight: 700,
+              textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10,
+            }}>
+              Legacy — Pre-Rebrand Applications · {unmatched.length}
+            </p>
+            <p style={{ fontSize: 11, color: MUTED, marginBottom: 10, lineHeight: 1.6 }}>
+              These applications used the old course list (before the 8-programme rebrand). Review them and move into the right new programme.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {Object.entries(legacyByName)
+                .sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => (
+                  <div key={name} style={{
+                    fontSize: 11, color: DARK, padding: "4px 0",
+                    display: "flex", justifyContent: "space-between",
+                  }}>
+                    <span>{name}</span>
+                    <span style={{ color: MUTED }}>{count}</span>
+                  </div>
+                ))}
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );
@@ -1008,41 +1086,81 @@ function isoMonday(d: Date): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */
+/**
+ * Operations Calendar — mirrors PHASE7_HUB/CALENDAR/HUB_Calendar.ics exactly.
+ * Only the events in that file are shown:
+ *   · Weekly: Main teaching (Mon-Wed 8-10:30am) + Hall gathering (Mon-Wed 11-2)
+ *   · Weekly: Kids teaching (Thu-Sat 8-10:30am) + Kids hall (Thu-Sat 11-2)
+ *   · Monthly: New cohort resumption (1st of month)
+ *   · Monthly: Team competition challenge (first Monday)
+ */
 function OpsCalendarSection() {
   const today = new Date();
   const startMonth = today.getMonth();
   const startYear = today.getFullYear();
 
-  // Generate next 6 months of key operational events
-  const months: { label: string; events: { date: string; type: string; title: string; color: string }[] }[] = [];
+  const months: { label: string; events: { date: string; type: string; title: string; detail: string; color: string }[] }[] = [];
   for (let i = 0; i < 6; i++) {
     const y = startYear + Math.floor((startMonth + i) / 12);
     const m = (startMonth + i) % 12;
     const label = new Date(y, m, 1).toLocaleDateString("en-NG", { month: "long", year: "numeric" });
     const firstMon = getFirstMonday(y, m);
+    // Only the TWO monthly anchors from the ics file
     const events = [
-      { date: new Date(y, m, 1).toISOString().split("T")[0], type: "Cohort Start", title: "New cohort resumption — orientation day", color: NAVY },
-      { date: firstMon.toISOString().split("T")[0],          type: "Team Competition", title: "Team competition challenge announced", color: PURPLE },
-      { date: new Date(y, m, 14).toISOString().split("T")[0], type: "Mid-Month", title: "Mid-month progress review + social verification", color: BLUE },
-      { date: new Date(y, m + 1, 0).toISOString().split("T")[0], type: "Month End", title: "Attendance review + programme wrap-up", color: GOLD },
+      {
+        date: new Date(y, m, 1).toISOString().split("T")[0],
+        type: "New Cohort Resumption",
+        title: "1st of month — new students start",
+        detail: "Orientation + welcome session",
+        color: NAVY,
+      },
+      {
+        date: firstMon.toISOString().split("T")[0],
+        type: "Team Competition",
+        title: "Team Competition Challenge Announced",
+        detail: "First Monday — new challenge for all 4 teams",
+        color: PURPLE,
+      },
     ];
     months.push({ label, events });
   }
 
   return (
     <div>
-      <SectionTitle sub="Operational rhythm from PHASE7_HUB/CALENDAR — monthly cohort starts, first-Monday team competitions, mid-month reviews.">
+      <SectionTitle sub="Exact rhythm from PHASE7_HUB/CALENDAR/HUB_Calendar.ics — weekly teaching + hall gatherings, plus two monthly anchors.">
         Operations Calendar
       </SectionTitle>
 
       <Card style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.7 }}>
-          <strong style={{ color: DARK }}>Weekly cadence:</strong><br/>
-          · Mon – Wed · 8:00 – 10:30 am — Main teaching<br/>
-          · Mon – Wed · 11:00 am – 2:00 pm — Hall gathering (entrepreneurship / content / AI prompts)<br/>
-          · Thu – Sat · 8:00 – 10:30 am — Kids programme<br/>
-          · Thu – Sat · 11:00 am – 2:00 pm — Kids hall gathering
+        <p style={{ fontSize: 11, color: NAVY, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
+          Weekly Cadence
         </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <WeeklyBlock
+            name="Teaching Session (Main Programs)"
+            days="Mon – Wed"
+            time="8:00 – 10:30 am"
+            detail="Business Builders · Digital Dominance · Code Craft · Compliance · Money · MetFix"
+          />
+          <WeeklyBlock
+            name="Hall Gathering (Main)"
+            days="Mon – Wed"
+            time="11:00 am – 2:00 pm"
+            detail="Entrepreneurship · Social media & content · AI prompt training"
+          />
+          <WeeklyBlock
+            name="Basic Computer Skills (Kids Programme)"
+            days="Thu – Sat"
+            time="8:00 – 10:30 am"
+            detail="Ages 8–15 · Computer basics"
+          />
+          <WeeklyBlock
+            name="Hall Gathering (Kids)"
+            days="Thu – Sat"
+            time="11:00 am – 2:00 pm"
+            detail="Age-appropriate entrepreneurship · Creative projects"
+          />
+        </div>
       </Card>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1057,17 +1175,20 @@ function OpsCalendarSection() {
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               {m.events.map((e, i) => (
                 <div key={i} style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "8px 12px", backgroundColor: BG, borderRadius: 8, gap: 10, flexWrap: "wrap",
+                  padding: "10px 12px", backgroundColor: BG, borderRadius: 10,
+                  border: `1px solid ${DARK}06`,
+                  display: "flex", alignItems: "flex-start", gap: 10,
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: e.color, flexShrink: 0 }} />
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{e.title}</p>
-                      <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                        {fmtDate(e.date)} · {e.type}
-                      </p>
-                    </div>
+                  <span style={{
+                    width: 8, height: 8, borderRadius: 4, backgroundColor: e.color,
+                    flexShrink: 0, marginTop: 5,
+                  }} />
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{e.title}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{e.detail}</p>
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      {fmtDate(e.date)} · {e.type}
+                    </p>
                   </div>
                 </div>
               ))}
@@ -1075,6 +1196,23 @@ function OpsCalendarSection() {
           </Card>
         ))}
       </div>
+    </div>
+  );
+}
+
+function WeeklyBlock({ name, days, time, detail }: { name: string; days: string; time: string; detail: string }) {
+  return (
+    <div style={{
+      padding: "10px 12px", backgroundColor: BG, borderRadius: 10,
+      border: `1px solid ${DARK}06`,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+        <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{name}</p>
+        <p style={{ fontSize: 10, color: NAVY, fontWeight: 600, whiteSpace: "nowrap" }}>
+          {days} · {time}
+        </p>
+      </div>
+      <p style={{ fontSize: 11, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{detail}</p>
     </div>
   );
 }
