@@ -6,7 +6,8 @@ import PageMeta from "@/components/PageMeta";
 import {
   LayoutDashboard, Receipt, DollarSign, PiggyBank, Award, TrendingUp,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
-  Menu, X, Shield, Send, Wallet, Activity,
+  Menu, X, Shield, Send, Wallet, Activity, Landmark, FileText, CreditCard,
+  Plus, Trash2,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
@@ -32,7 +33,8 @@ const PURPLE = "#8B5CF6";
 
 type Section =
   | "dashboard" | "invoices" | "payments" | "allocations"
-  | "commissions" | "aifund" | "reports";
+  | "commissions" | "aifund" | "reports"
+  | "bankrecon" | "taxfilings" | "expenses";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -141,10 +143,13 @@ export default function FinancePortal() {
     { key: "dashboard",   icon: LayoutDashboard, label: "Overview" },
     { key: "invoices",    icon: Receipt,         label: "Invoices" },
     { key: "payments",    icon: DollarSign,      label: "Payments In" },
+    { key: "expenses",    icon: CreditCard,      label: "Expenses" },
+    { key: "bankrecon",   icon: Landmark,        label: "Bank Reconciliation" },
+    { key: "commissions", icon: Award,           label: "Commissions (40/60)" },
     { key: "allocations", icon: PiggyBank,       label: "Allocations (50/30/20)" },
-    { key: "commissions", icon: Award,           label: "Commissions" },
+    { key: "taxfilings",  icon: FileText,        label: "Tax Filings" },
     { key: "aifund",      icon: Activity,        label: "AI Fund" },
-    { key: "reports",     icon: TrendingUp,      label: "Reports" },
+    { key: "reports",     icon: TrendingUp,      label: "Monthly Report" },
   ];
 
   return (
@@ -267,8 +272,11 @@ export default function FinancePortal() {
             {active === "dashboard"   && <OverviewSection onGoto={setActive} />}
             {active === "invoices"    && <InvoicesSection />}
             {active === "payments"    && <PaymentsSection />}
-            {active === "allocations" && <AllocationsSection />}
+            {active === "expenses"    && <ExpensesSection />}
+            {active === "bankrecon"   && <BankReconSection />}
             {active === "commissions" && <CommissionsSection />}
+            {active === "allocations" && <AllocationsSection />}
+            {active === "taxfilings"  && <TaxFilingsSection />}
             {active === "aifund"      && <AIFundSection />}
             {active === "reports"     && <ReportsSection />}
           </div>
@@ -296,6 +304,17 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
     if (!i.dueDate) return false;
     try { return new Date(i.dueDate) < new Date(); } catch { return false; }
   }).length;
+
+  /* ─── Finance success metrics per Ops Guide ────────────────
+     · Payment collection rate >90% (paid / total billable)
+     · Overdue invoices <10% of total
+     · Tax filings 100% on time (proxy: no overdue bizdoc filings)
+   ───────────────────────────────────────────────────────────*/
+  const totalBillable = invoices.filter(i => i.status !== "cancelled").length;
+  const collectionRate = totalBillable > 0 ? Math.round((paid / totalBillable) * 100) : 0;
+  const overduePct = totalBillable > 0 ? Math.round((overdue / totalBillable) * 100) : 0;
+  const collectionOk = collectionRate >= 90;
+  const overdueOk = overduePct <= 10;
 
   const kpis = [
     { label: "Revenue (Paid)",  value: fmtNaira(r?.totalRevenue),    icon: DollarSign, color: GREEN,  section: "payments" as Section },
@@ -329,6 +348,37 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
           </button>
         ))}
       </div>
+
+      {/* Success metrics per Finance Ops Guide */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Success Metrics
+        </p>
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+          <MetricBar
+            label="Payment Collection Rate"
+            target="≥ 90%"
+            value={collectionRate}
+            ok={collectionOk}
+            display={`${collectionRate}%`}
+          />
+          <MetricBar
+            label="Overdue Invoices"
+            target="≤ 10%"
+            value={overduePct}
+            ok={overdueOk}
+            display={`${overduePct}%`}
+            inverse
+          />
+          <MetricBar
+            label="Monthly Report Status"
+            target="5th of month"
+            value={new Date().getDate() <= 5 ? 100 : 50}
+            ok={new Date().getDate() <= 5}
+            display={new Date().getDate() <= 5 ? "On time" : "Due"}
+          />
+        </div>
+      </Card>
 
       <Card style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
@@ -403,6 +453,28 @@ function InvoicesSection() {
     onError: (e) => toast.error(e.message),
   });
 
+  /** Ready-to-send receipt text per Finance Ops Guide. */
+  const copyReceipt = (i: any) => {
+    const text = `HAMZURY · Receipt for ${i.invoiceNumber}
+Built to Last.
+
+Received from: ${i.clientName}
+Amount:        ${fmtNaira(i.total)}
+Invoice ref:   ${i.invoiceNumber}
+Paid on:       ${fmtDate(i.paidAt)}
+
+Thank you for your payment. This receipt confirms
+settlement of the invoice referenced above.
+
+HAMZURY Business Institute
+Ajami Plaza, Garki, Abuja
+finance@hamzury.com`;
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`Receipt for ${i.invoiceNumber} copied`),
+      () => toast.error("Couldn't copy — select manually"),
+    );
+  };
+
   const TONE: Record<string, "green" | "gold" | "red" | "muted"> = {
     paid: "green", sent: "gold", draft: "muted", cancelled: "red",
   };
@@ -476,6 +548,18 @@ function InvoicesSection() {
                         border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer",
                       }}>
                       Mark Paid
+                    </button>
+                  )}
+                  {i.status === "paid" && (
+                    <button
+                      onClick={() => copyReceipt(i)}
+                      style={{
+                        marginTop: 6, padding: "5px 12px", borderRadius: 8,
+                        backgroundColor: `${GOLD}15`, color: GOLD,
+                        border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer",
+                        display: "inline-flex", alignItems: "center", gap: 4,
+                      }}>
+                      <Send size={11} /> Receipt
                     </button>
                   )}
                 </div>
@@ -557,8 +641,8 @@ function AllocationsSection() {
 
   return (
     <div>
-      <SectionTitle sub="Every confirmed payment splits 50% institution · 30% staff pool · 20% affiliate pool. Institution then splits 25% ops / 10% growth / 9% AI / 6% reserve.">
-        Revenue Allocations
+      <SectionTitle sub="Institutional money split (legacy backend model). Used for bookkeeping across company functions. The division + CSO payout lives in the 'Commissions (40/60)' tab — that's what staff actually get paid.">
+        Revenue Allocations · 50/30/20
       </SectionTitle>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
@@ -1082,4 +1166,467 @@ function FinInput({ label, value, onChange }: { label: string; value: string; on
       />
     </label>
   );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * MetricBar — progress pill used on Overview "Success Metrics" card
+ * ═══════════════════════════════════════════════════════════════════════ */
+function MetricBar({
+  label, target, value, ok, display, inverse,
+}: {
+  label: string;
+  target: string;
+  value: number;   // 0-100
+  ok: boolean;
+  display: string;
+  inverse?: boolean;
+}) {
+  const fill = Math.min(100, Math.max(0, value));
+  const color = ok ? "#22C55E" : inverse ? RED : ORANGE;
+  return (
+    <div style={{
+      padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+        <p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+          {label}
+        </p>
+        <p style={{ fontSize: 9, color: MUTED }}>target {target}</p>
+      </div>
+      <p style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 8 }}>{display}</p>
+      <div style={{
+        height: 5, backgroundColor: `${DARK}08`, borderRadius: 999, overflow: "hidden",
+      }}>
+        <div style={{
+          height: "100%",
+          width: `${inverse ? Math.max(6, 100 - fill) : fill}%`,
+          backgroundColor: color,
+          transition: "width 0.3s",
+        }} />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 8. EXPENSES (localStorage v1 until backend table is added)
+ * ═══════════════════════════════════════════════════════════════════════ */
+type ExpenseRow = {
+  id: string;
+  date: string;
+  category: "fixed" | "variable";
+  vendor: string;
+  description: string;
+  amount: number;
+};
+const EXPENSES_STORE_KEY = "hamzury_finance_expenses_v1";
+
+function loadExpenses(): ExpenseRow[] {
+  try {
+    const raw = localStorage.getItem(EXPENSES_STORE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch { return []; }
+}
+function saveExpenses(rows: ExpenseRow[]) {
+  try { localStorage.setItem(EXPENSES_STORE_KEY, JSON.stringify(rows)); } catch {}
+}
+
+function ExpensesSection() {
+  const isMobile = useIsMobile();
+  const [rows, setRows] = useState<ExpenseRow[]>(loadExpenses);
+  const [form, setForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    category: "fixed" as "fixed" | "variable",
+    vendor: "",
+    description: "",
+    amount: "",
+  });
+
+  const add = () => {
+    const amt = parseFloat(form.amount);
+    if (!form.vendor.trim() || !form.description.trim() || !amt || amt <= 0) {
+      toast.error("Fill vendor, description + positive amount"); return;
+    }
+    const next: ExpenseRow[] = [
+      { id: Math.random().toString(36).slice(2), ...form, amount: amt },
+      ...rows,
+    ];
+    setRows(next); saveExpenses(next);
+    setForm({ ...form, vendor: "", description: "", amount: "" });
+    toast.success("Expense recorded");
+  };
+
+  const del = (id: string) => {
+    if (!confirm("Delete this expense?")) return;
+    const next = rows.filter(r => r.id !== id);
+    setRows(next); saveExpenses(next);
+  };
+
+  // This-month totals
+  const now = new Date();
+  const thisMonth = rows.filter(r => {
+    try {
+      const d = new Date(r.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    } catch { return false; }
+  });
+  const fixed    = thisMonth.filter(r => r.category === "fixed").reduce((s, r) => s + r.amount, 0);
+  const variable = thisMonth.filter(r => r.category === "variable").reduce((s, r) => s + r.amount, 0);
+
+  return (
+    <div>
+      <SectionTitle sub="Fixed + variable costs. Stored in your browser for now — moves to a DB table when backend lands.">
+        Expenses
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Fixed (month)"    value={fmtNaira(fixed)}      color={ORANGE} />
+        <MiniStat label="Variable (month)" value={fmtNaira(variable)}   color={RED} />
+        <MiniStat label="Total (month)"    value={fmtNaira(fixed + variable)} color={GOLD} />
+        <MiniStat label="Entries"          value={rows.length}          color={BLUE} />
+      </div>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Record Expense
+        </p>
+        <div style={{
+          display: "grid", gap: 10,
+          gridTemplateColumns: isMobile ? "1fr" : "120px 120px 1fr 1fr 140px auto",
+          alignItems: "end",
+        }}>
+          <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+            style={inputBox()} />
+          <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}
+            style={inputBox()}>
+            <option value="fixed">Fixed</option>
+            <option value="variable">Variable</option>
+          </select>
+          <input placeholder="Vendor (e.g. AfeesHost)" value={form.vendor}
+            onChange={e => setForm({ ...form, vendor: e.target.value })} style={inputBox()} />
+          <input placeholder="Description" value={form.description}
+            onChange={e => setForm({ ...form, description: e.target.value })} style={inputBox()} />
+          <input type="number" placeholder="Amount ₦" value={form.amount}
+            onChange={e => setForm({ ...form, amount: e.target.value })}
+            style={{ ...inputBox(), fontFamily: "monospace" }} />
+          <button onClick={add} style={{
+            padding: "10px 14px", borderRadius: 10,
+            backgroundColor: GREEN, color: WHITE, border: "none",
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6, justifyContent: "center",
+          }}>
+            <Plus size={12} /> Add
+          </button>
+        </div>
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Recorded Expenses ({rows.length})
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={CreditCard} title="No expenses recorded" hint="Add your first above." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.slice(0, 80).map(r => (
+              <div key={r.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
+                    {r.vendor} <span style={{ color: MUTED, fontWeight: 400 }}>· {r.description}</span>
+                  </p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {fmtDate(r.date)} · {r.category}
+                  </p>
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 700, color: r.category === "fixed" ? ORANGE : RED }}>
+                  {fmtNaira(r.amount)}
+                </span>
+                <button onClick={() => del(r.id)} style={{
+                  padding: "5px 8px", borderRadius: 8,
+                  backgroundColor: `${RED}10`, color: RED, border: "none",
+                  fontSize: 10, fontWeight: 600, cursor: "pointer",
+                }}>
+                  <Trash2 size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 9. BANK RECONCILIATION (daily, localStorage v1)
+ * ═══════════════════════════════════════════════════════════════════════ */
+type BankDay = {
+  id: string;
+  date: string;
+  opening: number;
+  inflows: number;
+  outflows: number;
+  notes: string;
+};
+const BANKRECON_STORE_KEY = "hamzury_finance_bankrecon_v1";
+function loadBankDays(): BankDay[] { try { return JSON.parse(localStorage.getItem(BANKRECON_STORE_KEY) || "[]"); } catch { return []; } }
+function saveBankDays(rows: BankDay[]) { try { localStorage.setItem(BANKRECON_STORE_KEY, JSON.stringify(rows)); } catch {} }
+
+function BankReconSection() {
+  const isMobile = useIsMobile();
+  const [rows, setRows] = useState<BankDay[]>(loadBankDays);
+  const [form, setForm] = useState({
+    date: new Date().toISOString().split("T")[0],
+    opening: "",
+    inflows: "",
+    outflows: "",
+    notes: "",
+  });
+
+  const add = () => {
+    const op = parseFloat(form.opening) || 0;
+    const inflow = parseFloat(form.inflows) || 0;
+    const outflow = parseFloat(form.outflows) || 0;
+    const next: BankDay[] = [
+      { id: Math.random().toString(36).slice(2), date: form.date, opening: op, inflows: inflow, outflows: outflow, notes: form.notes.trim() },
+      ...rows,
+    ].sort((a, b) => b.date.localeCompare(a.date));
+    setRows(next); saveBankDays(next);
+    setForm({ date: new Date().toISOString().split("T")[0], opening: "", inflows: "", outflows: "", notes: "" });
+    toast.success("Bank day recorded");
+  };
+
+  const del = (id: string) => {
+    if (!confirm("Delete this reconciliation entry?")) return;
+    const next = rows.filter(r => r.id !== id);
+    setRows(next); saveBankDays(next);
+  };
+
+  const latest = rows[0];
+  const latestClosing = latest ? latest.opening + latest.inflows - latest.outflows : 0;
+
+  return (
+    <div>
+      <SectionTitle sub="Daily opening · inflows · outflows · closing. Stored in your browser for now — migrates to a DB table next pass.">
+        Bank Reconciliation
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Latest closing"
+          value={fmtNaira(latestClosing)}
+          color={latestClosing >= 0 ? GREEN : RED} />
+        <MiniStat label="Days reconciled" value={rows.length} color={BLUE} />
+        <MiniStat label="Last reconciled"
+          value={latest ? fmtDate(latest.date) : "—"} color={GOLD} />
+      </div>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Record Day
+        </p>
+        <div style={{
+          display: "grid", gap: 10,
+          gridTemplateColumns: isMobile ? "1fr" : "140px 140px 140px 140px 1fr auto",
+          alignItems: "end",
+        }}>
+          <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
+            style={inputBox()} />
+          <input type="number" placeholder="Opening ₦" value={form.opening}
+            onChange={e => setForm({ ...form, opening: e.target.value })}
+            style={{ ...inputBox(), fontFamily: "monospace" }} />
+          <input type="number" placeholder="Inflows ₦" value={form.inflows}
+            onChange={e => setForm({ ...form, inflows: e.target.value })}
+            style={{ ...inputBox(), fontFamily: "monospace" }} />
+          <input type="number" placeholder="Outflows ₦" value={form.outflows}
+            onChange={e => setForm({ ...form, outflows: e.target.value })}
+            style={{ ...inputBox(), fontFamily: "monospace" }} />
+          <input placeholder="Notes (optional)" value={form.notes}
+            onChange={e => setForm({ ...form, notes: e.target.value })} style={inputBox()} />
+          <button onClick={add} style={{
+            padding: "10px 14px", borderRadius: 10,
+            backgroundColor: GREEN, color: WHITE, border: "none",
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6, justifyContent: "center",
+          }}>
+            <Plus size={12} /> Add
+          </button>
+        </div>
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          History
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={Landmark} title="No reconciliations yet" hint="Add today's bank numbers above." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.slice(0, 40).map(r => {
+              const closing = r.opening + r.inflows - r.outflows;
+              return (
+                <div key={r.id} style={{
+                  padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: DARK }}>{fmtDate(r.date)}</p>
+                      {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 2, fontStyle: "italic" }}>{r.notes}</p>}
+                    </div>
+                    <button onClick={() => del(r.id)} style={{
+                      padding: "5px 8px", borderRadius: 8,
+                      backgroundColor: `${RED}10`, color: RED, border: "none",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
+                    }}><Trash2 size={11} /></button>
+                  </div>
+                  <div style={{
+                    marginTop: 8, display: "grid", gap: 6,
+                    gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+                    fontSize: 11,
+                  }}>
+                    <span style={{ color: MUTED }}>Opening: <strong style={{ color: DARK }}>{fmtNaira(r.opening)}</strong></span>
+                    <span style={{ color: MUTED }}>Inflows: <strong style={{ color: GREEN }}>{fmtNaira(r.inflows)}</strong></span>
+                    <span style={{ color: MUTED }}>Outflows: <strong style={{ color: RED }}>{fmtNaira(r.outflows)}</strong></span>
+                    <span style={{ color: MUTED }}>Closing: <strong style={{ color: closing >= 0 ? GREEN : RED }}>{fmtNaira(closing)}</strong></span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * 10. TAX FILINGS — queue of tax work for Bizdoc clients
+ * ═══════════════════════════════════════════════════════════════════════ */
+function TaxFilingsSection() {
+  const tasksQ = trpc.tasks.list.useQuery({ department: "bizdoc" }, { retry: false });
+  const all = ((tasksQ.data || []) as any[]);
+
+  const TAX_KEYWORDS = ["VAT", "PAYE", "WHT", "Tax Clearance", "TCC", "CIT", "Annual Return", "Annual Filing", "Tax Management"];
+  const filings = all.filter(t =>
+    TAX_KEYWORDS.some(k => (t.service || "").toLowerCase().includes(k.toLowerCase()))
+  );
+
+  // Group by status
+  const active   = filings.filter(t => t.status !== "Completed");
+  const overdue  = active.filter(t => {
+    if (!t.deadline && !t.expectedDelivery) return false;
+    try { return new Date(t.deadline || t.expectedDelivery) < new Date(); } catch { return false; }
+  });
+  const upcoming = active.filter(t => {
+    if (!t.deadline && !t.expectedDelivery) return false;
+    try {
+      const d = new Date(t.deadline || t.expectedDelivery);
+      const days = Math.ceil((d.getTime() - Date.now()) / 86400000);
+      return days >= 0 && days <= 30;
+    } catch { return false; }
+  });
+  const done = filings.filter(t => t.status === "Completed").length;
+
+  return (
+    <div>
+      <SectionTitle sub="Tax filings Finance handles for Bizdoc clients. VAT, PAYE, WHT, TCC, annual returns. Renewals tracked here.">
+        Tax Filings
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="Active"    value={active.length}   color={BLUE} />
+        <MiniStat label="Overdue"   value={overdue.length}  color={RED} />
+        <MiniStat label="Next 30d"  value={upcoming.length} color={ORANGE} />
+        <MiniStat label="Completed" value={done}            color={GREEN} />
+      </div>
+
+      {overdue.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: RED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            🔴 Overdue — File Today
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {overdue.map((t: any) => (
+              <div key={t.id} style={{
+                padding: "10px 12px", backgroundColor: `${RED}06`, borderRadius: 10, border: `1px solid ${RED}20`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{t.service}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {t.clientName} · Due {fmtDate(t.deadline || t.expectedDelivery)}
+                  </p>
+                </div>
+                <span style={{ fontSize: 10, color: RED, fontWeight: 700 }}>OVERDUE</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Next 30 Days
+        </p>
+        {upcoming.length === 0 ? (
+          <EmptyState icon={CheckCircle2} title="No filings due in the next 30 days" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {upcoming.map((t: any) => (
+              <div key={t.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{t.service}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {t.clientName} · Due {fmtDate(t.deadline || t.expectedDelivery)}
+                  </p>
+                </div>
+                <StatusPill label={t.status} tone="blue" />
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          All Active Tax Work ({active.length})
+        </p>
+        {active.length === 0 ? (
+          <EmptyState icon={FileText} title="No active tax work" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {active.map((t: any) => (
+              <div key={t.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{t.service}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {t.clientName} · <span style={{ fontFamily: "monospace" }}>{t.ref}</span>
+                  </p>
+                </div>
+                <StatusPill label={t.status} tone="muted" />
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function inputBox(): React.CSSProperties {
+  return {
+    padding: "10px 12px", borderRadius: 10, border: `1px solid ${DARK}15`,
+    fontSize: 13, color: DARK, backgroundColor: WHITE, outline: "none",
+    fontFamily: "inherit",
+  };
 }

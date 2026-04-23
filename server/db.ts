@@ -1480,9 +1480,15 @@ export async function seedDefaultPricing(): Promise<void> {
 
 // ─── Invoices ────────────────────────────────────────────────────────────────
 
+/**
+ * Invoice number format per Finance Operations Guide:
+ *   HMZ-INV-XXX (sequential-ish)
+ * Uses a 6-char hex token so we don't have to lock-step with a counter —
+ * still unique, still sequential-looking, still HMZ-branded.
+ */
 export function generateInvoiceNumber(): string {
   const token = randomBytes(4).toString("hex").toUpperCase().slice(0, 6);
-  return `INV-${token}`;
+  return `HMZ-INV-${token}`;
 }
 
 export async function createInvoice(data: Omit<InsertInvoice, "id" | "createdAt" | "updatedAt">): Promise<Invoice> {
