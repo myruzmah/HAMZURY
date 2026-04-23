@@ -44,7 +44,7 @@ type Section =
 type PipelineView = "kanban" | "qualification";
 type BackOfficeTab =
   | "services" | "sources" | "cohorts" | "calendar" | "targets"
-  | "templates" | "audit" | "settings";
+  | "templates" | "forms" | "audit" | "settings";
 
 /* Shared dept leads — used by AssignTaskModal + dashboard surfaces */
 const DEPT_LEADS: Record<string, { name: string; dept: string }[]> = {
@@ -2875,6 +2875,7 @@ function BackOfficeSection({ currentUser, isCsoStaff }: { currentUser: any; isCs
 
   const TABS: { k: BackOfficeTab; label: string; staffVisible: boolean }[] = [
     { k: "services",  label: "Services Library", staffVisible: true },
+    { k: "forms",     label: "Client Forms",     staffVisible: true },
     { k: "sources",   label: "Source Tracker",   staffVisible: false },
     { k: "cohorts",   label: "Cohorts",          staffVisible: true },
     { k: "calendar",  label: "Calendar",         staffVisible: true },
@@ -2912,6 +2913,7 @@ function BackOfficeSection({ currentUser, isCsoStaff }: { currentUser: any; isCs
       </div>
 
       {tab === "services"  && <ServicesLibrary />}
+      {tab === "forms"     && <ClientFormsHub />}
       {tab === "sources"   && !isCsoStaff && <SourceTracker />}
       {tab === "cohorts"   && <BoCohorts />}
       {tab === "calendar"  && <CalendarSection />}
@@ -3137,6 +3139,197 @@ function AuditLogView() {
           ))}
         </div>
       )}
+    </Card>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * CLIENT FORMS HUB — CSO copy-and-share links for WhatsApp
+ * ═══════════════════════════════════════════════════════════════════════ */
+function ClientFormsHub() {
+  const FORMS = [
+    {
+      key: "bizdoc",
+      division: "Bizdoc",
+      category: "Tax & Compliance",
+      accent: "#1B4D3E",
+      path: "/bizdoc/assessment",
+      whenToShare: "Client mentions tax, CAC, FIRS, compliance, TCC, SCUML, or penalties.",
+      messageTemplate:
+        "Hi {name}, good to hear from you. Before our Bizdoc team calls you, please complete this short assessment (3 min) — it helps us prescribe the right package: {link}",
+    },
+    {
+      key: "scalar",
+      division: "Scalar",
+      category: "Web & Automation",
+      accent: "#0F172A",
+      path: "/scalar/assessment",
+      whenToShare: "Client mentions website, CRM, automation, dashboards, AI chatbots, or WhatsApp systems.",
+      messageTemplate:
+        "Hi {name}, thanks for reaching out. So we can scope a proper plan, please fill this 4-min assessment — our Scalar team will review before we call you: {link}",
+    },
+    {
+      key: "medialy",
+      division: "Medialy",
+      category: "Social Media",
+      accent: "#7C2D12",
+      path: "/medialy/assessment",
+      whenToShare: "Client mentions social media, content, Instagram, TikTok, reels, or paid ads.",
+      messageTemplate:
+        "Hi {name}, thanks for reaching out to Medialy. Quick 3-min assessment so we can design the right content plan for you: {link}",
+    },
+    {
+      key: "hub",
+      division: "HUB",
+      category: "Tech Training",
+      accent: "#1E3A5F",
+      path: "/hub/enroll",
+      whenToShare: "Client / student asks about courses, cohort dates, certifications, or team training.",
+      messageTemplate:
+        "Hi {name}, welcome to HAMZURY HUB. Please complete this 3-min enrolment — we'll match you to the right programme and cohort: {link}",
+    },
+  ] as const;
+
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://hamzury.com";
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`${label} copied`),
+      () => toast.error("Couldn't copy — select and copy manually"),
+    );
+  };
+
+  return (
+    <Card>
+      <SectionTitle sub="Copy a link, paste into WhatsApp. Client fills → it lands back in CSO Pipeline as a new lead.">
+        Client Forms
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+        {FORMS.map(f => {
+          const fullLink = `${origin}${f.path}`;
+          return (
+            <div
+              key={f.key}
+              style={{
+                backgroundColor: WHITE,
+                borderRadius: 14,
+                padding: 16,
+                border: `1px solid ${DARK}08`,
+                borderLeft: `3px solid ${f.accent}`,
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <div>
+                <p style={{
+                  fontSize: 10,
+                  color: f.accent,
+                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  marginBottom: 4,
+                }}>
+                  {f.category}
+                </p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>
+                  {f.division}
+                </p>
+                <p style={{ fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.5 }}>
+                  <strong style={{ color: DARK }}>Share when:</strong> {f.whenToShare}
+                </p>
+              </div>
+
+              <div style={{
+                backgroundColor: `${DARK}05`,
+                borderRadius: 8,
+                padding: "8px 10px",
+                fontSize: 11,
+                fontFamily: "monospace",
+                color: DARK,
+                wordBreak: "break-all",
+              }}>
+                {fullLink}
+              </div>
+
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button
+                  onClick={() => copy(fullLink, `${f.division} link`)}
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: 8,
+                    backgroundColor: f.accent,
+                    color: WHITE,
+                    border: "none",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    flex: 1,
+                    minWidth: 100,
+                  }}
+                >
+                  Copy Link
+                </button>
+                <button
+                  onClick={() => copy(f.messageTemplate.replace("{link}", fullLink), `${f.division} message template`)}
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: 8,
+                    backgroundColor: `${f.accent}12`,
+                    color: f.accent,
+                    border: "none",
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    flex: 1,
+                    minWidth: 120,
+                  }}
+                >
+                  Copy WhatsApp Msg
+                </button>
+                <a
+                  href={fullLink}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: "7px 12px",
+                    borderRadius: 8,
+                    backgroundColor: "transparent",
+                    color: MUTED,
+                    border: `1px solid ${DARK}15`,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Preview →
+                </a>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <p style={{
+        fontSize: 11,
+        color: MUTED,
+        marginTop: 16,
+        lineHeight: 1.6,
+        padding: "10px 12px",
+        backgroundColor: `${GOLD}08`,
+        borderRadius: 8,
+        borderLeft: `3px solid ${GOLD}`,
+      }}>
+        <strong style={{ color: DARK }}>Tip:</strong> Swap {"{name}"} in the WhatsApp message template for the
+        actual client name before sending. When the client submits, the lead appears in the
+        Pipeline with source <code style={{ fontFamily: "monospace", color: GOLD }}>assessment_bizdoc</code> /{" "}
+        <code style={{ fontFamily: "monospace", color: GOLD }}>assessment_scalar</code> etc. so you know where it came from.
+      </p>
     </Card>
   );
 }

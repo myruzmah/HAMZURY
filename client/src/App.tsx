@@ -16,6 +16,12 @@ import HubPage from "./pages/HubPage";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 
+/* ── Division assessment forms (CSO shares via WhatsApp) ── */
+import BizdocAssessment from "./pages/BizdocAssessment";
+import ScalarAssessment from "./pages/ScalarAssessment";
+import MedialyAssessment from "./pages/MedialyAssessment";
+import HubEnroll from "./pages/HubEnroll";
+
 /* ── Staff portals (kept in legacy green/gold) ── */
 import CSOPortal from "./pages/CSOPortal";
 import CEOPortal from "./pages/CEOPortal";
@@ -85,6 +91,12 @@ function Router() {
       <Route path="/hub"       component={HubPage} />
       <Route path="/about"     component={AboutPage} />
       <Route path="/contact"   component={ContactPage} />
+
+      {/* ═══ Division assessment forms (share via WhatsApp) ═══ */}
+      <Route path="/bizdoc/assessment"  component={BizdocAssessment} />
+      <Route path="/scalar/assessment"  component={ScalarAssessment} />
+      <Route path="/medialy/assessment" component={MedialyAssessment} />
+      <Route path="/hub/enroll"         component={HubEnroll} />
 
       {/* ═══ Legacy public redirects (old division names) ═══ */}
       <Route path="/systemise">{() => <Redirect to="/scalar" />}</Route>
@@ -161,11 +173,12 @@ function FloatingChat() {
   const [location] = useLocation();
   if (location === "/privacy" || location === "/terms") return null;
 
+  // HUB intentionally excluded — founder preference: no AI chat on /hub,
+  // clients reach HUB via WhatsApp/phone from the contact buttons instead.
   const chatRoutes: { prefix: string; dept: "bizdoc" | "systemise" | "skills" | "general"; exact?: boolean }[] = [
     { prefix: "/bizdoc",  dept: "bizdoc" },
     { prefix: "/scalar",  dept: "systemise" },
     { prefix: "/medialy", dept: "general" },
-    { prefix: "/hub",     dept: "skills" },
     { prefix: "/cso",     dept: "bizdoc" },
     { prefix: "/contact", dept: "general" },
     { prefix: "/founder", dept: "general" },

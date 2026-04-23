@@ -267,10 +267,10 @@ function CalendarSection() {
 
   const selectedEvents = selectedDate ? CALENDAR_EVENTS[selectedDate] ?? [] : [];
 
+  /** HUB has no AI chat — all "contact" CTAs open WhatsApp with context. */
   const openChat = (context: string) => {
-    localStorage.setItem("hamzury-chat-context", context);
-    const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
-    if (btn) btn.click();
+    const msg = encodeURIComponent(context);
+    window.open(`https://wa.me/2349130700056?text=${msg}`, "_blank");
   };
 
   const legendItems = [
@@ -600,10 +600,10 @@ export default function HubPage() {
     rejected: "Not accepted this cycle",
   };
 
+  /** HUB has no AI chat — route CTAs directly to WhatsApp with context. */
   const openChat = (context: string) => {
-    localStorage.setItem("hamzury-chat-context", context);
-    const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
-    if (btn) btn.click();
+    const msg = encodeURIComponent(context);
+    window.open(`https://wa.me/2349130700056?text=${msg}`, "_blank");
   };
 
   const togglePin = (item: CourseItem) => {
@@ -667,18 +667,17 @@ export default function HubPage() {
 
           {mobileMenuOpen && (
             <div className="absolute top-12 right-0 rounded-2xl py-2 min-w-[220px] shadow-xl" style={{ backgroundColor: W }} onClick={() => setMobileMenuOpen(false)}>
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
-                  if (btn) btn.click();
-                }}
+              <a
+                href={`https://wa.me/2349130700056?text=${encodeURIComponent("Hello HAMZURY HUB — I'd like to talk about a programme.")}`}
+                target="_blank"
+                rel="noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
                 className="flex items-center gap-2 px-3 py-3.5 rounded-xl w-full text-left mx-2"
-                style={{ backgroundColor: "#B48C4C10", color: "#B48C4C" }}
+                style={{ backgroundColor: "#25D36615", color: "#128C7E" }}
               >
                 <MessageSquare size={16} />
-                <span className="text-[13px] font-medium">Chat with us</span>
-              </button>
+                <span className="text-[13px] font-medium">WhatsApp us</span>
+              </a>
               {[
                 { label: "Bizdoc",  href: "/bizdoc" },
                 { label: "Scalar",  href: "/scalar" },
