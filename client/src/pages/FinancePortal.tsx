@@ -354,7 +354,7 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
         <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
           Success Metrics
         </p>
-        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
           <MetricBar
             label="Payment Collection Rate"
             target="≥ 90%"
@@ -760,7 +760,7 @@ function CommissionsSection() {
         </p>
         <div style={{
           display: "grid", gap: 12,
-          gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         }}>
           <label style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
@@ -908,7 +908,7 @@ function AIFundSection() {
         AI Fund
       </SectionTitle>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
         <MiniStat label="Current Balance" value={fmtNaira(data?.balance)}   color={PURPLE} />
         <MiniStat label="Entries"         value={data?.log?.length ?? 0}    color={GOLD} />
       </div>
@@ -1062,7 +1062,7 @@ Distribution: CEO (full), Founder (summary), Division leads (their lines).`;
         </p>
         <div style={{
           display: "grid", gap: 12,
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
         }}>
           <FinInput label="Fixed costs (rent, utilities, salaries) ₦"
             value={expFixed} onChange={setExpFixed} />
@@ -1095,7 +1095,8 @@ Distribution: CEO (full), Founder (summary), Division leads (their lines).`;
           fontSize: 11, color: DARK, backgroundColor: BG,
           padding: "14px 16px", borderRadius: 10,
           border: `1px solid ${DARK}06`,
-          whiteSpace: "pre-wrap", lineHeight: 1.7, margin: 0,
+          whiteSpace: "pre-wrap", wordBreak: "break-word", overflowX: "auto",
+          lineHeight: 1.7, margin: 0,
         }}>{report}</pre>
         <button onClick={copy}
           style={{
@@ -1187,11 +1188,16 @@ function MetricBar({
     <div style={{
       padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
-        <p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6, gap: 6 }}>
+        <p style={{
+          fontSize: 11, color: DARK, fontWeight: 600, lineHeight: 1.3,
+          minWidth: 0, flex: 1,
+        }}>
           {label}
         </p>
-        <p style={{ fontSize: 9, color: MUTED }}>target {target}</p>
+        <p style={{ fontSize: 9, color: MUTED, flexShrink: 0, whiteSpace: "nowrap" }}>
+          target {target}
+        </p>
       </div>
       <p style={{ fontSize: 18, fontWeight: 700, color, marginBottom: 8 }}>{display}</p>
       <div style={{
