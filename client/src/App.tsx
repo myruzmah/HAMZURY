@@ -6,71 +6,55 @@ import { Route, Switch, useLocation } from "wouter";
 import { useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+
+/* ── Public marketing pages (rebrand) ── */
 import Home from "./pages/Home";
-import BizDocPortal from "./pages/BizDocPortal";
+import BizdocPage from "./pages/BizdocPage";
+import ScalarPage from "./pages/ScalarPage";
+import MedialyPage from "./pages/MedialyPage";
+import HubPage from "./pages/HubPage";
+import AboutPage from "./pages/AboutPage";
+import ContactPage from "./pages/ContactPage";
+
+/* ── Staff portals (kept in legacy green/gold) ── */
 import CSOPortal from "./pages/CSOPortal";
 import CEOPortal from "./pages/CEOPortal";
 import BizDevPortal from "./pages/BizDevPortal";
-import SystemisePortal from "./pages/SystemisePortal";
-import SkillsPortal from "./pages/SkillsPortal";
-import SkillsPrograms from "./pages/SkillsPrograms";
-import SkillsBlueprint from "./pages/SkillsBlueprint";
-import SkillsStudent from "./pages/SkillsStudent";
+
+/* ── Public/client surfaces ── */
+import ClientDashboard from "./pages/ClientDashboard";
+import ClientOnboarding from "./pages/ClientOnboarding";
+import PricingPage from "./pages/PricingPage";
 import FounderPage from "./pages/FounderPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
-import ConsultantPage from "./pages/ConsultantPage";
-import AffiliatePage from "./pages/AffiliatePage";
-import PricingPage from "./pages/PricingPage";
-import CTOPublicPage from "./pages/CTOPublicPage";
-import ClientDashboard from "./pages/ClientDashboard";
-import AlumniPage from "./pages/AlumniPage";
-import RIDIPage from "./pages/RIDIPage";
-import BizDocBlueprint from "./pages/BizDocBlueprint";
-import TeamPage from "./pages/TeamPage";
-import MetFixPage from "./pages/MetFixPage";
-import SocialTemplates from "./pages/SocialTemplates";
-import TrainingPage from "./pages/TrainingPage";
-import SkillsMilestones from "./pages/SkillsMilestones";
-import SkillsStartups from "./pages/SkillsStartups";
-import SkillsAlumni from "./pages/SkillsAlumni";
-import SkillsHALS from "./pages/SkillsHALS";
-import ClientOnboarding from "./pages/ClientOnboarding";
 
 import CookieBanner from "./components/CookieBanner";
 import ChatWidget from "./components/ChatWidget";
 import { trpc } from "./lib/trpc";
 
-// Strict role access — each person only sees their own dashboard
-// Only the founder has cross-dashboard visibility
 /**
  * ROLE_ACCESS — protected internal portal routes.
- *
- * CSO is currently the only active staff dashboard. Other department
- * dashboards were removed 2026-04 and will be added back one at a time
- * once CSO is proven stable.
+ * Staff portals stay in legacy green/gold — public is rebranded to navy/brown/cream.
  */
 const ROLE_ACCESS: Record<string, string[]> = {
-  "/cso": ["cso", "cso_staff"],
-  "/ceo": ["ceo", "founder"],
+  "/cso":    ["cso", "cso_staff"],
+  "/ceo":    ["ceo", "founder"],
   "/bizdev": ["bizdev", "bizdev_staff", "ceo", "founder"],
 };
 
-/** Wrapper that enforces hamzuryRole-based access on /hub/* and sensitive routes */
 function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactNode }) {
-  const [location] = useLocation();
   const me = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
 
   if (me.isLoading) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center bg-[#1A1A1A]">
-        <div className="w-6 h-6 rounded-full border-2 border-[#B48C4C] border-t-transparent animate-spin" />
+      <div className="fixed inset-0 flex items-center justify-center bg-[#F5F5F4]">
+        <div className="w-6 h-6 rounded-full border-2 border-[#1E3A8A] border-t-transparent animate-spin" />
       </div>
     );
   }
 
   if (!me.data) {
-    // Not authenticated — redirect to home (staff login is in Track section)
     window.location.href = "/";
     return null;
   }
@@ -84,99 +68,80 @@ function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; childre
   return <>{children}</>;
 }
 
+/** Tiny inline redirect helper — used for deprecated paths. */
+function Redirect({ to }: { to: string }) {
+  useEffect(() => { window.location.href = to; }, [to]);
+  return null;
+}
+
 function Router() {
   return (
     <Switch>
-      {/* HAMZURY Main Hub */}
-      <Route path={"/"} component={Home} />
+      {/* ═══ Public marketing ═══ */}
+      <Route path="/"          component={Home} />
+      <Route path="/bizdoc"    component={BizdocPage} />
+      <Route path="/scalar"    component={ScalarPage} />
+      <Route path="/medialy"   component={MedialyPage} />
+      <Route path="/hub"       component={HubPage} />
+      <Route path="/about"     component={AboutPage} />
+      <Route path="/contact"   component={ContactPage} />
 
-      {/* BizDoc Department Portal */}
-      <Route path={"/bizdoc"} component={BizDocPortal} />
-      <Route path={"/bizdoc/blueprint"} component={BizDocBlueprint} />
+      {/* ═══ Legacy public redirects (old division names) ═══ */}
+      <Route path="/systemise">{() => <Redirect to="/scalar" />}</Route>
+      <Route path="/systemise/:rest*">{() => <Redirect to="/scalar" />}</Route>
+      <Route path="/skills">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/skills/:rest*">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/media">{() => <Redirect to="/medialy" />}</Route>
+      <Route path="/media/:rest*">{() => <Redirect to="/medialy" />}</Route>
+      <Route path="/bizdoc/blueprint">{() => <Redirect to="/bizdoc" />}</Route>
+      <Route path="/team">{() => <Redirect to="/about" />}</Route>
+      <Route path="/consultant">{() => <Redirect to="/about" />}</Route>
+      <Route path="/alumni">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/ridi">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/cto">{() => <Redirect to="/scalar" />}</Route>
+      <Route path="/metfix">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/templates">{() => <Redirect to="/medialy" />}</Route>
+      <Route path="/training/:dept">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/training">{() => <Redirect to="/hub" />}</Route>
+      <Route path="/affiliate">{() => <Redirect to="/about" />}</Route>
 
-      {/* Systemise Department Portal */}
-      <Route path={"/systemise"} component={SystemisePortal} />
-
-      {/* Skills Department Portal */}
-      <Route path={"/skills"} component={SkillsPortal} />
-      <Route path={"/skills/programs"} component={SkillsPrograms} />
-      <Route path={"/skills/blueprint"} component={SkillsBlueprint} />
-      <Route path={"/skills/student"} component={SkillsStudent} />
-      <Route path={"/skills/milestones"} component={SkillsMilestones} />
-      <Route path={"/skills/startups"} component={SkillsStartups} />
-      <Route path={"/skills/alumni"} component={SkillsAlumni} />
-      <Route path={"/skills/hals"} component={SkillsHALS} />
-
-      {/* Staff Dashboards — CSO is the only active one */}
-      <Route path={"/cso"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/cso"]}>
-          <CSOPortal />
-        </RoleGuard>
+      {/* ═══ Staff dashboards ═══ */}
+      <Route path="/cso">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/cso"]}><CSOPortal /></RoleGuard>
       </Route>
-      {/* Legacy /hub/cso redirect → /cso */}
-      <Route path={"/hub/cso"}>{() => { window.location.href = "/cso"; return null; }}</Route>
-
-      {/* CEO Executive Portal */}
-      <Route path={"/ceo"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/ceo"]}>
-          <CEOPortal />
-        </RoleGuard>
+      <Route path="/ceo">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/ceo"]}><CEOPortal /></RoleGuard>
       </Route>
-      <Route path={"/hub/ceo"}>{() => { window.location.href = "/ceo"; return null; }}</Route>
-
-      {/* BizDev Growth Portal */}
-      <Route path={"/bizdev"}>
-        <RoleGuard allowedRoles={ROLE_ACCESS["/bizdev"]}>
-          <BizDevPortal />
-        </RoleGuard>
+      <Route path="/bizdev">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/bizdev"]}><BizDevPortal /></RoleGuard>
       </Route>
 
-      {/* Deprecated staff dashboards — redirect to home (2026-04 cleanup) */}
-      <Route path={"/hub/finance"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/hub/hr"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/hub/bizdev"}>{() => { window.location.href = "/bizdev"; return null; }}</Route>
-      <Route path={"/hub/workspace"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/bizdoc/dashboard"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/systemise/dashboard"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/systemise/cto"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/skills/admin"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/skills/ceo"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/ridi/dashboard"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/media/dashboard"}>{() => { window.location.href = "/"; return null; }}</Route>
-      <Route path={"/affiliate/dashboard"}>{() => { window.location.href = "/"; return null; }}</Route>
+      {/* ═══ Legacy staff redirects ═══ */}
+      <Route path="/hub/cso">{() => <Redirect to="/cso" />}</Route>
+      <Route path="/hub/ceo">{() => <Redirect to="/ceo" />}</Route>
+      <Route path="/hub/bizdev">{() => <Redirect to="/bizdev" />}</Route>
+      <Route path="/hub/finance">{() => <Redirect to="/" />}</Route>
+      <Route path="/hub/hr">{() => <Redirect to="/" />}</Route>
+      <Route path="/hub/workspace">{() => <Redirect to="/" />}</Route>
+      <Route path="/bizdoc/dashboard">{() => <Redirect to="/" />}</Route>
+      <Route path="/ridi/dashboard">{() => <Redirect to="/" />}</Route>
+      <Route path="/media/dashboard">{() => <Redirect to="/" />}</Route>
+      <Route path="/affiliate/dashboard">{() => <Redirect to="/" />}</Route>
 
-      {/* Client Onboarding Form — public, ref-based (wildcard for refs with slashes like HMZ-26/4-5623) */}
-      <Route path="/start/*" component={ClientOnboarding} />
+      {/* ═══ Client portal ═══ */}
+      <Route path="/start/*"          component={ClientOnboarding} />
+      <Route path="/client/dashboard" component={ClientDashboard} />
+      <Route path="/client">{() => <Redirect to="/" />}</Route>
 
-      {/* Client Portal — dashboard only, clients enter ref via Track section */}
-      <Route path={"/client/dashboard"} component={ClientDashboard} />
-      <Route path={"/client"}>{() => { window.location.href = "/"; return null; }}</Route>
+      {/* ═══ Info / legal ═══ */}
+      <Route path="/founder" component={FounderPage} />
+      <Route path="/pricing" component={PricingPage} />
+      <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms"   component={TermsOfService} />
+      <Route path="/login">{() => <Redirect to="/" />}</Route>
 
-      {/* Affiliate Portal — public landing only */}
-      <Route path={"/affiliate"} component={AffiliatePage} />
-
-      {/* Public CTO Page */}
-      <Route path={"/cto"} component={CTOPublicPage} />
-
-      {/* Community / Public Pages */}
-      <Route path={"/alumni"} component={AlumniPage} />
-      <Route path={"/ridi"} component={RIDIPage} />
-      <Route path={"/team"} component={TeamPage} />
-
-      {/* Info Pages */}
-      <Route path={"/founder"} component={FounderPage} />
-      <Route path={"/privacy"} component={PrivacyPolicy} />
-      <Route path={"/terms"} component={TermsOfService} />
-      <Route path={"/consultant"} component={ConsultantPage} />
-      <Route path={"/pricing"} component={PricingPage} />
-      <Route path={"/metfix"} component={MetFixPage} />
-      <Route path={"/templates"} component={SocialTemplates} />
-      <Route path={"/training/:dept"} component={TrainingPage} />
-      <Route path={"/training"} component={TrainingPage} />
-      <Route path={"/login"}>{() => { window.location.href = "/"; return null; }}</Route>
-
-      {/* Fallback */}
-      <Route path={"/404"} component={NotFound} />
+      {/* ═══ Fallback ═══ */}
+      <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -185,32 +150,25 @@ function Router() {
 function ScrollToTop() {
   const [location] = useLocation();
   useEffect(() => {
-    // Skip scroll reset for hash links (in-page anchors)
     if (window.location.hash) return;
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
   }, [location]);
   return null;
 }
 
-/** Show chat on public pages, department portals, client dashboard, and staff dashboards */
+/** Floating chat for select public + staff pages (no chat on minimal marketing pages). */
 function FloatingChat() {
   const [location] = useLocation();
-
-  // Exclude legal pages
   if (location === "/privacy" || location === "/terms") return null;
 
-  // Chat on department portals, CSO dashboard, and pages with chat CTAs
   const chatRoutes: { prefix: string; dept: "bizdoc" | "systemise" | "skills" | "general"; exact?: boolean }[] = [
-    { prefix: "/bizdoc",    dept: "bizdoc" },
-    { prefix: "/systemise", dept: "systemise" },
-    { prefix: "/skills",    dept: "skills" },
-    { prefix: "/cso",       dept: "bizdoc" },
-    { prefix: "/pricing",   dept: "general" },
-    { prefix: "/founder",   dept: "general" },
-    { prefix: "/team",      dept: "general" },
-    { prefix: "/ridi",      dept: "skills" },
-    { prefix: "/cto",       dept: "systemise" },
-    { prefix: "/affiliate", dept: "general" },
+    { prefix: "/bizdoc",  dept: "bizdoc" },
+    { prefix: "/scalar",  dept: "systemise" },
+    { prefix: "/medialy", dept: "general" },
+    { prefix: "/hub",     dept: "skills" },
+    { prefix: "/cso",     dept: "bizdoc" },
+    { prefix: "/contact", dept: "general" },
+    { prefix: "/founder", dept: "general" },
   ];
 
   const match = chatRoutes.find(r =>
