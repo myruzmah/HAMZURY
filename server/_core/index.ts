@@ -132,6 +132,8 @@ async function startServer() {
         founder:      "/ceo",
         bizdev:       "/bizdev",
         bizdev_staff: "/bizdev",
+        finance:      "/finance",
+        hr:           "/hr",
       };
 
       res.json({

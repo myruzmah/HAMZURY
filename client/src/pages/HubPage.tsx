@@ -695,22 +695,57 @@ export default function HubPage() {
         </div>
       </nav>
 
+      {/* ── MAY COHORT BANNER — campaign strip ── */}
+      <section className="pt-20 pb-2" style={{ backgroundColor: BG }}>
+        <div className="max-w-3xl mx-auto px-6">
+          <div
+            className="flex items-center gap-3 px-5 py-3 rounded-full text-[12px] md:text-[13px] font-medium mx-auto"
+            style={{
+              backgroundColor: `${GOLD}12`,
+              border: `1px solid ${GOLD}30`,
+              color: DARK,
+              width: "fit-content",
+              maxWidth: "100%",
+            }}
+          >
+            <span
+              className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
+              style={{ backgroundColor: GOLD }}
+            />
+            <span className="tracking-[0.08em]">
+              <strong style={{ color: GOLD }}>May Cohort</strong>
+              <span className="opacity-60"> · starts May 1, 2026 · enrolment open</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* ── HERO ── */}
-      <section className="min-h-screen flex items-center justify-center px-6">
+      <section className="min-h-[85vh] flex items-center justify-center px-6">
         <div className="max-w-3xl mx-auto text-center">
-          <h1 className="text-[clamp(32px,6vw,48px)] font-light leading-[1.1] tracking-tight mb-6" style={{ color: TEXT }}>
-            Learn what{" "}<span style={{ color: DARK }}>actually works.</span>
-          </h1>
-          <p className="text-[14px] leading-relaxed mb-12 max-w-md mx-auto" style={{ color: TEXT, opacity: 0.5 }}>
-            Practical training for founders, operators, and teams. Build income, capability, and real market ability.
+          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-4" style={{ color: GOLD }}>
+            HAMZURY HUB · BUILT TO LAST
           </p>
-          <div className="flex flex-wrap gap-3 justify-center">
+          <h1 className="text-[clamp(32px,6vw,54px)] font-light leading-[1.05] tracking-tight mb-6" style={{ color: TEXT }}>
+            Tech skills that{" "}<span style={{ color: DARK }}>get you paid.</span>
+          </h1>
+          <p className="text-[15px] leading-relaxed mb-12 max-w-lg mx-auto" style={{ color: TEXT, opacity: 0.55 }}>
+            Eight programmes. Real portfolios. International certification. Pick your path — we'll walk you to placement.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center mb-8">
+            <Link
+              href="/hub/enroll"
+              className="px-8 py-4 rounded-full text-[14px] font-semibold transition-all duration-300 hover:scale-[1.02]"
+              style={{ backgroundColor: DARK, color: GOLD }}
+            >
+              Enrol for May Cohort →
+            </Link>
             <button
               onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
               className="px-8 py-4 rounded-full text-[14px] font-medium transition-all duration-300 hover:opacity-80"
               style={{ color: TEXT, border: `1px solid ${TEXT}20` }}
             >
-              Our Programs
+              See Programmes
             </button>
             <button
               onClick={() => document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth" })}
@@ -720,6 +755,9 @@ export default function HubPage() {
               Calendar
             </button>
           </div>
+          <p className="text-[12px]" style={{ color: `${TEXT}50` }}>
+            Not sure which skill? Start the enrolment form — we'll help you choose.
+          </p>
         </div>
       </section>
 

@@ -26,6 +26,8 @@ import HubEnroll from "./pages/HubEnroll";
 import CSOPortal from "./pages/CSOPortal";
 import CEOPortal from "./pages/CEOPortal";
 import BizDevPortal from "./pages/BizDevPortal";
+import FinancePortal from "./pages/FinancePortal";
+import HRPortal from "./pages/HRPortal";
 
 /* ── Public/client surfaces ── */
 import ClientDashboard from "./pages/ClientDashboard";
@@ -44,9 +46,11 @@ import { trpc } from "./lib/trpc";
  * Staff portals stay in legacy green/gold — public is rebranded to navy/brown/cream.
  */
 const ROLE_ACCESS: Record<string, string[]> = {
-  "/cso":    ["cso", "cso_staff"],
-  "/ceo":    ["ceo", "founder"],
-  "/bizdev": ["bizdev", "bizdev_staff", "ceo", "founder"],
+  "/cso":     ["cso", "cso_staff"],
+  "/ceo":     ["ceo", "founder"],
+  "/bizdev":  ["bizdev", "bizdev_staff", "ceo", "founder"],
+  "/finance": ["finance", "ceo", "founder"],
+  "/hr":      ["hr", "ceo", "founder"],
 };
 
 function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactNode }) {
@@ -127,13 +131,19 @@ function Router() {
       <Route path="/bizdev">
         <RoleGuard allowedRoles={ROLE_ACCESS["/bizdev"]}><BizDevPortal /></RoleGuard>
       </Route>
+      <Route path="/finance">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/finance"]}><FinancePortal /></RoleGuard>
+      </Route>
+      <Route path="/hr">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/hr"]}><HRPortal /></RoleGuard>
+      </Route>
 
       {/* ═══ Legacy staff redirects ═══ */}
       <Route path="/hub/cso">{() => <Redirect to="/cso" />}</Route>
       <Route path="/hub/ceo">{() => <Redirect to="/ceo" />}</Route>
       <Route path="/hub/bizdev">{() => <Redirect to="/bizdev" />}</Route>
-      <Route path="/hub/finance">{() => <Redirect to="/" />}</Route>
-      <Route path="/hub/hr">{() => <Redirect to="/" />}</Route>
+      <Route path="/hub/finance">{() => <Redirect to="/finance" />}</Route>
+      <Route path="/hub/hr">{() => <Redirect to="/hr" />}</Route>
       <Route path="/hub/workspace">{() => <Redirect to="/" />}</Route>
       <Route path="/bizdoc/dashboard">{() => <Redirect to="/" />}</Route>
       <Route path="/ridi/dashboard">{() => <Redirect to="/" />}</Route>

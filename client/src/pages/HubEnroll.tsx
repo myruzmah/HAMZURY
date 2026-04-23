@@ -8,12 +8,12 @@ const cfg: AssessmentConfig = {
   accent: "#1E3A5F",
   highlight: "#B48C4C",
   welcome: {
-    title: "Pick a programme. Get paid for the skill.",
-    sub: "Tech skills that get you paid. A few short questions so we can match you to the right HUB programme, cohort and payment plan.",
+    title: "May Cohort is open. Pick your tech skill.",
+    sub: "Tech skills that get you paid. Classes start May 1, 2026. A few short questions so we can match you to the right programme, cohort and payment plan.",
     bullets: [
-      "Takes about 3 minutes.",
-      "Scholarships + payment plans are real options — ask us.",
-      "You'll get a reference number so you can track your application.",
+      "May Cohort orientation: May 1 · Classes: Mon–Wed 8am–2pm.",
+      "Scholarships + instalment plans are real options — ask us.",
+      "Takes about 3 minutes. You'll get a reference number to track your application.",
     ],
   },
   steps: [
@@ -40,15 +40,15 @@ const cfg: AssessmentConfig = {
       sub: "Pick the one closest to your goal. We'll confirm fit.",
       questions: [
         { id: "program", prompt: "Programme:", required: true, options: [
+          "Any tech skill — help me choose (clarity session)",
           "Business Builders Academy — 3 wks, ₦150k",
-          "Digital Dominance (social media) — 4 wks, ₦80k",
-          "Code Craft Bootcamp (web dev) — 12 wks, ₦300k",
+          "Digital Dominance (social media + AI) — 4 wks, ₦80k",
+          "Code Craft Bootcamp (full-stack web) — 12 wks, ₦300k",
           "Compliance Mastery — 6 wks, ₦120k",
-          "Money Mastery — 4 wks, ₦90k",
+          "Money Mastery (personal finance + wealth) — 4 wks, ₦90k",
           "MetFix Hardware & Robotics — 8 wks, ₦180k / ₦80k online",
           "Basic Computer Skills (Kids) — 2 wks, ₦25k",
           "Online Academy course (self-paced, ₦10k–₦50k)",
-          "Not sure — book me a clarity session",
         ]},
         { id: "mode", prompt: "Preferred learning mode:", required: true, options: [
           "In-person at HUB (Abuja)",
@@ -85,10 +85,11 @@ const cfg: AssessmentConfig = {
           "My company / sponsor is paying",
         ]},
         { id: "cohort", prompt: "When do you want to start?", required: true, options: [
-          "This month's cohort",
-          "Next month",
-          "Next 2–3 months",
-          "I'm flexible",
+          "May Cohort (starts May 1, 2026) — priority",
+          "June Cohort",
+          "July – September",
+          "Later in the year",
+          "I'm flexible — whatever fits best",
         ]},
         { id: "notes", prompt: "Anything else we should know?", kind: "textarea" },
       ],

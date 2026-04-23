@@ -120,7 +120,7 @@ export const DIVISIONS: readonly {
     path:     "/bizdoc",
     accent:   PUBLIC.division.bizdoc,
     email:    "bizdoc@hamzury.com",
-    whatsapp: "08067193560",
+    whatsapp: "08067149356",
   },
   {
     key:      "scalar",

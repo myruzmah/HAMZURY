@@ -43,7 +43,7 @@ const STAFF_ROSTER: {
   { name: "Khadija Saad",      email: "bizdev@hamzury.com",       hamzuryRole: "bizdev" },           // BizDev Lead — department email is the single source of login for BizDev
   { name: "Farida Munir",      email: "faree@hamzury.com",        hamzuryRole: "bizdev" },           // BizDev + Podcast
   { name: "Maryam Ashir Lalo", email: "cso@hamzury.com",          hamzuryRole: "cso" },              // CSO Lead — department email is the single source of login for CSO
-  { name: "Abubakar Sadiq",    email: "abubakar@hamzury.com",     hamzuryRole: "finance" },          // Finance + Brand
+  { name: "Abubakar Sadiq",    email: "finance@hamzury.com",      hamzuryRole: "finance" },          // Finance Lead — department email is the single source of login for Finance
   { name: "Sulaiman Hikma",    email: "hikma@hamzury.com",        hamzuryRole: "media" },
   { name: "Salis",             email: "salis@hamzury.com",        hamzuryRole: "media" },            // Video/Sound
   { name: "Abdulmalik Musa",   email: "abdulmalik@hamzury.com",   hamzuryRole: "skills_staff" },     // Skills dept lead
@@ -171,6 +171,25 @@ export async function syncStaffRoster(): Promise<void> {
     }
   } catch (err) {
     console.log("[sync-staff] BizDev email migration error:", String(err));
+  }
+
+  // ─── 2026-04 migration: rename Finance personal email → department email ───
+  try {
+    const legacy = await getStaffUserByEmail("abubakar@hamzury.com");
+    if (legacy) {
+      const already = await getStaffUserByEmail("finance@hamzury.com");
+      if (already) {
+        await db.delete(staffUsers).where(eq(staffUsers.email, "abubakar@hamzury.com"));
+        console.log("[sync-staff] Removed legacy abubakar@hamzury.com (finance@hamzury.com already present)");
+      } else {
+        await db.update(staffUsers)
+          .set({ email: "finance@hamzury.com" })
+          .where(eq(staffUsers.email, "abubakar@hamzury.com"));
+        console.log("[sync-staff] Renamed abubakar@hamzury.com → finance@hamzury.com");
+      }
+    }
+  } catch (err) {
+    console.log("[sync-staff] Finance email migration error:", String(err));
   }
 
   for (const staff of STAFF_ROSTER) {
