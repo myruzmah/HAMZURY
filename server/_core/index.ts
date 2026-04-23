@@ -135,6 +135,7 @@ async function startServer() {
         finance:      "/finance",
         hr:           "/hr",
         compliance_staff: "/bizdoc/ops",
+        skills_staff:     "/hub/admin",
       };
 
       res.json({

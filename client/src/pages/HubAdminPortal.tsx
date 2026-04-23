@@ -1,0 +1,1158 @@
+/**
+ * HAMZURY HUB ADMIN PORTAL — Idris + Isa/Musa (interns)
+ *
+ * Built from PHASE7_HUB/OPERATIONS_GUIDE spec. Tabs prioritised by daily use.
+ * localStorage is used for Team Competition scores + Social Media
+ * verification (no backend tables for these yet).
+ */
+import { useState, useEffect, useMemo } from "react";
+import { Link } from "wouter";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import PageMeta from "@/components/PageMeta";
+import {
+  LayoutDashboard, Users, UserCheck, Trophy, Share2, Award, CalendarDays,
+  LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
+  Menu, X, Shield, Send, GraduationCap, Plus, Trash2, Eye,
+} from "lucide-react";
+import { toast } from "sonner";
+
+/* Palette — HUB uses aged navy as accent (Brand Bible) */
+const BG = "#FFFAF6";
+const WHITE = "#FFFFFF";
+const DARK = "#1A1A1A";
+const MUTED = "#666666";
+const GOLD = "#B48C4C";
+const NAVY = "#1E3A5F";       // HUB accent
+const RED = "#EF4444";
+const ORANGE = "#F59E0B";
+const BLUE = "#3B82F6";
+const PURPLE = "#8B5CF6";
+const GREEN_OK = "#22C55E";
+
+type Section =
+  | "dashboard" | "enrollments" | "cohorts" | "attendance"
+  | "competition" | "social" | "calendar" | "reports";
+
+function useIsMobile(breakpoint = 900) {
+  const [mobile, setMobile] = useState<boolean>(
+    typeof window !== "undefined" ? window.innerWidth < breakpoint : false
+  );
+  useEffect(() => {
+    const onResize = () => setMobile(window.innerWidth < breakpoint);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [breakpoint]);
+  return mobile;
+}
+
+function fmtDate(d: string | null | undefined | Date): string {
+  if (!d) return "—";
+  try { return new Date(d).toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" }); }
+  catch { return String(d); }
+}
+
+function Card({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{
+      backgroundColor: WHITE, borderRadius: 16, padding: 20,
+      border: `1px solid ${DARK}08`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      ...style,
+    }}>{children}</div>
+  );
+}
+function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>{children}</h2>
+      {sub && <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{sub}</p>}
+    </div>
+  );
+}
+function EmptyState({ icon: Icon, title, hint }: { icon: React.ElementType; title: string; hint?: string }) {
+  return (
+    <div style={{ textAlign: "center", padding: "40px 16px" }}>
+      <Icon size={28} style={{ color: GOLD, opacity: 0.4, marginBottom: 12 }} />
+      <p style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>{title}</p>
+      {hint && <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{hint}</p>}
+    </div>
+  );
+}
+function StatusPill({ label, tone }: { label: string; tone: "green" | "gold" | "red" | "blue" | "muted" | "orange" | "purple" }) {
+  const map = {
+    green:  { bg: `${GREEN_OK}15`, fg: GREEN_OK },
+    gold:   { bg: `${GOLD}20`,     fg: GOLD },
+    red:    { bg: `${RED}15`,      fg: RED },
+    blue:   { bg: `${BLUE}15`,     fg: BLUE },
+    muted:  { bg: "#9CA3AF25",     fg: MUTED },
+    orange: { bg: `${ORANGE}15`,   fg: ORANGE },
+    purple: { bg: `${PURPLE}15`,   fg: PURPLE },
+  }[tone];
+  return (
+    <span style={{
+      padding: "3px 9px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+      backgroundColor: map.bg, color: map.fg, textTransform: "uppercase", letterSpacing: "0.04em",
+    }}>{label}</span>
+  );
+}
+function MiniStat({ label, value, color }: { label: string; value: number | string; color: string }) {
+  const isString = typeof value === "string";
+  return (
+    <div style={{
+      backgroundColor: WHITE, borderRadius: 12, padding: "14px 14px",
+      border: `1px solid ${DARK}08`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+      minWidth: 0, overflow: "hidden",
+    }}>
+      <p style={{
+        fontSize: isString ? 15 : 20, fontWeight: 700, color, lineHeight: 1.15,
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+      }}>{value}</p>
+      <p style={{ fontSize: 10, color: MUTED, marginTop: 4, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</p>
+    </div>
+  );
+}
+function inputBox(): React.CSSProperties {
+  return {
+    padding: "10px 12px", borderRadius: 10, border: `1px solid ${DARK}15`,
+    fontSize: 13, color: DARK, backgroundColor: WHITE, outline: "none",
+    fontFamily: "inherit",
+  };
+}
+
+/* ─── HUB 8 programmes from PHASE7_HUB/PROGRAMS ─── */
+const PROGRAMMES = [
+  { key: "business-builders",   name: "Business Builders Academy",  weeks: 3,  price: 150000 },
+  { key: "digital-dominance",   name: "Digital Dominance",          weeks: 4,  price: 80000 },
+  { key: "code-craft",          name: "Code Craft Bootcamp",        weeks: 12, price: 300000 },
+  { key: "compliance-mastery",  name: "Compliance Mastery",         weeks: 6,  price: 120000 },
+  { key: "money-mastery",       name: "Money Mastery",              weeks: 4,  price: 90000 },
+  { key: "basic-kids",          name: "Basic Computer Skills — Kids", weeks: 2, price: 25000 },
+  { key: "metfix",              name: "MetFix Hardware & Robotics", weeks: 8,  price: 180000 },
+  { key: "online-academy",      name: "Online Academy (self-paced)", weeks: 0, price: 25000 },
+];
+
+/* ─── Teams from PHASE7_HUB/TEAM_COMPETITION ─── */
+const TEAMS = [
+  { key: "ai",       name: "AI Team",       color: PURPLE },
+  { key: "cyber",    name: "Cyber Team",    color: BLUE },
+  { key: "quantum",  name: "Quantum Team",  color: GOLD },
+  { key: "robotics", name: "Robotics Team", color: ORANGE },
+] as const;
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+export default function HubAdminPortal() {
+  const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
+  const [active, setActive] = useState<Section>("dashboard");
+  const isMobile = useIsMobile(900);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  useEffect(() => { if (!isMobile) setMobileNavOpen(false); }, [isMobile]);
+
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", backgroundColor: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <Loader2 size={28} className="animate-spin" style={{ color: GOLD }} />
+      </div>
+    );
+  }
+  if (!user) return null;
+
+  const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
+    { key: "dashboard",   icon: LayoutDashboard, label: "Overview" },
+    { key: "enrollments", icon: Users,           label: "Enrollments" },
+    { key: "cohorts",     icon: GraduationCap,   label: "Active Cohorts" },
+    { key: "attendance",  icon: UserCheck,       label: "Attendance" },
+    { key: "competition", icon: Trophy,          label: "Team Competition" },
+    { key: "social",      icon: Share2,          label: "Social Verification" },
+    { key: "calendar",    icon: CalendarDays,    label: "Operations Calendar" },
+    { key: "reports",     icon: Award,           label: "Reports" },
+  ];
+
+  return (
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
+      <PageMeta title="HUB Admin — HAMZURY" description="HAMZURY HUB admin — enrollments, cohorts, attendance, team competitions, social verification." />
+
+      {isMobile && mobileNavOpen && (
+        <div onClick={() => setMobileNavOpen(false)}
+          style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 40 }} />
+      )}
+
+      <aside style={{
+        width: 232, backgroundColor: NAVY, display: "flex", flexDirection: "column",
+        borderRight: `1px solid ${GOLD}20`,
+        ...(isMobile ? {
+          position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 50,
+          transform: mobileNavOpen ? "translateX(0)" : "translateX(-100%)",
+          transition: "transform 0.25s ease",
+          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.2)" : "none",
+        } : {}),
+      }}>
+        <div style={{
+          padding: "20px 18px", borderBottom: `1px solid ${GOLD}15`,
+          display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8,
+        }}>
+          <div>
+            <div style={{ fontSize: 11, color: GOLD, letterSpacing: "0.12em", fontWeight: 600, marginBottom: 2 }}>HAMZURY</div>
+            <div style={{ fontSize: 15, color: WHITE, fontWeight: 600, letterSpacing: -0.1 }}>HUB Admin</div>
+            <div style={{ fontSize: 10, color: `${GOLD}99`, marginTop: 4 }}>Cohorts · Teams · Certs</div>
+          </div>
+          {isMobile && (
+            <button onClick={() => setMobileNavOpen(false)} aria-label="Close menu"
+              style={{
+                width: 30, height: 30, borderRadius: 8, backgroundColor: `${GOLD}15`, color: GOLD,
+                border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              }}><X size={16} /></button>
+          )}
+        </div>
+        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+          {NAV.map(({ key, icon: Icon, label }) => {
+            const isActive = active === key;
+            return (
+              <button key={key}
+                onClick={() => { setActive(key); if (isMobile) setMobileNavOpen(false); }}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 12px", marginBottom: 2, borderRadius: 10,
+                  backgroundColor: isActive ? `${GOLD}20` : "transparent",
+                  color: isActive ? GOLD : `${GOLD}70`,
+                  border: "none", cursor: "pointer", textAlign: "left",
+                  fontSize: 13, fontWeight: isActive ? 600 : 500,
+                }}>
+                <Icon size={15} /> <span>{label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <div style={{ padding: "12px 10px", borderTop: `1px solid ${GOLD}15` }}>
+          <Link href="/" style={{
+            display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
+            borderRadius: 10, color: `${GOLD}60`, fontSize: 12, textDecoration: "none", marginBottom: 2,
+          }}>
+            <ArrowLeft size={13} /> Back to HAMZURY
+          </Link>
+          <button onClick={logout}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", gap: 10,
+              padding: "8px 12px", borderRadius: 10,
+              color: `${GOLD}60`, backgroundColor: "transparent", border: "none",
+              fontSize: 12, cursor: "pointer", textAlign: "left",
+            }}>
+            <LogOut size={13} /> Sign Out
+          </button>
+        </div>
+      </aside>
+
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", width: isMobile ? "100%" : "auto" }}>
+        <header style={{
+          padding: isMobile ? "12px 16px" : "14px 28px",
+          backgroundColor: WHITE, borderBottom: `1px solid ${DARK}08`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1 }}>
+            {isMobile && (
+              <button onClick={() => setMobileNavOpen(true)} aria-label="Open menu"
+                style={{
+                  width: 36, height: 36, borderRadius: 10,
+                  backgroundColor: `${NAVY}08`, color: NAVY,
+                  border: "none", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                }}><Menu size={18} /></button>
+            )}
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 11, color: MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                {NAV.find(n => n.key === active)?.label}
+              </p>
+              <p style={{ fontSize: 13, color: DARK, fontWeight: 500, marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {user.name} · HUB
+              </p>
+            </div>
+          </div>
+          <span style={{
+            padding: "4px 10px", borderRadius: 12, fontSize: 10,
+            backgroundColor: `${NAVY}10`, color: NAVY, fontWeight: 600,
+            letterSpacing: "0.04em", flexShrink: 0, whiteSpace: "nowrap",
+          }}>
+            <Shield size={10} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> HUB
+          </span>
+        </header>
+
+        <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
+          <div style={{
+            padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
+            maxWidth: 1200, margin: "0 auto",
+          }}>
+            {active === "dashboard"   && <OverviewSection onGoto={setActive} />}
+            {active === "enrollments" && <EnrollmentsSection />}
+            {active === "cohorts"     && <CohortsSection />}
+            {active === "attendance"  && <AttendanceSection />}
+            {active === "competition" && <CompetitionSection />}
+            {active === "social"      && <SocialSection />}
+            {active === "calendar"    && <OpsCalendarSection />}
+            {active === "reports"     && <ReportsSection />}
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
+  const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
+  const apps = ((appsQ.data || []) as any[]);
+
+  const accepted = apps.filter(a => a.status === "accepted").length;
+  const pending  = apps.filter(a => a.status === "submitted" || a.status === "under_review").length;
+  const waitlisted = apps.filter(a => a.status === "waitlisted").length;
+
+  // Next cohort start — from PHASE7_HUB calendar: 1st of every month
+  const today = new Date();
+  const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  const daysToNext = Math.ceil((nextMonthStart.getTime() - today.getTime()) / 86400000);
+
+  // Next team comp — first Monday of next month
+  const nextFirstMonday = getFirstMonday(nextMonthStart.getFullYear(), nextMonthStart.getMonth());
+  const daysToComp = Math.ceil((nextFirstMonday.getTime() - today.getTime()) / 86400000);
+
+  const kpis = [
+    { label: "Pending Applications", value: pending,     icon: Clock,       color: GOLD,   section: "enrollments" as Section },
+    { label: "Accepted Students",    value: accepted,    icon: CheckCircle2, color: GREEN_OK, section: "enrollments" as Section },
+    { label: "Waitlisted",           value: waitlisted,  icon: AlertCircle, color: ORANGE, section: "enrollments" as Section },
+    { label: "Next Cohort In",       value: `${daysToNext}d`, icon: CalendarDays, color: BLUE,  section: "calendar" as Section },
+    { label: "Next Comp Challenge",  value: `${daysToComp}d`, icon: Trophy,  color: PURPLE, section: "competition" as Section },
+    { label: "Programmes",           value: PROGRAMMES.length, icon: GraduationCap, color: NAVY, section: "cohorts" as Section },
+  ];
+
+  return (
+    <div>
+      <SectionTitle sub="Everything Idris + Isa + Musa need to run HUB today.">
+        HUB Overview
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 20 }}>
+        {kpis.map(k => (
+          <button key={k.label} onClick={() => onGoto(k.section)}
+            style={{
+              backgroundColor: WHITE, borderRadius: 14, padding: "14px 12px",
+              border: `1px solid ${DARK}08`, boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+              textAlign: "left", cursor: "pointer",
+            }}>
+            <k.icon size={14} style={{ color: k.color, marginBottom: 8 }} />
+            <p style={{ fontSize: typeof k.value === "string" ? 16 : 20, fontWeight: 700, color: DARK, lineHeight: 1.15 }}>{k.value}</p>
+            <p style={{ fontSize: 10, color: MUTED, marginTop: 6, letterSpacing: "0.04em", textTransform: "uppercase" }}>{k.label}</p>
+          </button>
+        ))}
+      </div>
+
+      {pending > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Applications Awaiting Review
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {apps.filter(a => a.status === "submitted" || a.status === "under_review").slice(0, 6).map((a: any) => (
+              <div key={a.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{a.fullName || "—"}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {a.program} · {fmtDate(a.createdAt)}
+                  </p>
+                </div>
+                <StatusPill label={a.status} tone="gold" />
+              </div>
+            ))}
+          </div>
+          <button onClick={() => onGoto("enrollments")}
+            style={{
+              marginTop: 12, padding: "8px 14px", borderRadius: 10,
+              backgroundColor: NAVY, color: GOLD, border: "none",
+              fontSize: 12, fontWeight: 600, cursor: "pointer",
+            }}>
+            Review all →
+          </button>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+function getFirstMonday(year: number, month: number): Date {
+  const d = new Date(year, month, 1);
+  while (d.getDay() !== 1) d.setDate(d.getDate() + 1);
+  return d;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function EnrollmentsSection() {
+  const isMobile = useIsMobile();
+  const utils = trpc.useUtils();
+  const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
+  const [filter, setFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+
+  const all = ((appsQ.data || []) as any[]);
+  const filtered = all
+    .filter(a => filter === "all" || a.status === filter)
+    .filter(a => !search ||
+      a.fullName?.toLowerCase().includes(search.toLowerCase()) ||
+      a.email?.toLowerCase().includes(search.toLowerCase()) ||
+      a.program?.toLowerCase().includes(search.toLowerCase()) ||
+      a.ref?.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const updateMut = trpc.skills.updateApplicationStatus.useMutation({
+    onSuccess: () => { toast.success("Status updated"); utils.skills.applications.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted"> = {
+    submitted: "gold", under_review: "blue", accepted: "green",
+    waitlisted: "muted", rejected: "red",
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Every student application. Review, accept, waitlist, or reject.">
+        Enrollments
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{
+          display: "flex", gap: 10,
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["all", "submitted", "under_review", "accepted", "waitlisted", "rejected"] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                style={{
+                  padding: "5px 10px", borderRadius: 8,
+                  backgroundColor: filter === f ? NAVY : "transparent",
+                  color: filter === f ? WHITE : MUTED,
+                  border: `1px solid ${filter === f ? NAVY : `${DARK}15`}`,
+                  fontSize: 10, fontWeight: 600, cursor: "pointer",
+                  textTransform: "uppercase", letterSpacing: "0.04em",
+                }}>{f.replace("_", " ")}</button>
+            ))}
+          </div>
+          <input type="search" placeholder="Search name, email, programme, ref…"
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...inputBox(), width: isMobile ? "100%" : 260 }} />
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card><EmptyState icon={Users} title="No applications match" /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.slice(0, 60).map((a: any) => (
+            <Card key={a.id} style={{ padding: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{a.fullName}</p>
+                    <StatusPill label={a.status} tone={TONE[a.status] || "muted"} />
+                    {a.paymentStatus && <StatusPill label={`payment: ${a.paymentStatus}`} tone={a.paymentStatus === "paid" ? "green" : "muted"} />}
+                  </div>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                    {a.program} · {a.pathway || "—"}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "monospace" }}>{a.ref}</span>
+                    {a.email && <span>{a.email}</span>}
+                    {a.phone && <span>{a.phone}</span>}
+                    <span>{fmtDate(a.createdAt)}</span>
+                  </div>
+                </div>
+                <select
+                  value={a.status}
+                  onChange={e => updateMut.mutate({ id: a.id, status: e.target.value as any })}
+                  disabled={updateMut.isPending}
+                  style={{
+                    padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+                    fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
+                  }}
+                >
+                  <option value="submitted">Submitted</option>
+                  <option value="under_review">Under Review</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="waitlisted">Waitlisted</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function CohortsSection() {
+  const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
+  const apps = ((appsQ.data || []) as any[]).filter(a => a.status === "accepted");
+
+  // Group by programme
+  const byProgramme: Record<string, any[]> = {};
+  for (const a of apps) {
+    const k = a.program || "Other";
+    (byProgramme[k] = byProgramme[k] || []).push(a);
+  }
+
+  return (
+    <div>
+      <SectionTitle sub="Students grouped by programme. All 8 HUB programmes shown.">
+        Active Cohorts
+      </SectionTitle>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {PROGRAMMES.map(p => {
+          const students = byProgramme[p.name] || [];
+          return (
+            <Card key={p.key}>
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+                gap: 10, flexWrap: "wrap", marginBottom: students.length ? 12 : 0,
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{p.name}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                    {p.weeks ? `${p.weeks} weeks` : "Self-paced"} · ₦{p.price.toLocaleString("en-NG")}
+                    {p.weeks ? `+` : ""} · Mon – Wed · 8:00 am – 2:00 pm
+                  </p>
+                </div>
+                <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  <p style={{ fontSize: 22, fontWeight: 700, color: NAVY, lineHeight: 1 }}>{students.length}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2, textTransform: "uppercase", letterSpacing: "0.06em" }}>enrolled</p>
+                </div>
+              </div>
+
+              {students.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingTop: 10, borderTop: `1px solid ${DARK}06` }}>
+                  {students.slice(0, 10).map((s: any) => (
+                    <div key={s.id} style={{
+                      fontSize: 11, color: DARK,
+                      display: "flex", justifyContent: "space-between", padding: "4px 0",
+                    }}>
+                      <span>{s.fullName}</span>
+                      <span style={{ color: MUTED, fontFamily: "monospace", fontSize: 10 }}>{s.ref}</span>
+                    </div>
+                  ))}
+                  {students.length > 10 && (
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>+ {students.length - 10} more</p>
+                  )}
+                </div>
+              )}
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function AttendanceSection() {
+  const [date, setDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const q = trpc.attendance.byDate.useQuery({ date }, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  // Weekly dates (this Mon–Sat from selected date)
+  const weekdays = useMemo(() => {
+    const d = new Date(date);
+    const day = d.getDay();
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - ((day + 6) % 7));
+    return Array.from({ length: 6 }, (_, i) => {
+      const x = new Date(monday);
+      x.setDate(monday.getDate() + i);
+      return x.toISOString().split("T")[0];
+    });
+  }, [date]);
+
+  return (
+    <div>
+      <SectionTitle sub="Daily check-ins. Students check in from their own portal; you see the roster here.">
+        Attendance
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 6, maxWidth: 260 }}>
+          <span style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600 }}>
+            Date
+          </span>
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} style={inputBox()} />
+        </label>
+        <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap" }}>
+          {weekdays.map(d => (
+            <button key={d} onClick={() => setDate(d)}
+              style={{
+                padding: "5px 10px", borderRadius: 8,
+                backgroundColor: d === date ? NAVY : "transparent",
+                color: d === date ? WHITE : MUTED,
+                border: `1px solid ${d === date ? NAVY : `${DARK}15`}`,
+                fontSize: 10, fontWeight: 600, cursor: "pointer",
+              }}>
+              {new Date(d).toLocaleDateString("en-NG", { weekday: "short", day: "numeric" })}
+            </button>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Check-ins for {fmtDate(date)} · {rows.length}
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={UserCheck} title="No check-ins for this date" hint="Students check in from their own portal. Nothing to review yet." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{r.userName || `User #${r.userId}`}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    In: {r.checkIn ? new Date(r.checkIn).toLocaleTimeString() : "—"}
+                    {r.checkOut && <> · Out: {new Date(r.checkOut).toLocaleTimeString()}</>}
+                  </p>
+                </div>
+                <StatusPill label={r.status || "present"} tone={r.status === "present" ? "green" : "muted"} />
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+type CompetitionEntry = {
+  id: string;
+  month: string; // YYYY-MM
+  title: string;
+  deadline: string;
+  status: "active" | "judged";
+  scores: Record<string, number>; // team key -> points
+};
+const COMP_STORE = "hamzury_hub_competitions_v1";
+function loadComps(): CompetitionEntry[] { try { return JSON.parse(localStorage.getItem(COMP_STORE) || "[]"); } catch { return []; } }
+function saveComps(c: CompetitionEntry[]) { try { localStorage.setItem(COMP_STORE, JSON.stringify(c)); } catch {} }
+
+function CompetitionSection() {
+  const [comps, setComps] = useState<CompetitionEntry[]>(loadComps);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    title: "",
+    deadline: "",
+  });
+
+  const addComp = () => {
+    if (!form.title.trim() || !form.deadline) { toast.error("Title + deadline required"); return; }
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const next: CompetitionEntry[] = [
+      { id: Math.random().toString(36).slice(2), month, title: form.title.trim(), deadline: form.deadline, status: "active", scores: {} },
+      ...comps,
+    ];
+    setComps(next); saveComps(next);
+    setForm({ title: "", deadline: "" });
+    setCreating(false);
+    toast.success("Challenge announced");
+  };
+
+  const setScore = (compId: string, teamKey: string, pts: number) => {
+    const next = comps.map(c => c.id === compId ? { ...c, scores: { ...c.scores, [teamKey]: pts } } : c);
+    setComps(next); saveComps(next);
+  };
+
+  const markJudged = (id: string) => {
+    const next = comps.map(c => c.id === id ? { ...c, status: "judged" as const } : c);
+    setComps(next); saveComps(next);
+    toast.success("Marked judged");
+  };
+
+  const del = (id: string) => {
+    if (!confirm("Delete this competition?")) return;
+    const next = comps.filter(c => c.id !== id);
+    setComps(next); saveComps(next);
+  };
+
+  // All-time leaderboard
+  const leaderboard = TEAMS.map(t => ({
+    ...t,
+    total: comps.reduce((s, c) => s + (c.scores[t.key] || 0), 0),
+  })).sort((a, b) => b.total - a.total);
+
+  const active = comps.filter(c => c.status === "active");
+  const judged = comps.filter(c => c.status === "judged");
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+        <SectionTitle sub="Monthly challenges across AI · Cyber · Quantum · Robotics teams. Announce on first Monday of each month.">
+          Team Competition
+        </SectionTitle>
+        <button onClick={() => setCreating(true)}
+          style={{
+            padding: "8px 14px", borderRadius: 10, backgroundColor: NAVY, color: GOLD,
+            border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+          <Plus size={14} /> Announce Challenge
+        </button>
+      </div>
+
+      {/* Leaderboard */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Year Leaderboard
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {leaderboard.map((t, i) => (
+            <div key={t.key} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 12px", backgroundColor: i === 0 ? `${GOLD}10` : BG, borderRadius: 10,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: i === 0 ? GOLD : MUTED, width: 24 }}>
+                  #{i + 1}
+                </span>
+                <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: t.color }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{t.name}</span>
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 700, color: i === 0 ? GOLD : DARK }}>{t.total} pts</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {creating && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            New Challenge
+          </p>
+          <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
+            <input placeholder="Challenge title" value={form.title}
+              onChange={e => setForm({ ...form, title: e.target.value })} style={inputBox()} />
+            <input type="date" value={form.deadline}
+              onChange={e => setForm({ ...form, deadline: e.target.value })} style={inputBox()} />
+          </div>
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button onClick={addComp}
+              style={{
+                padding: "8px 14px", borderRadius: 10, backgroundColor: NAVY, color: GOLD,
+                border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              }}>Announce</button>
+            <button onClick={() => setCreating(false)}
+              style={{
+                padding: "8px 14px", borderRadius: 10, backgroundColor: "transparent", color: MUTED,
+                border: `1px solid ${DARK}15`, fontSize: 12, cursor: "pointer",
+              }}>Cancel</button>
+          </div>
+        </Card>
+      )}
+
+      {active.length > 0 && (
+        <Card style={{ marginBottom: 16 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Active Challenges
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {active.map(c => (
+              <div key={c.id} style={{ padding: "14px 16px", backgroundColor: `${GOLD}06`, borderRadius: 10, border: `1px solid ${GOLD}30` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{c.title}</p>
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>Deadline: {fmtDate(c.deadline)} · {c.month}</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button onClick={() => markJudged(c.id)}
+                      style={{
+                        padding: "5px 10px", borderRadius: 8,
+                        backgroundColor: `${GREEN_OK}15`, color: GREEN_OK, border: "none",
+                        fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      }}>Mark Judged</button>
+                    <button onClick={() => del(c.id)}
+                      style={{
+                        padding: "5px 8px", borderRadius: 8,
+                        backgroundColor: `${RED}10`, color: RED, border: "none",
+                        fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      }}><Trash2 size={11} /></button>
+                  </div>
+                </div>
+                <div style={{ marginTop: 10, display: "grid", gap: 6, gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }}>
+                  {TEAMS.map(t => (
+                    <div key={t.key} style={{
+                      padding: "8px 10px", backgroundColor: WHITE, borderRadius: 8,
+                      border: `1px solid ${t.color}20`,
+                    }}>
+                      <p style={{ fontSize: 10, color: t.color, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+                        {t.name}
+                      </p>
+                      <select value={c.scores[t.key] || 0}
+                        onChange={e => setScore(c.id, t.key, parseInt(e.target.value))}
+                        style={{
+                          width: "100%", padding: "4px 6px", borderRadius: 6, border: `1px solid ${DARK}10`,
+                          fontSize: 12, color: DARK, backgroundColor: WHITE, cursor: "pointer",
+                        }}>
+                        <option value={0}>— pts</option>
+                        <option value={100}>100 (1st)</option>
+                        <option value={75}>75 (2nd)</option>
+                        <option value={50}>50 (3rd)</option>
+                        <option value={25}>25 (participation)</option>
+                      </select>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {judged.length > 0 && (
+        <Card>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+            Past Challenges ({judged.length})
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {judged.map(c => {
+              const winner = Object.entries(c.scores).sort((a, b) => b[1] - a[1])[0];
+              const winnerTeam = winner ? TEAMS.find(t => t.key === winner[0]) : null;
+              return (
+                <div key={c.id} style={{
+                  padding: "8px 10px", backgroundColor: BG, borderRadius: 8,
+                  display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+                }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p style={{ fontSize: 11, fontWeight: 600, color: DARK }}>{c.title}</p>
+                    <p style={{ fontSize: 10, color: MUTED }}>{c.month} · {fmtDate(c.deadline)}</p>
+                  </div>
+                  {winnerTeam && (
+                    <span style={{
+                      padding: "3px 9px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                      backgroundColor: `${winnerTeam.color}15`, color: winnerTeam.color,
+                      textTransform: "uppercase", letterSpacing: "0.04em",
+                    }}>🏆 {winnerTeam.name}</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
+      {active.length === 0 && judged.length === 0 && !creating && (
+        <Card><EmptyState icon={Trophy} title="No challenges yet" hint="Tap 'Announce Challenge' to start the first one." /></Card>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+type SocialEntry = {
+  id: string;
+  studentName: string;
+  weekOf: string;
+  platform: string;
+  postUrl: string;
+  verified: boolean;
+  verifiedBy?: string;
+};
+const SOCIAL_STORE = "hamzury_hub_social_v1";
+function loadSocial(): SocialEntry[] { try { return JSON.parse(localStorage.getItem(SOCIAL_STORE) || "[]"); } catch { return []; } }
+function saveSocial(r: SocialEntry[]) { try { localStorage.setItem(SOCIAL_STORE, JSON.stringify(r)); } catch {} }
+
+function SocialSection() {
+  const { user } = useAuth();
+  const [rows, setRows] = useState<SocialEntry[]>(loadSocial);
+  const [form, setForm] = useState({
+    studentName: "", platform: "instagram", postUrl: "",
+    weekOf: isoMonday(new Date()),
+  });
+
+  const add = () => {
+    if (!form.studentName.trim() || !form.postUrl.trim()) { toast.error("Student + URL required"); return; }
+    const next: SocialEntry[] = [
+      { id: Math.random().toString(36).slice(2), ...form, verified: false },
+      ...rows,
+    ];
+    setRows(next); saveSocial(next);
+    setForm({ ...form, studentName: "", postUrl: "" });
+    toast.success("Post logged");
+  };
+
+  const toggleVerify = (id: string) => {
+    const next = rows.map(r => r.id === id
+      ? { ...r, verified: !r.verified, verifiedBy: !r.verified ? (user?.name || "Staff") : undefined }
+      : r);
+    setRows(next); saveSocial(next);
+  };
+
+  const del = (id: string) => {
+    if (!confirm("Delete this entry?")) return;
+    const next = rows.filter(r => r.id !== id);
+    setRows(next); saveSocial(next);
+  };
+
+  const thisWeek = rows.filter(r => r.weekOf === isoMonday(new Date()));
+  const verifiedThisWeek = thisWeek.filter(r => r.verified).length;
+
+  return (
+    <div>
+      <SectionTitle sub="Students must post weekly. Verification required for certification. Stored in your browser for now.">
+        Social Media Verification
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+        <MiniStat label="This week" value={thisWeek.length} color={BLUE} />
+        <MiniStat label="Verified this week" value={verifiedThisWeek} color={GREEN_OK} />
+        <MiniStat label="Total logged" value={rows.length} color={GOLD} />
+      </div>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Log a Post
+        </p>
+        <div style={{ display: "grid", gap: 10, gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))" }}>
+          <input placeholder="Student name" value={form.studentName}
+            onChange={e => setForm({ ...form, studentName: e.target.value })} style={inputBox()} />
+          <select value={form.platform} onChange={e => setForm({ ...form, platform: e.target.value })} style={inputBox()}>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="linkedin">LinkedIn</option>
+            <option value="twitter">Twitter / X</option>
+            <option value="youtube">YouTube</option>
+          </select>
+          <input placeholder="Post URL" value={form.postUrl}
+            onChange={e => setForm({ ...form, postUrl: e.target.value })} style={inputBox()} />
+          <input type="date" value={form.weekOf}
+            onChange={e => setForm({ ...form, weekOf: e.target.value })} style={inputBox()} />
+        </div>
+        <button onClick={add}
+          style={{
+            marginTop: 12, padding: "8px 14px", borderRadius: 10,
+            backgroundColor: NAVY, color: GOLD, border: "none",
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+          <Plus size={12} /> Add
+        </button>
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Logged Posts ({rows.length})
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={Share2} title="No posts logged yet" hint="As students share weekly content, log the URLs here to verify." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {rows.slice(0, 60).map(r => (
+              <div key={r.id} style={{
+                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
+                    {r.studentName} <span style={{ color: MUTED, fontWeight: 400 }}>· {r.platform}</span>
+                  </p>
+                  <a href={r.postUrl} target="_blank" rel="noreferrer"
+                    style={{ fontSize: 10, color: BLUE, display: "inline-block", marginTop: 2, wordBreak: "break-all" }}>
+                    {r.postUrl.slice(0, 60)}{r.postUrl.length > 60 ? "…" : ""}
+                  </a>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    Week of {fmtDate(r.weekOf)}{r.verifiedBy && ` · verified by ${r.verifiedBy}`}
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                  <button onClick={() => toggleVerify(r.id)}
+                    style={{
+                      padding: "5px 10px", borderRadius: 8,
+                      backgroundColor: r.verified ? `${GREEN_OK}15` : `${DARK}08`,
+                      color: r.verified ? GREEN_OK : MUTED,
+                      border: "none", fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 4,
+                    }}>
+                    {r.verified ? <CheckCircle2 size={11} /> : <Eye size={11} />}
+                    {r.verified ? "Verified" : "Mark verified"}
+                  </button>
+                  <button onClick={() => del(r.id)}
+                    style={{
+                      padding: "5px 8px", borderRadius: 8,
+                      backgroundColor: `${RED}10`, color: RED, border: "none",
+                      fontSize: 10, fontWeight: 600, cursor: "pointer",
+                    }}><Trash2 size={11} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+function isoMonday(d: Date): string {
+  const x = new Date(d);
+  const day = x.getDay();
+  x.setDate(x.getDate() - ((day + 6) % 7));
+  return x.toISOString().split("T")[0];
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function OpsCalendarSection() {
+  const today = new Date();
+  const startMonth = today.getMonth();
+  const startYear = today.getFullYear();
+
+  // Generate next 6 months of key operational events
+  const months: { label: string; events: { date: string; type: string; title: string; color: string }[] }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const y = startYear + Math.floor((startMonth + i) / 12);
+    const m = (startMonth + i) % 12;
+    const label = new Date(y, m, 1).toLocaleDateString("en-NG", { month: "long", year: "numeric" });
+    const firstMon = getFirstMonday(y, m);
+    const events = [
+      { date: new Date(y, m, 1).toISOString().split("T")[0], type: "Cohort Start", title: "New cohort resumption — orientation day", color: NAVY },
+      { date: firstMon.toISOString().split("T")[0],          type: "Team Competition", title: "Team competition challenge announced", color: PURPLE },
+      { date: new Date(y, m, 14).toISOString().split("T")[0], type: "Mid-Month", title: "Mid-month progress review + social verification", color: BLUE },
+      { date: new Date(y, m + 1, 0).toISOString().split("T")[0], type: "Month End", title: "Attendance review + programme wrap-up", color: GOLD },
+    ];
+    months.push({ label, events });
+  }
+
+  return (
+    <div>
+      <SectionTitle sub="Operational rhythm from PHASE7_HUB/CALENDAR — monthly cohort starts, first-Monday team competitions, mid-month reviews.">
+        Operations Calendar
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.7 }}>
+          <strong style={{ color: DARK }}>Weekly cadence:</strong><br/>
+          · Mon – Wed · 8:00 – 10:30 am — Main teaching<br/>
+          · Mon – Wed · 11:00 am – 2:00 pm — Hall gathering (entrepreneurship / content / AI prompts)<br/>
+          · Thu – Sat · 8:00 – 10:30 am — Kids programme<br/>
+          · Thu – Sat · 11:00 am – 2:00 pm — Kids hall gathering
+        </p>
+      </Card>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {months.map(m => (
+          <Card key={m.label}>
+            <p style={{
+              fontSize: 11, color: NAVY, fontWeight: 700,
+              textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 12,
+            }}>
+              {m.label}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {m.events.map((e, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "8px 12px", backgroundColor: BG, borderRadius: 8, gap: 10, flexWrap: "wrap",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0, flex: 1 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: e.color, flexShrink: 0 }} />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{e.title}</p>
+                      <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                        {fmtDate(e.date)} · {e.type}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function ReportsSection() {
+  const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
+  const apps = ((appsQ.data || []) as any[]);
+
+  const comps = loadComps();
+  const social = loadSocial();
+
+  const enrolled = apps.filter(a => a.status === "accepted").length;
+  const pending  = apps.filter(a => a.status === "submitted" || a.status === "under_review").length;
+  const byProgramme: Record<string, number> = {};
+  for (const a of apps.filter(x => x.status === "accepted")) {
+    byProgramme[a.program || "Other"] = (byProgramme[a.program || "Other"] || 0) + 1;
+  }
+
+  const leaderboard = TEAMS.map(t => ({
+    ...t,
+    total: comps.reduce((s, c) => s + (c.scores[t.key] || 0), 0),
+  })).sort((a, b) => b.total - a.total);
+
+  const thisWeek = isoMonday(new Date());
+  const postsThisWeek = social.filter(r => r.weekOf === thisWeek).length;
+  const verifiedThisWeek = social.filter(r => r.weekOf === thisWeek && r.verified).length;
+
+  const report = `HAMZURY HUB · Weekly Report
+${new Date().toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
+
+ENROLLMENTS
+ · Accepted students:   ${enrolled}
+ · Pending review:      ${pending}
+
+BY PROGRAMME
+${Object.entries(byProgramme).map(([p, n]) => ` · ${p.padEnd(30)} ${n}`).join("\n") || " · (none yet)"}
+
+TEAM COMPETITION (year)
+${leaderboard.map((t, i) => ` · #${i + 1} ${t.name.padEnd(18)} ${t.total} pts`).join("\n")}
+
+SOCIAL MEDIA (this week)
+ · Posts logged:        ${postsThisWeek}
+ · Verified:            ${verifiedThisWeek}
+
+Built to Last.`;
+
+  const copy = () => {
+    navigator.clipboard.writeText(report).then(
+      () => toast.success("Report copied"),
+      () => toast.error("Couldn't copy — select manually"),
+    );
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Ready-to-paste weekly snapshot for CEO/Founder.">
+        Reports
+      </SectionTitle>
+      <Card>
+        <pre style={{
+          fontFamily: "ui-monospace, 'SF Mono', monospace",
+          fontSize: 11, color: DARK, backgroundColor: BG,
+          padding: "14px 16px", borderRadius: 10,
+          border: `1px solid ${DARK}06`,
+          whiteSpace: "pre-wrap", wordBreak: "break-word", overflowX: "auto",
+          lineHeight: 1.7, margin: 0,
+        }}>{report}</pre>
+        <button onClick={copy}
+          style={{
+            marginTop: 12, padding: "8px 14px", borderRadius: 10,
+            backgroundColor: NAVY, color: GOLD, border: "none",
+            fontSize: 12, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+          <Send size={12} /> Copy Report
+        </button>
+      </Card>
+    </div>
+  );
+}
