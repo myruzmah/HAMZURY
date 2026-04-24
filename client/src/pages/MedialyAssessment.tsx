@@ -5,8 +5,8 @@ const cfg: AssessmentConfig = {
   pageTitle: "Medialy Assessment | HAMZURY",
   pageDescription: "Tell us about your brand. We'll build the social rhythm that actually brings clients.",
   brand: "MEDIALY ASSESSMENT",
-  accent: "#7C2D12",
-  highlight: "#D4A574",
+  accent: "#1D4ED8",
+  highlight: "#B48C4C",
   welcome: {
     title: "Let's build a social media rhythm that actually works.",
     sub: "Social media that actually brings clients. Answer a few questions so our Medialy team can design the right posting cadence, content mix, and platform strategy for your brand.",

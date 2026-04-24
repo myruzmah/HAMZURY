@@ -5,7 +5,7 @@ const cfg: AssessmentConfig = {
   pageTitle: "Scalar Assessment | HAMZURY",
   pageDescription: "Tell us about your operations. We'll design the right web + automation system.",
   brand: "SCALAR ASSESSMENT",
-  accent: "#0F172A",
+  accent: "#D4A017",
   highlight: "#B48C4C",
   welcome: {
     title: "Let's see what your business needs to scale.",

@@ -37,12 +37,12 @@ export const PUBLIC = {
   /** Founder personal brand — brown */
   brown:    "#8B4513",
 
-  /** Per-division accent colours (from Brand Bible v1.0) */
+  /** Per-division accent colours — founder update 2026-04 */
   division: {
-    bizdoc:  "#22C55E", // Green
-    scalar:  "#0F172A", // Deep Navy
-    medialy: "#3498DB", // Blue
-    hub:     "#F59E0B", // Orange
+    bizdoc:  "#1B4D3E", // Forest Green
+    scalar:  "#D4A017", // Golden Yellow
+    medialy: "#1D4ED8", // Pure Royal Blue
+    hub:     "#1E3A5F", // Aged Navy
   },
 } as const;
 

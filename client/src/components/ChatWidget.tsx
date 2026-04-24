@@ -747,11 +747,17 @@ const CREAM = "#FFFAF6";
 const DARK = "#1A1A1A";
 
 /** Department brand colors — header bg + accent per department */
+/**
+ * Chat widget dept theming — updated 2026-04 per new brand palette.
+ * The `Department` type here still uses the legacy keys (systemise/skills)
+ * because those are the backend routing keys, but the rendered colours
+ * now match the new division brand: Scalar gold, HUB navy.
+ */
 const DEPT_BRAND: Record<Department, { header: string; accent: string; name: string }> = {
   general:   { header: "#0A1F1C", accent: "#C9A97E", name: "HAMZURY" },
-  bizdoc:    { header: "#1B4D3E", accent: "#C9A97E", name: "BizDoc" },
-  systemise: { header: "#2563EB", accent: "#C9A97E", name: "Systemise" },
-  skills:    { header: "#1B2A4A", accent: "#C9A97E", name: "Skills" },
+  bizdoc:    { header: "#1B4D3E", accent: "#C9A97E", name: "Bizdoc" },
+  systemise: { header: "#D4A017", accent: "#0F172A", name: "Scalar" },   // Scalar = golden yellow
+  skills:    { header: "#1E3A5F", accent: "#B48C4C", name: "HUB" },      // HUB = aged navy
 };
 
 /* ── Service catalog with pricing (Packages first, then individual) ── */

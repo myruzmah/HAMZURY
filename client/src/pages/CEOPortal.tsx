@@ -493,9 +493,10 @@ function DepartmentsSection() {
   const staff = staffQuery.data || [];
 
   const DEPTS: { key: string; label: string; color: string; lead?: string }[] = [
-    { key: "bizdoc",    label: "BizDoc Consult",     color: "#1B4D3E", lead: "Abdullahi Musa" },
-    { key: "systemise", label: "Systemise",           color: "#3B82F6", lead: "Dajot" },
-    { key: "skills",    label: "HAMZURY Innovation",  color: "#B48C4C", lead: "Abdulmalik Musa" },
+    { key: "bizdoc",    label: "Bizdoc Consult",      color: "#1B4D3E", lead: "Abdullahi Musa" },
+    { key: "scalar",    label: "Scalar",              color: "#D4A017", lead: "Dajot" },
+    { key: "medialy",   label: "Medialy",             color: "#1D4ED8", lead: "Hikma" },
+    { key: "hub",       label: "HUB",                 color: "#1E3A5F", lead: "Idris" },
   ];
 
   return (

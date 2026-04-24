@@ -3163,7 +3163,7 @@ function ClientFormsHub() {
       key: "scalar",
       division: "Scalar",
       category: "Web & Automation",
-      accent: "#0F172A",
+      accent: "#D4A017",
       path: "/scalar/assessment",
       whenToShare: "Client mentions website, CRM, automation, dashboards, AI chatbots, or WhatsApp systems.",
       messageTemplate:
@@ -3173,7 +3173,7 @@ function ClientFormsHub() {
       key: "medialy",
       division: "Medialy",
       category: "Social Media",
-      accent: "#7C2D12",
+      accent: "#1D4ED8",
       path: "/medialy/assessment",
       whenToShare: "Client mentions social media, content, Instagram, TikTok, reels, or paid ads.",
       messageTemplate:

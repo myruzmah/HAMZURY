@@ -20,19 +20,21 @@ const GREEN    = "#22C55E";
 const MILK     = "#FFFAF6";
 const WHITE    = "#FFFFFF";
 
-// Division accents — luxury minimal palette
-const BIZDOC_GREEN  = "#1B4D3E";   // dark forest
-const SCALAR_NAVY   = "#0F172A";   // deep navy (was Systemise blue)
-const MEDIALY_BROWN = "#7C2D12";   // warm brown
+// Division accents — founder update 2026-04
+const BIZDOC_GREEN  = "#1B4D3E";   // forest green
+const SCALAR_GOLD   = "#D4A017";   // golden yellow
+const MEDIALY_BLUE  = "#1D4ED8";   // pure royal blue
 const HUB_NAVY      = "#1E3A5F";   // aged navy
 
 // Backward compat aliases
 const TEAL  = CHARCOAL;
 const DARK  = CHARCOAL;
 const CREAM = MILK;
-const BIZDOC_COLOR  = BIZDOC_GREEN;
-const SYSTEMISE_BLUE = SCALAR_NAVY;  // legacy alias
-const SKILLS_NAVY    = HUB_NAVY;      // legacy alias
+const BIZDOC_COLOR   = BIZDOC_GREEN;
+const SCALAR_NAVY    = SCALAR_GOLD;   // legacy alias — now maps to gold
+const MEDIALY_BROWN  = MEDIALY_BLUE;  // legacy alias — now maps to blue
+const SYSTEMISE_BLUE = SCALAR_GOLD;
+const SKILLS_NAVY    = HUB_NAVY;
 
 const DEPARTMENTS = [
   {
@@ -48,7 +50,7 @@ const DEPARTMENTS = [
     label: "Scalar",
     pitch: "Websites that work. Systems that scale.",
     icon: <Cpu size={24} />,
-    color: SCALAR_NAVY,
+    color: SCALAR_GOLD,
     href: "/scalar",
   },
   {
@@ -56,7 +58,7 @@ const DEPARTMENTS = [
     label: "Medialy",
     pitch: "Social media that actually brings clients.",
     icon: <Megaphone size={24} />,
-    color: MEDIALY_BROWN,
+    color: MEDIALY_BLUE,
     href: "/medialy",
   },
   {
@@ -366,10 +368,10 @@ export default function Home() {
           <p className="text-xl font-medium tracking-tight" style={{ color: BIZDOC_GREEN, letterSpacing: "-0.02em" }}>
             Compliance that protects.
           </p>
-          <p className="text-xl font-medium tracking-tight" style={{ color: SCALAR_NAVY, letterSpacing: "-0.02em" }}>
+          <p className="text-xl font-medium tracking-tight" style={{ color: SCALAR_GOLD, letterSpacing: "-0.02em" }}>
             Systems that scale.
           </p>
-          <p className="text-xl font-medium tracking-tight" style={{ color: MEDIALY_BROWN, letterSpacing: "-0.02em" }}>
+          <p className="text-xl font-medium tracking-tight" style={{ color: MEDIALY_BLUE, letterSpacing: "-0.02em" }}>
             Stories that sell.
           </p>
           <p className="text-xl font-medium tracking-tight" style={{ color: HUB_NAVY, letterSpacing: "-0.02em" }}>
