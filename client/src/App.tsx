@@ -59,20 +59,22 @@ import { trpc } from "./lib/trpc";
  * ROLE_ACCESS — protected internal portal routes.
  * Staff portals stay in legacy green/gold — public is rebranded to navy/brown/cream.
  */
+// 2026-04 founder decision: strict role separation. Each role only
+// accesses its own portal. No oversight access — "everyone face his work".
 const ROLE_ACCESS: Record<string, string[]> = {
   "/cso":     ["cso", "cso_staff"],
-  "/ceo":     ["ceo", "founder"],
-  "/bizdev":  ["bizdev", "bizdev_staff", "ceo", "founder"],
-  "/finance":    ["finance", "ceo", "founder"],
-  "/hr":         ["hr", "ceo", "founder"],
-  "/bizdoc/ops": ["compliance_staff", "bizdev", "ceo", "founder"],
-  "/hub/admin":  ["skills_staff", "ceo", "founder"],
+  "/ceo":     ["ceo"],
+  "/bizdev":  ["bizdev", "bizdev_staff"],
+  "/finance":    ["finance"],
+  "/hr":         ["hr"],
+  "/bizdoc/ops": ["compliance_staff"],
+  "/hub/admin":  ["skills_staff"],
   "/founder/portal": ["founder"],
-  "/scalar/ops":     ["scalar_lead", "scalar_staff", "ceo", "founder"],
-  "/medialy/ops":    ["medialy_lead", "medialy_staff", "ceo", "founder"],
-  "/podcast/ops":    ["podcast_lead", "podcast_staff", "ceo", "founder"],
-  "/video/ops":      ["video_lead", "video_staff", "ceo", "founder"],
-  "/faceless/ops":   ["faceless_lead", "faceless_staff", "ceo", "founder"],
+  "/scalar/ops":     ["scalar_lead", "scalar_staff"],
+  "/medialy/ops":    ["medialy_lead", "medialy_staff"],
+  "/podcast/ops":    ["podcast_lead", "podcast_staff"],
+  "/video/ops":      ["video_lead", "video_staff"],
+  "/faceless/ops":   ["faceless_lead", "faceless_staff"],
 };
 
 function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactNode }) {
