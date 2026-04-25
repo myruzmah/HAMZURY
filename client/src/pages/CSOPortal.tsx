@@ -19,6 +19,8 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { SERVICE_LIST, servicesByDept } from "@shared/services";
+import { FORMS as DIAGNOSTIC_FORMS, type DiagnosticFormId } from "@/lib/diagnostic-forms";
+import { FORMS as REQUIREMENT_FORMS, type RequirementFormId } from "@/lib/requirement-forms";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY CSO PORTAL — Client Services Office
@@ -1448,7 +1450,7 @@ function QualificationSection({ selectedId, onBack }: { selectedId: number | nul
           <InfoRow label="Reference" value={<span style={{ fontFamily: "monospace", color: GOLD }}>{lead.ref}</span>} />
           <InfoRow label="Contact" value={`${lead.name}${lead.phone ? ` · ${lead.phone}` : ""}${lead.email ? ` · ${lead.email}` : ""}`} />
           <InfoRow label="Stated Request" value={lead.service} />
-          <InfoRow label="Context" value={lead.context || "—"} />
+          <LeadAnswersView lead={lead} />
           <InfoRow label="Source" value={lead.source || "direct"} />
           {lead.referrerName && <InfoRow label="Referred By" value={`${lead.referrerName} (${lead.referralSourceType || "affiliate"})`} />}
           <InfoRow label="Age" value={`${ageDays} day${ageDays === 1 ? "" : "s"} old`} />
@@ -1508,6 +1510,362 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
       <span style={{ fontSize: 12, color: DARK, flex: 1, wordBreak: "break-word" }}>{value}</span>
     </div>
   );
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+ * LeadAnswersView — pretty Q&A renderer for the CSO Portal lead detail.
+ * Replaces the legacy `<InfoRow label="Context" value={lead.context} />`
+ * which dumped raw JSON. Handles:
+ *   1. Empty/null context  → dash
+ *   2. Non-JSON text       → plain styled card "Context (raw)"
+ *   3. Diagnostic submission JSON  ({ formId, answers, submittedAt })
+ *   4. Requirement submission JSON ({ serviceId, answers, uploadKeys, submittedAt })
+ *   5. Merged JSON containing BOTH formId and serviceId
+ *   6. Unknown JSON shape  → pretty-printed <pre>
+ * ─────────────────────────────────────────────────────────────────────── */
+function LeadAnswersView({ lead }: { lead: any }) {
+  const raw: string | null | undefined = lead?.context;
+
+  if (!raw || (typeof raw === "string" && raw.trim() === "")) {
+    return <InfoRow label="Context" value="—" />;
+  }
+
+  // Try JSON.parse — fall back to plain-text card on failure.
+  let parsed: any = null;
+  let isJson = false;
+  try {
+    parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object") isJson = true;
+  } catch {
+    isJson = false;
+  }
+
+  if (!isJson) {
+    return (
+      <div style={{ paddingTop: 8 }}>
+        <p style={{
+          fontSize: 10, color: MUTED, textTransform: "uppercase",
+          letterSpacing: "0.04em", marginBottom: 6,
+        }}>
+          Context (raw)
+        </p>
+        <div style={{
+          fontSize: 12, color: DARK, lineHeight: 1.6,
+          backgroundColor: `${DARK}04`, border: `1px solid ${DARK}08`,
+          borderRadius: 8, padding: "10px 12px", whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+        }}>
+          {raw}
+        </div>
+      </div>
+    );
+  }
+
+  const formId = parsed.formId as string | undefined;
+  const serviceId = parsed.serviceId as string | undefined;
+  const uploadKeys = parsed.uploadKeys as Record<string, string[]> | undefined;
+  const submittedAt = parsed.submittedAt as string | undefined;
+
+  const diagnosticForm =
+    formId && (DIAGNOSTIC_FORMS as any)[formId as DiagnosticFormId]
+      ? (DIAGNOSTIC_FORMS as any)[formId as DiagnosticFormId]
+      : null;
+  const requirementForm =
+    serviceId && (REQUIREMENT_FORMS as any)[serviceId as RequirementFormId]
+      ? (REQUIREMENT_FORMS as any)[serviceId as RequirementFormId]
+      : null;
+
+  const hasUploads =
+    uploadKeys &&
+    typeof uploadKeys === "object" &&
+    Object.keys(uploadKeys).length > 0;
+
+  const recognised = Boolean(diagnosticForm || requirementForm || hasUploads);
+
+  if (!recognised) {
+    // Valid JSON but neither formId nor serviceId — pretty-print fallback.
+    return (
+      <div style={{ paddingTop: 8 }}>
+        <p style={{
+          fontSize: 10, color: MUTED, textTransform: "uppercase",
+          letterSpacing: "0.04em", marginBottom: 6,
+        }}>
+          Context (JSON)
+        </p>
+        <pre style={{
+          fontSize: 11, color: DARK, lineHeight: 1.5,
+          backgroundColor: `${DARK}04`, border: `1px solid ${DARK}08`,
+          borderRadius: 8, padding: "10px 12px", margin: 0,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          whiteSpace: "pre-wrap", wordBreak: "break-word", overflowX: "auto",
+        }}>
+{JSON.stringify(parsed, null, 2)}
+        </pre>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ paddingTop: 8, display: "flex", flexDirection: "column", gap: 14 }}>
+      {diagnosticForm && (
+        <DiagnosticAnswersBlock
+          form={diagnosticForm}
+          answers={parsed.answers}
+          submittedAt={submittedAt}
+        />
+      )}
+      {requirementForm && (
+        <RequirementAnswersBlock
+          form={requirementForm}
+          answers={parsed.answers}
+          // If both diagnostic + requirement, prefer not duplicating the timestamp.
+          submittedAt={diagnosticForm ? undefined : submittedAt}
+        />
+      )}
+      {hasUploads && <UploadedFilesBlock uploadKeys={uploadKeys!} />}
+    </div>
+  );
+}
+
+function LeadAnswersSectionHeader({
+  icon, title, submittedAt, subtitle,
+}: { icon: string; title: string; submittedAt?: string; subtitle?: string }) {
+  let when: string | null = null;
+  if (submittedAt) {
+    const d = new Date(submittedAt);
+    if (!isNaN(d.getTime())) when = d.toLocaleString();
+  }
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, letterSpacing: -0.1 }}>
+          <span style={{ marginRight: 6 }}>{icon}</span>{title}
+        </p>
+        {when && (
+          <span style={{ fontSize: 10, color: MUTED }}>· submitted {when}</span>
+        )}
+      </div>
+      {subtitle && (
+        <p style={{ fontSize: 11, color: MUTED, marginTop: 2, lineHeight: 1.5 }}>
+          {subtitle}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function QAItem({
+  questionHtml, children,
+}: { questionHtml: string; children: React.ReactNode }) {
+  return (
+    <div style={{ paddingBottom: 8, borderBottom: `1px solid ${DARK}05` }}>
+      <p
+        style={{ fontSize: 11, color: MUTED, lineHeight: 1.5, marginBottom: 4 }}
+        dangerouslySetInnerHTML={{ __html: questionHtml }}
+      />
+      <div style={{ fontSize: 12, color: DARK, lineHeight: 1.6, wordBreak: "break-word" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function AnswerScalar({ value }: { value: any }) {
+  if (value === undefined || value === null || value === "") {
+    return <span style={{ color: MUTED, fontStyle: "italic" }}>—</span>;
+  }
+  return <span>{String(value)}</span>;
+}
+
+function AnswerList({ values }: { values: any[] }) {
+  if (values.length === 0) {
+    return <span style={{ color: MUTED, fontStyle: "italic" }}>—</span>;
+  }
+  return (
+    <ul style={{ margin: "2px 0 0 16px", padding: 0 }}>
+      {values.map((v, i) => (
+        <li key={i} style={{ fontSize: 12, color: DARK, lineHeight: 1.6 }}>
+          {String(v)}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function DiagnosticAnswersBlock({
+  form, answers, submittedAt,
+}: { form: any; answers: Record<string, any> | undefined; submittedAt?: string }) {
+  const questions: any[] = Array.isArray(form?.questions) ? form.questions : [];
+  const a: Record<string, any> = answers && typeof answers === "object" ? answers : {};
+
+  const rows = questions.map((q, i) => {
+    const value = a[String(i)];
+    const isEmpty =
+      value === undefined ||
+      value === null ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0);
+    return { q, i, value, isEmpty };
+  }).filter((r) => !r.isEmpty);
+
+  return (
+    <div>
+      <LeadAnswersSectionHeader
+        icon="📋"
+        title={`Diagnostic — ${form?.title || "Form"}`}
+        submittedAt={submittedAt}
+        subtitle={form?.subtitle}
+      />
+      {rows.length === 0 ? (
+        <p style={{ fontSize: 12, color: MUTED, fontStyle: "italic" }}>No answers recorded.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {rows.map(({ q, i, value }) => {
+            const questionHtml = q?.question || `Question ${i + 1}`;
+            let body: React.ReactNode;
+            if (Array.isArray(value)) {
+              // Multi-select → bullet list. Map numeric option indexes to text if possible.
+              const labels = value.map((v) => {
+                if (typeof v === "number" && Array.isArray(q?.options) && q.options[v] !== undefined) {
+                  return q.options[v];
+                }
+                return v;
+              });
+              body = <AnswerList values={labels} />;
+            } else if (q?.type === "scale") {
+              const max = typeof q.max === "number" ? q.max : 5;
+              body = <span><strong>{String(value)}</strong> / {max}</span>;
+            } else if (q?.type === "single" && typeof value === "number" && Array.isArray(q.options) && q.options[value] !== undefined) {
+              body = <AnswerScalar value={q.options[value]} />;
+            } else if (q?.type === "contact" && value && typeof value === "object") {
+              body = (
+                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {Object.entries(value).map(([k, v]) => (
+                    <div key={k} style={{ fontSize: 12, color: DARK }}>
+                      <span style={{ color: MUTED, fontSize: 11 }}>{k}: </span>{String(v)}
+                    </div>
+                  ))}
+                </div>
+              );
+            } else {
+              body = <AnswerScalar value={value} />;
+            }
+            return <QAItem key={i} questionHtml={questionHtml}>{body}</QAItem>;
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RequirementAnswersBlock({
+  form, answers, submittedAt,
+}: { form: any; answers: Record<string, any> | undefined; submittedAt?: string }) {
+  const steps: any[] = Array.isArray(form?.steps) ? form.steps : [];
+  const a: Record<string, any> = answers && typeof answers === "object" ? answers : {};
+
+  // Flatten step.fields, gather answered ones.
+  const rows: { field: any; value: any; stepTitle: string }[] = [];
+  for (const step of steps) {
+    const fields: any[] = Array.isArray(step?.fields) ? step.fields : [];
+    for (const f of fields) {
+      if (!f || !f.id || f.type === "file") continue; // file uploads handled separately
+      const v = a[f.id];
+      const empty = v === undefined || v === null || v === "" ||
+        (Array.isArray(v) && v.length === 0);
+      if (empty) continue;
+      rows.push({ field: f, value: v, stepTitle: step?.title || "" });
+    }
+  }
+
+  return (
+    <div>
+      <LeadAnswersSectionHeader
+        icon="✅"
+        title={`Requirements — ${form?.name || "Service"}`}
+        submittedAt={submittedAt}
+        subtitle={form?.intro?.body}
+      />
+      {rows.length === 0 ? (
+        <p style={{ fontSize: 12, color: MUTED, fontStyle: "italic" }}>No answers recorded.</p>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {rows.map(({ field, value }, i) => {
+            const label = field?.label || field?.id || `Field ${i + 1}`;
+            const body = Array.isArray(value)
+              ? <AnswerList values={value} />
+              : <AnswerScalar value={value} />;
+            return <QAItem key={`${field.id}-${i}`} questionHtml={escapeHtml(label)}>{body}</QAItem>;
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UploadedFilesBlock({ uploadKeys }: { uploadKeys: Record<string, string[]> }) {
+  const entries = Object.entries(uploadKeys).filter(
+    ([, arr]) => Array.isArray(arr) && arr.length > 0,
+  );
+  if (entries.length === 0) return null;
+
+  return (
+    <div>
+      <LeadAnswersSectionHeader icon="📎" title="Files uploaded" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {entries.map(([fieldId, keys]) => (
+          <div key={fieldId}>
+            <p style={{
+              fontSize: 11, color: MUTED, marginBottom: 4,
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}>
+              {fieldId}
+            </p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {keys.map((key, i) => {
+                const filename = filenameFromKey(key);
+                return (
+                  <span
+                    key={`${key}-${i}`}
+                    title={key}
+                    style={{
+                      fontSize: 11, color: DARK,
+                      backgroundColor: `${GOLD}10`,
+                      border: `1px solid ${GOLD}30`,
+                      borderRadius: 999, padding: "3px 10px",
+                      lineHeight: 1.4, wordBreak: "break-all",
+                    }}
+                  >
+                    {filename}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function filenameFromKey(key: string): string {
+  // Storage key shape: requirements/<ref>/<service>/<fieldId>/<nanoid>-<filename>
+  // Take the last path segment, then everything after the LAST hyphen.
+  const lastSlash = key.lastIndexOf("/");
+  const tail = lastSlash >= 0 ? key.slice(lastSlash + 1) : key;
+  const lastDash = tail.lastIndexOf("-");
+  if (lastDash < 0) return tail || key;
+  const name = tail.slice(lastDash + 1);
+  return name || tail;
+}
+
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
