@@ -25,6 +25,9 @@ import HubEnroll from "./pages/HubEnroll";
 /* ── Public diagnostic forms (Apple-standard, Fraunces serif) ── */
 import DiagnosticForm from "./pages/DiagnosticForm";
 
+/* ── Post-payment requirement intake forms ── */
+import RequirementForm from "./components/RequirementForm";
+
 /* ── Staff portals (kept in legacy green/gold) ── */
 import CSOPortal from "./pages/CSOPortal";
 import CEOPortal from "./pages/CEOPortal";
@@ -127,6 +130,9 @@ function Router() {
       <Route path="/diagnose-software"><DiagnosticForm formId="software" /></Route>
       <Route path="/diagnose-media"><DiagnosticForm formId="media" /></Route>
       <Route path="/diagnose-skills"><DiagnosticForm formId="skills" /></Route>
+
+      {/* ═══ Post-payment requirement intake (?ref=HMZ-YY/M-XXXX) ═══ */}
+      <Route path="/requirements/cac"><RequirementForm serviceId="cac" /></Route>
 
       {/* ═══ Legacy public redirects (old division names) ═══ */}
       <Route path="/systemise">{() => <Redirect to="/scalar" />}</Route>

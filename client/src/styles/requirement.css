@@ -1,0 +1,589 @@
+/*
+ * Requirement form styles — companion to diagnostic.css.
+ *
+ * Requirement forms are the post-payment counterpart to diagnostic forms,
+ * so they should feel like the same family. We import diagnostic.css to
+ * inherit the palette, typography, intro/outro, button, and progress
+ * styles, then add only the bits that are unique to requirement forms:
+ *
+ *   - drag-and-drop file upload zone
+ *   - uploaded-file list / chips
+ *   - select dropdown styling (diagnostic forms don't have selects)
+ *   - per-step progress dots (diagnostic forms use a single progress bar)
+ *
+ * Everything is scoped under `.requirement-form` so it never leaks into
+ * the rest of the app.
+ */
+
+@import "./diagnostic.css";
+
+.requirement-form {
+  /* Inherit every CSS var defined on .diagnostic-form. We can't share
+   * selectors directly because the @import above scopes them under
+   * .diagnostic-form, so we redeclare the palette here using the same
+   * values for visual parity. */
+  --bg: #F4EEE2;
+  --paper: #FBF7EE;
+  --ink: #1F1710;
+  --ink-soft: #574A3C;
+  --ink-muted: #8A7B6B;
+  --ink-faint: #B8AD9B;
+  --line: #E4DCCE;
+  --line-soft: #EFE7D8;
+  --accent: #B8731F;
+  --accent-deep: #7A4A12;
+  --accent-soft: #F3E4CE;
+  --success: #1E7A48;
+  --danger: #D92A1C;
+  --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  min-height: 100vh;
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.005em;
+  background-image:
+    radial-gradient(circle at 15% 12%, rgba(184,115,31,0.05), transparent 45%),
+    radial-gradient(circle at 88% 92%, rgba(30,122,72,0.035), transparent 45%);
+}
+
+.requirement-form *,
+.requirement-form *::before,
+.requirement-form *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ============ FORM SHELL (mirrors diagnostic.css) ============ */
+.requirement-form .form-stage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.requirement-form .form-header {
+  padding: 32px 40px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 600px) {
+  .requirement-form .form-header { padding: 24px 20px 0; }
+}
+
+.requirement-form .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+.requirement-form .brand-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.requirement-form .ref-pill {
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+}
+
+/* ============ BODY (mirrors diagnostic.css) ============ */
+.requirement-form .form-body {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 40px 40px;
+}
+@media (max-width: 600px) {
+  .requirement-form .form-body { padding: 28px 20px 20px; }
+}
+
+.requirement-form .form-card {
+  width: 100%;
+  max-width: 680px;
+  animation: requirementFadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes requirementFadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.requirement-form .step-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 18px;
+}
+
+.requirement-form .step-title {
+  font-family: var(--serif);
+  font-size: 36px;
+  line-height: 1.16;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin-bottom: 14px;
+}
+.requirement-form .step-title em { font-style: italic; color: var(--accent-deep); }
+
+@media (max-width: 600px) {
+  .requirement-form .step-title { font-size: 28px; }
+}
+
+.requirement-form .step-subtitle {
+  font-size: 16px;
+  color: var(--ink-muted);
+  line-height: 1.55;
+  margin-bottom: 32px;
+  max-width: 580px;
+}
+
+/* ============ PROGRESS DOTS (per-step bar) ============ */
+.requirement-form .progress-dots {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+}
+.requirement-form .progress-dot {
+  flex: 1;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--line);
+  transition: background 0.4s;
+}
+.requirement-form .progress-dot.active,
+.requirement-form .progress-dot.done { background: var(--ink); }
+
+.requirement-form .progress-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  letter-spacing: 0.02em;
+  margin-bottom: 16px;
+}
+
+/* ============ FIELDS ============ */
+.requirement-form .field {
+  margin-bottom: 22px;
+}
+.requirement-form .field-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--ink);
+  letter-spacing: -0.003em;
+}
+.requirement-form .field-required {
+  color: var(--accent);
+  margin-left: 2px;
+}
+.requirement-form .field-hint {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 6px;
+  line-height: 1.45;
+}
+
+.requirement-form .input,
+.requirement-form .textarea,
+.requirement-form .select {
+  width: 100%;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink);
+  line-height: 1.5;
+  transition: border-color 0.15s, background 0.15s;
+}
+.requirement-form .input:focus,
+.requirement-form .textarea:focus,
+.requirement-form .select:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+}
+.requirement-form .input::placeholder,
+.requirement-form .textarea::placeholder { color: var(--ink-faint); }
+.requirement-form .textarea { resize: vertical; min-height: 120px; }
+
+.requirement-form .select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%23574A3C' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+
+/* ============ FILE UPLOAD ZONE ============ */
+.requirement-form .upload-zone {
+  display: block;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: var(--paper);
+}
+.requirement-form .upload-zone:hover {
+  border-color: var(--ink);
+  background: var(--line-soft);
+}
+.requirement-form .upload-zone.dragging {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transform: scale(1.005);
+}
+.requirement-form .upload-zone input[type="file"] { display: none; }
+
+.requirement-form .upload-icon {
+  width: 36px;
+  height: 36px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: var(--line-soft);
+  display: grid;
+  place-items: center;
+}
+.requirement-form .upload-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--ink-soft);
+}
+.requirement-form .upload-primary {
+  font-size: 14.5px;
+  font-weight: 500;
+  margin-bottom: 4px;
+  color: var(--ink);
+}
+.requirement-form .upload-primary u { text-decoration: underline; }
+.requirement-form .upload-secondary {
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.5;
+}
+
+/* ============ FILE CHIPS ============ */
+.requirement-form .file-list {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.requirement-form .file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  animation: requirementFadeIn 0.25s;
+}
+.requirement-form .file-row.uploading {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.requirement-form .file-row.error {
+  border-color: var(--danger);
+  background: #FCE8E4;
+}
+.requirement-form .file-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  background: var(--line-soft);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.requirement-form .file-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke: var(--ink-soft);
+}
+.requirement-form .file-meta {
+  flex: 1;
+  min-width: 0;
+}
+.requirement-form .file-name {
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.003em;
+}
+.requirement-form .file-status {
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+.requirement-form .file-row.error .file-status { color: var(--danger); }
+.requirement-form .file-remove {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--ink-muted);
+  font-size: 18px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+.requirement-form .file-remove:hover {
+  background: var(--line-soft);
+  color: var(--danger);
+}
+
+/* ============ NDPR / SUBMIT BLOCK ============ */
+.requirement-form .consent-card {
+  margin-top: 16px;
+  padding: 16px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.requirement-form .consent-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.requirement-form .consent-row input[type="checkbox"] {
+  margin-top: 3px;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.requirement-form .form-error {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: #FCE8E4;
+  color: #A3301F;
+  border-radius: 8px;
+  font-size: 13.5px;
+}
+
+/* ============ FOOTER ============ */
+.requirement-form .form-footer {
+  padding: 24px 40px 40px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+@media (max-width: 600px) {
+  .requirement-form .form-footer {
+    padding: 18px 20px 28px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+.requirement-form .btn {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  font-weight: 500;
+  padding: 13px 28px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.requirement-form .btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.requirement-form .btn-primary:hover:not(:disabled) {
+  background: var(--accent-deep);
+  transform: translateY(-1px);
+}
+.requirement-form .btn-primary:active:not(:disabled) { transform: translateY(0); }
+.requirement-form .btn-primary:disabled {
+  background: var(--ink-faint);
+  cursor: not-allowed;
+  transform: none;
+}
+
+.requirement-form .btn-ghost {
+  background: transparent;
+  color: var(--ink-muted);
+  border: 1px solid transparent;
+}
+.requirement-form .btn-ghost:hover { color: var(--ink); }
+
+/* ============ INTRO / OUTRO ============ */
+.requirement-form .intro-card,
+.requirement-form .outro-card {
+  max-width: 620px;
+  text-align: left;
+  animation: requirementFadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.requirement-form .intro-eyebrow {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.requirement-form .intro-title {
+  font-family: var(--serif);
+  font-size: 50px;
+  line-height: 1.06;
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  margin-bottom: 18px;
+}
+.requirement-form .intro-title em { font-style: italic; color: var(--accent); }
+@media (max-width: 600px) {
+  .requirement-form .intro-title { font-size: 36px; }
+}
+
+.requirement-form .intro-body {
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--ink-soft);
+  margin-bottom: 32px;
+  max-width: 520px;
+}
+
+.requirement-form .intro-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin-bottom: 36px;
+  padding: 22px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.requirement-form .intro-meta-item .k {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+.requirement-form .intro-meta-item .v {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 400;
+}
+
+.requirement-form .outro-mark {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: var(--ink);
+  display: grid;
+  place-items: center;
+  margin-bottom: 22px;
+}
+.requirement-form .outro-mark svg {
+  width: 24px;
+  height: 24px;
+}
+.requirement-form .outro-ref {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--line-soft);
+  font: 500 13px ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+  color: var(--ink-soft);
+  letter-spacing: 0.02em;
+}
+
+/* ============ VERIFY STATE ============ */
+.requirement-form .verify-card {
+  max-width: 560px;
+  text-align: center;
+  margin: 80px auto 0;
+  padding: 40px 32px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.requirement-form .verify-card h2 {
+  font-family: var(--serif);
+  font-size: 28px;
+  font-weight: 400;
+  margin-bottom: 12px;
+}
+.requirement-form .verify-card p {
+  color: var(--ink-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.requirement-form .verify-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--line);
+  border-top-color: var(--ink);
+  border-radius: 50%;
+  margin: 0 auto 18px;
+  animation: requirementSpin 0.8s linear infinite;
+}
+@keyframes requirementSpin {
+  to { transform: rotate(360deg); }
+}

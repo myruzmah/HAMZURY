@@ -3,6 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { founderRouter } from "./founder/router";
 import { diagnosticsRouter } from "./diagnostics/router";
+import { requirementsRouter } from "./requirements/router";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
@@ -129,6 +130,7 @@ export const appRouter = router({
   system: systemRouter,
   founder: founderRouter,
   diagnostics: diagnosticsRouter,
+  requirements: requirementsRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
