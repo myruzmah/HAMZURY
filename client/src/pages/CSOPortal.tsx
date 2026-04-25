@@ -51,7 +51,7 @@ type Section =
 type PipelineView = "kanban" | "qualification";
 type BackOfficeTab =
   | "services" | "sources" | "cohorts" | "calendar" | "targets"
-  | "templates" | "forms" | "audit" | "settings";
+  | "templates" | "forms" | "settings";
 
 /* Shared dept leads — used by AssignTaskModal + dashboard surfaces */
 const DEPT_LEADS: Record<string, { name: string; dept: string }[]> = {
@@ -3109,7 +3109,6 @@ function BackOfficeSection({ currentUser, isCsoStaff }: { currentUser: any; isCs
     { k: "calendar",  label: "Calendar",         staffVisible: true },
     { k: "targets",   label: "Targets",          staffVisible: false },
     { k: "templates", label: "Templates",        staffVisible: true },
-    { k: "audit",     label: "Audit Log",        staffVisible: false },
     { k: "settings",  label: "Settings",         staffVisible: true },
   ];
 
@@ -3147,7 +3146,6 @@ function BackOfficeSection({ currentUser, isCsoStaff }: { currentUser: any; isCs
       {tab === "calendar"  && <CalendarSection />}
       {tab === "targets"   && !isCsoStaff && <TargetsSection />}
       {tab === "templates" && <RhythmSection />}
-      {tab === "audit"     && !isCsoStaff && <AuditLogView />}
       {tab === "settings"  && <SettingsSection currentUser={currentUser} />}
     </div>
   );
@@ -3333,43 +3331,7 @@ function BoCohorts() {
   );
 }
 
-/* Audit log view */
-function AuditLogView() {
-  const query = trpc.auditCso.list.useQuery({ limit: 100 });
-  const rows = (query.data || []) as any[];
-  return (
-    <Card>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        <Shield size={14} style={{ color: GOLD }} />
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Recent Audit Events
-        </p>
-      </div>
-      {query.isLoading ? (
-        <EmptyState icon={Loader2} title="Loading audit log..." />
-      ) : rows.length === 0 ? (
-        <EmptyState icon={Shield} title="No audit entries yet" />
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {rows.map((r: any) => (
-            <div key={r.id} style={{
-              padding: "8px 10px", borderRadius: 8, backgroundColor: `${DARK}03`,
-              display: "flex", justifyContent: "space-between", gap: 10,
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 11, fontWeight: 600, color: DARK }}>{r.action}</p>
-                <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                  {r.userName} · {r.resource}{r.resourceId ? `#${r.resourceId}` : ""} · {r.details || ""}
-                </p>
-              </div>
-              <span style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap" }}>{fmtDate(r.createdAt)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </Card>
-  );
-}
+/* 2026-04-26 founder decision: Audit Log view removed (not in spec). */
 
 
 /* ═══════════════════════════════════════════════════════════════════════

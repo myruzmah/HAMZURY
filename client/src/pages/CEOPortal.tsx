@@ -169,7 +169,7 @@ export default function CEOPortal() {
     { key: "equipment",       icon: Monitor,         label: "Equipment Tracker" },
     { key: "software",        icon: Cpu,             label: "Software Vault" },
     { key: "documents",       icon: FileBox,         label: "Documents Vault" },
-    { key: "calendar",        icon: CalendarIcon,    label: "Calendar & Audit" },
+    { key: "calendar",        icon: CalendarIcon,    label: "Calendar" },
     { key: "notes",           icon: StickyNote,      label: "Notes" },
   ];
 
@@ -328,7 +328,7 @@ export default function CEOPortal() {
             {active === "equipment"       && <EquipmentSection />}
             {active === "software"        && <SoftwareSection />}
             {active === "documents"       && <DocumentsSection />}
-            {active === "calendar"        && <CalendarAuditSection />}
+            {active === "calendar"        && <CalendarSection />}
             {active === "notes"           && <NotesSection />}
           </div>
         </div>
@@ -366,7 +366,6 @@ function CommandCenter({ onGoto }: { onGoto: (s: Section) => void }) {
     { label: "Completion %",     value: `${completionRate}%`,                     icon: CheckCircle2,  color: "#22C55E", section: "targets" as Section },
     { label: "Revenue (Paid)",   value: fmtNaira(revStats?.totalRevenue),         icon: DollarSign,    color: GREEN,     section: "targets" as Section },
     { label: "Revenue Pending",  value: fmtNaira(revStats?.pendingRevenue),       icon: Wallet,        color: ORANGE,    section: "targets" as Section },
-    { label: "AI Fund Balance",  value: fmtNaira(aiFund?.balance),                icon: Activity,      color: PURPLE,    section: "targets" as Section },
     { label: "Escalations",      value: escalations.length,                       icon: AlertTriangle, color: RED,       section: "targets" as Section },
   ];
 
@@ -814,7 +813,7 @@ function MiniStat({ label, value, color }: { label: string; value: number | stri
 /* ═══════════════════════════════════════════════════════════════════════
  * 6. CALENDAR & AUDIT
  * ═══════════════════════════════════════════════════════════════════════ */
-function CalendarAuditSection() {
+function CalendarSection() {
   const isMobile = useIsMobile();
   const [creating, setCreating] = useState(false);
   const utils = trpc.useUtils();
@@ -829,16 +828,14 @@ function CalendarAuditSection() {
   }, []);
 
   const calQuery = trpc.calendar.list.useQuery({ from: rangeFrom, to: rangeTo }, { retry: false });
-  const auditQuery = trpc.institutional.auditLog.useQuery(undefined, { retry: false });
 
   const events = (calQuery.data || []) as any[];
-  const audit = (auditQuery.data || []) as any[];
 
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-        <SectionTitle sub="Institution-wide events and audit trail.">
-          Calendar & Audit
+        <SectionTitle sub="Institution-wide events.">
+          Calendar
         </SectionTitle>
         <button
           onClick={() => setCreating(true)}
@@ -882,51 +879,7 @@ function CalendarAuditSection() {
         )}
       </Card>
 
-      {/* Audit log */}
-      <Card>
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Audit Trail — Last {audit.length} Entries
-        </p>
-        {audit.length === 0 ? (
-          <EmptyState icon={Activity} title="No audit entries yet" />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: isMobile ? 8 : 4, maxHeight: 420, overflowY: "auto" }}>
-            {audit.slice(0, 60).map((a: any) => (
-              isMobile ? (
-                <div key={a.id} style={{
-                  padding: "8px 10px", fontSize: 11, borderBottom: `1px solid ${DARK}06`,
-                }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <Clock size={11} style={{ color: MUTED, flexShrink: 0 }} />
-                    <span style={{ color: DARK, fontWeight: 600 }}>{a.userName || "—"}</span>
-                    <span style={{ color: GOLD, fontFamily: "monospace", fontSize: 10 }}>{a.action}</span>
-                    <span style={{ color: MUTED, fontSize: 10, marginLeft: "auto" }}>{fmtDateTime(a.createdAt)}</span>
-                  </div>
-                  <p style={{
-                    color: MUTED, marginTop: 4, fontSize: 10, lineHeight: 1.4,
-                    wordBreak: "break-word",
-                  }}>{a.details}</p>
-                </div>
-              ) : (
-                <div key={a.id} style={{
-                  display: "flex", alignItems: "center", gap: 10,
-                  padding: "6px 8px", fontSize: 11, borderBottom: `1px solid ${DARK}06`,
-                }}>
-                  <Clock size={11} style={{ color: MUTED, flexShrink: 0 }} />
-                  <span style={{ color: DARK, fontWeight: 500, whiteSpace: "nowrap" }}>{a.userName || "—"}</span>
-                  <span style={{ color: GOLD, fontFamily: "monospace", fontSize: 10, whiteSpace: "nowrap" }}>{a.action}</span>
-                  <span style={{ color: MUTED, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {a.details}
-                  </span>
-                  <span style={{ color: MUTED, fontSize: 10, whiteSpace: "nowrap", flexShrink: 0 }}>
-                    {fmtDateTime(a.createdAt)}
-                  </span>
-                </div>
-              )
-            ))}
-          </div>
-        )}
-      </Card>
+      {/* 2026-04-26 founder decision: audit trail removed (not in spec). */}
 
       {creating && (
         <CreateEventModal
