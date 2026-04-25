@@ -123,6 +123,10 @@ function Router() {
 
       {/* ═══ Public diagnostic forms (Apple-standard, Fraunces serif) ═══ */}
       <Route path="/clarity-session"><DiagnosticForm formId="clarity" /></Route>
+      <Route path="/diagnose-business"><DiagnosticForm formId="business" /></Route>
+      <Route path="/diagnose-software"><DiagnosticForm formId="software" /></Route>
+      <Route path="/diagnose-media"><DiagnosticForm formId="media" /></Route>
+      <Route path="/diagnose-skills"><DiagnosticForm formId="skills" /></Route>
 
       {/* ═══ Legacy public redirects (old division names) ═══ */}
       <Route path="/systemise">{() => <Redirect to="/scalar" />}</Route>

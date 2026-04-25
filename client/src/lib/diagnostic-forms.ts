@@ -265,4 +265,412 @@ export const FORMS: Partial<Record<DiagnosticFormId, DiagnosticForm>> = {
       CONTACT_QUESTION,
     ],
   },
+
+  business: {
+    title: "Diagnose my Business",
+    subtitle: "Compliance & Growth",
+    intro: {
+      eyebrow: "Department diagnostic",
+      title: "Let's look at your <em>foundation</em>.",
+      body: "A focused diagnostic for the compliance, legal, and structural side of your business. No pressure, no judgment — just a calm conversation with yourself about where things stand.",
+      duration: "6–8 minutes",
+      questions: "7 questions",
+      privacy: "Skippable · private",
+    },
+    questions: [
+      {
+        type: "textarea",
+        section: "The quiet worry",
+        question:
+          "When you think about your business right now, what's the one thing that quietly worries you?",
+        helper:
+          "The thing that comes to mind at 2am. Be honest — nothing here leaves our team.",
+        placeholder:
+          "It could be anything — a feeling, a specific task you've been avoiding, a letter you haven't opened…",
+      },
+      {
+        type: "single",
+        section: "Registration",
+        question:
+          "Is your business formally registered with the Corporate Affairs Commission?",
+        helper:
+          "There's no wrong answer — many businesses operate for years before formalising.",
+        options: [
+          "Yes, fully registered with CAC",
+          "Registered but I'm not sure what's up to date",
+          "Started the process, never finished",
+          "No, not yet",
+          "Honestly, I'm not sure",
+        ],
+      },
+      {
+        type: "single",
+        section: "Tax",
+        question: "When was the last time you filed your taxes?",
+        helper: "This tells us a lot about where to start.",
+        options: [
+          "Within the past year",
+          "1–2 years ago",
+          "More than 2 years ago",
+          "I've never filed",
+          "I'm not sure",
+        ],
+      },
+      {
+        type: "single",
+        section: "Tax",
+        question: "Do you know exactly how much tax you paid last year?",
+        helper:
+          "Most business owners overpay because they don't track this closely.",
+        options: [
+          "Yes, exactly",
+          "A rough idea",
+          "Not really",
+          "I'd rather not say",
+        ],
+      },
+      {
+        type: "single",
+        section: "Finances",
+        question:
+          "How do you currently track your business income and expenses?",
+        helper: "The honest answer is often the most useful one.",
+        options: [
+          "Dedicated accounting software",
+          "Spreadsheets",
+          "A notebook",
+          "My bank statements — that's it",
+          "I don't really track it",
+        ],
+      },
+      {
+        type: "single",
+        section: "Readiness",
+        question:
+          "If a client asked you for a Tax Clearance Certificate today, could you provide one within 48 hours?",
+        helper: "TCCs have become routine requests — especially for contracts.",
+        options: [
+          "Yes, no problem",
+          "I'd have to scramble",
+          "No, I couldn't",
+          "What's a TCC?",
+        ],
+      },
+      {
+        type: "textarea",
+        section: "The vision",
+        question:
+          "When you imagine your business one year from now, what does <em>\"handled\"</em> look like to you?",
+        helper: "Describe the feeling, not just the milestones.",
+        placeholder:
+          "Maybe it's never worrying about tax. Maybe it's sleeping through an audit. Maybe it's something else entirely…",
+      },
+      CONTACT_QUESTION,
+    ],
+  },
+
+  software: {
+    title: "Diagnose my Software",
+    subtitle: "Digital Systems",
+    intro: {
+      eyebrow: "Department diagnostic",
+      title: "Let's look at your <em>systems</em>.",
+      body: "A focused diagnostic for your digital tools, workflows, and online presence. The goal isn't to catch you out — it's to see where systems could be doing more of the work.",
+      duration: "6–8 minutes",
+      questions: "7 questions",
+      privacy: "Skippable · private",
+    },
+    questions: [
+      {
+        type: "single",
+        section: "Digital presence",
+        question:
+          "When someone searches your business online right now, what do they find?",
+        helper: "Be honest with yourself — what's actually there today?",
+        options: [
+          "A professional website I'm proud of",
+          "A basic website that needs work",
+          "Just my social media",
+          "Almost nothing",
+          "I haven't checked in a while",
+        ],
+      },
+      {
+        type: "multi",
+        section: "Lead flow",
+        question: "How do leads currently reach you?",
+        helper: "Select all that apply.",
+        options: [
+          "WhatsApp",
+          "Instagram / Facebook DMs",
+          "Email",
+          "Phone calls",
+          "Walk-ins",
+          "Website enquiries",
+          "Referrals",
+          "Other",
+        ],
+      },
+      {
+        type: "single",
+        section: "Tracking",
+        question: "Where do you keep track of leads and conversations?",
+        helper:
+          "If a lead came in three weeks ago, could you find the conversation?",
+        options: [
+          "A proper CRM",
+          "Spreadsheets",
+          "My memory",
+          "WhatsApp chat history",
+          "A mix of everything",
+        ],
+      },
+      {
+        type: "single",
+        section: "Manual work",
+        question:
+          "How many times a week does your team do the same task by hand?",
+        helper:
+          "Sending the same email, updating the same sheet, replying to the same question…",
+        options: [
+          "1–5 times",
+          "6–15 times",
+          "16–30 times",
+          "More than 30 times",
+          "I've never counted — but a lot",
+        ],
+      },
+      {
+        type: "single",
+        section: "AI readiness",
+        question: "Have you tried using AI in your business yet?",
+        helper:
+          "Not just playing with ChatGPT — actually using it to do work.",
+        options: [
+          "Yes, it's working for me",
+          "Tried it, didn't stick",
+          "Want to, but don't know where to start",
+          "Not sure if it applies to my business",
+          "I haven't thought about it",
+        ],
+      },
+      {
+        type: "scale",
+        section: "Digital maturity",
+        question:
+          "If your website went offline today, how much would it actually affect sales?",
+        helper: "Drag to rate — 1 means no impact, 5 means devastating.",
+        min: 1,
+        max: 5,
+        minLabel: "No impact",
+        maxLabel: "Devastating",
+      },
+      {
+        type: "textarea",
+        section: "The vision",
+        question:
+          "What's one task that, if it <em>ran itself</em>, would give you your Sunday back?",
+        helper: "The specific thing you keep doing and keep resenting.",
+        placeholder:
+          "Maybe it's invoicing. Maybe it's chasing up leads. Maybe it's scheduling posts…",
+      },
+      CONTACT_QUESTION,
+    ],
+  },
+
+  media: {
+    title: "Diagnose my Media",
+    subtitle: "Content & Presence",
+    intro: {
+      eyebrow: "Department diagnostic",
+      title: "Let's look at your <em>presence</em>.",
+      body: "A focused diagnostic for your brand, content, and social presence. Most businesses know something is off here — this is how we find what.",
+      duration: "6–8 minutes",
+      questions: "7 questions",
+      privacy: "Skippable · private",
+    },
+    questions: [
+      {
+        type: "single",
+        section: "Activity",
+        question:
+          "When was the last time you posted on your main social channel?",
+        helper: "The channel your audience actually spends time on.",
+        options: [
+          "Today",
+          "This week",
+          "This month",
+          "Longer than a month",
+          "I don't really remember",
+        ],
+      },
+      {
+        type: "single",
+        section: "Clarity",
+        question:
+          "If someone new finds your Instagram today, would they immediately know what your business does?",
+        helper: "Think about it from a stranger's eyes.",
+        options: [
+          "Yes, totally clear",
+          "Somewhat clear",
+          "Probably confusing",
+          "I'd rather not think about it",
+        ],
+      },
+      {
+        type: "single",
+        section: "Capacity",
+        question: "Who creates your content right now?",
+        helper: "The real answer — not the one you wish were true.",
+        options: [
+          "Me personally, when I can",
+          "A team member doing it on the side",
+          "An agency or freelancer",
+          "No one consistently",
+          "Honestly, nobody right now",
+        ],
+      },
+      {
+        type: "single",
+        section: "Strategy",
+        question: "What's your content plan for next month?",
+        helper: "Not what you'd like it to be — what it actually is.",
+        options: [
+          "A full content calendar",
+          "Rough ideas written down",
+          "I'll figure it out as I go",
+          "There is no plan",
+        ],
+      },
+      {
+        type: "multi",
+        section: "Frustrations",
+        question: "Which of these have you felt recently?",
+        helper: "Select all that apply. No one is watching.",
+        options: [
+          "I post but nothing grows",
+          "I don't know what to say",
+          "I run out of ideas",
+          "My content looks inconsistent",
+          "I wish someone else could just handle it",
+          "I'm embarrassed to check my analytics",
+        ],
+      },
+      {
+        type: "textarea",
+        section: "The message",
+        question:
+          "If one piece of content could <em>go viral</em> this month, what would you want it to be about?",
+        helper:
+          "What's the one thing you wish the world understood about your business?",
+        placeholder:
+          "It could be a story, a transformation, a message, a product…",
+      },
+      {
+        type: "textarea",
+        section: "The vision",
+        question:
+          "What would a <em>strong media presence</em> actually look like for your business in six months?",
+        helper: "Paint the picture.",
+        placeholder:
+          "How many followers? What kind of engagement? What would people be saying?",
+      },
+      CONTACT_QUESTION,
+    ],
+  },
+
+  skills: {
+    title: "Diagnose my Skills",
+    subtitle: "Training & Development",
+    intro: {
+      eyebrow: "Department diagnostic",
+      title: "Let's look at your <em>people</em>.",
+      body: "A focused diagnostic for your team's capability and growth. Your business can only grow as far as your people can carry it.",
+      duration: "6–8 minutes",
+      questions: "7 questions",
+      privacy: "Skippable · private",
+    },
+    questions: [
+      {
+        type: "textarea",
+        section: "Observation",
+        question:
+          "When you think about your team, who's <em>quietly outgrowing</em> their role?",
+        helper:
+          "The one you can already see needs more — more challenge, more training, more growth.",
+        placeholder: "Just a name or a role is fine. Or tell us the story.",
+      },
+      {
+        type: "single",
+        section: "Training history",
+        question: "When was the last time your team did formal training?",
+        helper: "YouTube videos don't count.",
+        options: [
+          "Within the past 3 months",
+          "Within the past year",
+          "More than a year ago",
+          "We've never done formal training",
+        ],
+      },
+      {
+        type: "textarea",
+        section: "The gap",
+        question:
+          "Is there a specific skill gap right now that's <em>costing you money</em>?",
+        helper:
+          "A capability you're paying consultants for, or losing deals over, or just working around.",
+        placeholder: "Write it plainly. Naming it is half the work.",
+      },
+      {
+        type: "single",
+        section: "Your growth",
+        question: "How do you currently keep your own skills sharp?",
+        helper: "You're a leader — this matters.",
+        options: [
+          "I take courses regularly",
+          "I learn from mentors",
+          "YouTube and Google when I need to",
+          "I don't really have time for this",
+          "Honestly, I feel stuck",
+        ],
+      },
+      {
+        type: "textarea",
+        section: "Priority",
+        question:
+          "If you could add <em>one new capability</em> to your team in the next six months, what would it be?",
+        helper: "Not a dream list — the one that would move the needle.",
+        placeholder:
+          "It could be a technical skill, a soft skill, a whole new discipline…",
+      },
+      {
+        type: "single",
+        section: "Investment",
+        question: "How much do you currently budget for team development?",
+        helper: "Training, courses, coaching, conferences — all of it.",
+        options: [
+          "None",
+          "Under ₦50,000 per year",
+          "₦50,000 – ₦200,000 per year",
+          "₦200,000 – ₦500,000 per year",
+          "More than ₦500,000 per year",
+          "I've never thought about it as a line item",
+        ],
+      },
+      {
+        type: "single",
+        section: "Retention",
+        question:
+          "When your team thinks about their future at your company, do they see growth?",
+        helper: "This one is hard. Answer honestly.",
+        options: [
+          "Yes, clearly",
+          "Somewhat",
+          "Honestly, probably not",
+          "I don't know",
+        ],
+      },
+      CONTACT_QUESTION,
+    ],
+  },
 };
