@@ -1812,3 +1812,78 @@ export const founderVault = mysqlTable("founder_vault", {
 export type FounderVaultRow = typeof founderVault.$inferSelect;
 export type InsertFounderVaultRow = typeof founderVault.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * VIDEO OPS PORTAL — Salis (lead video editor)
+ * Migrated from localStorage (opsStore "video" portal) to real DB.
+ * Source shapes mirror client/src/pages/VideoOpsPortal.tsx.
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** Video projects — top-level production records. */
+export const videoProjects = mysqlTable("video_projects", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  client: varchar("client", { length: 255 }).notNull().default(""),
+  /** Human-readable code, e.g. "VID-001". Distinct from `id`. */
+  projectCode: varchar("projectCode", { length: 80 }).notNull().default(""),
+  deliveryDate: varchar("deliveryDate", { length: 10 }).notNull().default(""),  // ISO YYYY-MM-DD or ""
+  budget: int("budget").notNull().default(0),                                    // NGN
+  /** JSON-serialised array of ServiceTag values. */
+  services: text("services").notNull(),
+  status: mysqlEnum("videoProjectStatus", ["Pre", "Production", "Post", "Delivered"])
+    .default("Pre").notNull(),
+  phase: varchar("phase", { length: 40 }).notNull().default("script"),
+  owner: mysqlEnum("videoProjectOwner", ["Salis", "Client"]).default("Salis").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VideoProject = typeof videoProjects.$inferSelect;
+export type InsertVideoProject = typeof videoProjects.$inferInsert;
+
+/** Video assets — production materials per project (footage, audio, graphics, copy). */
+export const videoAssets = mysqlTable("video_assets", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  assetGroup: mysqlEnum("videoAssetGroup", ["Footage", "Audio", "Graphics", "Copy"])
+    .default("Footage").notNull(),
+  done: boolean("done").default(false).notNull(),
+  path: varchar("path", { length: 1024 }),
+  owner: varchar("owner", { length: 120 }),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VideoAsset = typeof videoAssets.$inferSelect;
+export type InsertVideoAsset = typeof videoAssets.$inferInsert;
+
+/** Video revisions — client feedback rounds (v1/v2/v3). */
+export const videoRevisions = mysqlTable("video_revisions", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  version: varchar("version", { length: 20 }).notNull(),       // "v1", "v2", "v3"
+  feedback: text("feedback").notNull(),
+  status: mysqlEnum("videoRevisionStatus", ["Pending", "In Progress", "Resolved"])
+    .default("Pending").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),             // ISO YYYY-MM-DD
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VideoRevision = typeof videoRevisions.$inferSelect;
+export type InsertVideoRevision = typeof videoRevisions.$inferInsert;
+
+/** Video deliverables — final outputs per project (MP4, thumbnail, SRT, project file). */
+export const videoDeliverables = mysqlTable("video_deliverables", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  kind: mysqlEnum("videoDeliverableKind", ["MP4", "Thumbnail", "SRT", "Project File", "Other"])
+    .default("MP4").notNull(),
+  path: varchar("path", { length: 1024 }),
+  format: varchar("format", { length: 80 }),
+  resolution: varchar("resolution", { length: 80 }),
+  done: boolean("done").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type VideoDeliverable = typeof videoDeliverables.$inferSelect;
+export type InsertVideoDeliverable = typeof videoDeliverables.$inferInsert;
+

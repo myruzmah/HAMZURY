@@ -8,16 +8,14 @@ import { toast } from "sonner";
 import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell";
 import PhaseTracker, { type Phase } from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
-import {
-  readAll, insert, update, remove, type OpsItem,
-} from "@/lib/opsStore";
+import { trpc } from "@/lib/trpc";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY VIDEO OPS PORTAL — Salis (lead video editor)
+ * Migrated from localStorage (opsStore "video") to tRPC + MySQL.
  * Source: PHASE8_SPECIAL_UNITS/VIDEO_UNIT
  * ══════════════════════════════════════════════════════════════════════ */
 
-const PORTAL = "video";
 const RED = "#DC2626";
 const DARK = "#1A1A1A";
 const MUTED = "#6B7280";
@@ -32,10 +30,11 @@ type Section =
 
 type ServiceTag = "Editing" | "Color" | "Sound" | "Animation" | "Full Production";
 
-type ProjectRow = OpsItem & {
+type ProjectRow = {
+  id: number;
   name: string;
   client: string;
-  projectId: string;
+  projectCode: string;
   deliveryDate: string;
   budget: number;
   services: ServiceTag[];
@@ -44,30 +43,33 @@ type ProjectRow = OpsItem & {
   owner: "Salis" | "Client";
 };
 
-type AssetRow = OpsItem & {
-  projectId: string;
+type AssetRow = {
+  id: number;
+  projectId: number;
   label: string;
-  group: "Footage" | "Audio" | "Graphics" | "Copy";
+  assetGroup: "Footage" | "Audio" | "Graphics" | "Copy";
   done: boolean;
-  path?: string;
-  owner?: string;
-  note?: string;
+  path?: string | null;
+  owner?: string | null;
+  note?: string | null;
 };
 
-type RevisionRow = OpsItem & {
-  projectId: string;
+type RevisionRow = {
+  id: number;
+  projectId: number;
   version: string; // v1 / v2 / v3
   feedback: string;
   status: "Pending" | "In Progress" | "Resolved";
   date: string;
 };
 
-type DeliverableRow = OpsItem & {
-  projectId: string;
+type DeliverableRow = {
+  id: number;
+  projectId: number;
   kind: "MP4" | "Thumbnail" | "SRT" | "Project File" | "Other";
-  path?: string;
-  format?: string;
-  resolution?: string;
+  path?: string | null;
+  format?: string | null;
+  resolution?: string | null;
   done: boolean;
 };
 
@@ -148,15 +150,8 @@ export default function VideoOpsPortal() {
 
 /* ───────────────────── Overview ───────────────────── */
 function OverviewSection() {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const h = () => setTick(t => t + 1);
-    window.addEventListener("opsStoreChange", h);
-    return () => window.removeEventListener("opsStoreChange", h);
-  }, []);
-  void tick;
-
-  const projects = readAll<ProjectRow>(PORTAL, "projects");
+  const projectsQuery = trpc.video.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as ProjectRow[];
   const active = projects.filter(p => p.status !== "Delivered");
   const delivered = projects.filter(p => p.status === "Delivered");
   const byService = useMemo(() => {
@@ -227,21 +222,51 @@ function OverviewSection() {
 }
 
 /* ───────────────────── Projects ───────────────────── */
+type EditingProject = Partial<ProjectRow> & { id?: number };
+
 function ProjectsSection() {
-  const [projects, setProjects] = useState<ProjectRow[]>([]);
-  const [editing, setEditing] = useState<Partial<ProjectRow> | null>(null);
-  const refresh = () => setProjects(readAll<ProjectRow>(PORTAL, "projects"));
-  useEffect(() => { refresh(); }, []);
+  const utils = trpc.useUtils();
+  const projectsQuery = trpc.video.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as ProjectRow[];
+
+  const [editing, setEditing] = useState<EditingProject | null>(null);
+
+  const createMut = trpc.video.projects.create.useMutation({
+    onSuccess: () => {
+      utils.video.projects.list.invalidate();
+      toast.success("Saved");
+    },
+  });
+  const updateMut = trpc.video.projects.update.useMutation({
+    onSuccess: () => {
+      utils.video.projects.list.invalidate();
+      toast.success("Saved");
+    },
+  });
+  const removeMut = trpc.video.projects.remove.useMutation({
+    onSuccess: () => utils.video.projects.list.invalidate(),
+  });
 
   const save = () => {
     if (!editing?.name) { toast.error("Project name required"); return; }
     if (editing.id) {
-      update<ProjectRow>(PORTAL, "projects", editing.id, editing);
+      updateMut.mutate({
+        id: editing.id,
+        name: editing.name,
+        client: editing.client,
+        projectCode: editing.projectCode,
+        deliveryDate: editing.deliveryDate,
+        budget: editing.budget,
+        services: editing.services,
+        status: editing.status,
+        phase: editing.phase,
+        owner: editing.owner,
+      });
     } else {
-      insert<ProjectRow>(PORTAL, "projects", {
-        name: editing.name!,
+      createMut.mutate({
+        name: editing.name,
         client: editing.client || "",
-        projectId: editing.projectId || `VID-${String(projects.length + 1).padStart(3, "0")}`,
+        projectCode: editing.projectCode || `VID-${String(projects.length + 1).padStart(3, "0")}`,
         deliveryDate: editing.deliveryDate || "",
         budget: editing.budget ?? 0,
         services: editing.services || ["Editing"],
@@ -250,7 +275,7 @@ function ProjectsSection() {
         owner: (editing.owner as any) || "Salis",
       });
     }
-    setEditing(null); refresh(); toast.success("Saved");
+    setEditing(null);
   };
 
   return (
@@ -283,7 +308,7 @@ function ProjectsSection() {
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{p.name}</p>
                   <p style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>
-                    {p.projectId} · {p.client} · Delivery: {p.deliveryDate || "TBD"}
+                    {p.projectCode} · {p.client} · Delivery: {p.deliveryDate || "TBD"}
                   </p>
                   <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
                     {(p.services || []).map(s => (
@@ -294,7 +319,7 @@ function ProjectsSection() {
                 </div>
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setEditing(p)} style={{ border: "none", background: "transparent", color: MUTED, cursor: "pointer" }}><Edit3 size={14} /></button>
-                  <button onClick={() => { remove(PORTAL, "projects", p.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer" }}><Trash2 size={14} /></button>
+                  <button onClick={() => removeMut.mutate({ id: p.id })} style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer" }}><Trash2 size={14} /></button>
                 </div>
               </div>
             </OpsCard>
@@ -312,7 +337,7 @@ function ProjectsSection() {
           }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "New"} Project</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <Lab l="Project ID"><Inp v={editing.projectId} onChange={v => setEditing({ ...editing, projectId: v })} /></Lab>
+              <Lab l="Project ID"><Inp v={editing.projectCode} onChange={v => setEditing({ ...editing, projectCode: v })} /></Lab>
               <Lab l="Name"><Inp v={editing.name} onChange={v => setEditing({ ...editing, name: v })} /></Lab>
               <Lab l="Client"><Inp v={editing.client} onChange={v => setEditing({ ...editing, client: v })} /></Lab>
               <Lab l="Delivery Date"><Inp v={editing.deliveryDate} type="date" onChange={v => setEditing({ ...editing, deliveryDate: v })} /></Lab>
@@ -334,13 +359,25 @@ function ProjectsSection() {
 
 /* ───────────────────── Timeline (phase tracker per project) ───────────────────── */
 function TimelineSection() {
-  const projects = readAll<ProjectRow>(PORTAL, "projects");
-  const [selected, setSelected] = useState<string | null>(projects[0]?.id || null);
+  const utils = trpc.useUtils();
+  const projectsQuery = trpc.video.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as ProjectRow[];
+  const [selected, setSelected] = useState<number | null>(null);
+
+  // Keep selection valid as projects load.
+  useEffect(() => {
+    if (selected == null && projects[0]) setSelected(projects[0].id);
+  }, [selected, projects]);
+
   const project = projects.find(p => p.id === selected);
+
+  const updateMut = trpc.video.projects.update.useMutation({
+    onSuccess: () => utils.video.projects.list.invalidate(),
+  });
 
   const setPhase = (phaseId: string) => {
     if (!project) return;
-    update<ProjectRow>(PORTAL, "projects", project.id, { phase: phaseId });
+    updateMut.mutate({ id: project.id, phase: phaseId });
     toast.success(`Advanced to ${VIDEO_PHASES.find(p => p.id === phaseId)?.label}`);
   };
 
@@ -352,13 +389,13 @@ function TimelineSection() {
           Select project
         </p>
         <select
-          value={selected || ""}
-          onChange={e => setSelected(e.target.value || null)}
+          value={selected ?? ""}
+          onChange={e => setSelected(e.target.value ? Number(e.target.value) : null)}
           style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`, fontSize: 13, width: "100%", maxWidth: 360 }}
         >
           <option value="">— pick one —</option>
           {projects.map(p => (
-            <option key={p.id} value={p.id}>{p.name} · {p.projectId}</option>
+            <option key={p.id} value={p.id}>{p.name} · {p.projectCode}</option>
           ))}
         </select>
       </OpsCard>
@@ -388,34 +425,55 @@ function TimelineSection() {
 
 /* ───────────────────── Assets ───────────────────── */
 function AssetsSection() {
-  const [projectId, setProjectId] = useState<string | null>(null);
-  const [tick, setTick] = useState(0);
-  const projects = readAll<ProjectRow>(PORTAL, "projects");
+  const utils = trpc.useUtils();
+  const projectsQuery = trpc.video.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as ProjectRow[];
+  const [projectId, setProjectId] = useState<number | null>(null);
+
   useEffect(() => {
-    if (!projectId && projects[0]) setProjectId(projects[0].id);
+    if (projectId == null && projects[0]) setProjectId(projects[0].id);
   }, [projectId, projects]);
 
-  const assets = readAll<AssetRow>(PORTAL, "assets").filter(a => a.projectId === projectId);
-  const toggle = (id: string) => {
+  const assetsQuery = trpc.video.assets.list.useQuery(
+    projectId != null ? { projectId } : undefined,
+    { enabled: projectId != null },
+  );
+  const assets = (assetsQuery.data ?? []) as AssetRow[];
+
+  const createMut = trpc.video.assets.create.useMutation({
+    onSuccess: () => utils.video.assets.list.invalidate(),
+  });
+  const updateMut = trpc.video.assets.update.useMutation({
+    onSuccess: () => utils.video.assets.list.invalidate(),
+  });
+
+  const toggle = (idStr: string) => {
+    const id = Number(idStr);
     const row = assets.find(a => a.id === id);
     if (!row) return;
-    update<AssetRow>(PORTAL, "assets", id, { done: !row.done });
-    setTick(t => t + 1);
+    updateMut.mutate({ id, done: !row.done });
   };
-  void tick;
 
   const addAsset = () => {
-    if (!projectId) { toast.error("Select a project first"); return; }
+    if (projectId == null) { toast.error("Select a project first"); return; }
     const label = prompt("Asset label (e.g. 'Raw footage - interview')"); if (!label) return;
-    const group = prompt("Group: Footage / Audio / Graphics / Copy", "Footage") as AssetRow["group"];
-    insert<AssetRow>(PORTAL, "assets", {
-      projectId, label, group: group || "Footage", done: false,
+    const group = prompt("Group: Footage / Audio / Graphics / Copy", "Footage") as AssetRow["assetGroup"];
+    createMut.mutate({
+      projectId,
+      label,
+      assetGroup: group || "Footage",
+      done: false,
     });
-    setTick(t => t + 1);
   };
 
   const items: AssetItem[] = assets.map(a => ({
-    id: a.id, label: a.label, group: a.group, done: a.done, path: a.path, owner: a.owner, note: a.note,
+    id: String(a.id),
+    label: a.label,
+    group: a.assetGroup,
+    done: a.done,
+    path: a.path ?? undefined,
+    owner: a.owner ?? undefined,
+    note: a.note ?? undefined,
   }));
 
   return (
@@ -432,8 +490,8 @@ function AssetsSection() {
           Project
         </p>
         <select
-          value={projectId || ""}
-          onChange={e => setProjectId(e.target.value || null)}
+          value={projectId ?? ""}
+          onChange={e => setProjectId(e.target.value ? Number(e.target.value) : null)}
           style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`, fontSize: 13, width: "100%", maxWidth: 360 }}
         >
           <option value="">— pick one —</option>
@@ -443,13 +501,13 @@ function AssetsSection() {
         </select>
       </OpsCard>
 
-      {projectId && items.length === 0 ? (
+      {projectId != null && items.length === 0 ? (
         <OpsCard>
           <p style={{ fontSize: 13, color: MUTED, textAlign: "center", padding: "20px 0" }}>
             No assets logged yet.
           </p>
         </OpsCard>
-      ) : projectId ? (
+      ) : projectId != null ? (
         <AssetChecklist
           items={items}
           onToggle={toggle}
@@ -465,25 +523,43 @@ function AssetsSection() {
 
 /* ───────────────────── Revisions ───────────────────── */
 function RevisionsSection() {
-  const [rows, setRows] = useState<RevisionRow[]>([]);
-  const refresh = () => setRows(readAll<RevisionRow>(PORTAL, "revisions"));
-  useEffect(() => { refresh(); }, []);
-  const projects = readAll<ProjectRow>(PORTAL, "projects");
+  const utils = trpc.useUtils();
+  const revisionsQuery = trpc.video.revisions.list.useQuery();
+  const projectsQuery = trpc.video.projects.list.useQuery();
+  const rows = (revisionsQuery.data ?? []) as RevisionRow[];
+  const projects = (projectsQuery.data ?? []) as ProjectRow[];
+
+  const createMut = trpc.video.revisions.create.useMutation({
+    onSuccess: () => utils.video.revisions.list.invalidate(),
+  });
+  const updateMut = trpc.video.revisions.update.useMutation({
+    onSuccess: () => utils.video.revisions.list.invalidate(),
+  });
+  const removeMut = trpc.video.revisions.remove.useMutation({
+    onSuccess: () => utils.video.revisions.list.invalidate(),
+  });
 
   const addRev = () => {
-    const projectId = prompt("Project ID? " + projects.map(p => p.projectId).join(", "));
-    if (!projectId) return;
+    const projectCode = prompt("Project ID? " + projects.map(p => p.projectCode).join(", "));
+    if (!projectCode) return;
+    const project = projects.find(p => p.projectCode === projectCode);
+    if (!project) { toast.error(`No project with code ${projectCode}`); return; }
     const version = prompt("Version (v1, v2, v3)?", "v1") || "v1";
     const feedback = prompt("Feedback?") || "";
-    insert<RevisionRow>(PORTAL, "revisions", {
-      projectId, version, feedback, status: "Pending", date: new Date().toISOString().slice(0, 10),
+    createMut.mutate({
+      projectId: project.id,
+      version,
+      feedback,
+      status: "Pending",
+      date: new Date().toISOString().slice(0, 10),
     });
-    refresh();
   };
-  const setStatus = (id: string, status: RevisionRow["status"]) => {
-    update<RevisionRow>(PORTAL, "revisions", id, { status });
-    refresh();
+  const setStatus = (id: number, status: RevisionRow["status"]) => {
+    updateMut.mutate({ id, status });
   };
+
+  // Map projectId -> projectCode for display.
+  const codeFor = (id: number) => projects.find(p => p.id === id)?.projectCode ?? `#${id}`;
 
   return (
     <div>
@@ -505,7 +581,7 @@ function RevisionsSection() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>
-                    {r.projectId} · {r.version} · {r.date}
+                    {codeFor(r.projectId)} · {r.version} · {r.date}
                   </p>
                   <p style={{ fontSize: 13, color: MUTED, marginTop: 4, lineHeight: 1.5 }}>{r.feedback}</p>
                 </div>
@@ -513,7 +589,7 @@ function RevisionsSection() {
                   <select value={r.status} onChange={e => setStatus(r.id, e.target.value as any)} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`, fontSize: 12, backgroundColor: WHITE }}>
                     <option>Pending</option><option>In Progress</option><option>Resolved</option>
                   </select>
-                  <button onClick={() => { remove(PORTAL, "revisions", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer", fontSize: 11 }}>
+                  <button onClick={() => removeMut.mutate({ id: r.id })} style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer", fontSize: 11 }}>
                     <Trash2 size={12} /> Delete
                   </button>
                 </div>
@@ -528,25 +604,38 @@ function RevisionsSection() {
 
 /* ───────────────────── Deliverables ───────────────────── */
 function DeliverablesSection() {
-  const [rows, setRows] = useState<DeliverableRow[]>([]);
-  const refresh = () => setRows(readAll<DeliverableRow>(PORTAL, "deliverables"));
-  useEffect(() => { refresh(); }, []);
-  const projects = readAll<ProjectRow>(PORTAL, "projects");
+  const utils = trpc.useUtils();
+  const deliverablesQuery = trpc.video.deliverables.list.useQuery();
+  const projectsQuery = trpc.video.projects.list.useQuery();
+  const rows = (deliverablesQuery.data ?? []) as DeliverableRow[];
+  const projects = (projectsQuery.data ?? []) as ProjectRow[];
+
+  const createMut = trpc.video.deliverables.create.useMutation({
+    onSuccess: () => utils.video.deliverables.list.invalidate(),
+  });
+  const updateMut = trpc.video.deliverables.update.useMutation({
+    onSuccess: () => utils.video.deliverables.list.invalidate(),
+  });
+  const removeMut = trpc.video.deliverables.remove.useMutation({
+    onSuccess: () => utils.video.deliverables.list.invalidate(),
+  });
+
+  const codeFor = (id: number) => projects.find(p => p.id === id)?.projectCode ?? `#${id}`;
 
   const addDel = () => {
-    const projectId = prompt("Project ID?");
-    if (!projectId) return;
+    const projectCode = prompt("Project ID? " + projects.map(p => p.projectCode).join(", "));
+    if (!projectCode) return;
+    const project = projects.find(p => p.projectCode === projectCode);
+    if (!project) { toast.error(`No project with code ${projectCode}`); return; }
     const kind = (prompt("Kind: MP4, Thumbnail, SRT, Project File, Other", "MP4") || "MP4") as DeliverableRow["kind"];
     const format = prompt("Format (e.g. H.264)?") || "";
     const resolution = prompt("Resolution (e.g. 1920x1080)?") || "";
-    insert<DeliverableRow>(PORTAL, "deliverables", { projectId, kind, format, resolution, done: false });
-    refresh();
+    createMut.mutate({ projectId: project.id, kind, format, resolution, done: false });
   };
-  const toggle = (id: string) => {
+  const toggle = (id: number) => {
     const row = rows.find(r => r.id === id);
     if (!row) return;
-    update<DeliverableRow>(PORTAL, "deliverables", id, { done: !row.done });
-    refresh();
+    updateMut.mutate({ id, done: !row.done });
   };
 
   return (
@@ -568,7 +657,7 @@ function DeliverablesSection() {
             <OpsCard key={r.id}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                 <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.kind} · {r.projectId}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.kind} · {codeFor(r.projectId)}</p>
                   <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
                     {r.format || "—"} · {r.resolution || "—"}
                   </p>
@@ -582,7 +671,7 @@ function DeliverablesSection() {
                   }}>
                     {r.done ? "✓ Delivered" : "Mark delivered"}
                   </button>
-                  <button onClick={() => { remove(PORTAL, "deliverables", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer" }}>
+                  <button onClick={() => removeMut.mutate({ id: r.id })} style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer" }}>
                     <Trash2 size={13} />
                   </button>
                 </div>
@@ -651,3 +740,6 @@ function Sel({ v, onChange, opts }: { v: any; onChange: (v: string) => void; opt
     </select>
   );
 }
+
+// Suppress unused import warnings for icons only used as conditional defaults.
+void BarChart3;
