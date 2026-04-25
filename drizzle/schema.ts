@@ -2739,3 +2739,108 @@ export const hrExits = mysqlTable("hr_exits", {
 export type HrExit = typeof hrExits.$inferSelect;
 export type InsertHrExit = typeof hrExits.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * BIZDEV PORTAL — Isa Ibrahim (BizDev Lead)
+ * Four sections that previously lived in the localStorage opsStore on
+ * client/src/pages/BizDevPortal.tsx are restored here as MySQL tables.
+ * Field schemas derived from the BizDev Operations Guide (partnership
+ * campaigns, grant pipeline, sponsorship deals, back-office templates).
+ *
+ * Multi-value JSON columns (stringified text):
+ *   - bizdev_campaigns.channels      → string[]
+ *   - bizdev_grants.requirements     → string[]
+ *   - bizdev_sponsorships.deliverables → string[]
+ *   - bizdev_templates.tags          → string[]
+ *
+ * No FKs between these tables (each is independent). No server-generated ref —
+ * rows are int-id only. Auth: founder | ceo | bizdev | bizdev_staff (matches
+ * the page-level ROLE_ACCESS in App.tsx).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** BizDev campaigns — partnership rollout / outreach pushes (e.g. RIDI launch). */
+export const bizdevCampaigns = mysqlTable("bizdev_campaigns", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  partner: varchar("partner", { length: 255 }),
+  objective: text("objective"),
+  /** JSON-stringified string[] — channels used (email, social, in-person, etc). */
+  channels: text("channels"),
+  startDate: varchar("startDate", { length: 10 }),
+  endDate: varchar("endDate", { length: 10 }),
+  budget: varchar("budget", { length: 80 }),
+  leadsGenerated: int("leadsGenerated"),
+  conversions: int("conversions"),
+  status: mysqlEnum("bizdevCampaignStatus", [
+    "Planning", "Active", "Paused", "Completed", "Cancelled",
+  ]).default("Planning").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BizdevCampaign = typeof bizdevCampaigns.$inferSelect;
+export type InsertBizdevCampaign = typeof bizdevCampaigns.$inferInsert;
+
+/** BizDev grants — applications + pipeline (target: 2-3 grants/quarter). */
+export const bizdevGrants = mysqlTable("bizdev_grants", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  funder: varchar("funder", { length: 255 }),
+  amount: varchar("amount", { length: 80 }),
+  category: varchar("category", { length: 120 }),
+  /** JSON-stringified string[] — required documents / criteria. */
+  requirements: text("requirements"),
+  applicationDate: varchar("applicationDate", { length: 10 }),
+  deadline: varchar("deadline", { length: 10 }),
+  decisionDate: varchar("decisionDate", { length: 10 }),
+  status: mysqlEnum("bizdevGrantStatus", [
+    "Researching", "Drafting", "Submitted", "Under Review", "Awarded", "Rejected",
+  ]).default("Researching").notNull(),
+  outcome: text("outcome"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BizdevGrant = typeof bizdevGrants.$inferSelect;
+export type InsertBizdevGrant = typeof bizdevGrants.$inferInsert;
+
+/** BizDev sponsorships — sponsorship opportunities and closes. */
+export const bizdevSponsorships = mysqlTable("bizdev_sponsorships", {
+  id: int("id").autoincrement().primaryKey(),
+  sponsor: varchar("sponsor", { length: 255 }).notNull(),
+  event: varchar("event", { length: 255 }),
+  contact: varchar("contact", { length: 255 }),
+  amount: varchar("amount", { length: 80 }),
+  /** JSON-stringified string[] — what we owe the sponsor (logo, post, mention). */
+  deliverables: text("deliverables"),
+  pitchDate: varchar("pitchDate", { length: 10 }),
+  closeDate: varchar("closeDate", { length: 10 }),
+  status: mysqlEnum("bizdevSponsorshipStatus", [
+    "Prospect", "Pitched", "Negotiating", "Closed", "Lost", "Delivered",
+  ]).default("Prospect").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BizdevSponsorship = typeof bizdevSponsorships.$inferSelect;
+export type InsertBizdevSponsorship = typeof bizdevSponsorships.$inferInsert;
+
+/** BizDev back-office templates — proposals, outreach scripts, decks. */
+export const bizdevTemplates = mysqlTable("bizdev_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("bizdevTemplateCategory", [
+    "Proposal", "Outreach", "Pitch Deck", "Follow-up", "Contract", "Other",
+  ]).default("Other").notNull(),
+  /** Markdown / plaintext template body. */
+  body: text("body"),
+  /** JSON-stringified string[] — searchable tags. */
+  tags: text("tags"),
+  usageCount: int("usageCount").default(0).notNull(),
+  lastUsedAt: varchar("lastUsedAt", { length: 10 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type BizdevTemplate = typeof bizdevTemplates.$inferSelect;
+export type InsertBizdevTemplate = typeof bizdevTemplates.$inferInsert;
+

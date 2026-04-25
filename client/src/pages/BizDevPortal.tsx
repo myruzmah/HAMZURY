@@ -9,12 +9,13 @@ import {
   Calendar as CalendarIcon, LogOut, ArrowLeft, Loader2,
   TrendingUp, AlertCircle, Menu, X, Plus, Shield, Briefcase,
   Target as TargetIcon, CheckCircle2, Clock, Send,
+  Megaphone, FileText, Sparkles, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
-/* 2026-04 founder decision: 4 sections (campaigns, grants, sponsorships,
-   back-office templates) were on localStorage and removed for launch.
-   Re-add when migrated to MySQL. */
+/* 2026-04 — restored. The 4 ops sections (campaigns, grants, sponsorships,
+   templates) are now MySQL-backed via tRPC `bizdevRestored.*` (see
+   server/bizdev/router.ts). int autoincrement ids end-to-end. */
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY BIZDEV PORTAL — Growth Engine Control
@@ -35,6 +36,7 @@ const PURPLE = "#8B5CF6";
 
 type Section =
   | "dashboard" | "affiliates" | "leads" | "partnerships"
+  | "campaigns" | "grants" | "sponsorships" | "templates"
   | "tasks" | "targets" | "calendar";
 
 function useIsMobile(breakpoint = 900) {
@@ -191,6 +193,10 @@ export default function BizDevPortal() {
     { key: "leads",        icon: TrendingUp,      label: "Leads & Sources" },
     { key: "affiliates",   icon: Award,           label: "Affiliates" },
     { key: "partnerships", icon: Handshake,       label: "Partnerships" },
+    { key: "campaigns",    icon: Megaphone,       label: "Campaigns" },
+    { key: "grants",       icon: Sparkles,        label: "Grants" },
+    { key: "sponsorships", icon: Award,           label: "Sponsorships" },
+    { key: "templates",    icon: FileText,        label: "Templates" },
     { key: "targets",      icon: TargetIcon,      label: "Targets from CEO" },
     { key: "tasks",        icon: Briefcase,       label: "My Tasks" },
     { key: "calendar",     icon: CalendarIcon,    label: "Outreach Calendar" },
@@ -334,6 +340,10 @@ export default function BizDevPortal() {
             {active === "leads"        && <LeadsSection />}
             {active === "affiliates"   && <AffiliatesSection />}
             {active === "partnerships" && <PartnershipsSection />}
+            {active === "campaigns"    && <CampaignsSection />}
+            {active === "grants"       && <GrantsSection />}
+            {active === "sponsorships" && <SponsorshipsSection />}
+            {active === "templates"    && <TemplatesSection />}
             {active === "targets"      && <WeeklyTargetsInboxSection />}
             {active === "tasks"        && <TasksSection />}
             {active === "calendar"     && <CalendarSection />}
@@ -1470,6 +1480,692 @@ function WeeklyTargetsInboxSection() {
           <EmptyState icon={TargetIcon} title="No targets yet" hint="Weekly targets from the CEO will land here." />
         </Card>
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * Restored sections — MySQL via tRPC `bizdevRestored.*` (server/bizdev/router.ts).
+ * Patterns mirror HRPortal.tsx (multi-section CRUD, ids are int end-to-end,
+ * toast on success, invalidate on mutate).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+function PrimaryButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{
+        padding: "8px 14px", borderRadius: 10,
+        backgroundColor: GREEN, color: WHITE, border: "none",
+        fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        display: "inline-flex", alignItems: "center", gap: 6,
+      }}>{children}</button>
+  );
+}
+function GhostButton({ onClick, children, color = MUTED }: { onClick: () => void; children: React.ReactNode; color?: string }) {
+  return (
+    <button onClick={onClick}
+      style={{
+        padding: "5px 10px", borderRadius: 8,
+        backgroundColor: `${color}10`, color, border: "none",
+        fontSize: 10, fontWeight: 600, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 4,
+      }}>{children}</button>
+  );
+}
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontSize: 10, color: MUTED, textTransform: "uppercase",
+      letterSpacing: "0.06em", fontWeight: 600,
+    }}>{children}</span>
+  );
+}
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }} />
+  );
+}
+function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%", minHeight: 60, resize: "vertical", fontFamily: "inherit",
+        ...props.style,
+      }} />
+  );
+}
+function SelectInput({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: React.ReactNode }) {
+  return (
+    <select {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }}>{children}</select>
+  );
+}
+function FormGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+    </label>
+  );
+}
+
+const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
+
+/* ─── Campaigns ───────────────────────────────────────────────────────── */
+function CampaignsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.bizdevRestored.campaigns.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "", partner: "", objective: "",
+    channels: "",
+    startDate: "", endDate: "",
+    budget: "",
+    leadsGenerated: 0, conversions: 0,
+    status: "Planning" as const,
+    notes: "",
+  });
+
+  const createMut = trpc.bizdevRestored.campaigns.create.useMutation({
+    onSuccess: () => {
+      toast.success("Campaign added");
+      utils.bizdevRestored.campaigns.list.invalidate();
+      setShowForm(false);
+      setForm({ name: "", partner: "", objective: "", channels: "", startDate: "", endDate: "", budget: "", leadsGenerated: 0, conversions: 0, status: "Planning" as const, notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.bizdevRestored.campaigns.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.bizdevRestored.campaigns.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.bizdevRestored.campaigns.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.bizdevRestored.campaigns.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Partnership campaign rollouts (e.g. RIDI launch). Track channels, budget, and conversion.">
+        Campaigns
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Active" value={rows.filter(r => r.status === "Active").length} color={BLUE} />
+        <MiniStat label="Planning" value={rows.filter(r => r.status === "Planning").length} color={GOLD} />
+        <MiniStat label="Completed" value={rows.filter(r => r.status === "Completed").length} color={GREEN} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Campaign</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. RIDI Q2 Rollout" /></FormField>
+              <FormField label="Partner"><TextInput value={form.partner} onChange={e => setForm({ ...form, partner: e.target.value })} placeholder="e.g. RIDI" /></FormField>
+              <FormField label="Start Date"><TextInput type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></FormField>
+              <FormField label="End Date"><TextInput type="date" value={form.endDate} onChange={e => setForm({ ...form, endDate: e.target.value })} /></FormField>
+              <FormField label="Budget"><TextInput value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })} placeholder="e.g. ₦200k" /></FormField>
+              <FormField label="Leads Generated"><TextInput type="number" value={form.leadsGenerated || ""} onChange={e => setForm({ ...form, leadsGenerated: Number(e.target.value) })} /></FormField>
+              <FormField label="Conversions"><TextInput type="number" value={form.conversions || ""} onChange={e => setForm({ ...form, conversions: Number(e.target.value) })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Objective"><TextArea value={form.objective} onChange={e => setForm({ ...form, objective: e.target.value })} /></FormField>
+              <FormField label="Channels (one per line)"><TextArea value={form.channels} onChange={e => setForm({ ...form, channels: e.target.value })} placeholder="email&#10;social&#10;in-person events" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.name.trim()) {
+                  toast.error("Name is required");
+                  return;
+                }
+                createMut.mutate({
+                  name: form.name,
+                  partner: form.partner || null,
+                  objective: form.objective || null,
+                  channels: splitLines(form.channels),
+                  startDate: form.startDate || null,
+                  endDate: form.endDate || null,
+                  budget: form.budget || null,
+                  leadsGenerated: form.leadsGenerated || null,
+                  conversions: form.conversions || null,
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Megaphone} title="No campaigns yet" hint="Add the first campaign above." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                      <StatusPill label={r.status} tone={r.status === "Active" ? "blue" : r.status === "Completed" ? "green" : r.status === "Cancelled" ? "red" : "gold"} />
+                    </div>
+                    {r.partner && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Partner: {r.partner}</p>}
+                    {r.objective && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Objective:</strong> {r.objective}</p>}
+                    {Array.isArray(r.channels) && r.channels.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.channels.map((c: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: GOLD, fontWeight: 600 }}>{c}</span>
+                        ))}
+                      </div>
+                    )}
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>
+                      {r.startDate && <>Start: {fmtDate(r.startDate)}</>}
+                      {r.endDate && <> · End: {fmtDate(r.endDate)}</>}
+                      {r.budget && <> · {r.budget}</>}
+                      {(r.leadsGenerated !== null || r.conversions !== null) && (
+                        <> · {r.leadsGenerated || 0} leads / {r.conversions || 0} conv</>
+                      )}
+                    </p>
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Planning", "Active", "Paused", "Completed", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this campaign?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Grants ──────────────────────────────────────────────────────────── */
+function GrantsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.bizdevRestored.grants.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "", funder: "", amount: "", category: "",
+    requirements: "",
+    applicationDate: "", deadline: "", decisionDate: "",
+    status: "Researching" as const,
+    outcome: "", notes: "",
+  });
+
+  const createMut = trpc.bizdevRestored.grants.create.useMutation({
+    onSuccess: () => {
+      toast.success("Grant added");
+      utils.bizdevRestored.grants.list.invalidate();
+      setShowForm(false);
+      setForm({ name: "", funder: "", amount: "", category: "", requirements: "", applicationDate: "", deadline: "", decisionDate: "", status: "Researching" as const, outcome: "", notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.bizdevRestored.grants.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.bizdevRestored.grants.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.bizdevRestored.grants.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.bizdevRestored.grants.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Grant pipeline. Target: 2-3 applications/quarter, 1-2 wins/year.">
+        Grants
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Submitted" value={rows.filter(r => r.status === "Submitted" || r.status === "Under Review").length} color={BLUE} />
+        <MiniStat label="Awarded" value={rows.filter(r => r.status === "Awarded").length} color={GREEN} />
+        <MiniStat label="Drafting" value={rows.filter(r => r.status === "Drafting").length} color={GOLD} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Grant</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. NITDA Tech Education Grant" /></FormField>
+              <FormField label="Funder"><TextInput value={form.funder} onChange={e => setForm({ ...form, funder: e.target.value })} /></FormField>
+              <FormField label="Amount"><TextInput value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="e.g. ₦5M" /></FormField>
+              <FormField label="Category"><TextInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="Tech / Youth / SME" /></FormField>
+              <FormField label="Application Date"><TextInput type="date" value={form.applicationDate} onChange={e => setForm({ ...form, applicationDate: e.target.value })} /></FormField>
+              <FormField label="Deadline"><TextInput type="date" value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })} /></FormField>
+              <FormField label="Decision Date"><TextInput type="date" value={form.decisionDate} onChange={e => setForm({ ...form, decisionDate: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Requirements (one per line)"><TextArea value={form.requirements} onChange={e => setForm({ ...form, requirements: e.target.value })} placeholder="CAC certificate&#10;Audited accounts&#10;Project plan" /></FormField>
+              <FormField label="Outcome"><TextArea value={form.outcome} onChange={e => setForm({ ...form, outcome: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.name.trim()) {
+                  toast.error("Name is required");
+                  return;
+                }
+                createMut.mutate({
+                  name: form.name,
+                  funder: form.funder || null,
+                  amount: form.amount || null,
+                  category: form.category || null,
+                  requirements: splitLines(form.requirements),
+                  applicationDate: form.applicationDate || null,
+                  deadline: form.deadline || null,
+                  decisionDate: form.decisionDate || null,
+                  status: form.status,
+                  outcome: form.outcome || null,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Sparkles} title="No grants tracked yet" hint="Research and log grant opportunities here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                      <StatusPill label={r.status} tone={r.status === "Awarded" ? "green" : r.status === "Rejected" ? "red" : r.status === "Submitted" || r.status === "Under Review" ? "blue" : "gold"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.funder && <>Funder: {r.funder}</>}
+                      {r.amount && <> · {r.amount}</>}
+                      {r.category && <> · {r.category}</>}
+                    </p>
+                    {Array.isArray(r.requirements) && r.requirements.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong>Requirements:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.requirements.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>
+                      {r.applicationDate && <>Applied: {fmtDate(r.applicationDate)}</>}
+                      {r.deadline && <> · Deadline: {fmtDate(r.deadline)}</>}
+                      {r.decisionDate && <> · Decision: {fmtDate(r.decisionDate)}</>}
+                    </p>
+                    {r.outcome && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Outcome:</strong> {r.outcome}</p>}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Researching", "Drafting", "Submitted", "Under Review", "Awarded", "Rejected"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this grant?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Sponsorships ────────────────────────────────────────────────────── */
+function SponsorshipsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.bizdevRestored.sponsorships.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    sponsor: "", event: "", contact: "", amount: "",
+    deliverables: "",
+    pitchDate: "", closeDate: "",
+    status: "Prospect" as const,
+    notes: "",
+  });
+
+  const createMut = trpc.bizdevRestored.sponsorships.create.useMutation({
+    onSuccess: () => {
+      toast.success("Sponsorship added");
+      utils.bizdevRestored.sponsorships.list.invalidate();
+      setShowForm(false);
+      setForm({ sponsor: "", event: "", contact: "", amount: "", deliverables: "", pitchDate: "", closeDate: "", status: "Prospect" as const, notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.bizdevRestored.sponsorships.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.bizdevRestored.sponsorships.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.bizdevRestored.sponsorships.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.bizdevRestored.sponsorships.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Sponsorship pipeline — pitch, negotiate, close, deliver.">
+        Sponsorships
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Pitched" value={rows.filter(r => r.status === "Pitched" || r.status === "Negotiating").length} color={BLUE} />
+        <MiniStat label="Closed" value={rows.filter(r => r.status === "Closed" || r.status === "Delivered").length} color={GREEN} />
+        <MiniStat label="Prospect" value={rows.filter(r => r.status === "Prospect").length} color={GOLD} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Sponsorship</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Sponsor"><TextInput value={form.sponsor} onChange={e => setForm({ ...form, sponsor: e.target.value })} placeholder="Sponsor org" /></FormField>
+              <FormField label="Event"><TextInput value={form.event} onChange={e => setForm({ ...form, event: e.target.value })} placeholder="e.g. Hamzury Founder Event" /></FormField>
+              <FormField label="Contact"><TextInput value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} placeholder="Name + email/phone" /></FormField>
+              <FormField label="Amount"><TextInput value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="e.g. ₦500k" /></FormField>
+              <FormField label="Pitch Date"><TextInput type="date" value={form.pitchDate} onChange={e => setForm({ ...form, pitchDate: e.target.value })} /></FormField>
+              <FormField label="Close Date"><TextInput type="date" value={form.closeDate} onChange={e => setForm({ ...form, closeDate: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Deliverables (one per line)"><TextArea value={form.deliverables} onChange={e => setForm({ ...form, deliverables: e.target.value })} placeholder="Logo on banner&#10;Stage mention&#10;Social posts" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.sponsor.trim()) {
+                  toast.error("Sponsor is required");
+                  return;
+                }
+                createMut.mutate({
+                  sponsor: form.sponsor,
+                  event: form.event || null,
+                  contact: form.contact || null,
+                  amount: form.amount || null,
+                  deliverables: splitLines(form.deliverables),
+                  pitchDate: form.pitchDate || null,
+                  closeDate: form.closeDate || null,
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Award} title="No sponsorships yet" hint="Track sponsorship deals from prospect to delivery." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.sponsor}</p>
+                      <StatusPill label={r.status} tone={r.status === "Closed" || r.status === "Delivered" ? "green" : r.status === "Lost" ? "red" : r.status === "Pitched" || r.status === "Negotiating" ? "blue" : "gold"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.event && <>Event: {r.event}</>}
+                      {r.amount && <> · {r.amount}</>}
+                    </p>
+                    {r.contact && <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Contact: {r.contact}</p>}
+                    {Array.isArray(r.deliverables) && r.deliverables.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong>Deliverables:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.deliverables.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>
+                      {r.pitchDate && <>Pitched: {fmtDate(r.pitchDate)}</>}
+                      {r.closeDate && <> · Closed: {fmtDate(r.closeDate)}</>}
+                    </p>
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Prospect", "Pitched", "Negotiating", "Closed", "Lost", "Delivered"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this sponsorship?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Templates ───────────────────────────────────────────────────────── */
+function TemplatesSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.bizdevRestored.templates.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    name: "", category: "Other" as const,
+    body: "", tags: "",
+    notes: "",
+  });
+
+  const createMut = trpc.bizdevRestored.templates.create.useMutation({
+    onSuccess: () => {
+      toast.success("Template added");
+      utils.bizdevRestored.templates.list.invalidate();
+      setShowForm(false);
+      setForm({ name: "", category: "Other" as const, body: "", tags: "", notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.bizdevRestored.templates.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.bizdevRestored.templates.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.bizdevRestored.templates.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.bizdevRestored.templates.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Back-office templates — proposals, outreach scripts, pitch decks.">
+        Templates
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Proposals" value={rows.filter(r => r.category === "Proposal").length} color={GREEN} />
+        <MiniStat label="Outreach" value={rows.filter(r => r.category === "Outreach").length} color={BLUE} />
+        <MiniStat label="Pitches" value={rows.filter(r => r.category === "Pitch Deck").length} color={GOLD} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Template</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Cold Outreach Script v2" /></FormField>
+              <FormField label="Category">
+                <SelectInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}>
+                  {["Proposal", "Outreach", "Pitch Deck", "Follow-up", "Contract", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Body"><TextArea value={form.body} onChange={e => setForm({ ...form, body: e.target.value })} style={{ minHeight: 140 }} placeholder="Hi {{name}}, …" /></FormField>
+              <FormField label="Tags (one per line)"><TextArea value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="cold&#10;email&#10;intro" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.name.trim()) {
+                  toast.error("Name is required");
+                  return;
+                }
+                createMut.mutate({
+                  name: form.name,
+                  category: form.category,
+                  body: form.body || null,
+                  tags: splitLines(form.tags),
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={FileText} title="No templates yet" hint="Build your back-office library — proposals, outreach scripts." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                      <StatusPill label={r.category} tone="muted" />
+                      {typeof r.usageCount === "number" && r.usageCount > 0 && (
+                        <span style={{ fontSize: 10, color: GOLD, fontWeight: 600 }}>used {r.usageCount}×</span>
+                      )}
+                    </div>
+                    {Array.isArray(r.tags) && r.tags.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.tags.map((tag: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: GOLD, fontWeight: 600 }}>{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.body && (
+                      <pre style={{
+                        fontSize: 11, color: DARK, marginTop: 8,
+                        backgroundColor: WHITE, padding: "10px 12px", borderRadius: 8,
+                        whiteSpace: "pre-wrap", lineHeight: 1.6, fontFamily: "inherit",
+                        maxHeight: 220, overflow: "auto", border: `1px solid ${DARK}06`,
+                      }}>{r.body}</pre>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                    {r.lastUsedAt && <p style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>Last used {fmtDate(r.lastUsedAt)}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.category} onChange={e => updateMut.mutate({ id: r.id, category: e.target.value as any })}>
+                      {["Proposal", "Outreach", "Pitch Deck", "Follow-up", "Contract", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton
+                      onClick={() => {
+                        if (!r.body) { toast.error("No body to copy"); return; }
+                        navigator.clipboard.writeText(r.body).then(
+                          () => {
+                            toast.success("Copied — usage count bumped");
+                            updateMut.mutate({
+                              id: r.id,
+                              usageCount: (r.usageCount || 0) + 1,
+                              lastUsedAt: new Date().toISOString().slice(0, 10),
+                            });
+                          },
+                          () => toast.error("Couldn't copy"),
+                        );
+                      }}
+                      color={GREEN}
+                    >Copy</GhostButton>
+                    <GhostButton onClick={() => { if (confirm("Remove this template?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
