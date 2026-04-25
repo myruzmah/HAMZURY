@@ -15,6 +15,7 @@ import {
   LayoutDashboard, Users, UserCheck, Trophy, Share2, Award, CalendarDays,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
   Menu, X, Shield, Send, GraduationCap, Plus, Trash2, Eye,
+  BadgeCheck, BookOpen, Briefcase, Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,7 +34,8 @@ const GREEN_OK = "#22C55E";
 
 type Section =
   | "dashboard" | "enrollments" | "cohorts" | "attendance"
-  | "competition" | "social" | "calendar" | "reports";
+  | "competition" | "social" | "calendar" | "reports"
+  | "certifications" | "alumni" | "lmsProgress" | "internDuties" | "metfix";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -244,14 +246,19 @@ export default function HubAdminPortal() {
   if (!user) return null;
 
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
-    { key: "dashboard",   icon: LayoutDashboard, label: "Overview" },
-    { key: "enrollments", icon: Users,           label: "Enrollments" },
-    { key: "cohorts",     icon: GraduationCap,   label: "Active Cohorts" },
-    { key: "attendance",  icon: UserCheck,       label: "Attendance" },
-    { key: "competition", icon: Trophy,          label: "Team Competition" },
-    { key: "social",      icon: Share2,          label: "Social Verification" },
-    { key: "calendar",    icon: CalendarDays,    label: "Operations Calendar" },
-    { key: "reports",     icon: Award,           label: "Reports" },
+    { key: "dashboard",      icon: LayoutDashboard, label: "Overview" },
+    { key: "enrollments",    icon: Users,           label: "Enrollments" },
+    { key: "cohorts",        icon: GraduationCap,   label: "Active Cohorts" },
+    { key: "attendance",     icon: UserCheck,       label: "Attendance" },
+    { key: "competition",    icon: Trophy,          label: "Team Competition" },
+    { key: "social",         icon: Share2,          label: "Social Verification" },
+    { key: "certifications", icon: BadgeCheck,      label: "Certification" },
+    { key: "alumni",         icon: GraduationCap,   label: "Alumni" },
+    { key: "lmsProgress",    icon: BookOpen,        label: "LMS Progress" },
+    { key: "internDuties",   icon: Briefcase,       label: "Intern Coord" },
+    { key: "metfix",         icon: Wrench,          label: "MetFix" },
+    { key: "calendar",       icon: CalendarDays,    label: "Operations Calendar" },
+    { key: "reports",        icon: Award,           label: "Reports" },
   ];
 
   return (
@@ -368,14 +375,19 @@ export default function HubAdminPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
-            {active === "dashboard"   && <OverviewSection onGoto={setActive} />}
-            {active === "enrollments" && <EnrollmentsSection />}
-            {active === "cohorts"     && <CohortsSection />}
-            {active === "attendance"  && <AttendanceSection />}
-            {active === "competition" && <CompetitionSection />}
-            {active === "social"      && <SocialSection />}
-            {active === "calendar"    && <OpsCalendarSection />}
-            {active === "reports"     && <ReportsSection />}
+            {active === "dashboard"      && <OverviewSection onGoto={setActive} />}
+            {active === "enrollments"    && <EnrollmentsSection />}
+            {active === "cohorts"        && <CohortsSection />}
+            {active === "attendance"     && <AttendanceSection />}
+            {active === "competition"    && <CompetitionSection />}
+            {active === "social"         && <SocialSection />}
+            {active === "certifications" && <CertificationsSection />}
+            {active === "alumni"         && <AlumniSection />}
+            {active === "lmsProgress"    && <LmsProgressSection />}
+            {active === "internDuties"   && <InternDutiesSection />}
+            {active === "metfix"         && <MetfixSection />}
+            {active === "calendar"       && <OpsCalendarSection />}
+            {active === "reports"        && <ReportsSection />}
           </div>
         </div>
       </main>
@@ -1500,5 +1512,935 @@ Built to Last.`;
   );
 }
 
-/* 2026-04 founder decision: localStorage-backed sections removed for
-   launch. Re-add when migrated to MySQL. */
+/* ═══════════════════════════════════════════════════════════════════════
+ * RESTORED SECTIONS — MySQL via tRPC `hubAdmin.*` (server/hubAdmin/router.ts).
+ * The 5 sections that were cut at commit d7e9c60 are brought back here.
+ * Patterns mirror CEOPortal.tsx (multi-section CRUD, ids are int
+ * end-to-end, toast on success, invalidate on mutate).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+function PrimaryButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{
+        padding: "8px 14px", borderRadius: 10,
+        backgroundColor: NAVY, color: WHITE, border: "none",
+        fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        display: "inline-flex", alignItems: "center", gap: 6,
+      }}>{children}</button>
+  );
+}
+function GhostButton({ onClick, children, color = MUTED }: { onClick: () => void; children: React.ReactNode; color?: string }) {
+  return (
+    <button onClick={onClick}
+      style={{
+        padding: "5px 10px", borderRadius: 8,
+        backgroundColor: `${color}10`, color, border: "none",
+        fontSize: 10, fontWeight: 600, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 4,
+      }}>{children}</button>
+  );
+}
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontSize: 10, color: MUTED, textTransform: "uppercase",
+      letterSpacing: "0.06em", fontWeight: 600,
+    }}>{children}</span>
+  );
+}
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }} />
+  );
+}
+function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%", minHeight: 60, resize: "vertical", fontFamily: "inherit",
+        ...props.style,
+      }} />
+  );
+}
+function SelectInput({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: React.ReactNode }) {
+  return (
+    <select {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }}>{children}</select>
+  );
+}
+function FormGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+    </label>
+  );
+}
+
+const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
+const todayISO = (): string => new Date().toISOString().slice(0, 10);
+
+/* ─── Certification ───────────────────────────────────────────────────── */
+function CertificationsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hubAdmin.certifications.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    studentName: "", studentRef: "",
+    programme: PROGRAMMES[0]?.name || "",
+    level: "Foundation" as const,
+    issuingBody: "", certificateRef: "",
+    issueDate: todayISO(),
+    expiryDate: "",
+    skills: "",
+    status: "Issued" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.hubAdmin.certifications.create.useMutation({
+    onSuccess: () => {
+      toast.success("Certification logged");
+      utils.hubAdmin.certifications.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hubAdmin.certifications.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hubAdmin.certifications.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.certifications.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hubAdmin.certifications.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Issued certifications — Google, Coursera, internal HAMZURY certs.">
+        Certification
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Issued" value={rows.filter(r => r.status === "Issued").length} color={GREEN_OK} />
+        <MiniStat label="Pending" value={rows.filter(r => r.status === "Pending").length} color={GOLD} />
+        <MiniStat label="Expired" value={rows.filter(r => r.status === "Expired").length} color={RED} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Certification</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Student Name"><TextInput value={form.studentName} onChange={e => setForm({ ...form, studentName: e.target.value })} /></FormField>
+              <FormField label="Student Ref"><TextInput value={form.studentRef} onChange={e => setForm({ ...form, studentRef: e.target.value })} placeholder="e.g. HMZ-26/4-1234" /></FormField>
+              <FormField label="Programme">
+                <SelectInput value={form.programme} onChange={e => setForm({ ...form, programme: e.target.value })}>
+                  {PROGRAMMES.map(p => <option key={p.key} value={p.name}>{p.name}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Level">
+                <SelectInput value={form.level} onChange={e => setForm({ ...form, level: e.target.value as any })}>
+                  {["Foundation", "Intermediate", "Advanced", "Mastery", "Internal", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Issuing Body"><TextInput value={form.issuingBody} onChange={e => setForm({ ...form, issuingBody: e.target.value })} placeholder="Google / Coursera / HAMZURY" /></FormField>
+              <FormField label="Certificate Ref"><TextInput value={form.certificateRef} onChange={e => setForm({ ...form, certificateRef: e.target.value })} placeholder="Cert ID / URL" /></FormField>
+              <FormField label="Issue Date"><TextInput type="date" value={form.issueDate} onChange={e => setForm({ ...form, issueDate: e.target.value })} /></FormField>
+              <FormField label="Expiry Date"><TextInput type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Issued", "Pending", "Revoked", "Expired"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Skills validated (one per line)"><TextArea value={form.skills} onChange={e => setForm({ ...form, skills: e.target.value })} placeholder={"SEO\nAnalytics\nAds"} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.studentName.trim()) { toast.error("Student name is required"); return; }
+                if (!form.programme.trim()) { toast.error("Programme is required"); return; }
+                if (!form.issueDate) { toast.error("Issue date is required"); return; }
+                createMut.mutate({
+                  studentName: form.studentName,
+                  studentRef: form.studentRef || null,
+                  programme: form.programme,
+                  level: form.level,
+                  issuingBody: form.issuingBody || null,
+                  certificateRef: form.certificateRef || null,
+                  issueDate: form.issueDate,
+                  expiryDate: form.expiryDate || null,
+                  skills: splitLines(form.skills),
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={BadgeCheck} title="No certifications logged" hint="Track every issued cert here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.studentName}</p>
+                      <StatusPill label={r.level} tone="muted" />
+                      <StatusPill label={r.status} tone={r.status === "Issued" ? "green" : r.status === "Pending" ? "gold" : "red"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.programme}
+                      {r.issuingBody && <> · {r.issuingBody}</>}
+                      {r.studentRef && <> · {r.studentRef}</>}
+                    </p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                      Issued {fmtDate(r.issueDate)}
+                      {r.expiryDate && <> · Expires {fmtDate(r.expiryDate)}</>}
+                      {r.certificateRef && <> · {r.certificateRef}</>}
+                    </p>
+                    {Array.isArray(r.skills) && r.skills.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.skills.map((s: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: NAVY, fontWeight: 600 }}>{s}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Issued", "Pending", "Revoked", "Expired"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this certification?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Alumni ──────────────────────────────────────────────────────────── */
+function AlumniSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hubAdmin.alumni.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    studentName: "", studentRef: "",
+    programme: PROGRAMMES[0]?.name || "",
+    graduationDate: todayISO(),
+    currentEmployer: "", jobTitle: "",
+    placementStatus: "Seeking" as const,
+    email: "", phone: "",
+    skills: "",
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.hubAdmin.alumni.create.useMutation({
+    onSuccess: () => {
+      toast.success("Alumni added");
+      utils.hubAdmin.alumni.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hubAdmin.alumni.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hubAdmin.alumni.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.alumni.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hubAdmin.alumni.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="HAMZURY HUB alumni — placements + ongoing contact.">
+        Alumni
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Employed" value={rows.filter(r => r.placementStatus === "Employed").length} color={GREEN_OK} />
+        <MiniStat label="Self-Employed" value={rows.filter(r => r.placementStatus === "Self-Employed").length} color={PURPLE} />
+        <MiniStat label="Seeking" value={rows.filter(r => r.placementStatus === "Seeking").length} color={ORANGE} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Alumni</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Student Name"><TextInput value={form.studentName} onChange={e => setForm({ ...form, studentName: e.target.value })} /></FormField>
+              <FormField label="Student Ref"><TextInput value={form.studentRef} onChange={e => setForm({ ...form, studentRef: e.target.value })} /></FormField>
+              <FormField label="Programme">
+                <SelectInput value={form.programme} onChange={e => setForm({ ...form, programme: e.target.value })}>
+                  {PROGRAMMES.map(p => <option key={p.key} value={p.name}>{p.name}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Graduation Date"><TextInput type="date" value={form.graduationDate} onChange={e => setForm({ ...form, graduationDate: e.target.value })} /></FormField>
+              <FormField label="Placement Status">
+                <SelectInput value={form.placementStatus} onChange={e => setForm({ ...form, placementStatus: e.target.value as any })}>
+                  {["Employed", "Self-Employed", "Internship", "Further Studies", "Seeking", "Unknown"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Current Employer"><TextInput value={form.currentEmployer} onChange={e => setForm({ ...form, currentEmployer: e.target.value })} /></FormField>
+              <FormField label="Job Title"><TextInput value={form.jobTitle} onChange={e => setForm({ ...form, jobTitle: e.target.value })} /></FormField>
+              <FormField label="Email"><TextInput type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></FormField>
+              <FormField label="Phone"><TextInput value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Skills (one per line)"><TextArea value={form.skills} onChange={e => setForm({ ...form, skills: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.studentName.trim()) { toast.error("Student name is required"); return; }
+                if (!form.programme.trim()) { toast.error("Programme is required"); return; }
+                if (!form.graduationDate) { toast.error("Graduation date is required"); return; }
+                createMut.mutate({
+                  studentName: form.studentName,
+                  studentRef: form.studentRef || null,
+                  programme: form.programme,
+                  graduationDate: form.graduationDate,
+                  currentEmployer: form.currentEmployer || null,
+                  jobTitle: form.jobTitle || null,
+                  placementStatus: form.placementStatus,
+                  email: form.email || null,
+                  phone: form.phone || null,
+                  skills: splitLines(form.skills),
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={GraduationCap} title="No alumni logged" hint="Track every graduate here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.studentName}</p>
+                      <StatusPill
+                        label={r.placementStatus}
+                        tone={r.placementStatus === "Employed" || r.placementStatus === "Self-Employed" ? "green" :
+                              r.placementStatus === "Seeking" ? "orange" :
+                              r.placementStatus === "Internship" ? "blue" :
+                              r.placementStatus === "Further Studies" ? "purple" : "muted"}
+                      />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.programme} · Grad {fmtDate(r.graduationDate)}
+                      {r.studentRef && <> · {r.studentRef}</>}
+                    </p>
+                    {(r.currentEmployer || r.jobTitle) && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                        {r.jobTitle && <>{r.jobTitle}</>}
+                        {r.currentEmployer && <> @ {r.currentEmployer}</>}
+                      </p>
+                    )}
+                    {(r.email || r.phone) && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                        {r.email}{r.email && r.phone && <> · </>}{r.phone}
+                      </p>
+                    )}
+                    {Array.isArray(r.skills) && r.skills.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.skills.map((s: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: NAVY, fontWeight: 600 }}>{s}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.placementStatus} onChange={e => updateMut.mutate({ id: r.id, placementStatus: e.target.value as any })}>
+                      {["Employed", "Self-Employed", "Internship", "Further Studies", "Seeking", "Unknown"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this alumni record?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── LMS Progress ────────────────────────────────────────────────────── */
+function LmsProgressSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hubAdmin.lmsProgress.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    studentName: "", studentRef: "",
+    programme: PROGRAMMES[0]?.name || "",
+    currentModule: "",
+    completionPct: 0,
+    modulesCompleted: "",
+    lastActivity: todayISO(),
+    status: "Active" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.hubAdmin.lmsProgress.create.useMutation({
+    onSuccess: () => {
+      toast.success("Progress logged");
+      utils.hubAdmin.lmsProgress.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hubAdmin.lmsProgress.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hubAdmin.lmsProgress.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.lmsProgress.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hubAdmin.lmsProgress.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Track every student's LMS module progress + completion %.">
+        LMS Progress
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="On Track" value={rows.filter(r => r.status === "On Track" || r.status === "Active").length} color={GREEN_OK} />
+        <MiniStat label="Behind" value={rows.filter(r => r.status === "Behind").length} color={ORANGE} />
+        <MiniStat label="Stalled" value={rows.filter(r => r.status === "Stalled" || r.status === "Dropped").length} color={RED} />
+        <MiniStat label="Completed" value={rows.filter(r => r.status === "Completed").length} color={NAVY} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Progress Entry</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Student Name"><TextInput value={form.studentName} onChange={e => setForm({ ...form, studentName: e.target.value })} /></FormField>
+              <FormField label="Student Ref"><TextInput value={form.studentRef} onChange={e => setForm({ ...form, studentRef: e.target.value })} /></FormField>
+              <FormField label="Programme">
+                <SelectInput value={form.programme} onChange={e => setForm({ ...form, programme: e.target.value })}>
+                  {PROGRAMMES.map(p => <option key={p.key} value={p.name}>{p.name}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Current Module"><TextInput value={form.currentModule} onChange={e => setForm({ ...form, currentModule: e.target.value })} /></FormField>
+              <FormField label="Completion %">
+                <TextInput type="number" min={0} max={100} value={form.completionPct}
+                  onChange={e => setForm({ ...form, completionPct: Math.max(0, Math.min(100, parseInt(e.target.value || "0", 10) || 0)) })} />
+              </FormField>
+              <FormField label="Last Activity"><TextInput type="date" value={form.lastActivity} onChange={e => setForm({ ...form, lastActivity: e.target.value })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Active", "On Track", "Behind", "Stalled", "Completed", "Dropped"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Modules Completed (one per line)"><TextArea value={form.modulesCompleted} onChange={e => setForm({ ...form, modulesCompleted: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.studentName.trim()) { toast.error("Student name is required"); return; }
+                if (!form.programme.trim()) { toast.error("Programme is required"); return; }
+                createMut.mutate({
+                  studentName: form.studentName,
+                  studentRef: form.studentRef || null,
+                  programme: form.programme,
+                  currentModule: form.currentModule || null,
+                  completionPct: form.completionPct,
+                  modulesCompleted: splitLines(form.modulesCompleted),
+                  lastActivity: form.lastActivity || null,
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={BookOpen} title="No LMS progress logged" hint="Log every student's module progress here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.studentName}</p>
+                      <StatusPill
+                        label={r.status}
+                        tone={r.status === "Completed" ? "blue" :
+                              r.status === "On Track" || r.status === "Active" ? "green" :
+                              r.status === "Behind" ? "orange" :
+                              r.status === "Stalled" || r.status === "Dropped" ? "red" : "muted"}
+                      />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.programme}
+                      {r.currentModule && <> · {r.currentModule}</>}
+                      {r.studentRef && <> · {r.studentRef}</>}
+                    </p>
+                    <div style={{ marginTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                        <span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.04em", textTransform: "uppercase" }}>Progress</span>
+                        <span style={{ fontSize: 11, color: DARK, fontWeight: 700 }}>{r.completionPct}%</span>
+                      </div>
+                      <div style={{ height: 6, borderRadius: 3, backgroundColor: `${DARK}10`, overflow: "hidden" }}>
+                        <div style={{
+                          height: "100%", width: `${Math.max(0, Math.min(100, r.completionPct ?? 0))}%`,
+                          backgroundColor: r.status === "Behind" ? ORANGE : r.status === "Stalled" || r.status === "Dropped" ? RED : NAVY,
+                          transition: "width 0.3s ease",
+                        }} />
+                      </div>
+                    </div>
+                    {r.lastActivity && <p style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>Last activity {fmtDate(r.lastActivity)}</p>}
+                    {Array.isArray(r.modulesCompleted) && r.modulesCompleted.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.modulesCompleted.map((m: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: GREEN_OK, fontWeight: 600 }}>{m}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Active", "On Track", "Behind", "Stalled", "Completed", "Dropped"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this progress record?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Intern Coord ────────────────────────────────────────────────────── */
+function InternDutiesSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hubAdmin.internDuties.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    internName: "",
+    dutyTitle: "",
+    category: "Other" as const,
+    assignedDate: todayISO(),
+    dueDate: "",
+    checklist: "",
+    status: "Assigned" as const,
+    assignedBy: "",
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.hubAdmin.internDuties.create.useMutation({
+    onSuccess: () => {
+      toast.success("Duty assigned");
+      utils.hubAdmin.internDuties.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hubAdmin.internDuties.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hubAdmin.internDuties.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.internDuties.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hubAdmin.internDuties.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="HUB intern duty roster — assignments, checklists, status.">
+        Intern Coord
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Assigned" value={rows.filter(r => r.status === "Assigned").length} color={GOLD} />
+        <MiniStat label="In Progress" value={rows.filter(r => r.status === "In Progress").length} color={BLUE} />
+        <MiniStat label="Blocked" value={rows.filter(r => r.status === "Blocked").length} color={RED} />
+        <MiniStat label="Done" value={rows.filter(r => r.status === "Done").length} color={GREEN_OK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Duty</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Intern Name"><TextInput value={form.internName} onChange={e => setForm({ ...form, internName: e.target.value })} placeholder="Isa / Musa" /></FormField>
+              <FormField label="Duty Title"><TextInput value={form.dutyTitle} onChange={e => setForm({ ...form, dutyTitle: e.target.value })} /></FormField>
+              <FormField label="Category">
+                <SelectInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}>
+                  {["Teaching Support", "Admin", "Facilities", "Social Media", "LMS", "Events", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Assigned Date"><TextInput type="date" value={form.assignedDate} onChange={e => setForm({ ...form, assignedDate: e.target.value })} /></FormField>
+              <FormField label="Due Date"><TextInput type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Assigned", "In Progress", "Blocked", "Done", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Assigned By"><TextInput value={form.assignedBy} onChange={e => setForm({ ...form, assignedBy: e.target.value })} placeholder="Idris" /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Checklist (one per line)"><TextArea value={form.checklist} onChange={e => setForm({ ...form, checklist: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.internName.trim()) { toast.error("Intern name is required"); return; }
+                if (!form.dutyTitle.trim()) { toast.error("Duty title is required"); return; }
+                if (!form.assignedDate) { toast.error("Assigned date is required"); return; }
+                createMut.mutate({
+                  internName: form.internName,
+                  dutyTitle: form.dutyTitle,
+                  category: form.category,
+                  assignedDate: form.assignedDate,
+                  dueDate: form.dueDate || null,
+                  checklist: splitLines(form.checklist),
+                  status: form.status,
+                  assignedBy: form.assignedBy || null,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Briefcase} title="No duties assigned" hint="Assign every intern duty here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.dutyTitle}</p>
+                      <StatusPill label={r.category} tone="muted" />
+                      <StatusPill
+                        label={r.status}
+                        tone={r.status === "Done" ? "green" :
+                              r.status === "In Progress" ? "blue" :
+                              r.status === "Blocked" ? "red" :
+                              r.status === "Assigned" ? "gold" : "muted"}
+                      />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.internName}
+                      {r.assignedBy && <> · by {r.assignedBy}</>}
+                    </p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                      Assigned {fmtDate(r.assignedDate)}
+                      {r.dueDate && <> · Due {fmtDate(r.dueDate)}</>}
+                    </p>
+                    {Array.isArray(r.checklist) && r.checklist.length > 0 && (
+                      <ul style={{ listStyle: "none", padding: 0, margin: "8px 0 0", display: "flex", flexDirection: "column", gap: 4 }}>
+                        {r.checklist.map((c: string, i: number) => (
+                          <li key={i} style={{
+                            fontSize: 11, color: DARK, padding: "4px 8px", backgroundColor: WHITE, borderRadius: 6,
+                            display: "flex", alignItems: "center", gap: 6,
+                          }}>
+                            <CheckCircle2 size={10} style={{ color: NAVY, flexShrink: 0 }} />
+                            {c}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Assigned", "In Progress", "Blocked", "Done", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this duty?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── MetFix ──────────────────────────────────────────────────────────── */
+function MetfixSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hubAdmin.metfix.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    itemName: "",
+    jobType: "Repair" as const,
+    customerName: "", customerPhone: "",
+    intakeDate: todayISO(),
+    completedDate: "",
+    amount: "",
+    technician: "",
+    parts: "",
+    status: "Intake" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.hubAdmin.metfix.create.useMutation({
+    onSuccess: () => {
+      toast.success("Job logged");
+      utils.hubAdmin.metfix.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hubAdmin.metfix.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hubAdmin.metfix.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.metfix.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hubAdmin.metfix.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="MetFix unit — hardware sales, repairs, parts orders.">
+        MetFix
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Intake" value={rows.filter(r => r.status === "Intake").length} color={GOLD} />
+        <MiniStat label="In Progress" value={rows.filter(r => r.status === "In Progress").length} color={BLUE} />
+        <MiniStat label="Awaiting Parts" value={rows.filter(r => r.status === "Awaiting Parts").length} color={ORANGE} />
+        <MiniStat label="Delivered" value={rows.filter(r => r.status === "Delivered").length} color={GREEN_OK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New MetFix Job</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Item Name"><TextInput value={form.itemName} onChange={e => setForm({ ...form, itemName: e.target.value })} placeholder="e.g. HP Pavilion 15" /></FormField>
+              <FormField label="Job Type">
+                <SelectInput value={form.jobType} onChange={e => setForm({ ...form, jobType: e.target.value as any })}>
+                  {["Sale", "Repair", "Diagnosis", "Service", "Parts Order", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Customer Name"><TextInput value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} /></FormField>
+              <FormField label="Customer Phone"><TextInput value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} /></FormField>
+              <FormField label="Intake Date"><TextInput type="date" value={form.intakeDate} onChange={e => setForm({ ...form, intakeDate: e.target.value })} /></FormField>
+              <FormField label="Completed Date"><TextInput type="date" value={form.completedDate} onChange={e => setForm({ ...form, completedDate: e.target.value })} /></FormField>
+              <FormField label="Amount"><TextInput value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="e.g. ₦25,000" /></FormField>
+              <FormField label="Technician"><TextInput value={form.technician} onChange={e => setForm({ ...form, technician: e.target.value })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Intake", "In Progress", "Awaiting Parts", "Ready", "Delivered", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Parts (one per line)"><TextArea value={form.parts} onChange={e => setForm({ ...form, parts: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.itemName.trim()) { toast.error("Item name is required"); return; }
+                if (!form.intakeDate) { toast.error("Intake date is required"); return; }
+                createMut.mutate({
+                  itemName: form.itemName,
+                  jobType: form.jobType,
+                  customerName: form.customerName || null,
+                  customerPhone: form.customerPhone || null,
+                  intakeDate: form.intakeDate,
+                  completedDate: form.completedDate || null,
+                  amount: form.amount || null,
+                  technician: form.technician || null,
+                  parts: splitLines(form.parts),
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Wrench} title="No MetFix jobs logged" hint="Track every hardware sale, repair, and parts order here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.itemName}</p>
+                      <StatusPill label={r.jobType} tone="muted" />
+                      <StatusPill
+                        label={r.status}
+                        tone={r.status === "Delivered" ? "green" :
+                              r.status === "Ready" ? "blue" :
+                              r.status === "In Progress" ? "purple" :
+                              r.status === "Awaiting Parts" ? "orange" :
+                              r.status === "Cancelled" ? "red" : "gold"}
+                      />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.customerName && <>Customer: {r.customerName}</>}
+                      {r.customerPhone && <> · {r.customerPhone}</>}
+                    </p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                      Intake {fmtDate(r.intakeDate)}
+                      {r.completedDate && <> · Completed {fmtDate(r.completedDate)}</>}
+                      {r.amount && <> · {r.amount}</>}
+                      {r.technician && <> · Tech: {r.technician}</>}
+                    </p>
+                    {Array.isArray(r.parts) && r.parts.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.parts.map((p: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: NAVY, fontWeight: 600 }}>{p}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Intake", "In Progress", "Awaiting Parts", "Ready", "Delivered", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this MetFix job?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+

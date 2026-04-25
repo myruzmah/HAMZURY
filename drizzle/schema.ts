@@ -3029,3 +3029,141 @@ export const ceoWeeklyMeetings = mysqlTable("ceo_weekly_meetings", {
 export type CeoWeeklyMeeting = typeof ceoWeeklyMeetings.$inferSelect;
 export type InsertCeoWeeklyMeeting = typeof ceoWeeklyMeetings.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * HUB ADMIN PORTAL — Idris + Isa/Musa (interns)
+ * Five sections that previously lived inline (some localStorage-backed) on
+ * client/src/pages/HubAdminPortal.tsx are restored here as MySQL tables.
+ * Field shapes derived from the HUB Operations Guide — student
+ * certifications, alumni placements, LMS module progress, intern duty
+ * roster, and the MetFix hardware sales/service tracking unit.
+ *
+ * Multi-value JSON columns (stringified text):
+ *   - hub_certifications.skills            → string[] (skills validated)
+ *   - hub_alumni.skills                    → string[]
+ *   - hub_lms_progress.modulesCompleted    → string[]
+ *   - hub_intern_duties.checklist          → string[]
+ *   - hub_metfix.parts                     → string[]
+ *
+ * No FKs between these tables (each is independent). No server-generated ref —
+ * rows are int-id only. Auth: founder | ceo | skills_staff (matches the
+ * page-level ROLE_ACCESS in App.tsx for /hub/admin).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** HUB student certifications — issued certs per programme/level/date. */
+export const hubCertifications = mysqlTable("hub_certifications", {
+  id: int("id").autoincrement().primaryKey(),
+  studentName: varchar("studentName", { length: 255 }).notNull(),
+  studentRef: varchar("studentRef", { length: 60 }),
+  programme: varchar("programme", { length: 255 }).notNull(),
+  level: mysqlEnum("hubCertificationLevel", [
+    "Foundation", "Intermediate", "Advanced", "Mastery", "Internal", "Other",
+  ]).default("Foundation").notNull(),
+  issuingBody: varchar("issuingBody", { length: 255 }),
+  certificateRef: varchar("certificateRef", { length: 200 }),
+  issueDate: varchar("issueDate", { length: 10 }).notNull(),
+  expiryDate: varchar("expiryDate", { length: 10 }),
+  /** JSON-stringified string[] — specific skills validated by the cert. */
+  skills: text("skills"),
+  status: mysqlEnum("hubCertificationStatus", [
+    "Issued", "Pending", "Revoked", "Expired",
+  ]).default("Issued").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubCertification = typeof hubCertifications.$inferSelect;
+export type InsertHubCertification = typeof hubCertifications.$inferInsert;
+
+/** HUB alumni — graduates, current employer, placement status, contact. */
+export const hubAlumni = mysqlTable("hub_alumni", {
+  id: int("id").autoincrement().primaryKey(),
+  studentName: varchar("studentName", { length: 255 }).notNull(),
+  studentRef: varchar("studentRef", { length: 60 }),
+  programme: varchar("programme", { length: 255 }).notNull(),
+  graduationDate: varchar("graduationDate", { length: 10 }).notNull(),
+  currentEmployer: varchar("currentEmployer", { length: 255 }),
+  jobTitle: varchar("jobTitle", { length: 255 }),
+  placementStatus: mysqlEnum("hubAlumniPlacement", [
+    "Employed", "Self-Employed", "Internship", "Further Studies", "Seeking", "Unknown",
+  ]).default("Seeking").notNull(),
+  email: varchar("email", { length: 320 }),
+  phone: varchar("phone", { length: 50 }),
+  /** JSON-stringified string[] — career skills profile. */
+  skills: text("skills"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubAlumni = typeof hubAlumni.$inferSelect;
+export type InsertHubAlumni = typeof hubAlumni.$inferInsert;
+
+/** HUB LMS progress — student LMS module progress + completion %. */
+export const hubLmsProgress = mysqlTable("hub_lms_progress", {
+  id: int("id").autoincrement().primaryKey(),
+  studentName: varchar("studentName", { length: 255 }).notNull(),
+  studentRef: varchar("studentRef", { length: 60 }),
+  programme: varchar("programme", { length: 255 }).notNull(),
+  currentModule: varchar("currentModule", { length: 255 }),
+  /** Whole percent 0-100. */
+  completionPct: int("completionPct").default(0).notNull(),
+  /** JSON-stringified string[] — modules completed. */
+  modulesCompleted: text("modulesCompleted"),
+  lastActivity: varchar("lastActivity", { length: 10 }),
+  status: mysqlEnum("hubLmsProgressStatus", [
+    "Active", "On Track", "Behind", "Stalled", "Completed", "Dropped",
+  ]).default("Active").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubLmsProgress = typeof hubLmsProgress.$inferSelect;
+export type InsertHubLmsProgress = typeof hubLmsProgress.$inferInsert;
+
+/** HUB intern duties — duty assignments for HUB interns + status. */
+export const hubInternDuties = mysqlTable("hub_intern_duties", {
+  id: int("id").autoincrement().primaryKey(),
+  internName: varchar("internName", { length: 255 }).notNull(),
+  dutyTitle: varchar("dutyTitle", { length: 255 }).notNull(),
+  category: mysqlEnum("hubInternDutyCategory", [
+    "Teaching Support", "Admin", "Facilities", "Social Media", "LMS", "Events", "Other",
+  ]).default("Other").notNull(),
+  assignedDate: varchar("assignedDate", { length: 10 }).notNull(),
+  dueDate: varchar("dueDate", { length: 10 }),
+  /** JSON-stringified string[] — checklist of sub-items. */
+  checklist: text("checklist"),
+  status: mysqlEnum("hubInternDutyStatus", [
+    "Assigned", "In Progress", "Blocked", "Done", "Cancelled",
+  ]).default("Assigned").notNull(),
+  assignedBy: varchar("assignedBy", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubInternDuty = typeof hubInternDuties.$inferSelect;
+export type InsertHubInternDuty = typeof hubInternDuties.$inferInsert;
+
+/** HUB MetFix — hardware sales/service tracking unit (computers, repairs, parts). */
+export const hubMetfix = mysqlTable("hub_metfix", {
+  id: int("id").autoincrement().primaryKey(),
+  itemName: varchar("itemName", { length: 255 }).notNull(),
+  jobType: mysqlEnum("hubMetfixJobType", [
+    "Sale", "Repair", "Diagnosis", "Service", "Parts Order", "Other",
+  ]).default("Repair").notNull(),
+  customerName: varchar("customerName", { length: 255 }),
+  customerPhone: varchar("customerPhone", { length: 50 }),
+  intakeDate: varchar("intakeDate", { length: 10 }).notNull(),
+  completedDate: varchar("completedDate", { length: 10 }),
+  amount: varchar("amount", { length: 80 }),
+  technician: varchar("technician", { length: 255 }),
+  /** JSON-stringified string[] — parts used / ordered. */
+  parts: text("parts"),
+  status: mysqlEnum("hubMetfixStatus", [
+    "Intake", "In Progress", "Awaiting Parts", "Ready", "Delivered", "Cancelled",
+  ]).default("Intake").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubMetfix = typeof hubMetfix.$inferSelect;
+export type InsertHubMetfix = typeof hubMetfix.$inferInsert;
+
