@@ -36,10 +36,14 @@ const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
 const PURPLE = "#8B5CF6";
 
+// 2026-04-25 — Section list aligned to Phase 2 Finance Master Dashboard
+// 8-tab spec (Overview, Invoices, Payments, Bank Reconciliation,
+// Commissions, Tax Filings, Reports, Calendar). Cut: allocations, aifund,
+// expenses, reportArchive (not in spec — data layer retained).
 type Section =
-  | "dashboard" | "invoices" | "payments" | "allocations"
-  | "commissions" | "aifund" | "reports" | "reportArchive"
-  | "bankrecon" | "taxfilings" | "expenses"
+  | "dashboard" | "invoices" | "payments"
+  | "commissions" | "reports"
+  | "bankrecon" | "taxfilings"
   | "calendar";
 
 function useIsMobile(breakpoint = 900) {
@@ -145,18 +149,15 @@ export default function FinancePortal() {
   }
   if (!user) return null;
 
+  // 2026-04-25 — NAV reduced to Phase 2 Finance Master Dashboard 8 tabs.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",   icon: LayoutDashboard, label: "Overview" },
     { key: "invoices",    icon: Receipt,         label: "Invoices" },
     { key: "payments",    icon: DollarSign,      label: "Payments In" },
-    { key: "expenses",    icon: CreditCard,      label: "Expenses" },
     { key: "bankrecon",   icon: Landmark,        label: "Bank Reconciliation" },
     { key: "commissions", icon: Award,           label: "Commissions (40/60)" },
-    { key: "allocations", icon: PiggyBank,       label: "Allocations (50/30/20)" },
     { key: "taxfilings",  icon: FileText,        label: "Tax Filings" },
-    { key: "aifund",      icon: Activity,        label: "AI Fund" },
     { key: "reports",     icon: TrendingUp,      label: "Monthly Report" },
-    { key: "reportArchive", icon: Archive,       label: "Report Archive" },
     { key: "calendar",    icon: CalendarIcon,    label: "Finance Calendar" },
   ];
 
@@ -277,18 +278,15 @@ export default function FinancePortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
+            {/* 2026-04-25 — Dispatcher reduced to Phase 2 Finance 8-tab spec. */}
             {active === "dashboard"   && <OverviewSection onGoto={setActive} />}
             {active === "invoices"    && <InvoicesSection />}
             {active === "payments"    && <PaymentsSection />}
-            {active === "expenses"    && <ExpensesSection />}
             {active === "bankrecon"   && <BankReconSection />}
             {active === "commissions" && <CommissionsSection />}
-            {active === "allocations" && <AllocationsSection />}
             {active === "taxfilings"  && <TaxFilingsSection />}
-            {active === "aifund"      && <AIFundSection />}
             {active === "reports"     && <ReportsSection />}
-            {active === "reportArchive" && <ReportArchiveSection />}
-            {active === "calendar"        && <FinanceCalendarSection />}
+            {active === "calendar"    && <FinanceCalendarSection />}
           </div>
         </div>
       </main>
@@ -302,7 +300,7 @@ export default function FinancePortal() {
 function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const rev = trpc.commissions.revenueStats.useQuery(undefined, { retry: false });
   const aiFund = trpc.finance.aiFund.useQuery(undefined, { retry: false });
-  const allocations = trpc.finance.allocations.useQuery(undefined, { retry: false });
+  // 2026-04-25 — `allocations` query removed alongside Allocations section cut.
   const invoicesQ = trpc.invoices.list.useQuery(undefined, { retry: false });
 
   const r = rev.data;
@@ -329,7 +327,7 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const kpis = [
     { label: "Revenue (Paid)",  value: fmtNaira(r?.totalRevenue),    icon: DollarSign, color: GREEN,  section: "payments" as Section },
     { label: "Pending Revenue", value: fmtNaira(r?.pendingRevenue),  icon: Clock,      color: ORANGE, section: "invoices" as Section },
-    { label: "AI Fund Balance", value: fmtNaira(aiFund.data?.balance), icon: Activity, color: PURPLE, section: "aifund" as Section },
+    { label: "AI Fund Balance", value: fmtNaira(aiFund.data?.balance), icon: Activity, color: PURPLE, section: "reports" as Section },
     { label: "Invoices Paid",   value: paid,                         icon: CheckCircle2, color: GREEN, section: "invoices" as Section },
     { label: "Invoices Pending",value: pending,                      icon: Receipt,    color: GOLD,   section: "invoices" as Section },
     { label: "Overdue",         value: overdue,                      icon: AlertCircle, color: RED,   section: "invoices" as Section },
@@ -411,30 +409,7 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
         </div>
       </Card>
 
-      <Card>
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Recent Allocations
-        </p>
-        {(allocations.data || []).length === 0 ? (
-          <EmptyState icon={PiggyBank} title="No allocations yet" hint="Every confirmed payment splits 50/30/20 and lands here." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {((allocations.data || []) as any[]).slice(0, 8).map((a: any) => (
-              <div key={a.id} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "8px 10px", backgroundColor: BG, borderRadius: 8, flexWrap: "wrap", gap: 8,
-              }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{a.clientName || "—"}</p>
-                  <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>{a.transactionRef}</p>
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: GREEN }}>{fmtNaira(a.totalAmount)}</span>
-                <StatusPill label={a.status} tone={a.status === "paid" ? "green" : a.status === "approved" ? "gold" : "muted"} />
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
+      {/* 2026-04-25 — Recent Allocations card removed alongside Allocations section cut. */}
     </div>
   );
 }
@@ -636,93 +611,7 @@ function PaymentsSection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * 4. ALLOCATIONS (50/30/20)
- * ═══════════════════════════════════════════════════════════════════════ */
-function AllocationsSection() {
-  const isMobile = useIsMobile();
-  const listQ = trpc.finance.allocations.useQuery(undefined, { retry: false });
-  const rows = ((listQ.data || []) as any[]);
-
-  const totalRev = rows.reduce((s, a) => s + parseFloat(a.totalAmount || 0), 0);
-  const totalStaff = rows.reduce((s, a) => s + parseFloat(a.humanStaffAmount || 0), 0);
-  const totalAi = rows.reduce((s, a) => s + parseFloat(a.aiFundAmount || 0), 0);
-  const totalAffPool = rows.reduce((s, a) => s + parseFloat(a.affiliatePoolAmount || 0), 0);
-
-  return (
-    <div>
-      <SectionTitle sub="Institutional money split (legacy backend model). Used for bookkeeping across company functions. The division + CSO payout lives in the 'Commissions (40/60)' tab — that's what staff actually get paid.">
-        Revenue Allocations · 50/30/20
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
-        <MiniStat label="Total Allocated"  value={fmtNaira(totalRev)}     color={GREEN} />
-        <MiniStat label="Staff (Human)"    value={fmtNaira(totalStaff)}   color={GOLD} />
-        <MiniStat label="AI Fund"          value={fmtNaira(totalAi)}      color={PURPLE} />
-        <MiniStat label="Affiliate Pool"   value={fmtNaira(totalAffPool)} color={BLUE} />
-      </div>
-
-      <Card>
-        {rows.length === 0 ? (
-          <EmptyState icon={PiggyBank} title="No allocations yet" hint="Payments flow here after they're confirmed." />
-        ) : isMobile ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {rows.slice(0, 40).map((a: any) => (
-              <div key={a.id} style={{
-                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{a.clientName || "—"}</p>
-                    <p style={{ fontSize: 10, color: MUTED, fontFamily: "monospace", marginTop: 2 }}>{a.transactionRef}</p>
-                  </div>
-                  <StatusPill label={a.status} tone={a.status === "paid" ? "green" : a.status === "approved" ? "gold" : "muted"} />
-                </div>
-                <div style={{ marginTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, fontSize: 10, color: MUTED }}>
-                  <span>Total: <strong style={{ color: DARK }}>{fmtNaira(a.totalAmount)}</strong></span>
-                  <span>Staff: <strong style={{ color: GOLD }}>{fmtNaira(a.humanStaffAmount)}</strong></span>
-                  <span>AI: <strong style={{ color: PURPLE }}>{fmtNaira(a.aiFundAmount)}</strong></span>
-                  <span>Affiliate: <strong style={{ color: BLUE }}>{fmtNaira(a.affiliatePoolAmount)}</strong></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
-              <thead>
-                <tr style={{ textAlign: "left", color: MUTED, fontSize: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                  <th style={{ padding: "8px 10px" }}>Ref</th>
-                  <th style={{ padding: "8px 10px" }}>Client</th>
-                  <th style={{ padding: "8px 10px" }}>Total</th>
-                  <th style={{ padding: "8px 10px" }}>Staff</th>
-                  <th style={{ padding: "8px 10px" }}>AI Fund</th>
-                  <th style={{ padding: "8px 10px" }}>Affiliate</th>
-                  <th style={{ padding: "8px 10px" }}>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.slice(0, 40).map((a: any) => (
-                  <tr key={a.id} style={{ borderTop: `1px solid ${DARK}06` }}>
-                    <td style={{ padding: "10px 10px", fontFamily: "monospace", fontSize: 10 }}>{a.transactionRef}</td>
-                    <td style={{ padding: "10px 10px" }}>{a.clientName || "—"}</td>
-                    <td style={{ padding: "10px 10px", fontWeight: 700 }}>{fmtNaira(a.totalAmount)}</td>
-                    <td style={{ padding: "10px 10px", color: GOLD }}>{fmtNaira(a.humanStaffAmount)}</td>
-                    <td style={{ padding: "10px 10px", color: PURPLE }}>{fmtNaira(a.aiFundAmount)}</td>
-                    <td style={{ padding: "10px 10px", color: BLUE }}>{fmtNaira(a.affiliatePoolAmount)}</td>
-                    <td style={{ padding: "10px 10px" }}>
-                      <StatusPill label={a.status} tone={a.status === "paid" ? "green" : a.status === "approved" ? "gold" : "muted"} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Allocations (50/30/20) section removed (not in Phase 2 Finance Master Dashboard 8-tab spec). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════
  * 5. COMMISSIONS — 40/60 + CSO 18% model (per Finance Operations Guide)
@@ -905,50 +794,7 @@ function Breakdown({ label, value, color }: { label: string; value: string; colo
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * 6. AI FUND
- * ═══════════════════════════════════════════════════════════════════════ */
-function AIFundSection() {
-  const q = trpc.finance.aiFund.useQuery(undefined, { retry: false });
-  const data = q.data;
-
-  return (
-    <div>
-      <SectionTitle sub="AI Fund accumulates 9% of every payment (+ up to 30% of the staff pool when AI did >50% of the work).">
-        AI Fund
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
-        <MiniStat label="Current Balance" value={fmtNaira(data?.balance)}   color={PURPLE} />
-        <MiniStat label="Entries"         value={data?.log?.length ?? 0}    color={GOLD} />
-      </div>
-
-      <Card>
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Fund Log — Recent
-        </p>
-        {!data?.log || data.log.length === 0 ? (
-          <EmptyState icon={Activity} title="No fund entries yet" />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {data.log.slice(0, 40).map((l: any) => (
-              <div key={l.id} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "8px 10px", backgroundColor: BG, borderRadius: 8, gap: 10,
-              }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 11, color: DARK }}>{l.description}</p>
-                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{fmtDate(l.createdAt)}</p>
-                </div>
-                <span style={{ fontSize: 12, fontWeight: 700, color: PURPLE }}>{fmtNaira(l.amount)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — AI Fund section removed (not in Phase 2 Finance Master Dashboard 8-tab spec). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════
  * 7. REPORTS — Monthly Financial Report (per Finance Operations Guide)
@@ -1224,158 +1070,7 @@ function MetricBar({
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * 8. EXPENSES (localStorage v1 until backend table is added)
- * ═══════════════════════════════════════════════════════════════════════ */
-type ExpenseRow = {
-  id: string;
-  date: string;
-  category: "fixed" | "variable";
-  vendor: string;
-  description: string;
-  amount: number;
-};
-const EXPENSES_STORE_KEY = "hamzury_finance_expenses_v1";
-
-function loadExpenses(): ExpenseRow[] {
-  try {
-    const raw = localStorage.getItem(EXPENSES_STORE_KEY);
-    if (!raw) return [];
-    return JSON.parse(raw);
-  } catch { return []; }
-}
-function saveExpenses(rows: ExpenseRow[]) {
-  try { localStorage.setItem(EXPENSES_STORE_KEY, JSON.stringify(rows)); } catch {}
-}
-
-function ExpensesSection() {
-  const isMobile = useIsMobile();
-  const [rows, setRows] = useState<ExpenseRow[]>(loadExpenses);
-  const [form, setForm] = useState({
-    date: new Date().toISOString().split("T")[0],
-    category: "fixed" as "fixed" | "variable",
-    vendor: "",
-    description: "",
-    amount: "",
-  });
-
-  const add = () => {
-    const amt = parseFloat(form.amount);
-    if (!form.vendor.trim() || !form.description.trim() || !amt || amt <= 0) {
-      toast.error("Fill vendor, description + positive amount"); return;
-    }
-    const next: ExpenseRow[] = [
-      { id: Math.random().toString(36).slice(2), ...form, amount: amt },
-      ...rows,
-    ];
-    setRows(next); saveExpenses(next);
-    setForm({ ...form, vendor: "", description: "", amount: "" });
-    toast.success("Expense recorded");
-  };
-
-  const del = (id: string) => {
-    if (!confirm("Delete this expense?")) return;
-    const next = rows.filter(r => r.id !== id);
-    setRows(next); saveExpenses(next);
-  };
-
-  // This-month totals
-  const now = new Date();
-  const thisMonth = rows.filter(r => {
-    try {
-      const d = new Date(r.date);
-      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    } catch { return false; }
-  });
-  const fixed    = thisMonth.filter(r => r.category === "fixed").reduce((s, r) => s + r.amount, 0);
-  const variable = thisMonth.filter(r => r.category === "variable").reduce((s, r) => s + r.amount, 0);
-
-  return (
-    <div>
-      <SectionTitle sub="Fixed + variable costs. Stored in your browser for now — moves to a DB table when backend lands.">
-        Expenses
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
-        <MiniStat label="Fixed (month)"    value={fmtNaira(fixed)}      color={ORANGE} />
-        <MiniStat label="Variable (month)" value={fmtNaira(variable)}   color={RED} />
-        <MiniStat label="Total (month)"    value={fmtNaira(fixed + variable)} color={GOLD} />
-        <MiniStat label="Entries"          value={rows.length}          color={BLUE} />
-      </div>
-
-      <Card style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Record Expense
-        </p>
-        <div style={{
-          display: "grid", gap: 10,
-          gridTemplateColumns: isMobile ? "1fr" : "120px 120px 1fr 1fr 140px auto",
-          alignItems: "end",
-        }}>
-          <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}
-            style={inputBox()} />
-          <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}
-            style={inputBox()}>
-            <option value="fixed">Fixed</option>
-            <option value="variable">Variable</option>
-          </select>
-          <input placeholder="Vendor (e.g. AfeesHost)" value={form.vendor}
-            onChange={e => setForm({ ...form, vendor: e.target.value })} style={inputBox()} />
-          <input placeholder="Description" value={form.description}
-            onChange={e => setForm({ ...form, description: e.target.value })} style={inputBox()} />
-          <input type="number" placeholder="Amount ₦" value={form.amount}
-            onChange={e => setForm({ ...form, amount: e.target.value })}
-            style={{ ...inputBox(), fontFamily: "monospace" }} />
-          <button onClick={add} style={{
-            padding: "10px 14px", borderRadius: 10,
-            backgroundColor: GREEN, color: WHITE, border: "none",
-            fontSize: 12, fontWeight: 600, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6, justifyContent: "center",
-          }}>
-            <Plus size={12} /> Add
-          </button>
-        </div>
-      </Card>
-
-      <Card>
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
-          Recorded Expenses ({rows.length})
-        </p>
-        {rows.length === 0 ? (
-          <EmptyState icon={CreditCard} title="No expenses recorded" hint="Add your first above." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {rows.slice(0, 80).map(r => (
-              <div key={r.id} style={{
-                padding: "10px 12px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
-                display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap",
-              }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
-                    {r.vendor} <span style={{ color: MUTED, fontWeight: 400 }}>· {r.description}</span>
-                  </p>
-                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                    {fmtDate(r.date)} · {r.category}
-                  </p>
-                </div>
-                <span style={{ fontSize: 13, fontWeight: 700, color: r.category === "fixed" ? ORANGE : RED }}>
-                  {fmtNaira(r.amount)}
-                </span>
-                <button onClick={() => del(r.id)} style={{
-                  padding: "5px 8px", borderRadius: 8,
-                  backgroundColor: `${RED}10`, color: RED, border: "none",
-                  fontSize: 10, fontWeight: 600, cursor: "pointer",
-                }}>
-                  <Trash2 size={11} />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Expenses section + helpers removed (not in Phase 2 Finance Master Dashboard 8-tab spec). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════
  * 9. BANK RECONCILIATION (daily, localStorage v1)
@@ -1827,267 +1522,4 @@ function fmtMonthYM(ym: string | null | undefined): string {
   return d.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
 }
 
-function ReportArchiveSection() {
-  const { user } = useAuth({ redirectOnUnauthenticated: true });
-  const utils = trpc.useUtils();
-  const q = trpc.financeOps.monthlyReports.list.useQuery(undefined, { retry: false });
-  const rows = ((q.data || []) as any[]);
-
-  const [showForm, setShowForm] = useState(false);
-  const initForm = {
-    month: thisMonthYM(),
-    revenue: "",
-    expenses: "",
-    profit: "",
-    profitTouched: false,
-    notes: "",
-  };
-  const [form, setForm] = useState(initForm);
-
-  // Auto-derive profit unless the user has explicitly edited it.
-  const autoProfit = useMemo(() => {
-    const r = parseFloat(form.revenue);
-    const e = parseFloat(form.expenses);
-    if (isNaN(r) && isNaN(e)) return "";
-    return ((isNaN(r) ? 0 : r) - (isNaN(e) ? 0 : e)).toString();
-  }, [form.revenue, form.expenses]);
-  const profitValue = form.profitTouched ? form.profit : autoProfit;
-
-  const createMut = trpc.financeOps.monthlyReports.create.useMutation({
-    onSuccess: () => {
-      toast.success("Monthly report archived");
-      utils.financeOps.monthlyReports.list.invalidate();
-      setShowForm(false);
-      setForm(initForm);
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const updateMut = trpc.financeOps.monthlyReports.update.useMutation({
-    onSuccess: () => { toast.success("Updated"); utils.financeOps.monthlyReports.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-  const removeMut = trpc.financeOps.monthlyReports.remove.useMutation({
-    onSuccess: () => { toast.success("Removed"); utils.financeOps.monthlyReports.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editDraft, setEditDraft] = useState<{
-    month: string; revenue: string; expenses: string; profit: string; notes: string;
-  }>({ month: "", revenue: "", expenses: "", profit: "", notes: "" });
-
-  const openEdit = (r: any) => {
-    setEditingId(r.id);
-    setEditDraft({
-      month: r.month || "",
-      revenue: r.revenue ?? "",
-      expenses: r.expenses ?? "",
-      profit: r.profit ?? "",
-      notes: r.notes ?? "",
-    });
-  };
-  const cancelEdit = () => { setEditingId(null); };
-  const saveEdit = () => {
-    if (editingId == null) return;
-    if (!/^\d{4}-\d{2}$/.test(editDraft.month)) {
-      toast.error("Month must be YYYY-MM");
-      return;
-    }
-    updateMut.mutate({
-      id: editingId,
-      month: editDraft.month,
-      revenue: editDraft.revenue || null,
-      expenses: editDraft.expenses || null,
-      profit: editDraft.profit || null,
-      notes: editDraft.notes || null,
-    });
-    setEditingId(null);
-  };
-
-  return (
-    <div>
-      <SectionTitle sub="Archive each month's P&L summary for the audit trail. View past months any time.">
-        Monthly Report Archive
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
-        <MiniStat label="Months Archived" value={rows.length} color={GREEN} />
-        <MiniStat
-          label="Latest Revenue"
-          value={fmtNaira(rows[0]?.revenue)}
-          color={GOLD}
-        />
-        <MiniStat
-          label="Latest Profit"
-          value={fmtNaira(rows[0]?.profit)}
-          color={
-            rows[0]?.profit !== null && rows[0]?.profit !== undefined && parseFloat(rows[0].profit) >= 0
-              ? GREEN : RED
-          }
-        />
-        <MiniStat label="Latest Month" value={fmtMonthYM(rows[0]?.month)} color={DARK} />
-      </div>
-
-      <Card style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Archive a Month
-          </p>
-          <PrimaryButton onClick={() => setShowForm(!showForm)}>
-            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Archive Report"}
-          </PrimaryButton>
-        </div>
-        {showForm && (
-          <>
-            <FormGrid>
-              <FormField label="Month (YYYY-MM)">
-                <TextInput
-                  type="month"
-                  value={form.month}
-                  onChange={e => setForm({ ...form, month: e.target.value })}
-                />
-              </FormField>
-              <FormField label="Revenue (₦)">
-                <TextInput
-                  type="number" step="0.01" min="0"
-                  value={form.revenue}
-                  onChange={e => setForm({ ...form, revenue: e.target.value })}
-                  placeholder="0.00"
-                />
-              </FormField>
-              <FormField label="Expenses (₦)">
-                <TextInput
-                  type="number" step="0.01" min="0"
-                  value={form.expenses}
-                  onChange={e => setForm({ ...form, expenses: e.target.value })}
-                  placeholder="0.00"
-                />
-              </FormField>
-              <FormField label="Profit (₦) — auto from rev − exp">
-                <TextInput
-                  type="number" step="0.01"
-                  value={profitValue}
-                  onChange={e => setForm({ ...form, profit: e.target.value, profitTouched: true })}
-                  placeholder="0.00"
-                />
-              </FormField>
-            </FormGrid>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
-              <FormField label="Notes (commentary, anomalies, context)">
-                <TextArea
-                  value={form.notes}
-                  onChange={e => setForm({ ...form, notes: e.target.value })}
-                  placeholder="e.g. Big retainer paid this month, one-off equipment expense, etc."
-                />
-              </FormField>
-            </div>
-            <PrimaryButton
-              onClick={() => {
-                if (!/^\d{4}-\d{2}$/.test(form.month)) { toast.error("Month must be YYYY-MM"); return; }
-                createMut.mutate({
-                  month: form.month,
-                  revenue: form.revenue || null,
-                  expenses: form.expenses || null,
-                  profit: profitValue || null,
-                  notes: form.notes || null,
-                  archivedBy: user?.name || user?.email || null,
-                });
-              }}
-              disabled={createMut.isPending}
-            >Archive Report</PrimaryButton>
-          </>
-        )}
-      </Card>
-
-      <Card>
-        {rows.length === 0 ? (
-          <EmptyState icon={Archive} title="No reports archived" hint="Archive each month's summary so the audit trail is complete." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {rows.map((r: any) => {
-              const isEditing = editingId === r.id;
-              const profitNum = r.profit !== null && r.profit !== undefined ? parseFloat(r.profit) : NaN;
-              const profitOk = !isNaN(profitNum) && profitNum >= 0;
-              return (
-                <div key={r.id} style={{
-                  padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
-                }}>
-                  {!isEditing ? (
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{fmtMonthYM(r.month)}</p>
-                          <StatusPill
-                            label={!isNaN(profitNum) ? (profitOk ? "Profit" : "Loss") : "—"}
-                            tone={!isNaN(profitNum) ? (profitOk ? "green" : "red") : "muted"}
-                          />
-                        </div>
-                        <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 11, color: MUTED }}>
-                            Revenue: <b style={{ color: DARK }}>{fmtNaira(r.revenue)}</b>
-                          </span>
-                          <span style={{ fontSize: 11, color: MUTED }}>
-                            Expenses: <b style={{ color: DARK }}>{fmtNaira(r.expenses)}</b>
-                          </span>
-                          <span style={{ fontSize: 11, color: MUTED }}>
-                            Profit: <b style={{ color: profitOk ? GREEN : RED }}>{fmtNaira(r.profit)}</b>
-                          </span>
-                        </div>
-                        {r.notes && (
-                          <p style={{ fontSize: 11, color: MUTED, marginTop: 6, fontStyle: "italic" }}>{r.notes}</p>
-                        )}
-                        <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
-                          {r.archivedBy ? <>Archived by {r.archivedBy} · </> : null}
-                          {fmtDate(r.createdAt)}
-                        </p>
-                      </div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 100 }}>
-                        <GhostButton onClick={() => openEdit(r)} color={GREEN}>
-                          Edit
-                        </GhostButton>
-                        <GhostButton onClick={() => { if (confirm(`Remove archive for ${fmtMonthYM(r.month)}?`)) removeMut.mutate({ id: r.id }); }} color={RED}>
-                          <Trash2 size={10} /> Remove
-                        </GhostButton>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <FormGrid>
-                        <FormField label="Month (YYYY-MM)">
-                          <TextInput type="month" value={editDraft.month}
-                            onChange={e => setEditDraft({ ...editDraft, month: e.target.value })} />
-                        </FormField>
-                        <FormField label="Revenue (₦)">
-                          <TextInput type="number" step="0.01" value={editDraft.revenue}
-                            onChange={e => setEditDraft({ ...editDraft, revenue: e.target.value })} />
-                        </FormField>
-                        <FormField label="Expenses (₦)">
-                          <TextInput type="number" step="0.01" value={editDraft.expenses}
-                            onChange={e => setEditDraft({ ...editDraft, expenses: e.target.value })} />
-                        </FormField>
-                        <FormField label="Profit (₦)">
-                          <TextInput type="number" step="0.01" value={editDraft.profit}
-                            onChange={e => setEditDraft({ ...editDraft, profit: e.target.value })} />
-                        </FormField>
-                      </FormGrid>
-                      <div style={{ marginBottom: 10 }}>
-                        <FormField label="Notes">
-                          <TextArea value={editDraft.notes}
-                            onChange={e => setEditDraft({ ...editDraft, notes: e.target.value })} />
-                        </FormField>
-                      </div>
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <PrimaryButton onClick={saveEdit} disabled={updateMut.isPending}>Save</PrimaryButton>
-                        <GhostButton onClick={cancelEdit} color={MUTED}>Cancel</GhostButton>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — ReportArchive section removed (not in Phase 2 Finance Master Dashboard 8-tab spec). ── */

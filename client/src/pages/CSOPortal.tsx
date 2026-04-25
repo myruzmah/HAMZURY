@@ -38,9 +38,14 @@ const RED = "#EF4444";
 const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
 
+// 2026-04-25 — Section list aligned to Phase 4 CSO Sales Dashboard 6-tab
+// spec (Overview, Lead Pipeline, Closed Deals, Commission Tracker, Lead
+// Sources, Calendar). Cut: flow_system (off-spec process doc),
+// subscriptions, tasks. Lead Sources + Calendar remain accessible inside
+// back_office tabs as the spec implies. Data tables retained.
 type Section =
-  | "dashboard" | "flow_system" | "pipeline" | "revenue" | "active_clients"
-  | "subscriptions" | "tasks" | "back_office";
+  | "dashboard" | "pipeline" | "revenue" | "active_clients"
+  | "back_office";
 
 /* Internal qualification panel shown inside pipeline column detail */
 type PipelineView = "kanban" | "qualification";
@@ -206,14 +211,13 @@ export default function CSOPortal() {
   }
   if (!user) return null;
 
+  // 2026-04-25 — NAV reduced to Phase 4 CSO 6-tab spec.
+  // Lead Sources + Calendar live as sub-tabs inside Back Office.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",      icon: LayoutDashboard, label: "Dashboard" },
-    { key: "flow_system",    icon: Network,         label: "Flow System" },
     { key: "pipeline",       icon: Target,          label: "Pipeline" },
     { key: "revenue",        icon: DollarSign,      label: "Revenue & Commissions" },
     { key: "active_clients", icon: Building2,       label: "Active Clients" },
-    { key: "subscriptions",  icon: RefreshCw,       label: "Subscriptions" },
-    { key: "tasks",          icon: FileCheck,       label: "Tasks" },
     { key: "back_office",    icon: SettingsIcon,    label: "Back Office" },
   ];
 
@@ -371,8 +375,8 @@ export default function CSOPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
+            {/* 2026-04-25 — Dispatcher reduced to Phase 4 CSO 6-tab spec. */}
             {active === "dashboard"      && <HomeSection onGoto={setActive} />}
-            {active === "flow_system"    && <FlowSystemSection />}
             {active === "pipeline" && pipelineView === "kanban" && (
               <PipelineSection
                 onQualify={(id) => { setSelectedLeadId(id); setPipelineView("qualification"); }}
@@ -386,8 +390,6 @@ export default function CSOPortal() {
             )}
             {active === "revenue"        && <RevenueCommissionsSection />}
             {active === "active_clients" && <ClientsSection />}
-            {active === "subscriptions"  && <SubscriptionsSection />}
-            {active === "tasks"          && <TasksSection isCsoStaff={isCsoStaff} />}
             {active === "back_office"    && <BackOfficeSection currentUser={user} isCsoStaff={isCsoStaff} />}
           </div>
         </div>
@@ -396,509 +398,7 @@ export default function CSOPortal() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * FLOW SYSTEM — the CSO operating manual rendered on-screen
- * Source of truth: HAMZURY_CSO_FLOW_DIAGRAM.txt (April 2026)
- * Every lead, every time. Print this. Post it on the wall.
- * ═══════════════════════════════════════════════════════════════════════ */
-type FlowStage = {
-  n: string;
-  title: string;
-  owner: "Lead Handler" | "Coordinator" | "Closer" | "Founder" | "Closer + Coord";
-  action: string;
-  timeLimit?: string;
-  status: string;
-  path?: "shared" | "direct" | "diagnosis" | "close" | "retain";
-};
-
-const FLOW_STAGES: FlowStage[] = [
-  { n: "1",  title: "Lead Enters",       owner: "Lead Handler", action: "WhatsApp / Form / Email / Social DM → add to tracking sheet immediately", timeLimit: "Within 30 minutes", status: "NEW", path: "shared" },
-  { n: "2",  title: "First Response",    owner: "Lead Handler", action: "Send Message 1 (Welcome + 3 qualification questions). Then wait.", timeLimit: "Within 2 hours", status: "CONTACTED", path: "shared" },
-  { n: "3",  title: "Qualification",     owner: "Lead Handler", action: "Review answers. Check budget, timeline, fit. Decide: Direct or Diagnosis.", status: "CONTACTED", path: "shared" },
-  { n: "4A", title: "Assign to Closer",  owner: "Lead Handler", action: "Clear, simple need → notify Closer, send Message 2A.", status: "ASSIGNED", path: "direct" },
-  { n: "5A", title: "Closer Calls",      owner: "Closer",       action: "Call client. Present solution.", timeLimit: "Within 24 hours", status: "CALL DONE", path: "direct" },
-  { n: "4B", title: "Send Form",         owner: "Coordinator",  action: "Complex need → send Message 3 with diagnosis form link.", timeLimit: "Within 4 hours", status: "FORM SENT", path: "diagnosis" },
-  { n: "5B", title: "Wait for Form",     owner: "Coordinator",  action: "Client completes form. If no response in 24h → follow up. If done → Stage 6B.", status: "FORM SENT", path: "diagnosis" },
-  { n: "6B", title: "Create PDF",        owner: "Closer + Coord", action: "Build customised strategy doc, send Message 4.", timeLimit: "Within 24h of form", status: "PDF SENT", path: "diagnosis" },
-  { n: "7B", title: "Schedule Call",     owner: "Coordinator",  action: "Send Message 5 (call booking). Book calendar slot.", status: "CALL SCHEDULED", path: "diagnosis" },
-  { n: "7",  title: "Closer Calls",      owner: "Closer",       action: "Discuss solution / PDF / proposal. Handle objections. Ask \"Ready to move forward?\"", status: "PROPOSAL SENT", path: "shared" },
-  { n: "8A", title: "Send Invoice",      owner: "Coordinator",  action: "Client said YES → send Message 6A, invoice + agreement.", timeLimit: "Within 1 hour", status: "CLOSED", path: "close" },
-  { n: "8B", title: "Nurture",           owner: "Closer",       action: "Client said maybe → send Message 6B, follow-up in 3–7 days.", status: "NURTURING", path: "close" },
-  { n: "8C", title: "Lost",              owner: "Closer",       action: "Client said no → send Message 6C (stay warm). Move to Lost Deals.", status: "LOST", path: "close" },
-  { n: "9",  title: "Track Payment",     owner: "Coordinator",  action: "Monitor payment. If paid → notify division. If delayed → follow up daily.", status: "PAID", path: "retain" },
-  { n: "10", title: "Handoff to Delivery", owner: "Coordinator", action: "Notify Medialy / Scalar / Bizdoc / HUB. Send client info + project brief. CC client on intro email.", timeLimit: "Within 4 hours", status: "IN DELIVERY", path: "retain" },
-  { n: "11", title: "Retention",         owner: "Closer",       action: "30 days after delivery → send Bonus Message (check-in). Ask feedback, next project.", status: "RETAIN", path: "retain" },
-];
-
-const TIME_LIMITS: { action: string; limit: string }[] = [
-  { action: "Add lead to sheet",         limit: "30 minutes" },
-  { action: "Send welcome message",      limit: "2 hours" },
-  { action: "Assign to Closer",          limit: "4 hours" },
-  { action: "Closer's first call",       limit: "24 hours" },
-  { action: "Send form link",            limit: "4 hours" },
-  { action: "Create & send PDF",         limit: "24 hours" },
-  { action: "Send invoice after close",  limit: "1 hour" },
-  { action: "Follow-up if no response",  limit: "48 hours" },
-  { action: "Payment processing",        limit: "Same day" },
-  { action: "Handoff to delivery dept",  limit: "4 hours" },
-];
-
-const STATUS_DEFS: { key: string; meaning: string; color: string }[] = [
-  { key: "NEW",             meaning: "Just entered, not contacted yet",            color: BLUE },
-  { key: "CONTACTED",       meaning: "Welcome message sent, waiting for response", color: GOLD },
-  { key: "ASSIGNED",        meaning: "Given to Closer (Direct path)",              color: "#6366F1" },
-  { key: "FORM SENT",       meaning: "Diagnosis form sent, waiting for completion", color: "#F59E0B" },
-  { key: "PDF SENT",        meaning: "Strategy document sent, waiting for response", color: "#F97316" },
-  { key: "CALL SCHEDULED",  meaning: "Appointment booked",                          color: "#8B5CF6" },
-  { key: "PROPOSAL SENT",   meaning: "Waiting for decision",                        color: GOLD },
-  { key: "CLOSED",          meaning: "Won — invoice sent",                          color: GREEN },
-  { key: "PAID",            meaning: "Payment received, handed to delivery",        color: "#14B8A6" },
-  { key: "NURTURING",       meaning: "They said maybe, following up",               color: "#EA580C" },
-  { key: "LOST",            meaning: "They said no or went dark",                   color: RED },
-];
-
-const ROLE_OWNERSHIP: { role: string; stages: string; leader: string; color: string }[] = [
-  { role: "Lead Handler", stages: "Stages 1, 2, 3, 4",         leader: "Lalo (CSO)",            color: BLUE },
-  { role: "Coordinator",  stages: "Stages 4B, 6B, 7B, 8A, 9, 10", leader: "CSO Coordinator",    color: GREEN },
-  { role: "Closer",       stages: "Stages 5, 7, 8, 11",        leader: "CSO Closers",           color: GOLD },
-  { role: "Founder",      stages: "Custom requests, refunds, escalations only", leader: "Muhammad Hamzury", color: "#1E3A8A" },
-];
-
-const DAILY_ROUTINE: { role: string; schedule: { time: string; action: string }[]; color: string }[] = [
-  {
-    role: "Lead Handler",
-    color: BLUE,
-    schedule: [
-      { time: "8:30 AM", action: "Check overnight leads, add to sheet" },
-      { time: "Daytime", action: "Respond within 2 hours" },
-      { time: "5:00 PM", action: "Update sheet, report numbers" },
-    ],
-  },
-  {
-    role: "Closer",
-    color: GOLD,
-    schedule: [
-      { time: "9:00 AM", action: "Review assigned leads in sheet" },
-      { time: "Daytime", action: "Call / follow-up" },
-      { time: "4:00 PM", action: "Update all statuses" },
-      { time: "5:00 PM", action: "Report closes / stuck leads" },
-    ],
-  },
-  {
-    role: "Coordinator",
-    color: GREEN,
-    schedule: [
-      { time: "8:30 AM", action: "Check what needs processing" },
-      { time: "Daytime", action: "Send forms / PDFs / invoices" },
-      { time: "4:00 PM", action: "Track payments" },
-      { time: "5:00 PM", action: "Update payment statuses" },
-    ],
-  },
-  {
-    role: "Founder",
-    color: "#1E3A8A",
-    schedule: [
-      { time: "9:00 AM", action: "Check dashboard (5 min)" },
-      { time: "Daytime", action: "Handle escalations only" },
-      { time: "6:00 PM", action: "Review daily report (10 min)" },
-    ],
-  },
-];
-
-const COMMS_TEMPLATES: { when: string; from: string; to: string; template: string }[] = [
-  {
-    from: "Lead Handler", to: "Closer", when: "Assigning a lead",
-    template: `@CloserName — New lead assigned
-Name: [Name]
-Service: [Service]
-Path: Direct
-Check sheet Row [#]`,
-  },
-  {
-    from: "Closer", to: "Coordinator", when: "Ready to close",
-    template: `@Coordinator — Ready to close
-Client: [Name]
-Service: [Service]
-Amount: ₦[Amount]
-Send invoice`,
-  },
-  {
-    from: "Coordinator", to: "Closer", when: "Payment received",
-    template: `@CloserName — PAID ✅
-Client: [Name]
-Amount: ₦[Amount]
-Handed to [Dept]`,
-  },
-  {
-    from: "Anyone", to: "Founder", when: "Stuck / custom / problem",
-    template: `@Founder — Need decision
-Issue: [Brief description]
-Client: [Name]
-Urgency: [High / Medium / Low]`,
-  },
-];
-
-const DECISION_POINTS: { question: string; answer: string }[] = [
-  { question: "Client not responding to welcome message?",       answer: "Lead Handler: wait 48h, then send gentle nudge. If still nothing, move to Lost after 5 days." },
-  { question: "Client says \"too expensive\"?",                  answer: "Closer: offer payment plan OR smaller package. Don't discount without Founder approval." },
-  { question: "Client wants a custom solution (not in packages)?", answer: "Closer: escalate to Founder for approval. Don't promise what you can't deliver." },
-  { question: "Client ready to pay but wants to start later?",    answer: "Coordinator: take 50% deposit, schedule start date. Hold their slot." },
-  { question: "Client disappears after PDF sent?",                answer: "Closer: follow up Day 2, Day 5, Day 10. After 3 attempts, move to Lost." },
-  { question: "Client paid but delivery dept is delayed?",        answer: "Coordinator: notify client immediately with a new timeline. Closer: call to apologise + offer a small bonus." },
-  { question: "Client requests a refund?",                        answer: "Closer: find out why, try to solve. If you can't, escalate to Founder." },
-];
-
-function FlowSystemSection() {
-  const [expandedStage, setExpandedStage] = useState<string | null>(null);
-  const [expandedQ, setExpandedQ] = useState<number | null>(null);
-  const [tab, setTab] = useState<"flow" | "timeLimits" | "statuses" | "roles" | "routine" | "comms" | "decisions">("flow");
-
-  const TABS: { k: typeof tab; label: string }[] = [
-    { k: "flow",       label: "11-Stage Flow" },
-    { k: "timeLimits", label: "Time Limits" },
-    { k: "statuses",   label: "Status Definitions" },
-    { k: "roles",      label: "Who Owns What" },
-    { k: "routine",    label: "Daily Routine" },
-    { k: "comms",      label: "Comms Templates" },
-    { k: "decisions",  label: "Decision Points" },
-  ];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Hero */}
-      <div style={{
-        backgroundColor: WHITE, borderRadius: 16, padding: "24px 28px",
-        border: `1px solid ${DARK}08`,
-      }}>
-        <div style={{ fontSize: 11, color: GREEN, letterSpacing: "0.12em", fontWeight: 600, textTransform: "uppercase", marginBottom: 4 }}>
-          HAMZURY CSO Flow System
-        </div>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: DARK, margin: 0, letterSpacing: -0.3 }}>
-          Every lead. Every time.
-        </h1>
-        <p style={{ fontSize: 13, color: MUTED, marginTop: 6, maxWidth: 620, lineHeight: 1.5 }}>
-          This is the operating manual. Read it. Live it. No lead leaks.
-          From first WhatsApp ping (Stage 1) to 30-day retention check (Stage 11) —
-          here's exactly what happens, who owns it, and how long it should take.
-        </p>
-      </div>
-
-      {/* Tabs */}
-      <div style={{
-        backgroundColor: WHITE, borderRadius: 12, padding: 6,
-        border: `1px solid ${DARK}08`,
-        display: "flex", flexWrap: "wrap", gap: 4,
-      }}>
-        {TABS.map(t => (
-          <button
-            key={t.k}
-            onClick={() => setTab(t.k)}
-            style={{
-              padding: "8px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-              backgroundColor: tab === t.k ? GREEN : "transparent",
-              color: tab === t.k ? WHITE : MUTED,
-              fontSize: 12, fontWeight: 600,
-              transition: "all 0.15s",
-            }}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {/* ── Tab content ── */}
-      {tab === "flow" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {FLOW_STAGES.map((s) => {
-            const open = expandedStage === s.n;
-            const ownerColor =
-              s.owner === "Lead Handler" ? BLUE :
-              s.owner === "Coordinator" ? GREEN :
-              s.owner === "Closer" ? GOLD : "#1E3A8A";
-            return (
-              <div
-                key={s.n}
-                style={{
-                  backgroundColor: WHITE, borderRadius: 12,
-                  border: `1px solid ${DARK}08`,
-                  overflow: "hidden",
-                  borderLeft: `3px solid ${ownerColor}`,
-                }}
-              >
-                <button
-                  onClick={() => setExpandedStage(open ? null : s.n)}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", gap: 14,
-                    padding: "14px 18px", border: "none", background: "transparent",
-                    cursor: "pointer", textAlign: "left",
-                  }}
-                >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 10,
-                    backgroundColor: `${ownerColor}15`, color: ownerColor,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 700, fontSize: 13, letterSpacing: "-0.02em",
-                    flexShrink: 0,
-                  }}>
-                    {s.n}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: DARK }}>
-                      Stage {s.n} · {s.title}
-                    </div>
-                    <div style={{ fontSize: 11, color: MUTED, marginTop: 2, display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <span>👤 {s.owner}</span>
-                      {s.timeLimit && <span style={{ color: ownerColor, fontWeight: 600 }}>⏱ {s.timeLimit}</span>}
-                      <span>Status → {s.status}</span>
-                    </div>
-                  </div>
-                  <ChevronRight size={16} color={MUTED} style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
-                </button>
-                {open && (
-                  <div style={{ padding: "0 18px 16px 74px", fontSize: 13, color: "#2D2D2D", lineHeight: 1.55 }}>
-                    {s.action}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {tab === "timeLimits" && (
-        <div style={{ backgroundColor: WHITE, borderRadius: 12, overflow: "hidden", border: `1px solid ${DARK}08` }}>
-          <div style={{
-            padding: "14px 18px", borderBottom: `1px solid ${DARK}08`,
-            backgroundColor: `${GREEN}06`,
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: DARK }}>Time Limits Chart</div>
-            <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Post next to the flow. Beat these limits, every time.</div>
-          </div>
-          {TIME_LIMITS.map((t, i) => (
-            <div
-              key={i}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 18px",
-                borderBottom: i < TIME_LIMITS.length - 1 ? `1px solid ${DARK}06` : "none",
-              }}
-            >
-              <div style={{ fontSize: 13, color: DARK }}>{t.action}</div>
-              <div style={{
-                fontSize: 12, fontWeight: 700, color: GREEN,
-                backgroundColor: `${GREEN}12`, padding: "4px 10px", borderRadius: 999,
-              }}>
-                {t.limit}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "statuses" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 10 }}>
-          {STATUS_DEFS.map(s => (
-            <div
-              key={s.key}
-              style={{
-                backgroundColor: WHITE, borderRadius: 12, padding: 14,
-                border: `1px solid ${DARK}08`,
-                borderLeft: `3px solid ${s.color}`,
-              }}
-            >
-              <div style={{
-                display: "inline-block",
-                fontSize: 10, fontWeight: 700, letterSpacing: "0.06em",
-                color: s.color, backgroundColor: `${s.color}15`,
-                padding: "3px 8px", borderRadius: 999, marginBottom: 6,
-              }}>
-                {s.key}
-              </div>
-              <div style={{ fontSize: 12, color: "#2D2D2D", lineHeight: 1.5 }}>{s.meaning}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "roles" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
-          {ROLE_OWNERSHIP.map(r => (
-            <div
-              key={r.role}
-              style={{
-                backgroundColor: WHITE, borderRadius: 12, padding: 18,
-                border: `1px solid ${DARK}08`,
-              }}
-            >
-              <div style={{
-                width: 38, height: 38, borderRadius: 10,
-                backgroundColor: `${r.color}15`, color: r.color,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                marginBottom: 10,
-              }}>
-                <UserCheck size={17} />
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{r.role}</div>
-              <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.leader}</div>
-              <div style={{
-                fontSize: 12, color: r.color, fontWeight: 600,
-                marginTop: 10, backgroundColor: `${r.color}10`,
-                padding: "6px 10px", borderRadius: 8,
-              }}>
-                {r.stages}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "routine" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
-          {DAILY_ROUTINE.map(r => (
-            <div
-              key={r.role}
-              style={{
-                backgroundColor: WHITE, borderRadius: 12, padding: 18,
-                border: `1px solid ${DARK}08`,
-              }}
-            >
-              <div style={{ fontSize: 11, color: r.color, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
-                {r.role} · Daily
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {r.schedule.map((s, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <div style={{
-                      fontSize: 11, fontWeight: 700, color: r.color,
-                      backgroundColor: `${r.color}15`, padding: "4px 8px",
-                      borderRadius: 6, minWidth: 72, textAlign: "center",
-                      flexShrink: 0,
-                    }}>
-                      {s.time}
-                    </div>
-                    <div style={{ fontSize: 12, color: DARK, lineHeight: 1.5, paddingTop: 3 }}>
-                      {s.action}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "comms" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {COMMS_TEMPLATES.map((c, i) => (
-            <div
-              key={i}
-              style={{
-                backgroundColor: WHITE, borderRadius: 12, padding: 18,
-                border: `1px solid ${DARK}08`,
-              }}
-            >
-              <div style={{
-                display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
-                marginBottom: 10,
-              }}>
-                <div style={{
-                  fontSize: 11, fontWeight: 700,
-                  backgroundColor: `${GOLD}15`, color: GOLD,
-                  padding: "4px 8px", borderRadius: 6,
-                }}>
-                  {c.from}
-                </div>
-                <span style={{ color: MUTED }}>→</span>
-                <div style={{
-                  fontSize: 11, fontWeight: 700,
-                  backgroundColor: `${GREEN}12`, color: GREEN,
-                  padding: "4px 8px", borderRadius: 6,
-                }}>
-                  {c.to}
-                </div>
-                <span style={{ fontSize: 11, color: MUTED, marginLeft: 4 }}>· When: {c.when}</span>
-              </div>
-              <pre style={{
-                margin: 0,
-                fontSize: 12, fontFamily: "'SF Mono', ui-monospace, monospace",
-                backgroundColor: `${DARK}04`,
-                padding: 12, borderRadius: 8,
-                color: DARK, whiteSpace: "pre-wrap", lineHeight: 1.5,
-              }}>
-{c.template}
-              </pre>
-              <button
-                onClick={() => { navigator.clipboard.writeText(c.template); toast.success("Template copied"); }}
-                style={{
-                  marginTop: 8, padding: "6px 12px", borderRadius: 999,
-                  border: `1px solid ${DARK}12`, backgroundColor: "transparent",
-                  color: DARK, fontSize: 11, fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                Copy template
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {tab === "decisions" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <p style={{ fontSize: 12, color: MUTED, margin: "0 0 4px 4px" }}>
-            When you're stuck, use this.
-          </p>
-          {DECISION_POINTS.map((d, i) => {
-            const open = expandedQ === i;
-            return (
-              <div
-                key={i}
-                style={{
-                  backgroundColor: WHITE, borderRadius: 12,
-                  border: `1px solid ${DARK}08`, overflow: "hidden",
-                }}
-              >
-                <button
-                  onClick={() => setExpandedQ(open ? null : i)}
-                  style={{
-                    width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-                    gap: 12, padding: "14px 18px",
-                    border: "none", background: "transparent", cursor: "pointer",
-                    textAlign: "left",
-                  }}
-                >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: DARK }}>❓ {d.question}</span>
-                  <ChevronRight size={15} color={MUTED} style={{ transform: open ? "rotate(90deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }} />
-                </button>
-                {open && (
-                  <div style={{ padding: "0 18px 16px 18px", fontSize: 13, color: "#2D2D2D", lineHeight: 1.55 }}>
-                    → {d.answer}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Footer action list */}
-      <div style={{
-        backgroundColor: `${GREEN}08`, borderRadius: 12, padding: "18px 22px",
-        border: `1px dashed ${GREEN}40`,
-      }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: GREEN, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-          Action Items (before going live)
-        </div>
-        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 13, color: DARK, lineHeight: 1.9 }}>
-          <li>Print this flow and post TIME LIMITS + WHO OWNS WHAT on the wall</li>
-          <li>Give everyone a copy of their DAILY ROUTINE</li>
-          <li>Train the team on the flow end-to-end</li>
-          <li>Run 3 test leads (Simple, Complex, Lost) — time each stage, fix bottlenecks</li>
-          <li>Go live!</li>
-        </ul>
-      </div>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Flow System section + types + data tables (not in CSO 6-tab spec) removed (Phase 4 CSO Sales Dashboard 6-tab spec: Overview, Lead Pipeline, Closed Deals, Commission Tracker, Lead Sources, Calendar). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════
  * 1. HOME / COMMAND CENTER
@@ -1133,12 +633,11 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
           </p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8 }}>
+          {/* 2026-04-25 — Flow System / Assign Task / Log Subscription manual controls
+              removed alongside their section cuts (off-spec for Phase 4 CSO 6-tab dashboard). */}
           {[
-            { label: "Flow System",          hint: "11-stage lead operating manual", section: "flow_system" as Section, icon: Network },
             { label: "Add Client",           hint: "Walk-in, phone, referral",    section: "active_clients" as Section, icon: UserPlus },
             { label: "Open Pipeline",        hint: "Move lead by hand",           section: "pipeline" as Section,       icon: Target },
-            { label: "Assign Task",          hint: "Route work to a dept lead",   section: "tasks" as Section,          icon: Send },
-            { label: "Log Subscription",     hint: "Monthly retainers",           section: "subscriptions" as Section,  icon: RefreshCw },
             { label: "Source Tracker",       hint: "See affiliate + content refs", section: "back_office" as Section,   icon: Eye },
           ].map(b => (
             <button key={b.label} onClick={() => onGoto(b.section)} style={{
@@ -3592,146 +3091,9 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * SUBSCRIPTIONS (v1 restructure — recurring engagements + renewal urgency)
- * ═══════════════════════════════════════════════════════════════════════ */
-function SubscriptionsSection() {
-  const subsQuery = trpc.subscriptions.list.useQuery();
-  const subs = (subsQuery.data || []) as any[];
+/* ── CUT 2026-04-25 — Subscriptions section (not in CSO 6-tab spec) removed (Phase 4 CSO Sales Dashboard 6-tab spec: Overview, Lead Pipeline, Closed Deals, Commission Tracker, Lead Sources, Calendar). ── */
 
-  const enriched = subs.map((s: any) => {
-    const days = s.endDate ? daysUntil(s.endDate) : null;
-    let urgency: "safe" | "flag" | "engage" | "decide" | "finalise" | "ended" = "safe";
-    if (days !== null) {
-      if (days <= 0) urgency = "ended";
-      else if (days <= 7) urgency = "finalise";
-      else if (days <= 14) urgency = "decide";
-      else if (days <= 30) urgency = "engage";
-      else if (days <= 45) urgency = "flag";
-    }
-    return { ...s, daysUntil: days, urgency };
-  });
-
-  const urgencyColor: Record<string, string> = {
-    safe: "#22C55E", flag: GOLD, engage: BLUE, decide: ORANGE, finalise: RED, ended: RED,
-  };
-
-  return (
-    <div>
-      <SectionTitle sub="Only recurring engagements. Renewal urgency auto-flagged 45/30/14/7 days.">
-        Subscriptions
-      </SectionTitle>
-
-      {subsQuery.isLoading ? (
-        <Card><EmptyState icon={Loader2} title="Loading subscriptions..." /></Card>
-      ) : enriched.length === 0 ? (
-        <Card><EmptyState icon={RefreshCw} title="No subscriptions yet" hint="Recurring engagements created in Active Clients will appear here." /></Card>
-      ) : (
-        <Card>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {enriched.map((s: any) => (
-              <div key={s.id} style={{
-                padding: "12px 14px", borderRadius: 10, border: `1px solid ${DARK}08`,
-                backgroundColor: `${DARK}02`, display: "flex", gap: 14, alignItems: "center",
-              }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 24, flexShrink: 0,
-                  backgroundColor: `${urgencyColor[s.urgency]}15`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: urgencyColor[s.urgency], fontWeight: 700, fontSize: 12,
-                }}>
-                  {s.daysUntil !== null ? `${s.daysUntil}d` : "∞"}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{s.clientName}</p>
-                  <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
-                    {s.service} · {fmtNaira(s.monthlyFee)}/mo · {s.status}
-                  </p>
-                </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 10,
-                  textTransform: "uppercase", letterSpacing: "0.04em",
-                  backgroundColor: `${urgencyColor[s.urgency]}15`,
-                  color: urgencyColor[s.urgency],
-                }}>
-                  {s.urgency}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
- * TASKS (v1 restructure — My tasks / Team tasks)
- * ═══════════════════════════════════════════════════════════════════════ */
-function TasksSection({ isCsoStaff }: { isCsoStaff: boolean }) {
-  const [tab, setTab] = useState<"mine" | "team">("mine");
-  const myQuery = trpc.tasks.myTasks.useQuery();
-  const teamQuery = trpc.tasks.list.useQuery(undefined, { enabled: !isCsoStaff && tab === "team" });
-
-  const rows = tab === "mine" ? (myQuery.data || []) : (teamQuery.data || []);
-  const loading = tab === "mine" ? myQuery.isLoading : teamQuery.isLoading;
-
-  return (
-    <div>
-      <SectionTitle sub="Your work queue. Team tab is visible to CSO Lead only.">
-        Tasks
-      </SectionTitle>
-
-      {!isCsoStaff && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          {[
-            { k: "mine" as const, label: "My Tasks" },
-            { k: "team" as const, label: "Team Tasks" },
-          ].map(t => (
-            <button
-              key={t.k}
-              onClick={() => setTab(t.k)}
-              style={{
-                padding: "7px 14px", borderRadius: 10, border: "none",
-                backgroundColor: tab === t.k ? GREEN : `${DARK}06`,
-                color: tab === t.k ? GOLD : DARK,
-                fontSize: 12, fontWeight: 600, cursor: "pointer",
-              }}
-            >{t.label}</button>
-          ))}
-        </div>
-      )}
-
-      {loading ? (
-        <Card><EmptyState icon={Loader2} title="Loading tasks..." /></Card>
-      ) : (rows as any[]).length === 0 ? (
-        <Card><EmptyState icon={CheckCircle2} title="No tasks" hint={tab === "mine" ? "You're clear." : "Team is clear."} /></Card>
-      ) : (
-        <Card>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {(rows as any[]).map((t: any) => (
-              <div key={t.id || t.ref} style={{
-                padding: "10px 12px", borderRadius: 10, border: `1px solid ${DARK}08`,
-                backgroundColor: `${DARK}02`,
-                display: "flex", gap: 12, alignItems: "center",
-              }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
-                    {t.service || t.title || t.ref}
-                  </p>
-                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                    {t.ref} · {t.clientName || "—"} · {t.department || "—"}
-                  </p>
-                </div>
-                <Pill status={(t.status || "new").toString().toLowerCase().replace(/\s+/g, "_")} />
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Tasks section (not in CSO 6-tab spec) removed (Phase 4 CSO Sales Dashboard 6-tab spec: Overview, Lead Pipeline, Closed Deals, Commission Tracker, Lead Sources, Calendar). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════
  * BACK OFFICE (v1 restructure — Services Library, Sources, Cohorts, etc.)

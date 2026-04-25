@@ -26,19 +26,19 @@ const RED = "#EF4444";
 const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
 
+// 2026-04-25 — Section list aligned to Phase 2 HR Master Dashboard 8-tab
+// spec (Overview, Staff, Interns, Attendance, Leave, Performance,
+// Recruitment, Calendar). Cut: discipline, reports, onboarding,
+// internCoord, exits (not in spec — data layer + tRPC retained for HR
+// SOPs that can run outside the dashboard UI).
 type Section =
   | "dashboard"
   | "roster"
   | "leave"
-  | "discipline"
   | "attendance"
-  | "reports"
   | "interns"
   | "requisitions"
-  | "onboarding"
-  | "internCoord"
-  | "performance"
-  | "exits";
+  | "performance";
 
 /* 2026-04 — restored. The 6 ops sections are now MySQL-backed via tRPC
    `hr.*` (see server/hr/router.ts). int autoincrement ids end-to-end. */
@@ -133,19 +133,17 @@ export default function HRPortal() {
   }
   if (!user) return null;
 
+  // 2026-04-25 — NAV reduced to Phase 2 HR Master Dashboard 7 of 8 tabs
+  // (Calendar deferred — no UI built yet). Spec: Overview, Staff, Interns,
+  // Attendance, Leave, Performance, Recruitment, Calendar.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",    icon: LayoutDashboard, label: "Overview" },
     { key: "roster",       icon: Users,           label: "Staff Roster" },
-    { key: "requisitions", icon: FilePlus2,       label: "Requisitions" },
-    { key: "onboarding",   icon: Sparkles,        label: "Onboarding" },
     { key: "interns",      icon: GraduationCap,   label: "Interns" },
-    { key: "internCoord",  icon: Workflow,        label: "Intern Coord" },
-    { key: "performance",  icon: Star,            label: "Performance" },
-    { key: "leave",        icon: CalendarIcon,    label: "Leave Requests" },
-    { key: "discipline",   icon: AlertCircle,     label: "Discipline" },
     { key: "attendance",   icon: UserCheck,       label: "Attendance" },
-    { key: "exits",        icon: DoorOpen,        label: "Exits" },
-    { key: "reports",      icon: ClipboardList,   label: "Reports" },
+    { key: "leave",        icon: CalendarIcon,    label: "Leave Requests" },
+    { key: "performance",  icon: Star,            label: "Performance" },
+    { key: "requisitions", icon: FilePlus2,       label: "Recruitment" },
   ];
 
   return (
@@ -261,18 +259,14 @@ export default function HRPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
+            {/* 2026-04-25 — Dispatcher reduced to Phase 2 HR 7-of-8 tabs (Calendar deferred). */}
             {active === "dashboard"    && <OverviewSection onGoto={setActive} />}
             {active === "roster"       && <RosterSection />}
-            {active === "requisitions" && <RequisitionsSection />}
-            {active === "onboarding"   && <OnboardingSection />}
             {active === "interns"      && <InternsSection />}
-            {active === "internCoord"  && <InternCoordSection />}
-            {active === "performance"  && <PerformanceSection />}
-            {active === "leave"        && <LeaveSection />}
-            {active === "discipline"   && <DisciplineSection />}
             {active === "attendance"   && <AttendanceSection />}
-            {active === "exits"        && <ExitsSection />}
-            {active === "reports"      && <ReportsSection />}
+            {active === "leave"        && <LeaveSection />}
+            {active === "performance"  && <PerformanceSection />}
+            {active === "requisitions" && <RequisitionsSection />}
           </div>
         </div>
       </main>
@@ -284,11 +278,10 @@ export default function HRPortal() {
 function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const staffQ = trpc.staff.listInternal.useQuery(undefined, { retry: false });
   const leaveQ = trpc.leave.list.useQuery({}, { retry: false });
-  const disciplineQ = trpc.discipline.list.useQuery({}, { retry: false });
+  // 2026-04-25 — disciplineQ removed alongside Discipline section cut.
 
   const staff = ((staffQ.data || []) as any[]);
   const leaves = ((leaveQ.data || []) as any[]);
-  const disciplines = ((disciplineQ.data || []) as any[]);
 
   const active = staff.filter(s => s.status === "Active").length;
   const pendingLeave = leaves.filter(l => l.status === "pending").length;
@@ -299,14 +292,13 @@ function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
       return new Date(l.startDate) <= now && new Date(l.endDate) >= now;
     } catch { return false; }
   }).length;
-  const openDiscipline = disciplines.filter(d => d.status !== "resolved").length;
 
+  // 2026-04-25 — Open Discipline KPI removed (Discipline section cut: not in HR 8-tab spec).
   const kpis = [
     { label: "Total Staff",       value: staff.length,      icon: Users,       color: GREEN,  section: "roster" as Section },
     { label: "Active",            value: active,            icon: UserCheck,   color: "#22C55E", section: "roster" as Section },
     { label: "On Leave Now",      value: onLeaveNow,        icon: UserX,       color: BLUE,   section: "leave" as Section },
     { label: "Pending Leave",     value: pendingLeave,      icon: Clock,       color: GOLD,   section: "leave" as Section },
-    { label: "Open Discipline",   value: openDiscipline,    icon: AlertCircle, color: RED,    section: "discipline" as Section },
   ];
 
   return (
@@ -559,83 +551,7 @@ function LeaveSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */
-function DisciplineSection() {
-  const utils = trpc.useUtils();
-  const q = trpc.discipline.list.useQuery({}, { retry: false });
-  const rows = ((q.data || []) as any[]);
-
-  const open = rows.filter(d => d.status !== "resolved");
-  const resolved = rows.filter(d => d.status === "resolved");
-
-  const resolveMut = trpc.discipline.resolve.useMutation({
-    onSuccess: () => { toast.success("Resolved"); utils.discipline.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-
-  return (
-    <div>
-      <SectionTitle sub="Queries and suspensions. Every record is audit-logged.">
-        Discipline Records
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
-        <MiniStat label="Open"     value={open.length}     color={RED} />
-        <MiniStat label="Resolved" value={resolved.length} color={GREEN} />
-      </div>
-
-      <Card>
-        {rows.length === 0 ? (
-          <EmptyState icon={CheckCircle2} title="No discipline records — clean house." hint="CEO can issue discipline from the CEO Portal." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {rows.slice(0, 40).map((d: any) => (
-              <div key={d.id} style={{
-                padding: "12px 14px",
-                backgroundColor: d.status === "resolved" ? BG : `${RED}05`,
-                borderRadius: 10, border: `1px solid ${d.status === "resolved" ? `${DARK}06` : `${RED}20`}`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{d.staffName}</p>
-                      <StatusPill label={d.type} tone={d.type === "suspension" ? "red" : "orange"} />
-                      <StatusPill label={d.status} tone={d.status === "resolved" ? "green" : "red"} />
-                    </div>
-                    <p style={{ fontSize: 12, color: DARK, marginTop: 6 }}>{d.reason}</p>
-                    {d.description && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>{d.description}</p>}
-                    <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
-                      By {d.issuedBy} · {fmtDate(d.createdAt)}
-                      {d.resolvedAt && <> · Resolved {fmtDate(d.resolvedAt)}</>}
-                    </p>
-                    {d.resolvedNotes && (
-                      <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>
-                        <strong>Resolution:</strong> {d.resolvedNotes}
-                      </p>
-                    )}
-                  </div>
-                  {d.status !== "resolved" && (
-                    <button
-                      onClick={() => {
-                        const note = prompt(`Resolution note for ${d.staffName}?`);
-                        if (!note) return;
-                        resolveMut.mutate({ id: d.id, resolvedNotes: note });
-                      }}
-                      disabled={resolveMut.isPending}
-                      style={{
-                        padding: "7px 12px", borderRadius: 8,
-                        backgroundColor: `${GREEN}15`, color: GREEN, border: "none",
-                        fontSize: 11, fontWeight: 600, cursor: "pointer", flexShrink: 0,
-                      }}>Resolve</button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Discipline section removed (not in Phase 2 HR Master Dashboard 8-tab spec). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════ */
 function AttendanceSection() {
@@ -689,79 +605,7 @@ function AttendanceSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════ */
-function ReportsSection() {
-  const staffQ = trpc.staff.listInternal.useQuery(undefined, { retry: false });
-  const leaveQ = trpc.leave.list.useQuery({}, { retry: false });
-  const disciplineQ = trpc.discipline.list.useQuery({}, { retry: false });
-
-  const staff = ((staffQ.data || []) as any[]);
-  const leaves = ((leaveQ.data || []) as any[]);
-  const disciplines = ((disciplineQ.data || []) as any[]);
-
-  const active = staff.filter(s => s.status === "Active").length;
-  const pendingLeave = leaves.filter(l => l.status === "pending").length;
-  const onLeaveNow = leaves.filter(l => {
-    if (l.status !== "approved") return false;
-    try {
-      const now = new Date();
-      return new Date(l.startDate) <= now && new Date(l.endDate) >= now;
-    } catch { return false; }
-  }).length;
-  const openDiscipline = disciplines.filter(d => d.status !== "resolved").length;
-
-  // Departments breakdown
-  const deptCounts: Record<string, number> = {};
-  staff.forEach(s => { const d = s.dept || "—"; deptCounts[d] = (deptCounts[d] || 0) + 1; });
-
-  const report = `HAMZURY · HR Summary
-${new Date().toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
-
-HEADCOUNT
- · Total staff:        ${staff.length}
- · Active:             ${active}
- · On leave now:       ${onLeaveNow}
-
-BY DEPARTMENT
-${Object.entries(deptCounts).map(([d, n]) => ` · ${d.padEnd(18)} ${n}`).join("\n")}
-
-PENDING ACTIONS
- · Leave requests:     ${pendingLeave}
- · Open discipline:    ${openDiscipline}
-
-Built to Last.`;
-
-  const copy = () => {
-    navigator.clipboard.writeText(report).then(
-      () => toast.success("Report copied to clipboard"),
-      () => toast.error("Couldn't copy — select manually"),
-    );
-  };
-
-  return (
-    <div>
-      <SectionTitle sub="Ready-to-paste summary for weekly CEO check-in.">Reports</SectionTitle>
-
-      <Card>
-        <pre style={{
-          fontFamily: "ui-monospace, 'SF Mono', monospace",
-          fontSize: 11, color: DARK, backgroundColor: BG,
-          padding: "14px 16px", borderRadius: 10,
-          border: `1px solid ${DARK}06`,
-          whiteSpace: "pre-wrap", lineHeight: 1.7, margin: 0,
-        }}>{report}</pre>
-        <button onClick={copy}
-          style={{
-            marginTop: 12, padding: "8px 14px", borderRadius: 10,
-            backgroundColor: GREEN, color: WHITE, border: "none",
-            fontSize: 12, fontWeight: 600, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 6,
-          }}>
-          <Send size={12} /> Copy Report
-        </button>
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — HR Reports section removed (not in Phase 2 HR Master Dashboard 8-tab spec). ── */
 
 /* ═══════════════════════════════════════════════════════════════════════
  * Restored sections — MySQL via tRPC `hr.*` (server/hr/router.ts).
@@ -986,162 +830,7 @@ function RequisitionsSection() {
 }
 
 /* ─── Onboarding ──────────────────────────────────────────────────────── */
-function OnboardingSection() {
-  const utils = trpc.useUtils();
-  const q = trpc.hr.onboarding.list.useQuery(undefined, { retry: false });
-  const rows = ((q.data || []) as any[]);
-
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    staffName: "", staffId: "", division: "",
-    hireDate: new Date().toISOString().slice(0, 10),
-    day1: "", week1: "", month1: "", month3: "",
-    notes: "",
-  });
-
-  const createMut = trpc.hr.onboarding.create.useMutation({
-    onSuccess: () => {
-      toast.success("Onboarding plan created");
-      utils.hr.onboarding.list.invalidate();
-      setShowForm(false);
-      setForm({ staffName: "", staffId: "", division: "", hireDate: new Date().toISOString().slice(0, 10), day1: "", week1: "", month1: "", month3: "", notes: "" });
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const updateMut = trpc.hr.onboarding.update.useMutation({
-    onSuccess: () => { toast.success("Updated"); utils.hr.onboarding.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-  const removeMut = trpc.hr.onboarding.remove.useMutation({
-    onSuccess: () => { toast.success("Removed"); utils.hr.onboarding.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
-
-  return (
-    <div>
-      <SectionTitle sub="Day 1 / Week 1 / Month 1 / Month 3 checklists per new hire.">
-        Onboarding
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
-        <MiniStat label="Active" value={rows.filter(r => !["Confirmed", "Parted Ways"].includes(r.status)).length} color={BLUE} />
-        <MiniStat label="Confirmed" value={rows.filter(r => r.status === "Confirmed").length} color={GREEN} />
-        <MiniStat label="Total" value={rows.length} color={DARK} />
-      </div>
-
-      <Card style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Onboarding Plan</p>
-          <PrimaryButton onClick={() => setShowForm(!showForm)}>
-            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
-          </PrimaryButton>
-        </div>
-        {showForm && (
-          <>
-            <FormGrid>
-              <FormField label="Staff Name"><TextInput value={form.staffName} onChange={e => setForm({ ...form, staffName: e.target.value })} /></FormField>
-              <FormField label="Staff ID"><TextInput value={form.staffId} onChange={e => setForm({ ...form, staffId: e.target.value })} placeholder="e.g. HMZ-S-019" /></FormField>
-              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
-              <FormField label="Hire Date"><TextInput type="date" value={form.hireDate} onChange={e => setForm({ ...form, hireDate: e.target.value })} /></FormField>
-            </FormGrid>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
-              <FormField label="Day 1 Tasks (one per line)"><TextArea value={form.day1} onChange={e => setForm({ ...form, day1: e.target.value })} placeholder="Office tour&#10;Sign contract&#10;Set up email" /></FormField>
-              <FormField label="Week 1 Tasks (one per line)"><TextArea value={form.week1} onChange={e => setForm({ ...form, week1: e.target.value })} /></FormField>
-              <FormField label="Month 1 Tasks (one per line)"><TextArea value={form.month1} onChange={e => setForm({ ...form, month1: e.target.value })} /></FormField>
-              <FormField label="Month 3 Tasks (one per line)"><TextArea value={form.month3} onChange={e => setForm({ ...form, month3: e.target.value })} /></FormField>
-              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
-            </div>
-            <PrimaryButton
-              onClick={() => {
-                if (!form.staffName.trim() || !form.hireDate) {
-                  toast.error("Staff Name and Hire Date are required");
-                  return;
-                }
-                createMut.mutate({
-                  staffName: form.staffName,
-                  staffId: form.staffId || null,
-                  division: form.division || null,
-                  hireDate: form.hireDate,
-                  day1Tasks: splitLines(form.day1),
-                  week1Tasks: splitLines(form.week1),
-                  month1Tasks: splitLines(form.month1),
-                  month3Tasks: splitLines(form.month3),
-                  notes: form.notes || null,
-                });
-              }}
-              disabled={createMut.isPending}
-            >Save</PrimaryButton>
-          </>
-        )}
-      </Card>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {rows.length === 0 ? (
-          <Card><EmptyState icon={Sparkles} title="No onboarding plans yet" /></Card>
-        ) : rows.map((r: any) => (
-          <Card key={r.id}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{r.staffName}</p>
-                  {r.staffId && <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.staffId}</span>}
-                  <StatusPill label={r.status} tone={r.status === "Confirmed" ? "green" : r.status === "Parted Ways" ? "red" : "blue"} />
-                </div>
-                <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>{r.division || "—"} · Hired {fmtDate(r.hireDate)}</p>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 180 }}>
-                <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
-                  {["Day 1", "Week 1", "Month 1", "Probation", "Confirmed", "Parted Ways"].map(s => <option key={s} value={s}>{s}</option>)}
-                </Select>
-                <GhostButton onClick={() => { if (confirm("Remove this plan?")) removeMut.mutate({ id: r.id }); }} color={RED}>
-                  <Trash2 size={10} /> Remove
-                </GhostButton>
-              </div>
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
-              {[
-                { key: "day1", label: "Day 1", tasks: r.day1Tasks as string[], done: r.day1Done, donePatch: { id: r.id, day1Done: !r.day1Done } },
-                { key: "week1", label: "Week 1", tasks: r.week1Tasks as string[], done: r.week1Done, donePatch: { id: r.id, week1Done: !r.week1Done } },
-                { key: "month1", label: "Month 1", tasks: r.month1Tasks as string[], done: r.month1Done, donePatch: { id: r.id, month1Done: !r.month1Done } },
-                { key: "month3", label: "Month 3", tasks: r.month3Tasks as string[], done: r.month3Done, donePatch: { id: r.id, month3Done: !r.month3Done } },
-              ].map(p => (
-                <div key={p.key} style={{
-                  padding: 10, backgroundColor: BG, borderRadius: 8, border: `1px solid ${DARK}06`,
-                }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <p style={{ fontSize: 11, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.label}</p>
-                    <button
-                      onClick={() => updateMut.mutate(p.donePatch as any)}
-                      style={{
-                        padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer",
-                        fontSize: 10, fontWeight: 600,
-                        backgroundColor: p.done ? `${GREEN}15` : `${MUTED}15`,
-                        color: p.done ? GREEN : MUTED,
-                      }}>{p.done ? "Done" : "Mark"}</button>
-                  </div>
-                  {p.tasks.length === 0 ? (
-                    <p style={{ fontSize: 10, color: MUTED, fontStyle: "italic" }}>No tasks</p>
-                  ) : (
-                    <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: DARK, lineHeight: 1.6 }}>
-                      {p.tasks.map((t, i) => <li key={i}>{t}</li>)}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-            {r.notes && (
-              <p style={{ fontSize: 11, color: MUTED, marginTop: 10, fontStyle: "italic" }}>
-                Notes: {r.notes}
-              </p>
-            )}
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Onboarding section (SOP, not in 8-tab HR spec) removed (not in Phase 2 HR Master Dashboard 8-tab spec). ── */
 
 /* ─── Interns ─────────────────────────────────────────────────────────── */
 function InternsSection() {
@@ -1273,133 +962,7 @@ function InternsSection() {
 }
 
 /* ─── Intern Coord ────────────────────────────────────────────────────── */
-function InternCoordSection() {
-  const utils = trpc.useUtils();
-  const q = trpc.hr.internCoord.list.useQuery(undefined, { retry: false });
-  const rows = ((q.data || []) as any[]);
-
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    internId: "", internName: "", division: "",
-    divisionLead: "", hubManager: "",
-    divisionHoursPerWeek: 0, hubHoursPerWeek: 0,
-    lastReviewAt: "",
-    divisionFeedback: "", hubFeedback: "",
-    status: "Active" as const,
-    conversionDecision: "", notes: "",
-  });
-
-  const createMut = trpc.hr.internCoord.create.useMutation({
-    onSuccess: () => {
-      toast.success("Coordination added");
-      utils.hr.internCoord.list.invalidate();
-      setShowForm(false);
-      setForm({ internId: "", internName: "", division: "", divisionLead: "", hubManager: "", divisionHoursPerWeek: 0, hubHoursPerWeek: 0, lastReviewAt: "", divisionFeedback: "", hubFeedback: "", status: "Active" as const, conversionDecision: "", notes: "" });
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const updateMut = trpc.hr.internCoord.update.useMutation({
-    onSuccess: () => { toast.success("Updated"); utils.hr.internCoord.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-  const removeMut = trpc.hr.internCoord.remove.useMutation({
-    onSuccess: () => { toast.success("Removed"); utils.hr.internCoord.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-
-  return (
-    <div>
-      <SectionTitle sub="HUB ↔ Division dual-coordination. Both leads feed back to HR.">
-        Intern Coord
-      </SectionTitle>
-
-      <Card style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Coordination Entry</p>
-          <PrimaryButton onClick={() => setShowForm(!showForm)}>
-            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
-          </PrimaryButton>
-        </div>
-        {showForm && (
-          <>
-            <FormGrid>
-              <FormField label="Intern ID"><TextInput value={form.internId} onChange={e => setForm({ ...form, internId: e.target.value })} placeholder="HMZ-I-001" /></FormField>
-              <FormField label="Intern Name"><TextInput value={form.internName} onChange={e => setForm({ ...form, internName: e.target.value })} /></FormField>
-              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
-              <FormField label="Division Lead"><TextInput value={form.divisionLead} onChange={e => setForm({ ...form, divisionLead: e.target.value })} /></FormField>
-              <FormField label="HUB Manager"><TextInput value={form.hubManager} onChange={e => setForm({ ...form, hubManager: e.target.value })} /></FormField>
-              <FormField label="Division hrs/week"><TextInput type="number" value={form.divisionHoursPerWeek || ""} onChange={e => setForm({ ...form, divisionHoursPerWeek: Number(e.target.value) })} /></FormField>
-              <FormField label="HUB hrs/week"><TextInput type="number" value={form.hubHoursPerWeek || ""} onChange={e => setForm({ ...form, hubHoursPerWeek: Number(e.target.value) })} /></FormField>
-              <FormField label="Last Review Date"><TextInput type="date" value={form.lastReviewAt} onChange={e => setForm({ ...form, lastReviewAt: e.target.value })} /></FormField>
-            </FormGrid>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
-              <FormField label="Division Feedback"><TextArea value={form.divisionFeedback} onChange={e => setForm({ ...form, divisionFeedback: e.target.value })} /></FormField>
-              <FormField label="HUB Feedback"><TextArea value={form.hubFeedback} onChange={e => setForm({ ...form, hubFeedback: e.target.value })} /></FormField>
-              <FormField label="Conversion Decision"><TextInput value={form.conversionDecision} onChange={e => setForm({ ...form, conversionDecision: e.target.value })} placeholder="Convert / Extend / End" /></FormField>
-              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
-            </div>
-            <PrimaryButton
-              onClick={() => {
-                if (!form.internId.trim() || !form.internName.trim() || !form.division.trim()) {
-                  toast.error("Intern ID, Name, and Division are required");
-                  return;
-                }
-                createMut.mutate({ ...form });
-              }}
-              disabled={createMut.isPending}
-            >Save</PrimaryButton>
-          </>
-        )}
-      </Card>
-
-      <Card>
-        {rows.length === 0 ? (
-          <EmptyState icon={Workflow} title="No coordination entries yet" hint="Track HUB + Division feedback per intern." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {rows.map((r: any) => (
-              <div key={r.id} style={{
-                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.internName}</p>
-                      <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.internId}</span>
-                      <StatusPill label={r.status} tone={r.status === "Active" ? "blue" : r.status === "Converting" ? "gold" : r.status === "Ended" ? "muted" : "green"} />
-                    </div>
-                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
-                      {r.division}
-                      {r.divisionLead && <> · Lead: {r.divisionLead}</>}
-                      {r.hubManager && <> · HUB: {r.hubManager}</>}
-                    </p>
-                    {(r.divisionHoursPerWeek || r.hubHoursPerWeek) && (
-                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
-                        {r.divisionHoursPerWeek || 0}h division / {r.hubHoursPerWeek || 0}h HUB
-                        {r.lastReviewAt && <> · Last review {fmtDate(r.lastReviewAt)}</>}
-                      </p>
-                    )}
-                    {r.divisionFeedback && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Division:</strong> {r.divisionFeedback}</p>}
-                    {r.hubFeedback && <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}><strong>HUB:</strong> {r.hubFeedback}</p>}
-                    {r.conversionDecision && <p style={{ fontSize: 11, color: GOLD, marginTop: 4, fontWeight: 600 }}>Decision: {r.conversionDecision}</p>}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
-                    <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
-                      {["Onboarding", "Active", "Review", "Converting", "Ended"].map(s => <option key={s} value={s}>{s}</option>)}
-                    </Select>
-                    <GhostButton onClick={() => { if (confirm("Remove this entry?")) removeMut.mutate({ id: r.id }); }} color={RED}>
-                      <Trash2 size={10} /> Remove
-                    </GhostButton>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Intern Coord section (duplicate of Interns) removed (not in Phase 2 HR Master Dashboard 8-tab spec). ── */
 
 /* ─── Performance ─────────────────────────────────────────────────────── */
 function PerformanceSection() {
@@ -1561,172 +1124,4 @@ function PerformanceSection() {
 }
 
 /* ─── Exits ───────────────────────────────────────────────────────────── */
-function ExitsSection() {
-  const utils = trpc.useUtils();
-  const q = trpc.hr.exits.list.useQuery(undefined, { retry: false });
-  const rows = ((q.data || []) as any[]);
-
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    staffName: "", staffId: "", division: "",
-    exitType: "Resignation" as const,
-    noticeDate: "", lastDay: "",
-    reason: "", handover: "", feedback: "",
-    status: "Notified" as const,
-    notes: "",
-  });
-
-  const createMut = trpc.hr.exits.create.useMutation({
-    onSuccess: () => {
-      toast.success("Exit logged");
-      utils.hr.exits.list.invalidate();
-      setShowForm(false);
-      setForm({ staffName: "", staffId: "", division: "", exitType: "Resignation" as const, noticeDate: "", lastDay: "", reason: "", handover: "", feedback: "", status: "Notified" as const, notes: "" });
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const updateMut = trpc.hr.exits.update.useMutation({
-    onSuccess: () => { toast.success("Updated"); utils.hr.exits.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-  const removeMut = trpc.hr.exits.remove.useMutation({
-    onSuccess: () => { toast.success("Removed"); utils.hr.exits.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
-  });
-
-  const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
-
-  return (
-    <div>
-      <SectionTitle sub="Offboarding workflow — handover, equipment, access, final pay, exit interview.">
-        Exits
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
-        <MiniStat label="In Progress" value={rows.filter(r => !["Departed", "Post-Exit"].includes(r.status)).length} color={GOLD} />
-        <MiniStat label="Departed" value={rows.filter(r => ["Departed", "Post-Exit"].includes(r.status)).length} color={MUTED} />
-        <MiniStat label="Total" value={rows.length} color={DARK} />
-      </div>
-
-      <Card style={{ marginBottom: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Exit Record</p>
-          <PrimaryButton onClick={() => setShowForm(!showForm)}>
-            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
-          </PrimaryButton>
-        </div>
-        {showForm && (
-          <>
-            <FormGrid>
-              <FormField label="Staff Name"><TextInput value={form.staffName} onChange={e => setForm({ ...form, staffName: e.target.value })} /></FormField>
-              <FormField label="Staff ID"><TextInput value={form.staffId} onChange={e => setForm({ ...form, staffId: e.target.value })} placeholder="HMZ-S-XXX" /></FormField>
-              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
-              <FormField label="Exit Type">
-                <Select value={form.exitType} onChange={e => setForm({ ...form, exitType: e.target.value as any })}>
-                  {["Resignation", "Termination", "End of Contract", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
-                </Select>
-              </FormField>
-              <FormField label="Notice Date"><TextInput type="date" value={form.noticeDate} onChange={e => setForm({ ...form, noticeDate: e.target.value })} /></FormField>
-              <FormField label="Last Day"><TextInput type="date" value={form.lastDay} onChange={e => setForm({ ...form, lastDay: e.target.value })} /></FormField>
-            </FormGrid>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
-              <FormField label="Reason"><TextArea value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></FormField>
-              <FormField label="Handover Items (one per line)"><TextArea value={form.handover} onChange={e => setForm({ ...form, handover: e.target.value })} /></FormField>
-              <FormField label="Feedback (exit interview)"><TextArea value={form.feedback} onChange={e => setForm({ ...form, feedback: e.target.value })} /></FormField>
-              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
-            </div>
-            <PrimaryButton
-              onClick={() => {
-                if (!form.staffName.trim()) {
-                  toast.error("Staff Name is required");
-                  return;
-                }
-                createMut.mutate({
-                  staffName: form.staffName,
-                  staffId: form.staffId || null,
-                  division: form.division || null,
-                  exitType: form.exitType,
-                  noticeDate: form.noticeDate || null,
-                  lastDay: form.lastDay || null,
-                  reason: form.reason || null,
-                  handoverItems: splitLines(form.handover),
-                  feedback: form.feedback || null,
-                  status: form.status,
-                  notes: form.notes || null,
-                });
-              }}
-              disabled={createMut.isPending}
-            >Save</PrimaryButton>
-          </>
-        )}
-      </Card>
-
-      <Card>
-        {rows.length === 0 ? (
-          <EmptyState icon={DoorOpen} title="No exits logged" hint="Hopefully this stays empty." />
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {rows.map((r: any) => (
-              <div key={r.id} style={{
-                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.staffName}</p>
-                      {r.staffId && <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.staffId}</span>}
-                      <StatusPill label={r.exitType} tone={r.exitType === "Termination" ? "red" : "muted"} />
-                      <StatusPill label={r.status} tone={r.status === "Departed" ? "green" : r.status === "Post-Exit" ? "muted" : "gold"} />
-                    </div>
-                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
-                      {r.division || "—"}
-                      {r.noticeDate && <> · Notice {fmtDate(r.noticeDate)}</>}
-                      {r.lastDay && <> · Last day {fmtDate(r.lastDay)}</>}
-                    </p>
-                    {r.reason && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Reason:</strong> {r.reason}</p>}
-                    {Array.isArray(r.handoverItems) && r.handoverItems.length > 0 && (
-                      <div style={{ fontSize: 11, color: DARK, marginTop: 4 }}>
-                        <strong>Handover:</strong>
-                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
-                          {r.handoverItems.map((g: string, i: number) => <li key={i}>{g}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    {r.feedback && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>Feedback: {r.feedback}</p>}
-                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
-                      {[
-                        { key: "equipmentReturned", label: "Equipment" },
-                        { key: "accessRevoked", label: "Access" },
-                        { key: "finalPayProcessed", label: "Final Pay" },
-                        { key: "exitInterviewDone", label: "Interview" },
-                      ].map(b => (
-                        <button key={b.key}
-                          onClick={() => updateMut.mutate({ id: r.id, [b.key]: !r[b.key] } as any)}
-                          style={{
-                            padding: "3px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-                            fontSize: 10, fontWeight: 600,
-                            backgroundColor: r[b.key] ? `${GREEN}15` : `${MUTED}15`,
-                            color: r[b.key] ? GREEN : MUTED,
-                          }}>
-                          {r[b.key] ? "✓" : "○"} {b.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
-                    <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
-                      {["Notified", "Transition", "Final Week", "Departed", "Post-Exit"].map(s => <option key={s} value={s}>{s}</option>)}
-                    </Select>
-                    <GhostButton onClick={() => { if (confirm("Remove this exit record?")) removeMut.mutate({ id: r.id }); }} color={RED}>
-                      <Trash2 size={10} /> Remove
-                    </GhostButton>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Card>
-    </div>
-  );
-}
+/* ── CUT 2026-04-25 — Exits section removed (not in Phase 2 HR Master Dashboard 8-tab spec). ── */
