@@ -692,8 +692,10 @@ Sitemap: ${base}/sitemap.xml
       // await seedTaxClients();
       // await seedMediaClients();
       // await seedRealClients();
-      // Start AI agent scheduler (background automation)
-      await startAgentScheduler();
+      // 2026-04 founder decision: AI agent scheduler disabled for launch.
+      // Background automation paused until founder is ready to re-enable.
+      // To re-enable: uncomment the line below.
+      // await startAgentScheduler();
     } catch (err) {
       console.log("[startup] DB init error:", String(err));
     }
