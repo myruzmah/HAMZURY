@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell";
 import PhaseTracker, {
@@ -7,14 +7,8 @@ import PhaseTracker, {
   type Phase,
 } from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
-import {
-  readAll,
-  insert,
-  update,
-  remove,
-  cryptoId,
-  type OpsItem,
-} from "@/lib/opsStore";
+import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -49,12 +43,18 @@ import {
  *   4. Video Production Tracker  — manual vs AI path, stock sources, export
  *   5. Channel / Client Register — YT channels, social packs, bulk packs
  *   6. Distribution              — per-platform publish state + tags + thumb
- *   7. Templates                 — 10 ready-to-use scripts (from spec)
+ *   7. Templates                 — 10 ready-to-use scripts (static const)
  *   8. AI Tools Cost Tracker     — ElevenLabs, Murf, Pictory, ChatGPT…
  *
- * Storage: opsStore portal "faceless" — 7 collections (templates are static).
+ * Storage: tRPC `faceless.*` (MySQL via Drizzle).
  * Auth:    founder | ceo | faceless_lead | faceless_staff.
  * Brand:   teal #0F766E sidebar + accent · milk #FFFAF6 background.
+ *
+ * NOTE: ids are now `number` end-to-end. The legacy localStorage shape used
+ * string ids; this file flips everything to int. The `assetSources` field
+ * on production and `tags` on distribution are parsed/stringified server-side
+ * so the client always sees a real string[]. Templates collection remains a
+ * hardcoded TS const (product copy, not user data).
  * ══════════════════════════════════════════════════════════════════════════ */
 
 const TEAL = "#0F766E";
@@ -69,7 +69,6 @@ const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
 const PURPLE = "#8B5CF6";
 
-const PORTAL = "faceless" as const;
 const ALLOWED_ROLES = ["founder", "ceo", "faceless_lead", "faceless_staff"];
 
 type Section =
@@ -84,90 +83,114 @@ type Section =
   | "tools";
 
 /* ══════════════════════════════════════════════════════════════════════════
- *  DOMAIN TYPES (stored in opsStore)
+ *  DOMAIN TYPES (returned by tRPC — `id` is number; FK refs are number|null)
  * ══════════════════════════════════════════════════════════════════════════ */
 
-type ContentItem = OpsItem & {
+type ContentItem = {
+  id: number;
   topic: string;
-  niche: string;
+  niche?: string | null;
   client: string;
   channel: string;
-  format: string; // Short | Long | Reel | Short-form Listicle …
-  publishDate: string; // ISO date
+  format?: string | null;
+  publishDate?: string | null;
   status: "Idea" | "Scripting" | "Voiceover" | "Editing" | "Scheduled" | "Published";
-  notes?: string;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ScriptItem = OpsItem & {
+type ScriptItem = {
+  id: number;
   title: string;
-  contentId?: string;
+  contentId?: number | null;
   hook: string;
-  body: string;
-  cta: string;
-  aiPrompt: string;
-  wordCount?: number;
+  body?: string | null;
+  cta?: string | null;
+  aiPrompt?: string | null;
+  wordCount?: number | null;
   approval: "Draft" | "In Review" | "Approved" | "Revise";
-  reviewer?: string;
+  reviewer?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type VoiceoverItem = OpsItem & {
+type VoiceoverItem = {
+  id: number;
   scriptTitle: string;
-  scriptId?: string;
+  scriptId?: number | null;
   tool: "ElevenLabs" | "Murf" | "Play.ht" | "Speechify" | "Other";
   voice: string;
-  speed?: string;
-  audioPath?: string;
+  speed?: string | null;
+  audioPath?: string | null;
   status: "Queued" | "Generating" | "Needs QC" | "Approved" | "Rejected";
-  note?: string;
+  note?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ProductionItem = OpsItem & {
+type ProductionItem = {
+  id: number;
   videoTitle: string;
-  contentId?: string;
+  contentId?: number | null;
   path: "Manual" | "AI-Assisted";
-  assetSources: string[]; // Pexels, Pixabay, Storyblocks, Epidemic Sound, Artlist…
+  /** Already-parsed array (server stringifies to text on storage). */
+  assetSources: string[];
   assetsReady: boolean;
   voFileReady: boolean;
   editStatus: "Not Started" | "Rough Cut" | "Polishing" | "QC" | "Exported";
-  exportPath?: string;
-  duration?: string; // "60s" / "8:32"
+  exportPath?: string | null;
+  duration?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ChannelItem = OpsItem & {
+type ChannelItem = {
+  id: number;
   kind: "YouTube Channel" | "Social Package" | "Bulk Package";
   name: string;
   client: string;
-  niche?: string;
-  tier?: string; // "10 videos" | "20 videos" | "50 videos" | "20 posts/mo"…
-  priceNGN?: number;
-  monthlyQuota?: number;
-  delivered?: number;
+  niche?: string | null;
+  tier?: string | null;
+  priceNGN?: number | null;
+  monthlyQuota?: number | null;
+  delivered?: number | null;
   status: "Onboarding" | "Active" | "Paused" | "Completed";
-  startedAt?: string;
+  startedAt?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type DistributionItem = OpsItem & {
+type DistributionItem = {
+  id: number;
   videoTitle: string;
   platform: "YouTube" | "YouTube Shorts" | "TikTok" | "Instagram Reels" | "Instagram" | "Facebook";
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
+  /** Already-parsed array (server stringifies to text on storage). */
   tags: string[];
-  scheduleAt?: string;
-  publishedAt?: string;
+  scheduleAt?: string | null;
+  publishedAt?: string | null;
   status: "Scheduled" | "Published" | "Draft" | "Failed";
-  channelName?: string;
+  channelName?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ToolItem = OpsItem & {
+type ToolItem = {
+  id: number;
   name: string;
   category: "Voice" | "Script" | "Video" | "Image" | "Stock" | "Music" | "Editing" | "Captions" | "Scheduler";
   monthlyNGN: number;
-  seats?: number;
-  renewsOn?: string;
-  note?: string;
+  seats?: number | null;
+  renewsOn?: string | null;
+  note?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
  *  STATIC: 10 script templates (from Faceless_Content_Templates.txt)
+ *  Kept as a TS const — product copy, not user data, never persisted.
  * ══════════════════════════════════════════════════════════════════════════ */
 
 type Template = {
@@ -290,94 +313,14 @@ const TEMPLATES: Template[] = [
 ];
 
 /* ══════════════════════════════════════════════════════════════════════════
- *  SEED DATA (written on first run — so the portal isn't empty)
- * ══════════════════════════════════════════════════════════════════════════ */
-
-function seedOnce() {
-  const key = `hamzury.v1.${PORTAL}.__seeded`;
-  if (typeof window === "undefined") return;
-  if (localStorage.getItem(key)) return;
-
-  const now = Date.now();
-  const seedTools: Omit<ToolItem, "id" | "createdAt" | "updatedAt">[] = [
-    { name: "ElevenLabs", category: "Voice", monthlyNGN: 30000, renewsOn: "", note: "Best voice quality — primary tool" },
-    { name: "Murf AI", category: "Voice", monthlyNGN: 20000, note: "Backup voice tool" },
-    { name: "Play.ht", category: "Voice", monthlyNGN: 15000, note: "Budget alternative" },
-    { name: "Pictory", category: "Video", monthlyNGN: 25000, note: "Script → video (AI path)" },
-    { name: "ChatGPT Plus", category: "Script", monthlyNGN: 20000, note: "Script writing + hooks" },
-    { name: "MidJourney", category: "Image", monthlyNGN: 25000, note: "Thumbnails + custom stills" },
-    { name: "Storyblocks", category: "Stock", monthlyNGN: 35000, note: "Unlimited stock footage" },
-    { name: "Epidemic Sound", category: "Music", monthlyNGN: 20000, note: "Background music" },
-    { name: "Adobe Premiere Pro", category: "Editing", monthlyNGN: 30000, note: "Manual path editor" },
-    { name: "Canva Pro", category: "Image", monthlyNGN: 15000, note: "Thumbnails + carousels" },
-  ];
-  for (const t of seedTools) insert<ToolItem>(PORTAL, "tools", t);
-
-  const seedChannels: Omit<ChannelItem, "id" | "createdAt" | "updatedAt">[] = [
-    {
-      kind: "YouTube Channel", name: "Naija Finance Hacks", client: "Folarin Enterprises",
-      niche: "Personal finance (Nigeria)", tier: "Channel + 20 videos", priceNGN: 900000,
-      monthlyQuota: 4, delivered: 6, status: "Active", startedAt: "2026-03-01",
-    },
-    {
-      kind: "Social Package", name: "CleanCut Barbers · 30 Reels/mo", client: "CleanCut Barbers",
-      tier: "30 short videos", priceNGN: 400000, monthlyQuota: 30, delivered: 18,
-      status: "Active", startedAt: "2026-04-01",
-    },
-    {
-      kind: "Bulk Package", name: "TechStack Tips · 20 Videos", client: "TechStack NG",
-      tier: "20 videos", priceNGN: 750000, monthlyQuota: 0, delivered: 12,
-      status: "Active", startedAt: "2026-03-15",
-    },
-  ];
-  for (const c of seedChannels) insert<ChannelItem>(PORTAL, "channels", c);
-
-  const seedContent: Omit<ContentItem, "id" | "createdAt" | "updatedAt">[] = [
-    {
-      topic: "10 Side Hustles You Can Start This Weekend", niche: "Finance",
-      client: "Folarin Enterprises", channel: "Naija Finance Hacks",
-      format: "Long-form listicle (6min)", publishDate: "2026-04-28",
-      status: "Scripting", notes: "Use TEMPLATE 1 (10 Tips)",
-    },
-    {
-      topic: "How To Open a Domiciliary Account in Nigeria", niche: "Finance",
-      client: "Folarin Enterprises", channel: "Naija Finance Hacks",
-      format: "Tutorial (3min)", publishDate: "2026-05-02",
-      status: "Voiceover", notes: "TEMPLATE 2",
-    },
-    {
-      topic: "Fresh Fade Reel — before/after", niche: "Grooming",
-      client: "CleanCut Barbers", channel: "CleanCut IG/TikTok",
-      format: "Reel (45s)", publishDate: "2026-04-25",
-      status: "Editing",
-    },
-    {
-      topic: "Myth: You need ₦1M to start a business in Nigeria", niche: "Entrepreneurship",
-      client: "Folarin Enterprises", channel: "Naija Finance Hacks",
-      format: "Myth-busting (4min)", publishDate: "2026-05-05",
-      status: "Idea", notes: "TEMPLATE 5",
-    },
-    {
-      topic: "5 VS Code Extensions Every Dev Needs", niche: "Tech",
-      client: "TechStack NG", channel: "TechStack NG YT",
-      format: "Listicle (5min)", publishDate: "2026-04-29",
-      status: "Scheduled",
-    },
-  ];
-  for (const c of seedContent) insert<ContentItem>(PORTAL, "content", c);
-
-  localStorage.setItem(key, "1");
-}
-
-/* ══════════════════════════════════════════════════════════════════════════
  *  LOCAL HELPERS
  * ══════════════════════════════════════════════════════════════════════════ */
 
-function fmtNaira(n: number | undefined): string {
-  if (!n && n !== 0) return "—";
+function fmtNaira(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "—";
   return `₦${Math.round(n).toLocaleString()}`;
 }
-function fmtDate(d: string | undefined): string {
+function fmtDate(d: string | null | undefined): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-NG", {
@@ -387,7 +330,7 @@ function fmtDate(d: string | undefined): string {
     return d;
   }
 }
-function daysBetween(iso: string | undefined): number | null {
+function daysBetween(iso: string | null | undefined): number | null {
   if (!iso) return null;
   try {
     const t = new Date(iso).getTime();
@@ -396,12 +339,6 @@ function daysBetween(iso: string | undefined): number | null {
   } catch {
     return null;
   }
-}
-
-/** Small re-render helper — bumps state when localStorage mutated */
-function useRefresh(): [number, () => void] {
-  const [tick, setTick] = useState(0);
-  return [tick, () => setTick(t => t + 1)];
 }
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
@@ -495,6 +432,7 @@ function Btn({
   small,
   type,
   title,
+  disabled,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
@@ -502,6 +440,7 @@ function Btn({
   small?: boolean;
   type?: "button" | "submit";
   title?: string;
+  disabled?: boolean;
 }) {
   const map = {
     primary: { bg: TEAL, fg: WHITE, bd: TEAL },
@@ -513,6 +452,7 @@ function Btn({
       type={type ?? "button"}
       onClick={onClick}
       title={title}
+      disabled={disabled}
       style={{
         padding: small ? "6px 10px" : "9px 14px",
         borderRadius: 9,
@@ -521,7 +461,8 @@ function Btn({
         border: `1px solid ${map.bd}`,
         fontSize: small ? 11 : 12,
         fontWeight: 600,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
@@ -597,10 +538,6 @@ export default function FacelessOpsPortal() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [active, setActive] = useState<Section>("dashboard");
 
-  useEffect(() => {
-    seedOnce();
-  }, []);
-
   if (loading) {
     return (
       <div
@@ -619,7 +556,7 @@ export default function FacelessOpsPortal() {
   if (!user) return null;
 
   // Role gate — founder / ceo / faceless_lead / faceless_staff only
-  const role = (user as any).role as string | undefined;
+  const role = (user as any).hamzuryRole as string | undefined;
   const allowed = role && ALLOWED_ROLES.includes(role);
   if (!allowed) {
     return (
@@ -701,14 +638,21 @@ export default function FacelessOpsPortal() {
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function DashboardSection({ onGoto }: { onGoto: (s: Section) => void }) {
-  const [tick] = useRefresh();
-  const content = useMemo(() => readAll<ContentItem>(PORTAL, "content"), [tick]);
-  const scripts = useMemo(() => readAll<ScriptItem>(PORTAL, "scripts"), [tick]);
-  const vos = useMemo(() => readAll<VoiceoverItem>(PORTAL, "voiceovers"), [tick]);
-  const prods = useMemo(() => readAll<ProductionItem>(PORTAL, "production"), [tick]);
-  const channels = useMemo(() => readAll<ChannelItem>(PORTAL, "channels"), [tick]);
-  const dist = useMemo(() => readAll<DistributionItem>(PORTAL, "distribution"), [tick]);
-  const tools = useMemo(() => readAll<ToolItem>(PORTAL, "tools"), [tick]);
+  const contentQ = trpc.faceless.content.list.useQuery();
+  const scriptsQ = trpc.faceless.scripts.list.useQuery();
+  const vosQ = trpc.faceless.voiceovers.list.useQuery();
+  const prodsQ = trpc.faceless.production.list.useQuery();
+  const channelsQ = trpc.faceless.channels.list.useQuery();
+  const distQ = trpc.faceless.distribution.list.useQuery();
+  const toolsQ = trpc.faceless.tools.list.useQuery();
+
+  const content = (contentQ.data ?? []) as ContentItem[];
+  const scripts = (scriptsQ.data ?? []) as ScriptItem[];
+  const vos = (vosQ.data ?? []) as VoiceoverItem[];
+  const prods = (prodsQ.data ?? []) as ProductionItem[];
+  const channels = (channelsQ.data ?? []) as ChannelItem[];
+  const dist = (distQ.data ?? []) as DistributionItem[];
+  const tools = (toolsQ.data ?? []) as ToolItem[];
 
   const ideas = content.filter(c => c.status === "Idea").length;
   const scripting = content.filter(c => c.status === "Scripting").length;
@@ -742,7 +686,7 @@ function DashboardSection({ onGoto }: { onGoto: (s: Section) => void }) {
     Editing: editing, Scheduled: scheduled, Published: published,
   };
 
-  // Next 7 days
+  // Next 14 days
   const upcoming = content
     .filter(c => c.status !== "Published")
     .map(c => ({ c, days: daysBetween(c.publishDate) }))
@@ -857,7 +801,7 @@ function DashboardSection({ onGoto }: { onGoto: (s: Section) => void }) {
                       {c.topic}
                     </div>
                     <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                      {c.client} · {c.channel} · {c.format} · due {fmtDate(c.publishDate)}
+                      {c.client} · {c.channel} · {c.format || "—"} · due {fmtDate(c.publishDate)}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -879,8 +823,22 @@ function DashboardSection({ onGoto }: { onGoto: (s: Section) => void }) {
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function CalendarSection() {
-  const [tick, refresh] = useRefresh();
-  const items = useMemo(() => readAll<ContentItem>(PORTAL, "content"), [tick]);
+  const utils = trpc.useUtils();
+  const itemsQ = trpc.faceless.content.list.useQuery();
+  const items = (itemsQ.data ?? []) as ContentItem[];
+
+  const updateMut = trpc.faceless.content.update.useMutation({
+    onSuccess: () => { utils.faceless.content.list.invalidate(); },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+  const removeMut = trpc.faceless.content.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.content.list.invalidate();
+      toast.success("Content removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [horizon, setHorizon] = useState<"30" | "60" | "90" | "all">("30");
   const [clientFilter, setClientFilter] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
@@ -970,12 +928,9 @@ function CalendarSection() {
       {showForm && (
         <ContentForm
           item={editing}
-          onSave={data => {
-            if (editing) update<ContentItem>(PORTAL, "content", editing.id, data);
-            else insert<ContentItem>(PORTAL, "content", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -1029,7 +984,7 @@ function CalendarSection() {
                         {it.topic}
                       </div>
                       <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                        {it.client} · {it.channel} · {it.format} · {it.niche}
+                        {it.client} · {it.channel} · {it.format || "—"} · {it.niche || "—"}
                       </div>
                       <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
                         Publish {fmtDate(it.publishDate)} · {per}% through
@@ -1039,10 +994,10 @@ function CalendarSection() {
                     <Select
                       value={it.status}
                       onChange={e => {
-                        update<ContentItem>(PORTAL, "content", it.id, {
+                        updateMut.mutate({
+                          id: it.id,
                           status: e.target.value as ContentItem["status"],
                         });
-                        refresh();
                       }}
                       style={{ width: "auto", minWidth: 120 }}
                     >
@@ -1066,8 +1021,7 @@ function CalendarSection() {
                       small
                       onClick={() => {
                         if (confirm(`Delete "${it.topic}"?`)) {
-                          remove(PORTAL, "content", it.id);
-                          refresh();
+                          removeMut.mutate({ id: it.id });
                         }
                       }}
                     >
@@ -1137,13 +1091,31 @@ function PhasePctForStatus(s: ContentItem["status"]): number {
 
 function ContentForm({
   item,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: ContentItem | null;
-  onSave: (data: Omit<ContentItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.content.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.content.list.invalidate();
+      toast.success("Content added");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.content.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.content.list.invalidate();
+      toast.success("Content updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
   const [topic, setTopic] = useState(item?.topic ?? "");
   const [niche, setNiche] = useState(item?.niche ?? "");
   const [client, setClient] = useState(item?.client ?? "");
@@ -1152,6 +1124,8 @@ function ContentForm({
   const [publishDate, setPublishDate] = useState(item?.publishDate ?? "");
   const [status, setStatus] = useState<ContentItem["status"]>(item?.status ?? "Idea");
   const [notes, setNotes] = useState(item?.notes ?? "");
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   return (
     <OpsCard style={{ marginBottom: 12, borderLeft: `3px solid ${TEAL}` }}>
@@ -1171,7 +1145,7 @@ function ContentForm({
         </div>
         <div>
           <FieldLabel>Niche</FieldLabel>
-          <Input value={niche} onChange={e => setNiche(e.target.value)} placeholder="Finance / Tech / Grooming…" />
+          <Input value={niche ?? ""} onChange={e => setNiche(e.target.value)} placeholder="Finance / Tech / Grooming…" />
         </div>
         <div>
           <FieldLabel>Client *</FieldLabel>
@@ -1183,11 +1157,11 @@ function ContentForm({
         </div>
         <div>
           <FieldLabel>Format</FieldLabel>
-          <Input value={format} onChange={e => setFormat(e.target.value)} placeholder="Long / Short / Reel (duration)" />
+          <Input value={format ?? ""} onChange={e => setFormat(e.target.value)} placeholder="Long / Short / Reel (duration)" />
         </div>
         <div>
           <FieldLabel>Publish date</FieldLabel>
-          <Input type="date" value={publishDate} onChange={e => setPublishDate(e.target.value)} />
+          <Input type="date" value={publishDate ?? ""} onChange={e => setPublishDate(e.target.value)} />
         </div>
         <div>
           <FieldLabel>Status</FieldLabel>
@@ -1202,17 +1176,29 @@ function ContentForm({
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Notes</FieldLabel>
-          <Textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Template used, B-roll ideas, hooks to try…" />
+          <Textarea value={notes ?? ""} onChange={e => setNotes(e.target.value)} placeholder="Template used, B-roll ideas, hooks to try…" />
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!topic.trim() || !client.trim() || !channel.trim()) {
-              alert("Topic, Client and Channel are required.");
+              toast.error("Topic, Client and Channel are required.");
               return;
             }
-            onSave({ topic, niche, client, channel, format, publishDate, status, notes });
+            const payload = {
+              topic,
+              niche: niche || null,
+              client,
+              channel,
+              format: format || null,
+              publishDate: publishDate || null,
+              status,
+              notes: notes || null,
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -1230,12 +1216,26 @@ function ContentForm({
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function ScriptsSection() {
-  const [tick, refresh] = useRefresh();
-  const scripts = useMemo(() => readAll<ScriptItem>(PORTAL, "scripts"), [tick]);
+  const utils = trpc.useUtils();
+  const scriptsQ = trpc.faceless.scripts.list.useQuery();
+  const scripts = (scriptsQ.data ?? []) as ScriptItem[];
+
+  const updateMut = trpc.faceless.scripts.update.useMutation({
+    onSuccess: () => { utils.faceless.scripts.list.invalidate(); },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+  const removeMut = trpc.faceless.scripts.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.scripts.list.invalidate();
+      toast.success("Script removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [filter, setFilter] = useState<"all" | ScriptItem["approval"]>("all");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ScriptItem | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<number | null>(null);
   const [useTemplate, setUseTemplate] = useState<string>("");
 
   const filtered = filter === "all" ? scripts : scripts.filter(s => s.approval === filter);
@@ -1307,13 +1307,10 @@ function ScriptsSection() {
         <ScriptForm
           item={editing}
           prefill={prefill}
-          onSave={data => {
-            if (editing) update<ScriptItem>(PORTAL, "scripts", editing.id, data);
-            else insert<ScriptItem>(PORTAL, "scripts", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
             setUseTemplate("");
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -1358,10 +1355,10 @@ function ScriptsSection() {
                   <Select
                     value={s.approval}
                     onChange={e => {
-                      update<ScriptItem>(PORTAL, "scripts", s.id, {
+                      updateMut.mutate({
+                        id: s.id,
                         approval: e.target.value as ScriptItem["approval"],
                       });
-                      refresh();
                     }}
                     style={{ width: "auto" }}
                   >
@@ -1392,8 +1389,7 @@ function ScriptsSection() {
                     small
                     onClick={() => {
                       if (confirm(`Delete script "${s.title}"?`)) {
-                        remove(PORTAL, "scripts", s.id);
-                        refresh();
+                        removeMut.mutate({ id: s.id });
                       }
                     }}
                   >
@@ -1405,9 +1401,9 @@ function ScriptsSection() {
               {expanded === s.id && (
                 <div style={{ marginTop: 12, display: "grid", gap: 10 }}>
                   <Block label="HOOK" body={s.hook} accent={TEAL} />
-                  <Block label="BODY" body={s.body} accent={GOLD} />
-                  <Block label="CTA" body={s.cta} accent={PURPLE} />
-                  <Block label="AI PROMPT USED" body={s.aiPrompt} accent={BLUE} mono />
+                  <Block label="BODY" body={s.body || ""} accent={GOLD} />
+                  <Block label="CTA" body={s.cta || ""} accent={PURPLE} />
+                  <Block label="AI PROMPT USED" body={s.aiPrompt || ""} accent={BLUE} mono />
                 </div>
               )}
             </OpsCard>
@@ -1468,14 +1464,32 @@ function Block({
 function ScriptForm({
   item,
   prefill,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: ScriptItem | null;
   prefill?: Template | null;
-  onSave: (data: Omit<ScriptItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.scripts.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.scripts.list.invalidate();
+      toast.success("Script added");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.scripts.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.scripts.list.invalidate();
+      toast.success("Script updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
   const [title, setTitle] = useState(item?.title ?? (prefill ? `[${prefill.name}] — ` : ""));
   const [hook, setHook] = useState(item?.hook ?? prefill?.hook ?? "");
   const [body, setBody] = useState(item?.body ?? prefill?.structure ?? "");
@@ -1486,6 +1500,8 @@ function ScriptForm({
   const [wordCount, setWordCount] = useState<string>(item?.wordCount ? String(item.wordCount) : "");
   const [approval, setApproval] = useState<ScriptItem["approval"]>(item?.approval ?? "Draft");
   const [reviewer, setReviewer] = useState(item?.reviewer ?? "");
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   return (
     <OpsCard style={{ marginBottom: 12, borderLeft: `3px solid ${TEAL}` }}>
@@ -1510,19 +1526,19 @@ function ScriptForm({
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Body / Structure</FieldLabel>
           <Textarea
-            value={body}
+            value={body ?? ""}
             onChange={e => setBody(e.target.value)}
             style={{ minHeight: 120 }}
           />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Call-to-action</FieldLabel>
-          <Textarea value={cta} onChange={e => setCta(e.target.value)} />
+          <Textarea value={cta ?? ""} onChange={e => setCta(e.target.value)} />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>AI Prompt used</FieldLabel>
           <Textarea
-            value={aiPrompt}
+            value={aiPrompt ?? ""}
             onChange={e => setAiPrompt(e.target.value)}
             style={{ fontFamily: "ui-monospace, 'SF Mono', monospace", fontSize: 12 }}
           />
@@ -1549,26 +1565,29 @@ function ScriptForm({
         </div>
         <div>
           <FieldLabel>Reviewer</FieldLabel>
-          <Input value={reviewer} onChange={e => setReviewer(e.target.value)} />
+          <Input value={reviewer ?? ""} onChange={e => setReviewer(e.target.value)} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!title.trim() || !hook.trim()) {
-              alert("Title and Hook are required.");
+              toast.error("Title and Hook are required.");
               return;
             }
-            onSave({
+            const payload = {
               title,
               hook,
-              body,
-              cta,
-              aiPrompt,
-              wordCount: wordCount ? Number(wordCount) : undefined,
+              body: body || null,
+              cta: cta || null,
+              aiPrompt: aiPrompt || null,
+              wordCount: wordCount ? Number(wordCount) : null,
               approval,
-              reviewer,
-            });
+              reviewer: reviewer || null,
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -1586,9 +1605,24 @@ function ScriptForm({
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function VoiceoversSection() {
-  const [tick, refresh] = useRefresh();
-  const items = useMemo(() => readAll<VoiceoverItem>(PORTAL, "voiceovers"), [tick]);
-  const scripts = useMemo(() => readAll<ScriptItem>(PORTAL, "scripts"), [tick]);
+  const utils = trpc.useUtils();
+  const itemsQ = trpc.faceless.voiceovers.list.useQuery();
+  const scriptsQ = trpc.faceless.scripts.list.useQuery();
+  const items = (itemsQ.data ?? []) as VoiceoverItem[];
+  const scripts = (scriptsQ.data ?? []) as ScriptItem[];
+
+  const updateMut = trpc.faceless.voiceovers.update.useMutation({
+    onSuccess: () => { utils.faceless.voiceovers.list.invalidate(); },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+  const removeMut = trpc.faceless.voiceovers.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.voiceovers.list.invalidate();
+      toast.success("Voiceover removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<VoiceoverItem | null>(null);
 
@@ -1625,12 +1659,9 @@ function VoiceoversSection() {
         <VoiceoverForm
           item={editing}
           scripts={scripts}
-          onSave={data => {
-            if (editing) update<VoiceoverItem>(PORTAL, "voiceovers", editing.id, data);
-            else insert<VoiceoverItem>(PORTAL, "voiceovers", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -1683,10 +1714,10 @@ function VoiceoversSection() {
                       <Select
                         value={v.status}
                         onChange={e => {
-                          update<VoiceoverItem>(PORTAL, "voiceovers", v.id, {
+                          updateMut.mutate({
+                            id: v.id,
                             status: e.target.value as VoiceoverItem["status"],
                           });
-                          refresh();
                         }}
                         style={{ width: "auto", fontSize: 11, padding: "4px 6px" }}
                       >
@@ -1708,8 +1739,7 @@ function VoiceoversSection() {
                         small
                         onClick={() => {
                           if (confirm("Remove VO?")) {
-                            remove(PORTAL, "voiceovers", v.id);
-                            refresh();
+                            removeMut.mutate({ id: v.id });
                           }
                         }}
                       >
@@ -1730,15 +1760,33 @@ function VoiceoversSection() {
 function VoiceoverForm({
   item,
   scripts,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: VoiceoverItem | null;
   scripts: ScriptItem[];
-  onSave: (data: Omit<VoiceoverItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
-  const [scriptId, setScriptId] = useState(item?.scriptId ?? "");
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.voiceovers.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.voiceovers.list.invalidate();
+      toast.success("Voiceover queued");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.voiceovers.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.voiceovers.list.invalidate();
+      toast.success("Voiceover updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
+  const [scriptId, setScriptId] = useState<number | null>(item?.scriptId ?? null);
   const [scriptTitle, setScriptTitle] = useState(item?.scriptTitle ?? "");
   const [tool, setTool] = useState<VoiceoverItem["tool"]>(item?.tool ?? "ElevenLabs");
   const [voice, setVoice] = useState(item?.voice ?? "");
@@ -1746,6 +1794,8 @@ function VoiceoverForm({
   const [audioPath, setAudioPath] = useState(item?.audioPath ?? "");
   const [status, setStatus] = useState<VoiceoverItem["status"]>(item?.status ?? "Queued");
   const [note, setNote] = useState(item?.note ?? "");
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   return (
     <OpsCard style={{ marginBottom: 12, borderLeft: `3px solid ${TEAL}` }}>
@@ -1762,16 +1812,22 @@ function VoiceoverForm({
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Link to approved script</FieldLabel>
           <Select
-            value={scriptId}
+            value={scriptId ? String(scriptId) : ""}
             onChange={e => {
-              const sel = scripts.find(s => s.id === e.target.value);
-              setScriptId(sel?.id ?? "");
+              const v = e.target.value;
+              if (!v) {
+                setScriptId(null);
+                return;
+              }
+              const id = Number(v);
+              const sel = scripts.find(s => s.id === id);
+              setScriptId(id);
               if (sel) setScriptTitle(sel.title);
             }}
           >
             <option value="">— Or type a title below —</option>
             {scripts.map(s => (
-              <option key={s.id} value={s.id}>
+              <option key={s.id} value={String(s.id)}>
                 {s.title} ({s.approval})
               </option>
             ))}
@@ -1806,7 +1862,7 @@ function VoiceoverForm({
         <div>
           <FieldLabel>Speed / Pitch</FieldLabel>
           <Input
-            value={speed}
+            value={speed ?? ""}
             onChange={e => setSpeed(e.target.value)}
             placeholder="1.0x / 1.1x / pitch+2"
           />
@@ -1827,24 +1883,36 @@ function VoiceoverForm({
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Audio file path / link</FieldLabel>
           <Input
-            value={audioPath}
+            value={audioPath ?? ""}
             onChange={e => setAudioPath(e.target.value)}
             placeholder="drive://… or https://…"
           />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Note</FieldLabel>
-          <Textarea value={note} onChange={e => setNote(e.target.value)} />
+          <Textarea value={note ?? ""} onChange={e => setNote(e.target.value)} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!scriptTitle.trim() || !voice.trim()) {
-              alert("Script title and Voice are required.");
+              toast.error("Script title and Voice are required.");
               return;
             }
-            onSave({ scriptId, scriptTitle, tool, voice, speed, audioPath, status, note });
+            const payload = {
+              scriptTitle,
+              scriptId: scriptId ?? null,
+              tool,
+              voice,
+              speed: speed || null,
+              audioPath: audioPath || null,
+              status,
+              note: note || null,
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -1877,11 +1945,25 @@ const STOCK_SOURCES = [
 ];
 
 function ProductionSection() {
-  const [tick, refresh] = useRefresh();
-  const items = useMemo(() => readAll<ProductionItem>(PORTAL, "production"), [tick]);
+  const utils = trpc.useUtils();
+  const itemsQ = trpc.faceless.production.list.useQuery();
+  const items = (itemsQ.data ?? []) as ProductionItem[];
+
+  const updateMut = trpc.faceless.production.update.useMutation({
+    onSuccess: () => { utils.faceless.production.list.invalidate(); },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+  const removeMut = trpc.faceless.production.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.production.list.invalidate();
+      toast.success("Video removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductionItem | null>(null);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<number | null>(null);
 
   const STATUS_TONE: Record<ProductionItem["editStatus"], "muted" | "orange" | "blue" | "gold" | "green"> = {
     "Not Started": "muted",
@@ -1906,12 +1988,9 @@ function ProductionSection() {
       {showForm && (
         <ProductionForm
           item={editing}
-          onSave={data => {
-            if (editing) update<ProductionItem>(PORTAL, "production", editing.id, data);
-            else insert<ProductionItem>(PORTAL, "production", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -1960,10 +2039,10 @@ function ProductionSection() {
                   <Select
                     value={p.editStatus}
                     onChange={e => {
-                      update<ProductionItem>(PORTAL, "production", p.id, {
+                      updateMut.mutate({
+                        id: p.id,
                         editStatus: e.target.value as ProductionItem["editStatus"],
                       });
-                      refresh();
                     }}
                     style={{ width: "auto" }}
                   >
@@ -1995,8 +2074,7 @@ function ProductionSection() {
                     small
                     onClick={() => {
                       if (confirm(`Delete "${p.videoTitle}"?`)) {
-                        remove(PORTAL, "production", p.id);
-                        refresh();
+                        removeMut.mutate({ id: p.id });
                       }
                     }}
                   >
@@ -2013,10 +2091,11 @@ function ProductionSection() {
                     hint="Tick items as they arrive / are produced."
                     grouped
                     onToggle={id => {
-                      const flags = perVideoFlags(p);
+                      const flags = perVideoFlags(p.id);
                       const next = { ...flags, [id]: !flags[id] };
                       persistPerVideoFlags(p.id, next);
-                      refresh();
+                      // Force re-render of checklist via list invalidation.
+                      utils.faceless.production.list.invalidate();
                     }}
                     items={perVideoChecklistFor(p)}
                   />
@@ -2046,25 +2125,31 @@ function ProductionSection() {
   );
 }
 
-/** Per-video checklist persists a simple flag map under the item id. */
-function perVideoFlags(p: ProductionItem): Record<string, boolean> {
+/**
+ * Per-video checklist persists a simple flag map under the item id.
+ * This is a UX-only ephemeral toggle (which boxes the operator has ticked
+ * locally) — kept in localStorage to avoid bloating the DB schema with
+ * per-flag rows. The DB tracks the structured `assetsReady` / `voFileReady`
+ * booleans; this map is just the granular checklist behind the Assets toggle.
+ */
+function perVideoFlags(id: number): Record<string, boolean> {
   try {
-    const raw = localStorage.getItem(`hamzury.v1.${PORTAL}.prod-flags.${p.id}`);
+    const raw = localStorage.getItem(`hamzury.v1.faceless.prod-flags.${id}`);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
   }
 }
-function persistPerVideoFlags(id: string, flags: Record<string, boolean>) {
+function persistPerVideoFlags(id: number, flags: Record<string, boolean>) {
   try {
-    localStorage.setItem(`hamzury.v1.${PORTAL}.prod-flags.${id}`, JSON.stringify(flags));
+    localStorage.setItem(`hamzury.v1.faceless.prod-flags.${id}`, JSON.stringify(flags));
   } catch {
     /* noop */
   }
 }
 
 function perVideoChecklistFor(p: ProductionItem): AssetItem[] {
-  const flags = perVideoFlags(p);
+  const flags = perVideoFlags(p.id);
   const base: Omit<AssetItem, "done">[] = [
     { id: "script", label: "Approved script ready", group: "Copy", owner: "Maryam" },
     { id: "vo", label: "Voiceover file (MP3/WAV)", group: "Audio", owner: "Habeeba" },
@@ -2088,13 +2173,31 @@ function perVideoChecklistFor(p: ProductionItem): AssetItem[] {
 
 function ProductionForm({
   item,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: ProductionItem | null;
-  onSave: (data: Omit<ProductionItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.production.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.production.list.invalidate();
+      toast.success("Video added");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.production.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.production.list.invalidate();
+      toast.success("Video updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
   const [videoTitle, setVideoTitle] = useState(item?.videoTitle ?? "");
   const [path, setPath] = useState<ProductionItem["path"]>(item?.path ?? "Manual");
   const [sources, setSources] = useState<string[]>(item?.assetSources ?? []);
@@ -2105,6 +2208,8 @@ function ProductionForm({
   const [duration, setDuration] = useState(item?.duration ?? "");
   const [assetsReady, setAssetsReady] = useState(item?.assetsReady ?? false);
   const [voFileReady, setVoFileReady] = useState(item?.voFileReady ?? false);
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   const toggleSource = (s: string) =>
     setSources(v => (v.includes(s) ? v.filter(x => x !== s) : [...v, s]));
@@ -2134,7 +2239,7 @@ function ProductionForm({
         </div>
         <div>
           <FieldLabel>Duration</FieldLabel>
-          <Input value={duration} onChange={e => setDuration(e.target.value)} placeholder="e.g. 45s / 6:30" />
+          <Input value={duration ?? ""} onChange={e => setDuration(e.target.value)} placeholder="e.g. 45s / 6:30" />
         </div>
         <div>
           <FieldLabel>Edit status</FieldLabel>
@@ -2197,26 +2302,29 @@ function ProductionForm({
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Export path / link</FieldLabel>
-          <Input value={exportPath} onChange={e => setExportPath(e.target.value)} />
+          <Input value={exportPath ?? ""} onChange={e => setExportPath(e.target.value)} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!videoTitle.trim()) {
-              alert("Video title is required.");
+              toast.error("Video title is required.");
               return;
             }
-            onSave({
+            const payload = {
               videoTitle,
               path,
               assetSources: sources,
               editStatus,
-              exportPath,
-              duration,
+              exportPath: exportPath || null,
+              duration: duration || null,
               assetsReady,
               voFileReady,
-            });
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -2234,8 +2342,22 @@ function ProductionForm({
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function ChannelsSection() {
-  const [tick, refresh] = useRefresh();
-  const items = useMemo(() => readAll<ChannelItem>(PORTAL, "channels"), [tick]);
+  const utils = trpc.useUtils();
+  const itemsQ = trpc.faceless.channels.list.useQuery();
+  const items = (itemsQ.data ?? []) as ChannelItem[];
+
+  const updateMut = trpc.faceless.channels.update.useMutation({
+    onSuccess: () => { utils.faceless.channels.list.invalidate(); },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+  const removeMut = trpc.faceless.channels.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.channels.list.invalidate();
+      toast.success("Engagement removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [kindFilter, setKindFilter] = useState<"all" | ChannelItem["kind"]>("all");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ChannelItem | null>(null);
@@ -2318,12 +2440,9 @@ function ChannelsSection() {
       {showForm && (
         <ChannelForm
           item={editing}
-          onSave={data => {
-            if (editing) update<ChannelItem>(PORTAL, "channels", editing.id, data);
-            else insert<ChannelItem>(PORTAL, "channels", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -2399,10 +2518,10 @@ function ChannelsSection() {
                     <Select
                       value={c.status}
                       onChange={e => {
-                        update<ChannelItem>(PORTAL, "channels", c.id, {
+                        updateMut.mutate({
+                          id: c.id,
                           status: e.target.value as ChannelItem["status"],
                         });
-                        refresh();
                       }}
                       style={{ width: "auto" }}
                     >
@@ -2423,8 +2542,7 @@ function ChannelsSection() {
                       small
                       onClick={() => {
                         if (confirm(`Remove "${c.name}"?`)) {
-                          remove(PORTAL, "channels", c.id);
-                          refresh();
+                          removeMut.mutate({ id: c.id });
                         }
                       }}
                     >
@@ -2443,13 +2561,31 @@ function ChannelsSection() {
 
 function ChannelForm({
   item,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: ChannelItem | null;
-  onSave: (data: Omit<ChannelItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.channels.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.channels.list.invalidate();
+      toast.success("Engagement added");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.channels.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.channels.list.invalidate();
+      toast.success("Engagement updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
   const [kind, setKind] = useState<ChannelItem["kind"]>(item?.kind ?? "Social Package");
   const [name, setName] = useState(item?.name ?? "");
   const [client, setClient] = useState(item?.client ?? "");
@@ -2464,6 +2600,8 @@ function ChannelForm({
   );
   const [status, setStatus] = useState<ChannelItem["status"]>(item?.status ?? "Onboarding");
   const [startedAt, setStartedAt] = useState(item?.startedAt ?? "");
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   return (
     <OpsCard style={{ marginBottom: 12, borderLeft: `3px solid ${TEAL}` }}>
@@ -2495,12 +2633,12 @@ function ChannelForm({
         </div>
         <div>
           <FieldLabel>Niche</FieldLabel>
-          <Input value={niche} onChange={e => setNiche(e.target.value)} />
+          <Input value={niche ?? ""} onChange={e => setNiche(e.target.value)} />
         </div>
         <div>
           <FieldLabel>Tier / Scope</FieldLabel>
           <Input
-            value={tier}
+            value={tier ?? ""}
             onChange={e => setTier(e.target.value)}
             placeholder="e.g. 30 posts/mo · 20 videos bulk"
           />
@@ -2539,28 +2677,31 @@ function ChannelForm({
         </div>
         <div>
           <FieldLabel>Started on</FieldLabel>
-          <Input type="date" value={startedAt} onChange={e => setStartedAt(e.target.value)} />
+          <Input type="date" value={startedAt ?? ""} onChange={e => setStartedAt(e.target.value)} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!name.trim() || !client.trim()) {
-              alert("Name and Client are required.");
+              toast.error("Name and Client are required.");
               return;
             }
-            onSave({
+            const payload = {
               kind,
               name,
               client,
-              niche,
-              tier,
-              priceNGN: priceNGN ? Number(priceNGN) : undefined,
-              monthlyQuota: monthlyQuota ? Number(monthlyQuota) : undefined,
-              delivered: delivered ? Number(delivered) : undefined,
+              niche: niche || null,
+              tier: tier || null,
+              priceNGN: priceNGN ? Number(priceNGN) : null,
+              monthlyQuota: monthlyQuota ? Number(monthlyQuota) : null,
+              delivered: delivered ? Number(delivered) : null,
               status,
-              startedAt,
-            });
+              startedAt: startedAt || null,
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -2578,8 +2719,22 @@ function ChannelForm({
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function DistributionSection() {
-  const [tick, refresh] = useRefresh();
-  const items = useMemo(() => readAll<DistributionItem>(PORTAL, "distribution"), [tick]);
+  const utils = trpc.useUtils();
+  const itemsQ = trpc.faceless.distribution.list.useQuery();
+  const items = (itemsQ.data ?? []) as DistributionItem[];
+
+  const updateMut = trpc.faceless.distribution.update.useMutation({
+    onSuccess: () => { utils.faceless.distribution.list.invalidate(); },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+  const removeMut = trpc.faceless.distribution.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.distribution.list.invalidate();
+      toast.success("Distribution removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [platformFilter, setPlatformFilter] = useState<"all" | DistributionItem["platform"]>("all");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<DistributionItem | null>(null);
@@ -2642,12 +2797,9 @@ function DistributionSection() {
       {showForm && (
         <DistributionForm
           item={editing}
-          onSave={data => {
-            if (editing) update<DistributionItem>(PORTAL, "distribution", editing.id, data);
-            else insert<DistributionItem>(PORTAL, "distribution", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -2761,14 +2913,13 @@ function DistributionSection() {
                   <Select
                     value={d.status}
                     onChange={e => {
-                      const next: Partial<DistributionItem> = {
+                      const next: { status: DistributionItem["status"]; publishedAt?: string } = {
                         status: e.target.value as DistributionItem["status"],
                       };
                       if (e.target.value === "Published" && !d.publishedAt) {
                         next.publishedAt = new Date().toISOString();
                       }
-                      update<DistributionItem>(PORTAL, "distribution", d.id, next);
-                      refresh();
+                      updateMut.mutate({ id: d.id, ...next });
                     }}
                     style={{ width: "auto", fontSize: 11 }}
                   >
@@ -2789,8 +2940,7 @@ function DistributionSection() {
                     small
                     onClick={() => {
                       if (confirm(`Remove "${d.videoTitle}" from ${d.platform}?`)) {
-                        remove(PORTAL, "distribution", d.id);
-                        refresh();
+                        removeMut.mutate({ id: d.id });
                       }
                     }}
                   >
@@ -2808,13 +2958,31 @@ function DistributionSection() {
 
 function DistributionForm({
   item,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: DistributionItem | null;
-  onSave: (data: Omit<DistributionItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.distribution.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.distribution.list.invalidate();
+      toast.success("Distribution added");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.distribution.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.distribution.list.invalidate();
+      toast.success("Distribution updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
   const [videoTitle, setVideoTitle] = useState(item?.videoTitle ?? "");
   const [platform, setPlatform] = useState<DistributionItem["platform"]>(
     item?.platform ?? "YouTube"
@@ -2825,6 +2993,8 @@ function DistributionForm({
   const [scheduleAt, setScheduleAt] = useState(item?.scheduleAt ?? "");
   const [publishedAt, setPublishedAt] = useState(item?.publishedAt ?? "");
   const [status, setStatus] = useState<DistributionItem["status"]>(item?.status ?? "Draft");
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   return (
     <OpsCard style={{ marginBottom: 12, borderLeft: `3px solid ${TEAL}` }}>
@@ -2858,11 +3028,11 @@ function DistributionForm({
         </div>
         <div>
           <FieldLabel>Channel / Handle</FieldLabel>
-          <Input value={channelName} onChange={e => setChannelName(e.target.value)} />
+          <Input value={channelName ?? ""} onChange={e => setChannelName(e.target.value)} />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Thumbnail URL</FieldLabel>
-          <Input value={thumbnailUrl} onChange={e => setThumbnailUrl(e.target.value)} />
+          <Input value={thumbnailUrl ?? ""} onChange={e => setThumbnailUrl(e.target.value)} />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Tags (comma separated)</FieldLabel>
@@ -2876,7 +3046,7 @@ function DistributionForm({
           <FieldLabel>Schedule at</FieldLabel>
           <Input
             type="datetime-local"
-            value={scheduleAt}
+            value={scheduleAt ?? ""}
             onChange={e => setScheduleAt(e.target.value)}
           />
         </div>
@@ -2884,7 +3054,7 @@ function DistributionForm({
           <FieldLabel>Published at</FieldLabel>
           <Input
             type="datetime-local"
-            value={publishedAt}
+            value={publishedAt ?? ""}
             onChange={e => setPublishedAt(e.target.value)}
           />
         </div>
@@ -2903,25 +3073,28 @@ function DistributionForm({
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!videoTitle.trim()) {
-              alert("Video title is required.");
+              toast.error("Video title is required.");
               return;
             }
             const tags = tagInput
               .split(",")
               .map(t => t.trim())
               .filter(Boolean);
-            onSave({
+            const payload = {
               videoTitle,
               platform,
-              channelName,
-              thumbnailUrl,
+              channelName: channelName || null,
+              thumbnailUrl: thumbnailUrl || null,
               tags,
-              scheduleAt,
-              publishedAt,
+              scheduleAt: scheduleAt || null,
+              publishedAt: publishedAt || null,
               status,
-            });
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -2935,7 +3108,7 @@ function DistributionForm({
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
- *  8 · TEMPLATES (the 10 ready-to-use)
+ *  8 · TEMPLATES (the 10 ready-to-use, hardcoded)
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function TemplatesSection() {
@@ -3057,8 +3230,18 @@ function TemplatesSection() {
  * ══════════════════════════════════════════════════════════════════════════ */
 
 function ToolsSection() {
-  const [tick, refresh] = useRefresh();
-  const tools = useMemo(() => readAll<ToolItem>(PORTAL, "tools"), [tick]);
+  const utils = trpc.useUtils();
+  const toolsQ = trpc.faceless.tools.list.useQuery();
+  const tools = (toolsQ.data ?? []) as ToolItem[];
+
+  const removeMut = trpc.faceless.tools.remove.useMutation({
+    onSuccess: () => {
+      utils.faceless.tools.list.invalidate();
+      toast.success("Tool removed");
+    },
+    onError: e => toast.error(e.message || "Delete failed"),
+  });
+
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ToolItem | null>(null);
 
@@ -3160,12 +3343,9 @@ function ToolsSection() {
       {showForm && (
         <ToolForm
           item={editing}
-          onSave={data => {
-            if (editing) update<ToolItem>(PORTAL, "tools", editing.id, data);
-            else insert<ToolItem>(PORTAL, "tools", data);
+          onSaved={() => {
             setShowForm(false);
             setEditing(null);
-            refresh();
           }}
           onCancel={() => {
             setShowForm(false);
@@ -3247,8 +3427,7 @@ function ToolsSection() {
                     small
                     onClick={() => {
                       if (confirm(`Remove "${t.name}"?`)) {
-                        remove(PORTAL, "tools", t.id);
-                        refresh();
+                        removeMut.mutate({ id: t.id });
                       }
                     }}
                   >
@@ -3272,13 +3451,31 @@ function ToolsSection() {
 
 function ToolForm({
   item,
-  onSave,
+  onSaved,
   onCancel,
 }: {
   item: ToolItem | null;
-  onSave: (data: Omit<ToolItem, "id" | "createdAt" | "updatedAt">) => void;
+  onSaved: () => void;
   onCancel: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.faceless.tools.create.useMutation({
+    onSuccess: () => {
+      utils.faceless.tools.list.invalidate();
+      toast.success("Tool added");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Save failed"),
+  });
+  const updateMut = trpc.faceless.tools.update.useMutation({
+    onSuccess: () => {
+      utils.faceless.tools.list.invalidate();
+      toast.success("Tool updated");
+      onSaved();
+    },
+    onError: e => toast.error(e.message || "Update failed"),
+  });
+
   const [name, setName] = useState(item?.name ?? "");
   const [category, setCategory] = useState<ToolItem["category"]>(
     item?.category ?? "Voice"
@@ -3289,6 +3486,8 @@ function ToolForm({
   const [seats, setSeats] = useState<string>(item?.seats ? String(item.seats) : "");
   const [renewsOn, setRenewsOn] = useState(item?.renewsOn ?? "");
   const [note, setNote] = useState(item?.note ?? "");
+
+  const busy = createMut.isPending || updateMut.isPending;
 
   return (
     <OpsCard style={{ marginBottom: 12, borderLeft: `3px solid ${TEAL}` }}>
@@ -3337,28 +3536,31 @@ function ToolForm({
         </div>
         <div>
           <FieldLabel>Renews on</FieldLabel>
-          <Input type="date" value={renewsOn} onChange={e => setRenewsOn(e.target.value)} />
+          <Input type="date" value={renewsOn ?? ""} onChange={e => setRenewsOn(e.target.value)} />
         </div>
         <div style={{ gridColumn: "1 / -1" }}>
           <FieldLabel>Note</FieldLabel>
-          <Input value={note} onChange={e => setNote(e.target.value)} />
+          <Input value={note ?? ""} onChange={e => setNote(e.target.value)} />
         </div>
       </div>
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         <Btn
+          disabled={busy}
           onClick={() => {
             if (!name.trim() || !monthlyNGN) {
-              alert("Name and monthly cost are required.");
+              toast.error("Name and monthly cost are required.");
               return;
             }
-            onSave({
+            const payload = {
               name,
               category,
               monthlyNGN: Number(monthlyNGN),
-              seats: seats ? Number(seats) : undefined,
-              renewsOn,
-              note,
-            });
+              seats: seats ? Number(seats) : null,
+              renewsOn: renewsOn || null,
+              note: note || null,
+            };
+            if (item) updateMut.mutate({ id: item.id, ...payload });
+            else createMut.mutate(payload);
           }}
         >
           <Check size={14} /> Save
@@ -3371,6 +3573,3 @@ function ToolForm({
   );
 }
 
-/* Silence "cryptoId imported but unused" if tree-shaker complains — we may
- * switch to explicit ids in a future CRUD refactor. */
-void cryptoId;

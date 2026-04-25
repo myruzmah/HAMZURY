@@ -6,6 +6,7 @@ import { videoRouter } from "./video/router";
 import { scalarRouter } from "./scalar/router";
 import { podcastOpsRouter } from "./podcastOps/router";
 import { medialyRouter } from "./medialy/router";
+import { facelessRouter } from "./faceless/router";
 import { diagnosticsRouter } from "./diagnostics/router";
 import { requirementsRouter } from "./requirements/router";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
@@ -137,6 +138,7 @@ export const appRouter = router({
   scalar: scalarRouter,
   podcastOps: podcastOpsRouter,
   medialy: medialyRouter,
+  faceless: facelessRouter,
   diagnostics: diagnosticsRouter,
   requirements: requirementsRouter,
   auth: router({

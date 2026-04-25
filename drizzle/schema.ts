@@ -2351,3 +2351,187 @@ export const medialyReports = mysqlTable("medialy_reports", {
 export type MedialyReport = typeof medialyReports.$inferSelect;
 export type InsertMedialyReport = typeof medialyReports.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * FACELESS OPS PORTAL — Maryam Lalo (Lead) + Habeeba (Production)
+ * Migrated from localStorage (opsStore "faceless" portal) to real DB.
+ * Source shapes mirror client/src/pages/FacelessOpsPortal.tsx.
+ *
+ * Seven collections moved to MySQL:
+ *   - faceless_content       (calendar pipeline)
+ *   - faceless_scripts       (hook/body/cta + AI prompt)
+ *   - faceless_voiceovers    (TTS queue, FK on scriptId)
+ *   - faceless_production    (per-video tracker, FK on contentId)
+ *   - faceless_channels      (YT channels / social packs / bulk packs)
+ *   - faceless_distribution  (per-platform schedule/publish)
+ *   - faceless_tools         (AI tools cost tracker)
+ *
+ * NOTE: the 8th collection ("templates") is intentionally NOT a table —
+ * the 10 ready-to-use script templates remain a hardcoded TS const in the
+ * client portal (they're product copy, not user data).
+ *
+ * Multi-value JSON columns (stringified text):
+ *   - faceless_production.assetSources → string[]
+ *   - faceless_distribution.tags        → string[]
+ *
+ * Children FK on int parent ids (no formal constraint, matches schema convention):
+ *   - faceless_scripts.contentId      → faceless_content.id (nullable)
+ *   - faceless_voiceovers.scriptId    → faceless_scripts.id (nullable)
+ *   - faceless_production.contentId   → faceless_content.id (nullable)
+ *
+ * No server-generated ref pattern in this portal — entries are int-id only.
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** Faceless content calendar — 30/60/90-day pipeline per client/channel. */
+export const facelessContent = mysqlTable("faceless_content", {
+  id: int("id").autoincrement().primaryKey(),
+  topic: varchar("topic", { length: 255 }).notNull(),
+  niche: varchar("niche", { length: 120 }),
+  client: varchar("client", { length: 255 }).notNull(),
+  channel: varchar("channel", { length: 255 }).notNull(),
+  /** Free-form ("Long-form listicle (6min)" / "Reel (45s)" / "Tutorial (3min)" etc). */
+  format: varchar("format", { length: 120 }),
+  /** ISO date YYYY-MM-DD. */
+  publishDate: varchar("publishDate", { length: 10 }),
+  status: mysqlEnum("facelessContentStatus", [
+    "Idea", "Scripting", "Voiceover", "Editing", "Scheduled", "Published",
+  ]).default("Idea").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessContent = typeof facelessContent.$inferSelect;
+export type InsertFacelessContent = typeof facelessContent.$inferInsert;
+
+/** Faceless script library — hook/body/cta + AI prompt + approval state. */
+export const facelessScripts = mysqlTable("faceless_scripts", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  /** FK to faceless_content.id (nullable — scripts can stand alone). */
+  contentId: int("contentId"),
+  hook: text("hook").notNull(),
+  body: text("body"),
+  cta: text("cta"),
+  aiPrompt: text("aiPrompt"),
+  wordCount: int("wordCount"),
+  approval: mysqlEnum("facelessScriptApproval", [
+    "Draft", "In Review", "Approved", "Revise",
+  ]).default("Draft").notNull(),
+  reviewer: varchar("reviewer", { length: 120 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessScript = typeof facelessScripts.$inferSelect;
+export type InsertFacelessScript = typeof facelessScripts.$inferInsert;
+
+/** Faceless voiceover queue — script → tool/voice → audio path. */
+export const facelessVoiceovers = mysqlTable("faceless_voiceovers", {
+  id: int("id").autoincrement().primaryKey(),
+  scriptTitle: varchar("scriptTitle", { length: 255 }).notNull(),
+  /** FK to faceless_scripts.id (nullable — VO can be queued without linked script). */
+  scriptId: int("scriptId"),
+  tool: mysqlEnum("facelessVoTool", [
+    "ElevenLabs", "Murf", "Play.ht", "Speechify", "Other",
+  ]).default("ElevenLabs").notNull(),
+  voice: varchar("voice", { length: 255 }).notNull(),
+  /** Free-form ("1.0x" / "1.1x" / "pitch+2"). */
+  speed: varchar("speed", { length: 60 }),
+  audioPath: varchar("audioPath", { length: 1024 }),
+  status: mysqlEnum("facelessVoStatus", [
+    "Queued", "Generating", "Needs QC", "Approved", "Rejected",
+  ]).default("Queued").notNull(),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessVoiceover = typeof facelessVoiceovers.$inferSelect;
+export type InsertFacelessVoiceover = typeof facelessVoiceovers.$inferInsert;
+
+/** Faceless video production tracker — manual vs AI path + asset sources. */
+export const facelessProduction = mysqlTable("faceless_production", {
+  id: int("id").autoincrement().primaryKey(),
+  videoTitle: varchar("videoTitle", { length: 255 }).notNull(),
+  /** FK to faceless_content.id (nullable). */
+  contentId: int("contentId"),
+  path: mysqlEnum("facelessProdPath", ["Manual", "AI-Assisted"])
+    .default("Manual").notNull(),
+  /** JSON-stringified string[] of stock/AI sources (Pexels, Storyblocks, MidJourney…). */
+  assetSources: text("assetSources"),
+  assetsReady: boolean("assetsReady").default(false).notNull(),
+  voFileReady: boolean("voFileReady").default(false).notNull(),
+  editStatus: mysqlEnum("facelessProdEditStatus", [
+    "Not Started", "Rough Cut", "Polishing", "QC", "Exported",
+  ]).default("Not Started").notNull(),
+  exportPath: varchar("exportPath", { length: 1024 }),
+  /** Free-form ("60s" / "8:32"). */
+  duration: varchar("duration", { length: 40 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessProduction = typeof facelessProduction.$inferSelect;
+export type InsertFacelessProduction = typeof facelessProduction.$inferInsert;
+
+/** Faceless channels & client engagements — YT channels, social packs, bulk packs. */
+export const facelessChannels = mysqlTable("faceless_channels", {
+  id: int("id").autoincrement().primaryKey(),
+  kind: mysqlEnum("facelessChannelKind", [
+    "YouTube Channel", "Social Package", "Bulk Package",
+  ]).default("Social Package").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  client: varchar("client", { length: 255 }).notNull(),
+  niche: varchar("niche", { length: 120 }),
+  /** Free-form ("10 videos" / "20 videos" / "30 posts/mo"). */
+  tier: varchar("tier", { length: 120 }),
+  priceNGN: int("priceNGN"),
+  monthlyQuota: int("monthlyQuota"),
+  delivered: int("delivered"),
+  status: mysqlEnum("facelessChannelStatus", [
+    "Onboarding", "Active", "Paused", "Completed",
+  ]).default("Onboarding").notNull(),
+  startedAt: varchar("startedAt", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessChannel = typeof facelessChannels.$inferSelect;
+export type InsertFacelessChannel = typeof facelessChannels.$inferInsert;
+
+/** Faceless distribution — per-platform publish state (thumbnail, tags, schedule). */
+export const facelessDistribution = mysqlTable("faceless_distribution", {
+  id: int("id").autoincrement().primaryKey(),
+  videoTitle: varchar("videoTitle", { length: 255 }).notNull(),
+  platform: mysqlEnum("facelessDistPlatform", [
+    "YouTube", "YouTube Shorts", "TikTok", "Instagram Reels", "Instagram", "Facebook",
+  ]).default("YouTube").notNull(),
+  thumbnailUrl: varchar("thumbnailUrl", { length: 1024 }),
+  /** JSON-stringified string[] of hashtags/keywords. */
+  tags: text("tags"),
+  /** ISO datetime for scheduled posts. */
+  scheduleAt: varchar("scheduleAt", { length: 32 }),
+  /** ISO datetime for actual publish. */
+  publishedAt: varchar("publishedAt", { length: 32 }),
+  status: mysqlEnum("facelessDistStatus", [
+    "Scheduled", "Published", "Draft", "Failed",
+  ]).default("Draft").notNull(),
+  channelName: varchar("channelName", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessDistribution = typeof facelessDistribution.$inferSelect;
+export type InsertFacelessDistribution = typeof facelessDistribution.$inferInsert;
+
+/** Faceless AI tools cost tracker — every paid tool the unit uses. */
+export const facelessTools = mysqlTable("faceless_tools", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("facelessToolCategory", [
+    "Voice", "Script", "Video", "Image", "Stock", "Music", "Editing", "Captions", "Scheduler",
+  ]).default("Voice").notNull(),
+  monthlyNGN: int("monthlyNGN").default(0).notNull(),
+  seats: int("seats"),
+  renewsOn: varchar("renewsOn", { length: 10 }),
+  note: text("note"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FacelessTool = typeof facelessTools.$inferSelect;
+export type InsertFacelessTool = typeof facelessTools.$inferInsert;
+
