@@ -2844,3 +2844,188 @@ export const bizdevTemplates = mysqlTable("bizdev_templates", {
 export type BizdevTemplate = typeof bizdevTemplates.$inferSelect;
 export type InsertBizdevTemplate = typeof bizdevTemplates.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * CEO PORTAL — Strategic Command (Muhammad Hamzury / CEO)
+ * Seven sections that previously lived inline (some localStorage-backed) on
+ * client/src/pages/CEOPortal.tsx are restored here as MySQL tables. Field
+ * shapes derived from the CEO Operations Guide (equipment & software mgmt,
+ * branding QA, documents vault, division updates, Canva templates library,
+ * weekly meetings cadence).
+ *
+ * Multi-value JSON columns (stringified text):
+ *   - ceo_branding_qa.checklist             → string[] (specific issues found)
+ *   - ceo_documents.tags                    → string[]
+ *   - ceo_division_updates.wins             → string[]
+ *   - ceo_division_updates.blockers         → string[]
+ *   - ceo_canva_templates.tags              → string[]
+ *   - ceo_weekly_meetings.attendees         → string[]
+ *   - ceo_weekly_meetings.agenda            → string[]
+ *   - ceo_weekly_meetings.decisions         → string[]
+ *   - ceo_weekly_meetings.actionItems       → string[]
+ *
+ * No FKs between these tables (each is independent). No server-generated ref —
+ * rows are int-id only. Auth: founder | ceo (matches the page-level
+ * ROLE_ACCESS in App.tsx for /ceo).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** CEO equipment tracker — laptops, phones, peripherals etc. */
+export const ceoEquipment = mysqlTable("ceo_equipment", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("ceoEquipmentCategory", [
+    "Laptop", "Desktop", "Phone", "Tablet", "Camera", "Audio", "Peripheral", "Furniture", "Other",
+  ]).default("Other").notNull(),
+  serial: varchar("serial", { length: 120 }),
+  assignedTo: varchar("assignedTo", { length: 255 }),
+  location: varchar("location", { length: 255 }),
+  purchaseDate: varchar("purchaseDate", { length: 10 }),
+  purchaseCost: varchar("purchaseCost", { length: 80 }),
+  condition: mysqlEnum("ceoEquipmentCondition", [
+    "New", "Good", "Fair", "Poor", "Repair", "Retired",
+  ]).default("Good").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoEquipment = typeof ceoEquipment.$inferSelect;
+export type InsertCeoEquipment = typeof ceoEquipment.$inferInsert;
+
+/** CEO software vault — license keys, subscriptions, seats, renewals. */
+export const ceoSoftware = mysqlTable("ceo_software", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  vendor: varchar("vendor", { length: 255 }),
+  category: varchar("category", { length: 120 }),
+  licenseKey: varchar("licenseKey", { length: 500 }),
+  seats: int("seats"),
+  seatsUsed: int("seatsUsed"),
+  monthlyCost: varchar("monthlyCost", { length: 80 }),
+  renewalDate: varchar("renewalDate", { length: 10 }),
+  status: mysqlEnum("ceoSoftwareStatus", [
+    "Active", "Trial", "Expired", "Cancelled",
+  ]).default("Active").notNull(),
+  primaryUser: varchar("primaryUser", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoSoftware = typeof ceoSoftware.$inferSelect;
+export type InsertCeoSoftware = typeof ceoSoftware.$inferInsert;
+
+/** CEO branding QA — weekly brand-compliance reviews per division. */
+export const ceoBrandingQa = mysqlTable("ceo_branding_qa", {
+  id: int("id").autoincrement().primaryKey(),
+  reviewDate: varchar("reviewDate", { length: 10 }).notNull(),
+  division: mysqlEnum("ceoBrandingQaDivision", [
+    "Bizdoc", "Scalar", "Medialy", "HUB", "Podcast", "Video", "BizDev", "CSO", "Skills", "Other",
+  ]).default("Other").notNull(),
+  contentType: varchar("contentType", { length: 120 }),
+  contentRef: varchar("contentRef", { length: 500 }),
+  /** JSON-stringified string[] — specific issues / fixes flagged. */
+  checklist: text("checklist"),
+  passRate: int("passRate"),
+  outcome: mysqlEnum("ceoBrandingQaOutcome", [
+    "Approved", "Needs Revision", "Rejected", "Pending",
+  ]).default("Pending").notNull(),
+  reviewer: varchar("reviewer", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoBrandingQa = typeof ceoBrandingQa.$inferSelect;
+export type InsertCeoBrandingQa = typeof ceoBrandingQa.$inferInsert;
+
+/** CEO documents vault — contracts, certificates, IDs, internal docs. */
+export const ceoDocuments = mysqlTable("ceo_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  category: mysqlEnum("ceoDocumentCategory", [
+    "Legal", "Financial", "Operational", "Strategic", "HR", "Client", "Other",
+  ]).default("Other").notNull(),
+  storageLocation: varchar("storageLocation", { length: 500 }),
+  ownerName: varchar("ownerName", { length: 255 }),
+  expiryDate: varchar("expiryDate", { length: 10 }),
+  /** JSON-stringified string[] — searchable tags. */
+  tags: text("tags"),
+  status: mysqlEnum("ceoDocumentStatus", [
+    "Active", "Pending", "Expired", "Archived",
+  ]).default("Active").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoDocument = typeof ceoDocuments.$inferSelect;
+export type InsertCeoDocument = typeof ceoDocuments.$inferInsert;
+
+/** CEO division updates — weekly roll-up reports from each division head. */
+export const ceoDivisionUpdates = mysqlTable("ceo_division_updates", {
+  id: int("id").autoincrement().primaryKey(),
+  weekOf: varchar("weekOf", { length: 10 }).notNull(),
+  division: mysqlEnum("ceoDivisionUpdatesDivision", [
+    "Bizdoc", "Scalar", "Medialy", "HUB", "Podcast", "Video", "BizDev", "CSO", "Skills", "Finance", "HR", "Other",
+  ]).default("Other").notNull(),
+  submittedBy: varchar("submittedBy", { length: 255 }),
+  pulseScore: int("pulseScore"),
+  /** JSON-stringified string[] — the week's wins. */
+  wins: text("wins"),
+  /** JSON-stringified string[] — blockers needing CEO support. */
+  blockers: text("blockers"),
+  nextWeekFocus: text("nextWeekFocus"),
+  status: mysqlEnum("ceoDivisionUpdateStatus", [
+    "Submitted", "Reviewed", "Acted On", "Archived",
+  ]).default("Submitted").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoDivisionUpdate = typeof ceoDivisionUpdates.$inferSelect;
+export type InsertCeoDivisionUpdate = typeof ceoDivisionUpdates.$inferInsert;
+
+/** CEO Canva templates — central library of approved Canva designs. */
+export const ceoCanvaTemplates = mysqlTable("ceo_canva_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("ceoCanvaTemplateCategory", [
+    "Social Post", "Carousel", "Story", "Flyer", "Brochure", "Pitch Deck", "Proposal", "Cover", "Other",
+  ]).default("Other").notNull(),
+  division: varchar("division", { length: 80 }),
+  canvaUrl: varchar("canvaUrl", { length: 1000 }),
+  thumbnailUrl: varchar("thumbnailUrl", { length: 1000 }),
+  /** JSON-stringified string[] — searchable tags. */
+  tags: text("tags"),
+  usageCount: int("usageCount").default(0).notNull(),
+  lastUsedAt: varchar("lastUsedAt", { length: 10 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoCanvaTemplate = typeof ceoCanvaTemplates.$inferSelect;
+export type InsertCeoCanvaTemplate = typeof ceoCanvaTemplates.$inferInsert;
+
+/** CEO weekly meetings — Monday kickoff / Wed midweek / Fri wrap cadence. */
+export const ceoWeeklyMeetings = mysqlTable("ceo_weekly_meetings", {
+  id: int("id").autoincrement().primaryKey(),
+  meetingDate: varchar("meetingDate", { length: 10 }).notNull(),
+  meetingType: mysqlEnum("ceoWeeklyMeetingType", [
+    "Monday Kickoff", "Wednesday Midweek", "Friday Wrap", "Branding QA", "Ad-hoc", "Other",
+  ]).default("Monday Kickoff").notNull(),
+  /** JSON-stringified string[] — attendee names. */
+  attendees: text("attendees"),
+  /** JSON-stringified string[] — agenda items. */
+  agenda: text("agenda"),
+  /** JSON-stringified string[] — decisions taken. */
+  decisions: text("decisions"),
+  /** JSON-stringified string[] — action items + owners. */
+  actionItems: text("actionItems"),
+  durationMinutes: int("durationMinutes"),
+  facilitator: varchar("facilitator", { length: 255 }),
+  status: mysqlEnum("ceoWeeklyMeetingStatus", [
+    "Planned", "Held", "Cancelled", "Postponed",
+  ]).default("Planned").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoWeeklyMeeting = typeof ceoWeeklyMeetings.$inferSelect;
+export type InsertCeoWeeklyMeeting = typeof ceoWeeklyMeetings.$inferInsert;
+

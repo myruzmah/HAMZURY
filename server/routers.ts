@@ -9,6 +9,7 @@ import { medialyRouter } from "./medialy/router";
 import { facelessRouter } from "./faceless/router";
 import { hrRouter } from "./hr/router";
 import { bizdevRestoredRouter } from "./bizdev/router";
+import { ceoOpsRouter } from "./ceoOps/router";
 import { diagnosticsRouter } from "./diagnostics/router";
 import { requirementsRouter } from "./requirements/router";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
@@ -192,6 +193,7 @@ export const appRouter = router({
   faceless: facelessRouter,
   hr: hrRouter,
   bizdevRestored: bizdevRestoredRouter,
+  ceoOps: ceoOpsRouter,
   diagnostics: diagnosticsRouter,
   requirements: requirementsRouter,
   auth: router({

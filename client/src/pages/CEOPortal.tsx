@@ -12,6 +12,7 @@ import {
   Settings as SettingsIcon, RefreshCw, Activity, Trash2, Send,
   Bell, Key, Eye, EyeOff, Megaphone, Inbox, CheckCheck, ChevronRight,
   Folder, ShieldCheck,
+  Monitor, Cpu, Palette, FileBox, MessageSquare, Image as ImageIcon, CalendarCheck,
 } from "lucide-react";
 
 import {
@@ -42,7 +43,10 @@ const PURPLE = "#8B5CF6";
 type Section =
   | "dashboard" | "departments" | "targets" | "staff" | "finance" | "calendar"
   | "clients" | "weekly" | "vault" | "content" | "inbox"
-  | "approvals";
+  | "approvals"
+  // 2026-04 — restored sections (MySQL via tRPC `ceoOps.*`).
+  | "equipment" | "software" | "brandingQa" | "documents"
+  | "divisionUpdates" | "canvaTemplates" | "weeklyMeetings";
 
 /* Utilities */
 function fmtNaira(v: string | number | null | undefined): string {
@@ -150,18 +154,27 @@ export default function CEOPortal() {
   if (!user) return null;
 
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
-    { key: "dashboard",   icon: LayoutDashboard, label: "Command Center" },
-    { key: "clients",     icon: Folder,          label: "Active Clients" },
-    { key: "departments", icon: Building2,       label: "Departments" },
-    { key: "targets",     icon: TargetIcon,      label: "Targets & Alerts" },
-    { key: "weekly",      icon: CheckCheck,      label: "Weekly Targets" },
-    { key: "staff",       icon: Users,           label: "Staff Oversight" },
-    { key: "finance",     icon: DollarSign,      label: "Finance" },
-    { key: "content",     icon: Megaphone,       label: "Content Ops" },
-    { key: "vault",       icon: Key,             label: "Credentials Vault" },
+    { key: "dashboard",       icon: LayoutDashboard, label: "Command Center" },
+    { key: "clients",         icon: Folder,          label: "Active Clients" },
+    { key: "departments",     icon: Building2,       label: "Departments" },
+    { key: "targets",         icon: TargetIcon,      label: "Targets & Alerts" },
+    { key: "weekly",          icon: CheckCheck,      label: "Weekly Targets" },
+    { key: "staff",           icon: Users,           label: "Staff Oversight" },
+    { key: "finance",         icon: DollarSign,      label: "Finance" },
+    { key: "content",         icon: Megaphone,       label: "Content Ops" },
+    { key: "vault",           icon: Key,             label: "Credentials Vault" },
     { key: "approvals",       icon: ShieldCheck,     label: "Approvals" },
-    { key: "calendar",    icon: CalendarIcon,    label: "Calendar & Audit" },
-    { key: "inbox",       icon: Inbox,           label: "Notifications" },
+    // ── Restored sections (cut at 136da29, brought back 2026-04) ─────────────
+    { key: "equipment",       icon: Monitor,         label: "Equipment Tracker" },
+    { key: "software",        icon: Cpu,             label: "Software Vault" },
+    { key: "brandingQa",      icon: Palette,         label: "Branding QA" },
+    { key: "documents",       icon: FileBox,         label: "Documents Vault" },
+    { key: "divisionUpdates", icon: MessageSquare,   label: "Division Updates" },
+    { key: "canvaTemplates",  icon: ImageIcon,       label: "Canva Templates" },
+    { key: "weeklyMeetings",  icon: CalendarCheck,   label: "Weekly Meetings" },
+    // ────────────────────────────────────────────────────────────────────────
+    { key: "calendar",        icon: CalendarIcon,    label: "Calendar & Audit" },
+    { key: "inbox",           icon: Inbox,           label: "Notifications" },
   ];
 
   return (
@@ -312,18 +325,25 @@ export default function CEOPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
-            {active === "dashboard"   && <CommandCenter onGoto={setActive} />}
-            {active === "clients"     && <ClientsSection />}
-            {active === "departments" && <DepartmentsSection />}
-            {active === "targets"     && <TargetsSection />}
-            {active === "weekly"      && <WeeklyTargetsSection />}
-            {active === "staff"       && <StaffSection />}
-            {active === "finance"     && <FinanceSection />}
-            {active === "content"     && <ContentOpsSection />}
-            {active === "vault"       && <CredentialsVaultSection />}
-            {active === "approvals"        && <ApprovalTiersSection />}
-            {active === "calendar"    && <CalendarAuditSection />}
-            {active === "inbox"       && <NotificationsSection />}
+            {active === "dashboard"       && <CommandCenter onGoto={setActive} />}
+            {active === "clients"         && <ClientsSection />}
+            {active === "departments"     && <DepartmentsSection />}
+            {active === "targets"         && <TargetsSection />}
+            {active === "weekly"          && <WeeklyTargetsSection />}
+            {active === "staff"           && <StaffSection />}
+            {active === "finance"         && <FinanceSection />}
+            {active === "content"         && <ContentOpsSection />}
+            {active === "vault"           && <CredentialsVaultSection />}
+            {active === "approvals"       && <ApprovalTiersSection />}
+            {active === "equipment"       && <EquipmentSection />}
+            {active === "software"        && <SoftwareSection />}
+            {active === "brandingQa"      && <BrandingQaSection />}
+            {active === "documents"       && <DocumentsSection />}
+            {active === "divisionUpdates" && <DivisionUpdatesSection />}
+            {active === "canvaTemplates"  && <CanvaTemplatesSection />}
+            {active === "weeklyMeetings"  && <WeeklyMeetingsSection />}
+            {active === "calendar"        && <CalendarAuditSection />}
+            {active === "inbox"           && <NotificationsSection />}
           </div>
         </div>
       </main>
@@ -2433,6 +2453,1180 @@ function ApprovalTiersSection() {
             </div>
           ))}
         </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * RESTORED SECTIONS — MySQL via tRPC `ceoOps.*` (server/ceoOps/router.ts).
+ * The 7 sections that were cut at commit 136da29 are brought back here.
+ * Patterns mirror BizDevPortal.tsx (multi-section CRUD, ids are int
+ * end-to-end, toast on success, invalidate on mutate).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+function PrimaryButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{
+        padding: "8px 14px", borderRadius: 10,
+        backgroundColor: GREEN, color: WHITE, border: "none",
+        fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        display: "inline-flex", alignItems: "center", gap: 6,
+      }}>{children}</button>
+  );
+}
+function GhostButton({ onClick, children, color = MUTED }: { onClick: () => void; children: React.ReactNode; color?: string }) {
+  return (
+    <button onClick={onClick}
+      style={{
+        padding: "5px 10px", borderRadius: 8,
+        backgroundColor: `${color}10`, color, border: "none",
+        fontSize: 10, fontWeight: 600, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 4,
+      }}>{children}</button>
+  );
+}
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontSize: 10, color: MUTED, textTransform: "uppercase",
+      letterSpacing: "0.06em", fontWeight: 600,
+    }}>{children}</span>
+  );
+}
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }} />
+  );
+}
+function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%", minHeight: 60, resize: "vertical", fontFamily: "inherit",
+        ...props.style,
+      }} />
+  );
+}
+function SelectInput({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: React.ReactNode }) {
+  return (
+    <select {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }}>{children}</select>
+  );
+}
+function FormGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+    </label>
+  );
+}
+
+const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
+
+/* ─── Equipment Tracker ───────────────────────────────────────────────── */
+function EquipmentSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.equipment.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    name: "", category: "Other" as const,
+    serial: "", assignedTo: "", location: "",
+    purchaseDate: "", purchaseCost: "",
+    condition: "Good" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.equipment.create.useMutation({
+    onSuccess: () => {
+      toast.success("Equipment added");
+      utils.ceoOps.equipment.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.equipment.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.equipment.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.equipment.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.equipment.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Office equipment inventory — laptops, phones, peripherals. Track who has what.">
+        Equipment Tracker
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="In Use" value={rows.filter(r => r.condition !== "Retired").length} color={GREEN} />
+        <MiniStat label="Repair" value={rows.filter(r => r.condition === "Repair").length} color={ORANGE} />
+        <MiniStat label="Retired" value={rows.filter(r => r.condition === "Retired").length} color={MUTED} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Equipment</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. MacBook Pro 14" /></FormField>
+              <FormField label="Category">
+                <SelectInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}>
+                  {["Laptop", "Desktop", "Phone", "Tablet", "Camera", "Audio", "Peripheral", "Furniture", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Serial / Asset Tag"><TextInput value={form.serial} onChange={e => setForm({ ...form, serial: e.target.value })} /></FormField>
+              <FormField label="Assigned To"><TextInput value={form.assignedTo} onChange={e => setForm({ ...form, assignedTo: e.target.value })} placeholder="Staff name" /></FormField>
+              <FormField label="Location"><TextInput value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} placeholder="HQ / Remote" /></FormField>
+              <FormField label="Purchase Date"><TextInput type="date" value={form.purchaseDate} onChange={e => setForm({ ...form, purchaseDate: e.target.value })} /></FormField>
+              <FormField label="Purchase Cost"><TextInput value={form.purchaseCost} onChange={e => setForm({ ...form, purchaseCost: e.target.value })} placeholder="e.g. ₦950k" /></FormField>
+              <FormField label="Condition">
+                <SelectInput value={form.condition} onChange={e => setForm({ ...form, condition: e.target.value as any })}>
+                  {["New", "Good", "Fair", "Poor", "Repair", "Retired"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ marginBottom: 10 }}>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.name.trim()) { toast.error("Name is required"); return; }
+                createMut.mutate({
+                  name: form.name,
+                  category: form.category,
+                  serial: form.serial || null,
+                  assignedTo: form.assignedTo || null,
+                  location: form.location || null,
+                  purchaseDate: form.purchaseDate || null,
+                  purchaseCost: form.purchaseCost || null,
+                  condition: form.condition,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Monitor} title="No equipment logged" hint="Track every laptop, phone, and peripheral here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                      <StatusPill label={r.category} tone="muted" />
+                      <StatusPill label={r.condition} tone={r.condition === "New" || r.condition === "Good" ? "green" : r.condition === "Repair" ? "orange" : r.condition === "Retired" ? "muted" : "gold"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.assignedTo && <>Assigned: {r.assignedTo}</>}
+                      {r.location && <> · {r.location}</>}
+                      {r.serial && <> · S/N {r.serial}</>}
+                    </p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                      {r.purchaseDate && <>Purchased: {fmtDate(r.purchaseDate)}</>}
+                      {r.purchaseCost && <> · {r.purchaseCost}</>}
+                    </p>
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.condition} onChange={e => updateMut.mutate({ id: r.id, condition: e.target.value as any })}>
+                      {["New", "Good", "Fair", "Poor", "Repair", "Retired"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this equipment?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Software Vault ──────────────────────────────────────────────────── */
+function SoftwareSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.software.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    name: "", vendor: "", category: "",
+    licenseKey: "",
+    seats: 0, seatsUsed: 0,
+    monthlyCost: "", renewalDate: "",
+    status: "Active" as const,
+    primaryUser: "",
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.software.create.useMutation({
+    onSuccess: () => {
+      toast.success("Software added");
+      utils.ceoOps.software.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.software.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.software.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.software.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.software.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="License keys, subscriptions, seats, renewals. Review annually — still needed?">
+        Software Vault
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Active" value={rows.filter(r => r.status === "Active").length} color={GREEN} />
+        <MiniStat label="Trial" value={rows.filter(r => r.status === "Trial").length} color={GOLD} />
+        <MiniStat label="Expired" value={rows.filter(r => r.status === "Expired").length} color={RED} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Software</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Notion" /></FormField>
+              <FormField label="Vendor"><TextInput value={form.vendor} onChange={e => setForm({ ...form, vendor: e.target.value })} /></FormField>
+              <FormField label="Category"><TextInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} placeholder="e.g. Productivity" /></FormField>
+              <FormField label="Seats"><TextInput type="number" value={form.seats || ""} onChange={e => setForm({ ...form, seats: Number(e.target.value) })} /></FormField>
+              <FormField label="Seats Used"><TextInput type="number" value={form.seatsUsed || ""} onChange={e => setForm({ ...form, seatsUsed: Number(e.target.value) })} /></FormField>
+              <FormField label="Monthly Cost"><TextInput value={form.monthlyCost} onChange={e => setForm({ ...form, monthlyCost: e.target.value })} placeholder="e.g. ₦15k" /></FormField>
+              <FormField label="Renewal Date"><TextInput type="date" value={form.renewalDate} onChange={e => setForm({ ...form, renewalDate: e.target.value })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Active", "Trial", "Expired", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Primary User"><TextInput value={form.primaryUser} onChange={e => setForm({ ...form, primaryUser: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="License Key / Account"><TextInput value={form.licenseKey} onChange={e => setForm({ ...form, licenseKey: e.target.value })} placeholder="abcd-efgh-…" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.name.trim()) { toast.error("Name is required"); return; }
+                createMut.mutate({
+                  name: form.name,
+                  vendor: form.vendor || null,
+                  category: form.category || null,
+                  licenseKey: form.licenseKey || null,
+                  seats: form.seats || null,
+                  seatsUsed: form.seatsUsed || null,
+                  monthlyCost: form.monthlyCost || null,
+                  renewalDate: form.renewalDate || null,
+                  status: form.status,
+                  primaryUser: form.primaryUser || null,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Cpu} title="No software tracked" hint="Add subscriptions, license keys, and renewals." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                      <StatusPill label={r.status} tone={r.status === "Active" ? "green" : r.status === "Trial" ? "gold" : r.status === "Expired" ? "red" : "muted"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.vendor && <>Vendor: {r.vendor}</>}
+                      {r.category && <> · {r.category}</>}
+                      {r.monthlyCost && <> · {r.monthlyCost}/mo</>}
+                    </p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                      {(r.seats !== null || r.seatsUsed !== null) && (
+                        <>Seats: {r.seatsUsed || 0} / {r.seats || 0}</>
+                      )}
+                      {r.renewalDate && <> · Renews {fmtDate(r.renewalDate)}</>}
+                      {r.primaryUser && <> · {r.primaryUser}</>}
+                    </p>
+                    {r.licenseKey && <p style={{ fontSize: 10, color: MUTED, marginTop: 4, fontFamily: "monospace" }}>Key: {r.licenseKey}</p>}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Active", "Trial", "Expired", "Cancelled"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this software?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Branding QA ─────────────────────────────────────────────────────── */
+function BrandingQaSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.brandingQa.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    reviewDate: todayISO(),
+    division: "Other" as const,
+    contentType: "", contentRef: "",
+    checklist: "",
+    passRate: 0,
+    outcome: "Pending" as const,
+    reviewer: "", notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.brandingQa.create.useMutation({
+    onSuccess: () => {
+      toast.success("QA review logged");
+      utils.ceoOps.brandingQa.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.brandingQa.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.brandingQa.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.brandingQa.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.brandingQa.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Weekly brand-compliance reviews per division. Run every Thursday 10–11 AM.">
+        Branding QA
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Approved" value={rows.filter(r => r.outcome === "Approved").length} color={GREEN} />
+        <MiniStat label="Needs Revision" value={rows.filter(r => r.outcome === "Needs Revision").length} color={GOLD} />
+        <MiniStat label="Rejected" value={rows.filter(r => r.outcome === "Rejected").length} color={RED} />
+        <MiniStat label="Pending" value={rows.filter(r => r.outcome === "Pending").length} color={MUTED} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New QA Review</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Review Date"><TextInput type="date" value={form.reviewDate} onChange={e => setForm({ ...form, reviewDate: e.target.value })} /></FormField>
+              <FormField label="Division">
+                <SelectInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value as any })}>
+                  {["Bizdoc", "Scalar", "Medialy", "HUB", "Podcast", "Video", "BizDev", "CSO", "Skills", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Content Type"><TextInput value={form.contentType} onChange={e => setForm({ ...form, contentType: e.target.value })} placeholder="Social post / Proposal / Deck" /></FormField>
+              <FormField label="Content Reference"><TextInput value={form.contentRef} onChange={e => setForm({ ...form, contentRef: e.target.value })} placeholder="URL or filename" /></FormField>
+              <FormField label="Pass Rate %"><TextInput type="number" min={0} max={100} value={form.passRate || ""} onChange={e => setForm({ ...form, passRate: Number(e.target.value) })} /></FormField>
+              <FormField label="Outcome">
+                <SelectInput value={form.outcome} onChange={e => setForm({ ...form, outcome: e.target.value as any })}>
+                  {["Approved", "Needs Revision", "Rejected", "Pending"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Reviewer"><TextInput value={form.reviewer} onChange={e => setForm({ ...form, reviewer: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Checklist Issues (one per line)"><TextArea value={form.checklist} onChange={e => setForm({ ...form, checklist: e.target.value })} placeholder="Wrong background colour&#10;Logo too close to edge&#10;Tone too aggressive" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.reviewDate) { toast.error("Review date is required"); return; }
+                createMut.mutate({
+                  reviewDate: form.reviewDate,
+                  division: form.division,
+                  contentType: form.contentType || null,
+                  contentRef: form.contentRef || null,
+                  checklist: splitLines(form.checklist),
+                  passRate: form.passRate || null,
+                  outcome: form.outcome,
+                  reviewer: form.reviewer || null,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Palette} title="No QA reviews yet" hint="Run weekly brand reviews and log outcomes here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.division} · {fmtDate(r.reviewDate)}</p>
+                      <StatusPill label={r.outcome} tone={r.outcome === "Approved" ? "green" : r.outcome === "Rejected" ? "red" : r.outcome === "Needs Revision" ? "gold" : "muted"} />
+                      {typeof r.passRate === "number" && r.passRate > 0 && (
+                        <span style={{ fontSize: 10, color: GOLD, fontWeight: 600 }}>{r.passRate}% pass</span>
+                      )}
+                    </div>
+                    {(r.contentType || r.contentRef) && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                        {r.contentType && <>{r.contentType}</>}
+                        {r.contentRef && <> · {r.contentRef}</>}
+                      </p>
+                    )}
+                    {Array.isArray(r.checklist) && r.checklist.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong>Issues:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.checklist.map((c: string, i: number) => <li key={i}>{c}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {r.reviewer && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Reviewer: {r.reviewer}</p>}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.outcome} onChange={e => updateMut.mutate({ id: r.id, outcome: e.target.value as any })}>
+                      {["Approved", "Needs Revision", "Rejected", "Pending"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this review?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Documents Vault ─────────────────────────────────────────────────── */
+function DocumentsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.documents.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    title: "",
+    category: "Other" as const,
+    storageLocation: "",
+    ownerName: "",
+    expiryDate: "",
+    tags: "",
+    status: "Active" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.documents.create.useMutation({
+    onSuccess: () => {
+      toast.success("Document logged");
+      utils.ceoOps.documents.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.documents.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.documents.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.documents.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.documents.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Important company documents — contracts, certificates, IDs, internal docs.">
+        Documents Vault
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Active" value={rows.filter(r => r.status === "Active").length} color={GREEN} />
+        <MiniStat label="Pending" value={rows.filter(r => r.status === "Pending").length} color={GOLD} />
+        <MiniStat label="Expired" value={rows.filter(r => r.status === "Expired").length} color={RED} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Document</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Title"><TextInput value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. CAC Certificate" /></FormField>
+              <FormField label="Category">
+                <SelectInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}>
+                  {["Legal", "Financial", "Operational", "Strategic", "HR", "Client", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Owner"><TextInput value={form.ownerName} onChange={e => setForm({ ...form, ownerName: e.target.value })} placeholder="Custodian / dept" /></FormField>
+              <FormField label="Expiry Date"><TextInput type="date" value={form.expiryDate} onChange={e => setForm({ ...form, expiryDate: e.target.value })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Active", "Pending", "Expired", "Archived"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Storage Location"><TextInput value={form.storageLocation} onChange={e => setForm({ ...form, storageLocation: e.target.value })} placeholder="Drive URL / cabinet ref / vault path" /></FormField>
+              <FormField label="Tags (one per line)"><TextArea value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="cac&#10;compliance&#10;2026" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.title.trim()) { toast.error("Title is required"); return; }
+                createMut.mutate({
+                  title: form.title,
+                  category: form.category,
+                  storageLocation: form.storageLocation || null,
+                  ownerName: form.ownerName || null,
+                  expiryDate: form.expiryDate || null,
+                  tags: splitLines(form.tags),
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={FileBox} title="No documents logged" hint="Track every contract, certificate, and ID here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.title}</p>
+                      <StatusPill label={r.category} tone="muted" />
+                      <StatusPill label={r.status} tone={r.status === "Active" ? "green" : r.status === "Pending" ? "gold" : r.status === "Expired" ? "red" : "muted"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.ownerName && <>Owner: {r.ownerName}</>}
+                      {r.expiryDate && <> · Expires {fmtDate(r.expiryDate)}</>}
+                    </p>
+                    {r.storageLocation && <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>📁 {r.storageLocation}</p>}
+                    {Array.isArray(r.tags) && r.tags.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.tags.map((tag: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: GOLD, fontWeight: 600 }}>{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Active", "Pending", "Expired", "Archived"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this document?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Division Updates ────────────────────────────────────────────────── */
+function DivisionUpdatesSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.divisionUpdates.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    weekOf: todayISO(),
+    division: "Other" as const,
+    submittedBy: "",
+    pulseScore: 0,
+    wins: "",
+    blockers: "",
+    nextWeekFocus: "",
+    status: "Submitted" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.divisionUpdates.create.useMutation({
+    onSuccess: () => {
+      toast.success("Update submitted");
+      utils.ceoOps.divisionUpdates.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.divisionUpdates.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.divisionUpdates.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.divisionUpdates.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.divisionUpdates.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Weekly roll-up reports from each division head. Wins, blockers, next-week focus.">
+        Division Updates
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Submitted" value={rows.filter(r => r.status === "Submitted").length} color={BLUE} />
+        <MiniStat label="Reviewed" value={rows.filter(r => r.status === "Reviewed").length} color={GOLD} />
+        <MiniStat label="Acted On" value={rows.filter(r => r.status === "Acted On").length} color={GREEN} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Division Update</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Week Of"><TextInput type="date" value={form.weekOf} onChange={e => setForm({ ...form, weekOf: e.target.value })} /></FormField>
+              <FormField label="Division">
+                <SelectInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value as any })}>
+                  {["Bizdoc", "Scalar", "Medialy", "HUB", "Podcast", "Video", "BizDev", "CSO", "Skills", "Finance", "HR", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Submitted By"><TextInput value={form.submittedBy} onChange={e => setForm({ ...form, submittedBy: e.target.value })} placeholder="Division lead name" /></FormField>
+              <FormField label="Pulse Score (1-10)"><TextInput type="number" min={0} max={10} value={form.pulseScore || ""} onChange={e => setForm({ ...form, pulseScore: Number(e.target.value) })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Submitted", "Reviewed", "Acted On", "Archived"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Wins (one per line)"><TextArea value={form.wins} onChange={e => setForm({ ...form, wins: e.target.value })} placeholder="Closed 2 deals&#10;Hired new editor&#10;Brand QA: 100% pass" /></FormField>
+              <FormField label="Blockers (one per line)"><TextArea value={form.blockers} onChange={e => setForm({ ...form, blockers: e.target.value })} placeholder="Need budget approval&#10;Software licence expired" /></FormField>
+              <FormField label="Next Week Focus"><TextArea value={form.nextWeekFocus} onChange={e => setForm({ ...form, nextWeekFocus: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.weekOf) { toast.error("Week is required"); return; }
+                createMut.mutate({
+                  weekOf: form.weekOf,
+                  division: form.division,
+                  submittedBy: form.submittedBy || null,
+                  pulseScore: form.pulseScore || null,
+                  wins: splitLines(form.wins),
+                  blockers: splitLines(form.blockers),
+                  nextWeekFocus: form.nextWeekFocus || null,
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={MessageSquare} title="No division updates yet" hint="Each division lead submits a weekly roll-up here." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.division} · Week of {fmtDate(r.weekOf)}</p>
+                      <StatusPill label={r.status} tone={r.status === "Acted On" ? "green" : r.status === "Reviewed" ? "gold" : r.status === "Submitted" ? "blue" : "muted"} />
+                      {typeof r.pulseScore === "number" && r.pulseScore > 0 && (
+                        <span style={{
+                          fontSize: 10, padding: "2px 8px", borderRadius: 10, fontWeight: 600,
+                          backgroundColor: r.pulseScore >= 8 ? `${GREEN}15` : r.pulseScore >= 5 ? `${GOLD}20` : `${RED}15`,
+                          color: r.pulseScore >= 8 ? GREEN : r.pulseScore >= 5 ? GOLD : RED,
+                        }}>Pulse {r.pulseScore}/10</span>
+                      )}
+                    </div>
+                    {r.submittedBy && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Submitted by: {r.submittedBy}</p>}
+                    {Array.isArray(r.wins) && r.wins.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong style={{ color: GREEN }}>Wins:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.wins.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(r.blockers) && r.blockers.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong style={{ color: RED }}>Blockers:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.blockers.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {r.nextWeekFocus && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Next week:</strong> {r.nextWeekFocus}</p>}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Submitted", "Reviewed", "Acted On", "Archived"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this update?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Canva Templates ─────────────────────────────────────────────────── */
+function CanvaTemplatesSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.canvaTemplates.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    name: "",
+    category: "Other" as const,
+    division: "",
+    canvaUrl: "",
+    thumbnailUrl: "",
+    tags: "",
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.canvaTemplates.create.useMutation({
+    onSuccess: () => {
+      toast.success("Template added");
+      utils.ceoOps.canvaTemplates.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.canvaTemplates.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.canvaTemplates.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.canvaTemplates.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.canvaTemplates.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Central library of approved Canva templates. Bump usage on copy.">
+        Canva Templates
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Social" value={rows.filter(r => r.category === "Social Post" || r.category === "Carousel" || r.category === "Story").length} color={BLUE} />
+        <MiniStat label="Decks" value={rows.filter(r => r.category === "Pitch Deck" || r.category === "Proposal").length} color={GREEN} />
+        <MiniStat label="Print" value={rows.filter(r => r.category === "Flyer" || r.category === "Brochure").length} color={GOLD} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Canva Template</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="e.g. Hamzury Carousel v3" /></FormField>
+              <FormField label="Category">
+                <SelectInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}>
+                  {["Social Post", "Carousel", "Story", "Flyer", "Brochure", "Pitch Deck", "Proposal", "Cover", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} placeholder="e.g. Medialy" /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Canva URL"><TextInput value={form.canvaUrl} onChange={e => setForm({ ...form, canvaUrl: e.target.value })} placeholder="https://canva.com/design/…" /></FormField>
+              <FormField label="Thumbnail URL"><TextInput value={form.thumbnailUrl} onChange={e => setForm({ ...form, thumbnailUrl: e.target.value })} placeholder="Optional preview image" /></FormField>
+              <FormField label="Tags (one per line)"><TextArea value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="brand&#10;launch&#10;quote" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.name.trim()) { toast.error("Name is required"); return; }
+                createMut.mutate({
+                  name: form.name,
+                  category: form.category,
+                  division: form.division || null,
+                  canvaUrl: form.canvaUrl || null,
+                  thumbnailUrl: form.thumbnailUrl || null,
+                  tags: splitLines(form.tags),
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={ImageIcon} title="No Canva templates yet" hint="Build the design library — every team uses these." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                      <StatusPill label={r.category} tone="muted" />
+                      {r.division && <StatusPill label={r.division} tone="gold" />}
+                      {typeof r.usageCount === "number" && r.usageCount > 0 && (
+                        <span style={{ fontSize: 10, color: GOLD, fontWeight: 600 }}>used {r.usageCount}×</span>
+                      )}
+                    </div>
+                    {r.canvaUrl && (
+                      <p style={{ fontSize: 11, marginTop: 4 }}>
+                        <a href={r.canvaUrl} target="_blank" rel="noopener noreferrer" style={{ color: BLUE, textDecoration: "underline" }}>Open in Canva ↗</a>
+                      </p>
+                    )}
+                    {Array.isArray(r.tags) && r.tags.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                        {r.tags.map((tag: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: GOLD, fontWeight: 600 }}>{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    {r.lastUsedAt && <p style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>Last used {fmtDate(r.lastUsedAt)}</p>}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.category} onChange={e => updateMut.mutate({ id: r.id, category: e.target.value as any })}>
+                      {["Social Post", "Carousel", "Story", "Flyer", "Brochure", "Pitch Deck", "Proposal", "Cover", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton
+                      onClick={() => {
+                        if (!r.canvaUrl) { toast.error("No Canva URL to copy"); return; }
+                        navigator.clipboard.writeText(r.canvaUrl).then(
+                          () => {
+                            toast.success("Copied — usage count bumped");
+                            updateMut.mutate({
+                              id: r.id,
+                              usageCount: (r.usageCount || 0) + 1,
+                              lastUsedAt: new Date().toISOString().slice(0, 10),
+                            });
+                          },
+                          () => toast.error("Couldn't copy"),
+                        );
+                      }}
+                      color={GREEN}
+                    >Copy URL</GhostButton>
+                    <GhostButton onClick={() => { if (confirm("Remove this template?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Weekly Meetings ─────────────────────────────────────────────────── */
+function WeeklyMeetingsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.weeklyMeetings.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    meetingDate: todayISO(),
+    meetingType: "Monday Kickoff" as const,
+    attendees: "",
+    agenda: "",
+    decisions: "",
+    actionItems: "",
+    durationMinutes: 30,
+    facilitator: "",
+    status: "Planned" as const,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.weeklyMeetings.create.useMutation({
+    onSuccess: () => {
+      toast.success("Meeting logged");
+      utils.ceoOps.weeklyMeetings.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.weeklyMeetings.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.weeklyMeetings.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.weeklyMeetings.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.weeklyMeetings.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="Monday kickoff / Wed midweek / Fri wrap. Agenda, attendance, decisions, actions.">
+        Weekly Meetings
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Held" value={rows.filter(r => r.status === "Held").length} color={GREEN} />
+        <MiniStat label="Planned" value={rows.filter(r => r.status === "Planned").length} color={GOLD} />
+        <MiniStat label="Cancelled" value={rows.filter(r => r.status === "Cancelled").length} color={RED} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Meeting</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Meeting Date"><TextInput type="date" value={form.meetingDate} onChange={e => setForm({ ...form, meetingDate: e.target.value })} /></FormField>
+              <FormField label="Type">
+                <SelectInput value={form.meetingType} onChange={e => setForm({ ...form, meetingType: e.target.value as any })}>
+                  {["Monday Kickoff", "Wednesday Midweek", "Friday Wrap", "Branding QA", "Ad-hoc", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+              <FormField label="Facilitator"><TextInput value={form.facilitator} onChange={e => setForm({ ...form, facilitator: e.target.value })} /></FormField>
+              <FormField label="Duration (min)"><TextInput type="number" value={form.durationMinutes || ""} onChange={e => setForm({ ...form, durationMinutes: Number(e.target.value) })} /></FormField>
+              <FormField label="Status">
+                <SelectInput value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })}>
+                  {["Planned", "Held", "Cancelled", "Postponed"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Attendees (one per line)"><TextArea value={form.attendees} onChange={e => setForm({ ...form, attendees: e.target.value })} placeholder="Muhammad Hamzury&#10;Isa Ibrahim&#10;…" /></FormField>
+              <FormField label="Agenda (one per line)"><TextArea value={form.agenda} onChange={e => setForm({ ...form, agenda: e.target.value })} placeholder="Opening&#10;Division briefs&#10;Priorities" /></FormField>
+              <FormField label="Decisions (one per line)"><TextArea value={form.decisions} onChange={e => setForm({ ...form, decisions: e.target.value })} placeholder="Approved budget for new hire" /></FormField>
+              <FormField label="Action Items (one per line)"><TextArea value={form.actionItems} onChange={e => setForm({ ...form, actionItems: e.target.value })} placeholder="Isa: send proposal by Wed&#10;Hauwa: post recap" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.meetingDate) { toast.error("Meeting date is required"); return; }
+                createMut.mutate({
+                  meetingDate: form.meetingDate,
+                  meetingType: form.meetingType,
+                  attendees: splitLines(form.attendees),
+                  agenda: splitLines(form.agenda),
+                  decisions: splitLines(form.decisions),
+                  actionItems: splitLines(form.actionItems),
+                  durationMinutes: form.durationMinutes || null,
+                  facilitator: form.facilitator || null,
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={CalendarCheck} title="No meetings logged" hint="Track every Monday/Wed/Fri sync. Discipline > intensity." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.meetingType} · {fmtDate(r.meetingDate)}</p>
+                      <StatusPill label={r.status} tone={r.status === "Held" ? "green" : r.status === "Planned" ? "gold" : r.status === "Cancelled" ? "red" : "muted"} />
+                      {r.durationMinutes && <span style={{ fontSize: 10, color: MUTED }}>{r.durationMinutes}min</span>}
+                    </div>
+                    {r.facilitator && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Facilitator: {r.facilitator}</p>}
+                    {Array.isArray(r.attendees) && r.attendees.length > 0 && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                        Attendees: {r.attendees.join(", ")}
+                      </p>
+                    )}
+                    {Array.isArray(r.agenda) && r.agenda.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong>Agenda:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.agenda.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(r.decisions) && r.decisions.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong style={{ color: GREEN }}>Decisions:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.decisions.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {Array.isArray(r.actionItems) && r.actionItems.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong style={{ color: GOLD }}>Action items:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.actionItems.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {r.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>{r.notes}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Planned", "Held", "Cancelled", "Postponed"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => { if (confirm("Remove this meeting?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
