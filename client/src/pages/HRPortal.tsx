@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, Calendar as CalendarIcon, AlertCircle, ClipboardList,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock,
@@ -151,7 +150,6 @@ export default function HRPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
-      <PendingReportsBanner />
       <PageMeta title="HR Portal — HAMZURY" description="Human resources — staff roster, leave, discipline, attendance, reports." />
 
       {isMobile && mobileNavOpen && (

@@ -3,68 +3,416 @@ import { Link } from "wouter";
 import { ArrowLeft, ChevronDown, Menu, X, MessageSquare } from "lucide-react";
 import PageMeta from "@/components/PageMeta";
 
-const MILK    = "#FFFAF6";
+/**
+ * Pricing — LOCKED to the Excel Master `Pricing_Matrix_All_Divisions.xlsx`.
+ * Version 2026-04 · Founder-approved.
+ *
+ * 4 divisions × 4 tiers each = 16 locked packages.
+ *   Bizdoc:  Starter   · Compliant   · ProMax (POPULAR) · Enterprise
+ *   Scalar:  Presence  · Growth      · Automate (POPULAR) · Platform
+ *   Medialy: Setup     · Manage      · Accelerate (POPULAR) · Authority
+ *   HUB:     Single    · Certification (POPULAR) · Team · Corporate
+ *
+ * Never change these in the UI without updating the Excel first.
+ */
+
+const MILK = "#FFFAF6";
 const CHARCOAL = "#1A1A1A";
-const GOLD    = "#B48C4C";
-const WHITE   = "#FFFFFF";
+const GOLD = "#B48C4C";
+const WHITE = "#FFFFFF";
 
-/* ── Service data ──────────────────────────────────────────────────────── */
-
-type Service = { name: string; price: string; includes: string[]; isPackage?: boolean };
+type Service = {
+  name: string;
+  price: string;
+  includes: string[];
+  isPackage?: boolean;
+  popular?: boolean;
+};
 
 const BIZDOC: Service[] = [
-  // Packages first
-  { name: "⭐ BizDoc Starter Pack", price: "\u20A6250,000", isPackage: true, includes: ["CAC Limited Company registration", "TIN registration (FIRS)", "Corporate bank account opening", "Company seal", "Save \u20A660,000 vs buying separately"] },
-  { name: "⭐ BizDoc Pro Pack", price: "\u20A6400,000", isPackage: true, includes: ["Everything in Starter Pack", "Annual tax filing", "Compliance management (6 months)", "Deadline tracking & reminders", "Save \u20A6110,000 vs buying separately"] },
-  { name: "⭐ BizDoc Complete Pack", price: "\u20A6600,000", isPackage: true, includes: ["Everything in Pro Pack", "Full legal document pack (contracts, NDA, T&C)", "One sector licence or permit", "Quarterly compliance review", "Save \u20A6180,000+ vs buying separately"] },
-  // Individual
-  { name: "CAC Registration", price: "From \u20A650,000", includes: ["Business Name, Ltd, or Trustees", "Name availability search", "Full CAC documentation", "Certificate of registration"] },
-  { name: "Tax Compliance", price: "From \u20A630,000", includes: ["TIN registration (FIRS)", "Tax Clearance Certificate (TCC)", "VAT setup & filing", "PAYE registration"] },
-  { name: "Tax Pro Max (Annual)", price: "\u20A6150,000/yr", includes: ["Annual tax filing & returns", "TIN & TCC management", "Penalty prevention monitoring", "Quarterly compliance reports"] },
-  { name: "Industry Licences & Permits", price: "From \u20A660,000", includes: ["NAFDAC, SON, NEPC, SCUML", "Application preparation", "Agency liaison & follow-up", "Certificate delivery"] },
-  { name: "Legal Documentation", price: "From \u20A640,000", includes: ["Contract drafting & review", "Legal agreements & NDAs", "Terms & conditions", "Full document pack available"] },
-  { name: "Foreign Business Setup", price: "From \u20A6350,000", includes: ["CERPAC residence permit", "Expatriate Quota (EQ)", "Business Permit", "Full foreign setup pack available"] },
-  { name: "Compliance Subscription", price: "\u20A650,000/mo", includes: ["Monthly compliance monitoring", "Deadline tracking & reminders", "Priority response", "Quarterly status reports"] },
+  {
+    name: "Bizdoc Starter",
+    price: "\u20A690,000",
+    isPackage: true,
+    includes: [
+      "CAC Limited Company registration",
+      "EFCC SCUML setup (if required)",
+      "Tax ProMax registration (TIN)",
+      "1 corporate bank account support",
+    ],
+  },
+  {
+    name: "Bizdoc Compliant",
+    price: "\u20A6150,000",
+    isPackage: true,
+    includes: [
+      "Everything in Starter",
+      "TCC (Tax Clearance Certificate)",
+      "Annual Returns filing",
+      "VAT + PAYE setup",
+    ],
+  },
+  {
+    name: "\u2B50 Bizdoc ProMax",
+    price: "\u20A6300,000",
+    isPackage: true,
+    popular: true,
+    includes: [
+      "Everything in Compliant",
+      "Branding light pack (logo + letterhead)",
+      "Business Plan document",
+      "1 year Tax Management (Tax ProMax)",
+      "Full contracts pack (NDA / service / employment)",
+    ],
+  },
+  {
+    name: "Bizdoc Enterprise",
+    price: "\u20A6500,000",
+    isPackage: true,
+    includes: [
+      "Everything in ProMax",
+      "ITF registration",
+      "NSITF registration",
+      "PENCOM setup",
+      "BPP / NEPC enrolment",
+      "Priority compliance support",
+    ],
+  },
+  {
+    name: "CAC Registration",
+    price: "From \u20A650,000",
+    includes: [
+      "Business Name, Ltd, or Trustees",
+      "Name availability search",
+      "Full CAC documentation",
+      "Certificate of registration",
+    ],
+  },
+  {
+    name: "Tax Compliance (TIN / TCC)",
+    price: "From \u20A630,000",
+    includes: [
+      "TIN registration (FIRS)",
+      "Tax Clearance Certificate (TCC)",
+      "VAT setup & filing",
+      "PAYE registration",
+    ],
+  },
+  {
+    name: "Tax Pro Max (Annual)",
+    price: "\u20A6150,000 / year",
+    includes: [
+      "Annual tax filing & returns",
+      "TIN & TCC management",
+      "Penalty prevention monitoring",
+      "Quarterly compliance reports",
+    ],
+  },
+  {
+    name: "Industry Licence or Permit",
+    price: "From \u20A660,000",
+    includes: [
+      "NAFDAC, SON, NEPC, SCUML",
+      "Application preparation",
+      "Agency liaison & follow-up",
+      "Certificate delivery",
+    ],
+  },
+  {
+    name: "Legal Documentation",
+    price: "From \u20A640,000",
+    includes: [
+      "Contract drafting & review",
+      "Legal agreements & NDAs",
+      "Terms & conditions",
+      "Full document pack available",
+    ],
+  },
+  {
+    name: "Foreign Business Setup",
+    price: "From \u20A6350,000",
+    includes: [
+      "CERPAC residence permit",
+      "Expatriate Quota (EQ)",
+      "Business Permit",
+      "Full foreign setup pack available",
+    ],
+  },
+  {
+    name: "Compliance Management Subscription",
+    price: "\u20A650,000 / month",
+    includes: [
+      "Monthly compliance monitoring",
+      "Deadline tracking & reminders",
+      "Priority response",
+      "Quarterly status reports",
+    ],
+  },
 ];
 
-const SYSTEMISE: Service[] = [
-  // Packages first
-  { name: "⭐ Digital Starter Pack", price: "\u20A6350,000", isPackage: true, includes: ["Full brand identity (logo, colors, guidelines)", "One-page landing website", "Social media brand kit", "Save \u20A680,000 vs buying separately"] },
-  { name: "⭐ Business Launch Pack", price: "\u20A6500,000", isPackage: true, includes: ["Full brand identity system", "Business website (5-8 pages)", "Social media setup & first month content", "SEO foundation", "Save \u20A6150,000+ vs buying separately"] },
-  { name: "⭐ Full Business Architecture", price: "From \u20A61,200,000", isPackage: true, includes: ["Complete brand system", "Full website with dashboard", "Social media management (3 months)", "CRM & lead pipeline setup", "AI automation integration", "Save \u20A6300,000+ vs buying separately"] },
-  // Individual
-  { name: "Brand Identity", price: "From \u20A680,000", includes: ["Logo design & visual identity", "Color palette & typography", "Brand guidelines document", "Full brand system: \u20A6350,000"] },
-  { name: "Website Design", price: "From \u20A6200,000", includes: ["Custom design & development", "Mobile responsive", "SEO foundation & analytics", "E-commerce from \u20A6500,000"] },
-  { name: "Social Media Management", price: "From \u20A6120,000/mo", includes: ["Content creation & scheduling", "Community management", "Monthly performance reports", "Full management: \u20A6400,000/mo"] },
-  { name: "CRM & Lead Generation", price: "From \u20A6180,000", includes: ["CRM setup & configuration", "Lead pipeline design", "Automation & notifications", "Team onboarding"] },
-  { name: "AI & Automation", price: "From \u20A6200,000", includes: ["AI customer support agent", "Workflow automation", "Invoice & payment automation", "Custom AI agent from \u20A6400,000"] },
-  { name: "Workflow Automation", price: "From \u20A6150,000", includes: ["Workflow mapping & design", "Tool integration & setup", "SOP documentation", "Team training session"] },
+const SCALAR: Service[] = [
+  {
+    name: "Scalar Presence",
+    price: "\u20A6300,000",
+    isPackage: true,
+    includes: [
+      "Professional 5-page website",
+      "Mobile responsive",
+      "Domain + hosting setup (1 year)",
+      "Basic SEO foundation",
+      "Delivery in 7 – 10 working days",
+    ],
+  },
+  {
+    name: "Scalar Growth",
+    price: "\u20A6500,000",
+    isPackage: true,
+    includes: [
+      "Everything in Presence",
+      "Lead-capture forms + email notifications",
+      "WhatsApp chat integration",
+      "Google Analytics + Search Console",
+      "Delivery in 2 – 3 weeks",
+    ],
+  },
+  {
+    name: "\u2B50 Scalar Automate",
+    price: "\u20A61,000,000",
+    isPackage: true,
+    popular: true,
+    includes: [
+      "Everything in Growth",
+      "Custom CRM & client dashboard",
+      "Email / WhatsApp automation",
+      "AI chatbot (FAQ + booking)",
+      "Team training + 30 days support",
+      "Delivery in 4 – 6 weeks",
+    ],
+  },
+  {
+    name: "Scalar Platform",
+    price: "\u20A62,000,000",
+    isPackage: true,
+    includes: [
+      "Everything in Automate",
+      "Custom platform / marketplace",
+      "Multi-role dashboards",
+      "Advanced AI agent + analytics",
+      "90 days post-launch support",
+      "Delivery in 6 – 10 weeks",
+    ],
+  },
+  {
+    name: "Brand Identity",
+    price: "From \u20A680,000",
+    includes: [
+      "Logo design & visual identity",
+      "Color palette & typography",
+      "Brand guidelines document",
+      "Full brand system from \u20A6350,000",
+    ],
+  },
+  {
+    name: "Website Design",
+    price: "From \u20A6200,000",
+    includes: [
+      "Custom design & development",
+      "Mobile responsive",
+      "SEO foundation & analytics",
+      "E-commerce from \u20A6500,000",
+    ],
+  },
+  {
+    name: "CRM & Lead Generation",
+    price: "From \u20A6180,000",
+    includes: [
+      "CRM setup & configuration",
+      "Lead pipeline design",
+      "Automation & notifications",
+      "Team onboarding",
+    ],
+  },
+  {
+    name: "AI Agent (Custom)",
+    price: "From \u20A6200,000",
+    includes: [
+      "Custom AI customer agent",
+      "Live chat + WhatsApp",
+      "FAQ training + handoff",
+      "Custom AI platform from \u20A6400,000",
+    ],
+  },
+  {
+    name: "Workflow Automation",
+    price: "From \u20A6150,000",
+    includes: [
+      "Workflow mapping & design",
+      "Tool integration & setup",
+      "SOP documentation",
+      "Team training session",
+    ],
+  },
 ];
 
-const SKILLS: Service[] = [
-  // Packages first
-  { name: "⭐ Founder Fast Track", price: "\u20A6120,000", isPackage: true, includes: ["AI Founder Launchpad program", "Vibe Coding for Founders program", "Combined 6-week intensive", "Save \u20A620,000 vs buying separately"] },
-  { name: "⭐ Full Founder Bundle", price: "\u20A6200,000", isPackage: true, includes: ["All 3 core programs", "1-on-1 mentorship sessions", "Certificate & portfolio", "Priority community access", "Save \u20A655,000+ vs buying separately"] },
-  { name: "⭐ Corporate Team Package", price: "From \u20A6350,000", isPackage: true, includes: ["Staff training (up to 20 people)", "Custom curriculum design", "On-site or virtual delivery", "Post-training assessment", "Save \u20A6150,000+ vs buying separately"] },
-  // Individual
-  { name: "AI Founder Launchpad", price: "\u20A675,000", includes: ["Build & launch with AI tools", "Live coaching sessions", "Business model validation", "Certificate of completion"] },
-  { name: "Vibe Coding for Founders", price: "\u20A665,000", includes: ["AI-assisted coding workflow", "Build your own MVP", "Real product deployment", "Certificate of completion"] },
-  { name: "AI Sales Operator", price: "\u20A655,000", includes: ["AI-powered sales systems", "Lead generation automation", "CRM & pipeline setup", "Certificate of completion"] },
-  { name: "Service Business in 21 Days", price: "\u20A645,000", includes: ["Service business blueprint", "Client acquisition strategy", "Pricing & packaging", "Certificate of completion"] },
-  { name: "Operations Automation Sprint", price: "\u20A660,000", includes: ["Automate repetitive tasks", "Tool selection & setup", "Workflow design", "Certificate of completion"] },
-  { name: "Corporate Staff Training", price: "Custom pricing", includes: ["Tailored to your organisation", "On-site or virtual delivery", "Custom curriculum design", "Post-training assessment"] },
-  { name: "RIDI Sponsorship", price: "Sponsored", includes: ["Fully sponsored training", "For underserved communities", "Application-based selection", "Mentorship included"] },
+const MEDIALY: Service[] = [
+  {
+    name: "Medialy Setup",
+    price: "\u20A650,000 one-time",
+    isPackage: true,
+    includes: [
+      "Profile tune-up on 3 platforms",
+      "Bio + link tree + branded cover",
+      "Content pillar plan (3-month outline)",
+      "Posting schedule template",
+    ],
+  },
+  {
+    name: "Medialy Manage",
+    price: "\u20A6150,000 / month",
+    isPackage: true,
+    includes: [
+      "12 posts / month (mix of feed + story)",
+      "Content calendar + approvals",
+      "Community management (replies + DMs)",
+      "Monthly performance report",
+    ],
+  },
+  {
+    name: "\u2B50 Medialy Accelerate",
+    price: "\u20A6300,000 / month",
+    isPackage: true,
+    popular: true,
+    includes: [
+      "Everything in Manage",
+      "20 posts / month (feed + reels + stories)",
+      "Reels scripting + editing",
+      "Paid ads setup + management (ad spend separate)",
+      "Weekly performance reviews",
+    ],
+  },
+  {
+    name: "Medialy Authority",
+    price: "\u20A6500,000 / month",
+    isPackage: true,
+    includes: [
+      "Everything in Accelerate",
+      "30+ posts / month across 4 platforms",
+      "Founder content production (podcast clips, interviews)",
+      "Dedicated content creator + editor",
+      "Influencer outreach + partnerships",
+    ],
+  },
+  {
+    name: "Social Media Management",
+    price: "From \u20A6120,000 / month",
+    includes: [
+      "Content creation & scheduling",
+      "Community management",
+      "Monthly performance reports",
+    ],
+  },
+  {
+    name: "Content Production",
+    price: "From \u20A6200,000",
+    includes: [
+      "Photography + videography shoot day",
+      "Short-form reel / tiktok editing",
+      "Platform-ready exports",
+      "One-time or retainer",
+    ],
+  },
+];
+
+const HUB: Service[] = [
+  {
+    name: "HUB Single Course",
+    price: "\u20A625,000 \u2013 \u20A6100,000",
+    isPackage: true,
+    includes: [
+      "One programme (choose from 8 tracks)",
+      "Live cohort delivery",
+      "Practical assignments",
+      "Certificate of completion",
+    ],
+  },
+  {
+    name: "\u2B50 HUB Certification",
+    price: "\u20A6200,000 \u2013 \u20A6400,000",
+    isPackage: true,
+    popular: true,
+    includes: [
+      "Full certification track (12-week intensive)",
+      "External cert support (Google / Coursera)",
+      "1-on-1 mentorship sessions",
+      "HAMZURY certificate (digital + physical)",
+      "Alumni community access",
+    ],
+  },
+  {
+    name: "HUB Team Training",
+    price: "\u20A6500,000",
+    isPackage: true,
+    includes: [
+      "Up to 20 staff trained",
+      "Custom curriculum tailored to business",
+      "On-site or virtual delivery",
+      "Post-training skills assessment",
+    ],
+  },
+  {
+    name: "HUB Corporate",
+    price: "From \u20A61,000,000",
+    isPackage: true,
+    includes: [
+      "Unlimited seats / full department",
+      "Multi-month curriculum design",
+      "Quarterly progress reports",
+      "Dedicated instructor pool",
+      "Priority content customisation",
+    ],
+  },
+  {
+    name: "AI Founder Launchpad",
+    price: "\u20A675,000",
+    includes: [
+      "Build & launch with AI tools",
+      "Live coaching sessions",
+      "Business model validation",
+      "Certificate of completion",
+    ],
+  },
+  {
+    name: "Vibe Coding for Founders",
+    price: "\u20A665,000",
+    includes: [
+      "AI-assisted coding workflow",
+      "Build your own MVP",
+      "Real product deployment",
+      "Certificate of completion",
+    ],
+  },
+  {
+    name: "RIDI Cohort",
+    price: "Sponsored",
+    includes: [
+      "Fully funded training",
+      "Application-based selection",
+      "For underserved communities",
+      "Mentorship + placement support",
+    ],
+  },
 ];
 
 const TABS = [
-  { key: "bizdoc", label: "BizDoc", data: BIZDOC },
-  { key: "systemise", label: "Systemise", data: SYSTEMISE },
-  { key: "skills", label: "Skills", data: SKILLS },
+  { key: "bizdoc", label: "Bizdoc", data: BIZDOC, accent: "#1B4D3E" },
+  { key: "scalar", label: "Scalar", data: SCALAR, accent: "#D4A017" },
+  { key: "medialy", label: "Medialy", data: MEDIALY, accent: "#1D4ED8" },
+  { key: "hub", label: "HUB", data: HUB, accent: "#1E3A5F" },
 ] as const;
 
 /* ── Expandable card ───────────────────────────────────────────────────── */
 
-function ServiceCard({ service }: { service: Service }) {
+function ServiceCard({ service, accent }: { service: Service; accent: string }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -72,19 +420,44 @@ function ServiceCard({ service }: { service: Service }) {
       className="rounded-[20px] overflow-hidden transition-all duration-300"
       style={{
         backgroundColor: WHITE,
-        boxShadow: service.isPackage ? `0 2px 12px ${GOLD}20` : "0 1px 3px rgba(0,0,0,0.04)",
-        border: service.isPackage ? `1.5px solid ${GOLD}40` : "1px solid transparent",
+        boxShadow: service.popular
+          ? `0 2px 16px ${accent}25`
+          : service.isPackage
+          ? `0 2px 12px ${GOLD}18`
+          : "0 1px 3px rgba(0,0,0,0.04)",
+        border: service.popular
+          ? `1.5px solid ${accent}55`
+          : service.isPackage
+          ? `1.5px solid ${GOLD}35`
+          : "1px solid transparent",
       }}
     >
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-7 py-6 text-left transition-colors duration-200 hover:bg-[#FAFAF8]"
       >
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {service.popular && (
+            <div
+              style={{
+                display: "inline-block",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                padding: "3px 8px",
+                borderRadius: 999,
+                backgroundColor: `${accent}15`,
+                color: accent,
+                marginBottom: 6,
+              }}
+            >
+              MOST POPULAR
+            </div>
+          )}
           <p className="text-[15px] font-semibold tracking-tight" style={{ color: CHARCOAL }}>
             {service.name}
           </p>
-          <p className="text-[22px] font-light mt-1" style={{ color: GOLD }}>
+          <p className="text-[22px] font-light mt-1" style={{ color: accent }}>
             {service.price}
           </p>
         </div>
@@ -98,169 +471,169 @@ function ServiceCard({ service }: { service: Service }) {
         />
       </button>
 
-      <div
-        className="overflow-hidden transition-all duration-300"
-        style={{
-          maxHeight: open ? 300 : 0,
-          opacity: open ? 1 : 0,
-        }}
-      >
-        <div className="px-7 pb-6 pt-0">
-          <div style={{ height: 1, backgroundColor: `${CHARCOAL}08`, marginBottom: 16 }} />
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] mb-3" style={{ color: `${CHARCOAL}40` }}>
-            What's included
-          </p>
-          <ul className="space-y-2">
-            {service.includes.map((item) => (
-              <li key={item} className="text-[13px] font-light leading-relaxed" style={{ color: `${CHARCOAL}90` }}>
-                {item}
+      {open && (
+        <div className="px-7 pb-6">
+          <ul className="space-y-2 mb-4">
+            {service.includes.map((it, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span style={{ color: accent, fontSize: 14, lineHeight: 1.4 }}>•</span>
+                <span className="text-[14px]" style={{ color: CHARCOAL, lineHeight: 1.5 }}>
+                  {it}
+                </span>
               </li>
             ))}
           </ul>
+          <a
+            href={`https://wa.me/2349130700056?text=${encodeURIComponent(
+              `Hello HAMZURY — I'm interested in ${service.name} (${service.price}).`
+            )}`}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold"
+            style={{ backgroundColor: accent, color: WHITE }}
+          >
+            <MessageSquare size={14} /> Ask about this
+          </a>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/* ── Page ───────────────────────────────────────────────────────────────── */
+/* ── Page ──────────────────────────────────────────────────────────────── */
 
 export default function PricingPage() {
-  const params = new URLSearchParams(window.location.search);
-  const initialTab = params.get("tab") || "bizdoc";
-  const [activeTab, setActiveTab] = useState<string>(
-    ["bizdoc", "systemise", "skills"].includes(initialTab) ? initialTab : "bizdoc"
-  );
-  const [navMenuOpen, setNavMenuOpen] = useState(false);
-  const currentTab = TABS.find((t) => t.key === activeTab) || TABS[0];
+  const [activeTab, setActiveTab] = useState<(typeof TABS)[number]["key"]>("bizdoc");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const active = TABS.find(t => t.key === activeTab)!;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: MILK }}>
+    <div style={{ backgroundColor: MILK, minHeight: "100vh" }}>
       <PageMeta
-        title="Pricing — HAMZURY"
-        description="Transparent pricing for BizDoc Consult, Systemise, and Hamzury Skills."
-        canonical="https://hamzury.com/pricing"
+        title="Pricing | HAMZURY"
+        description="Four divisions. Four tiers each. Founder-approved pricing — locked 2026-04."
       />
 
-      {/* Nav */}
-      <nav
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-14"
-        style={{ backgroundColor: `${MILK}F0`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)" }}
+      {/* Header */}
+      <header
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+          backgroundColor: `${MILK}F2`,
+          backdropFilter: "blur(12px)",
+          borderBottom: "1px solid rgba(0,0,0,0.06)",
+        }}
       >
-        <Link
-          href="/"
-          className="flex items-center gap-2 text-[13px] font-medium transition-opacity hover:opacity-50"
-          style={{ color: CHARCOAL }}
+        <div
+          className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between"
         >
-          <ArrowLeft size={14} /> HAMZURY
-        </Link>
-        <div className="relative">
-          <button
-            onClick={() => setNavMenuOpen(p => !p)}
-            className="flex items-center justify-center w-9 h-9 transition-opacity hover:opacity-70"
-            style={{ color: CHARCOAL }}
-            aria-label="Menu"
-          >
-            {navMenuOpen ? <X size={18} /> : <Menu size={18} />}
+          <Link href="/" style={{ color: CHARCOAL, display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+            <ArrowLeft size={16} /> HAMZURY
+          </Link>
+          <nav className="hidden md:flex gap-6 text-[13px]" style={{ color: CHARCOAL }}>
+            <Link href="/bizdoc">Bizdoc</Link>
+            <Link href="/scalar">Scalar</Link>
+            <Link href="/medialy">Medialy</Link>
+            <Link href="/hub">HUB</Link>
+            <Link href="/contact">Contact</Link>
+          </nav>
+          <button className="md:hidden" onClick={() => setMobileMenuOpen(v => !v)}>
+            {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
-          {navMenuOpen && (
-            <div
-              className="absolute top-10 right-0 rounded-2xl py-2 min-w-[220px] shadow-xl"
-              style={{ backgroundColor: WHITE }}
-              onClick={() => setNavMenuOpen(false)}
-            >
-              <button
-                onClick={() => {
-                  setNavMenuOpen(false);
-                  const btn = document.querySelector('[data-chat-trigger]') as HTMLElement;
-                  if (btn) btn.click();
-                }}
-                className="flex items-center gap-2 px-3 py-3.5 rounded-xl w-full text-left mx-2"
-                style={{ backgroundColor: "#B48C4C10", color: "#B48C4C" }}
-              >
-                <MessageSquare size={16} />
-                <span className="text-[13px] font-medium">Chat with us</span>
-              </button>
-              {[
-                { label: "Home",      href: "/" },
-                { label: "BizDoc",    href: "/bizdoc" },
-                { label: "Systemise", href: "/systemise" },
-                { label: "Skills",    href: "/skills" },
-              ].map(item => (
-                <Link key={item.href} href={item.href}>
-                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: CHARCOAL }}>
-                    {item.label}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
-      </nav>
+        {mobileMenuOpen && (
+          <div
+            className="md:hidden flex flex-col gap-3 p-4"
+            style={{ borderTop: "1px solid rgba(0,0,0,0.06)", backgroundColor: MILK }}
+          >
+            <Link href="/bizdoc">Bizdoc</Link>
+            <Link href="/scalar">Scalar</Link>
+            <Link href="/medialy">Medialy</Link>
+            <Link href="/hub">HUB</Link>
+            <Link href="/contact">Contact</Link>
+          </div>
+        )}
+      </header>
 
       {/* Hero */}
-      <section className="pt-32 pb-20 md:pt-40 md:pb-28 px-6">
-        <div className="max-w-2xl mx-auto text-center">
-          <h1
-            className="text-[clamp(32px,5vw,52px)] font-light tracking-tight leading-[1.1] mb-5"
-            style={{ color: CHARCOAL }}
-          >
-            Transparent pricing<br />for serious businesses.
-          </h1>
-          <p className="text-[15px] font-light leading-relaxed" style={{ color: `${CHARCOAL}60` }}>
-            Packages save you money. Individual services available too. 70% deposit, 30% on delivery.
-          </p>
-        </div>
-      </section>
-
-      {/* Tabs */}
-      <section className="px-6 pb-24 md:pb-32">
-        <div className="max-w-3xl mx-auto">
-          {/* Tab bar */}
-          <div className="flex justify-center gap-2 mb-14">
-            {TABS.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className="px-6 py-2.5 rounded-full text-[13px] font-medium transition-all duration-200"
-                style={{
-                  backgroundColor: activeTab === tab.key ? CHARCOAL : "transparent",
-                  color: activeTab === tab.key ? MILK : `${CHARCOAL}60`,
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Cards */}
-          <div className="space-y-3">
-            {currentTab.data.map((service) => (
-              <ServiceCard key={service.name} service={service} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Footer note */}
-      <section className="pb-20 px-6">
-        <p className="text-[13px] font-light text-center max-w-md mx-auto leading-relaxed" style={{ color: `${CHARCOAL}40` }}>
-          All prices are estimates. Contact us for a custom quote.
+      <section className="max-w-4xl mx-auto px-6 pt-16 pb-10 text-center">
+        <p style={{ fontSize: 11, letterSpacing: "0.18em", color: GOLD, fontWeight: 600 }}>
+          FOUNDER-APPROVED · LOCKED 2026-04
+        </p>
+        <h1
+          className="mt-3"
+          style={{ fontSize: 42, fontWeight: 300, color: CHARCOAL, letterSpacing: -1 }}
+        >
+          Transparent pricing.
+          <br />
+          <span style={{ fontWeight: 600 }}>No hidden fees.</span>
+        </h1>
+        <p className="mt-5 max-w-2xl mx-auto" style={{ fontSize: 15, color: CHARCOAL, lineHeight: 1.6 }}>
+          Four divisions, four tiers each. Built around what businesses actually need —
+          not what looks clever on a pitch deck. Tap any package to see what's inside.
         </p>
       </section>
 
-      {/* Footer */}
-      <footer className="py-10 px-6">
-        <div className="max-w-3xl mx-auto flex justify-between items-center">
-          <Link href="/" className="text-[12px] font-semibold tracking-wider transition-opacity hover:opacity-50" style={{ color: CHARCOAL }}>
-            HAMZURY
-          </Link>
-          <div className="flex gap-6">
-            <Link href="/bizdoc" className="text-[12px] transition-opacity hover:opacity-70" style={{ color: `${CHARCOAL}40` }}>BizDoc</Link>
-            <Link href="/systemise" className="text-[12px] transition-opacity hover:opacity-70" style={{ color: `${CHARCOAL}40` }}>Systemise</Link>
-            <Link href="/skills" className="text-[12px] transition-opacity hover:opacity-70" style={{ color: `${CHARCOAL}40` }}>Skills</Link>
-          </div>
+      {/* Tabs */}
+      <div
+        className="max-w-4xl mx-auto px-6 mb-10 flex flex-wrap gap-2 justify-center"
+      >
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setActiveTab(t.key)}
+            style={{
+              padding: "10px 20px",
+              borderRadius: 999,
+              border: activeTab === t.key ? "none" : `1px solid ${CHARCOAL}20`,
+              backgroundColor: activeTab === t.key ? t.accent : "transparent",
+              color: activeTab === t.key ? WHITE : CHARCOAL,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Service cards */}
+      <section className="max-w-3xl mx-auto px-6 pb-20">
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {active.data.map((s, i) => (
+            <ServiceCard key={i} service={s} accent={active.accent} />
+          ))}
         </div>
+
+        <div className="mt-12 text-center">
+          <p style={{ fontSize: 13, color: `${CHARCOAL}80` }}>
+            Need something custom? Talk to our team.
+          </p>
+          <Link
+            href="/contact"
+            className="inline-flex items-center gap-2 mt-3 px-6 py-3 rounded-full"
+            style={{ backgroundColor: CHARCOAL, color: WHITE, fontSize: 13, fontWeight: 600 }}
+          >
+            Start a conversation
+          </Link>
+        </div>
+      </section>
+
+      <footer
+        className="text-center pb-10"
+        style={{ fontSize: 11, color: `${CHARCOAL}60` }}
+      >
+        Hamzury. Built to Last.
       </footer>
     </div>
   );

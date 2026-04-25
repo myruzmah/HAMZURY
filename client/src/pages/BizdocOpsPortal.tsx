@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Folder, Briefcase, Award, Calendar as CalendarIcon,
   FileText, LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
@@ -144,7 +143,6 @@ export default function BizdocOpsPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
-      <PendingReportsBanner />
       <PageMeta title="Bizdoc Ops — HAMZURY" description="Bizdoc operations — clients, filings, industry licences, compliance calendar." />
 
       {isMobile && mobileNavOpen && (

@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Handshake, Award,
   Calendar as CalendarIcon, LogOut, ArrowLeft, Loader2,
@@ -204,7 +203,6 @@ export default function BizDevPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
-      <PendingReportsBanner />
       <PageMeta title="BizDev Portal — HAMZURY" description="HAMZURY Business Development — growth, partnerships, and affiliate operations." />
 
       {isMobile && mobileNavOpen && (

@@ -12,7 +12,6 @@ import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell"
 import PhaseTracker from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
 import { trpc } from "@/lib/trpc";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY MEDIALY OPS PORTAL — Hikma (lead) + Ahmad (content) + Salis (video).
@@ -481,8 +480,6 @@ export default function MedialyOpsPortal() {
   const userName = staff.displayName || staff.name || "Staff";
 
   return (
-    <>
-    <PendingReportsBanner />
     <OpsShell
       title="Medialy"
       subtitle="Social-media operations — Hikma, Ahmad, Salis."
@@ -506,7 +503,6 @@ export default function MedialyOpsPortal() {
       {active === "comms" && <CommsSection />}
       {active === "reports" && <ReportsSection />}
     </OpsShell>
-    </>
   );
 }
 

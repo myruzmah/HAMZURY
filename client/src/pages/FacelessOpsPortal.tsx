@@ -9,7 +9,6 @@ import PhaseTracker, {
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -607,8 +606,6 @@ export default function FacelessOpsPortal() {
   ];
 
   return (
-    <>
-    <PendingReportsBanner />
     <OpsShell
       title="Faceless Ops"
       subtitle="Scalable AI-powered content — without showing faces."
@@ -633,7 +630,6 @@ export default function FacelessOpsPortal() {
       {active === "templates" && <TemplatesSection />}
       {active === "tools" && <ToolsSection />}
     </OpsShell>
-    </>
   );
 }
 

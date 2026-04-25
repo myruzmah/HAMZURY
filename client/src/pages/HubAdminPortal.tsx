@@ -10,7 +10,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, UserCheck, Trophy, Share2, Award, CalendarDays,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
@@ -263,7 +262,6 @@ export default function HubAdminPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
-      <PendingReportsBanner />
       <PageMeta title="HUB Admin — HAMZURY" description="HAMZURY HUB admin — enrollments, cohorts, attendance, team competitions, social verification." />
 
       {isMobile && mobileNavOpen && (

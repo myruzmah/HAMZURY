@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, Building2, Target as TargetIcon,
   DollarSign, Calendar as CalendarIcon, LogOut, ArrowLeft, Loader2,
@@ -179,7 +178,6 @@ export default function CEOPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
-      <PendingReportsBanner />
       <PageMeta title="CEO Portal — HAMZURY" description="HAMZURY Executive Control Center — institutional oversight for the CEO." />
 
       {isMobile && mobileNavOpen && (

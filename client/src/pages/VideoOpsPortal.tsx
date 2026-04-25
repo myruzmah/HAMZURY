@@ -9,7 +9,6 @@ import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell"
 import PhaseTracker, { type Phase } from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
 import { trpc } from "@/lib/trpc";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY VIDEO OPS PORTAL — Salis (lead video editor)
@@ -116,8 +115,6 @@ export default function VideoOpsPortal() {
   ];
 
   return (
-    <>
-    <PendingReportsBanner />
     <OpsShell
       title="Video Ops"
       subtitle="HAMZURY Video Unit"
@@ -148,7 +145,6 @@ export default function VideoOpsPortal() {
       {active === "deliverables" && <DeliverablesSection />}
       {active === "pricing"      && <PricingSection />}
     </OpsShell>
-    </>
   );
 }
 

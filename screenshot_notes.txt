@@ -1,8 +1,0 @@
-Screenshot - HAMZURY Main Hub:
-- HAMZURY brand name in top-left nav
-- "Institutional Operating System" subtitle
-- Hero: "Structure that builds businesses that last."
-- Two CTAs: "Explore BizDoc" and "View All Services"
-- Quick Access bar visible at bottom (dark green) showing user name
-- No TypeScript errors, no build errors
-- Server running correctly

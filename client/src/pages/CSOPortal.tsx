@@ -3,7 +3,6 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
-import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, FileCheck, UserPlus, RefreshCw,
   Network, Calendar, LogOut, ArrowLeft, Loader2, AlertTriangle,
@@ -220,7 +219,6 @@ export default function CSOPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
-      <PendingReportsBanner />
       <PageMeta title="CSO Portal — HAMZURY" description="HAMZURY Client Services Office — the single gateway to all clients." />
 
       {/* Mobile overlay (closes drawer on tap) */}
