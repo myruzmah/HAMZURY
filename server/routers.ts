@@ -2,6 +2,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { founderRouter } from "./founder/router";
+import { diagnosticsRouter } from "./diagnostics/router";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
@@ -127,6 +128,7 @@ import { executeAgent, getAgentStatus, toggleAgent } from "./agents/agent-runner
 export const appRouter = router({
   system: systemRouter,
   founder: founderRouter,
+  diagnostics: diagnosticsRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {

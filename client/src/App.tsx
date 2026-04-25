@@ -22,6 +22,9 @@ import ScalarAssessment from "./pages/ScalarAssessment";
 import MedialyAssessment from "./pages/MedialyAssessment";
 import HubEnroll from "./pages/HubEnroll";
 
+/* ── Public diagnostic forms (Apple-standard, Fraunces serif) ── */
+import DiagnosticForm from "./pages/DiagnosticForm";
+
 /* ── Staff portals (kept in legacy green/gold) ── */
 import CSOPortal from "./pages/CSOPortal";
 import CEOPortal from "./pages/CEOPortal";
@@ -30,6 +33,12 @@ import FinancePortal from "./pages/FinancePortal";
 import HRPortal from "./pages/HRPortal";
 import BizdocOpsPortal from "./pages/BizdocOpsPortal";
 import HubAdminPortal from "./pages/HubAdminPortal";
+import FounderPortal from "./pages/FounderPortal";
+import ScalarOpsPortal from "./pages/ScalarOpsPortal";
+import MedialyOpsPortal from "./pages/MedialyOpsPortal";
+import PodcastOpsPortal from "./pages/PodcastOpsPortal";
+import VideoOpsPortal from "./pages/VideoOpsPortal";
+import FacelessOpsPortal from "./pages/FacelessOpsPortal";
 
 /* ── Public/client surfaces ── */
 import ClientDashboard from "./pages/ClientDashboard";
@@ -55,6 +64,12 @@ const ROLE_ACCESS: Record<string, string[]> = {
   "/hr":         ["hr", "ceo", "founder"],
   "/bizdoc/ops": ["compliance_staff", "bizdev", "ceo", "founder"],
   "/hub/admin":  ["skills_staff", "ceo", "founder"],
+  "/founder/portal": ["founder"],
+  "/scalar/ops":     ["scalar_lead", "scalar_staff", "ceo", "founder"],
+  "/medialy/ops":    ["medialy_lead", "medialy_staff", "ceo", "founder"],
+  "/podcast/ops":    ["podcast_lead", "podcast_staff", "ceo", "founder"],
+  "/video/ops":      ["video_lead", "video_staff", "ceo", "founder"],
+  "/faceless/ops":   ["faceless_lead", "faceless_staff", "ceo", "founder"],
 };
 
 function RoleGuard({ allowedRoles, children }: { allowedRoles: string[]; children: React.ReactNode }) {
@@ -106,6 +121,9 @@ function Router() {
       <Route path="/medialy/assessment" component={MedialyAssessment} />
       <Route path="/hub/enroll"         component={HubEnroll} />
 
+      {/* ═══ Public diagnostic forms (Apple-standard, Fraunces serif) ═══ */}
+      <Route path="/clarity-session"><DiagnosticForm formId="clarity" /></Route>
+
       {/* ═══ Legacy public redirects (old division names) ═══ */}
       <Route path="/systemise">{() => <Redirect to="/scalar" />}</Route>
       <Route path="/systemise/:rest*">{() => <Redirect to="/scalar" />}</Route>
@@ -146,6 +164,26 @@ function Router() {
       </Route>
       <Route path="/hub/admin">
         <RoleGuard allowedRoles={ROLE_ACCESS["/hub/admin"]}><HubAdminPortal /></RoleGuard>
+      </Route>
+
+      {/* ═══ New ops portals (Phase 8 + Founder + Division Ops) ═══ */}
+      <Route path="/founder/portal">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/founder/portal"]}><FounderPortal /></RoleGuard>
+      </Route>
+      <Route path="/scalar/ops">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/scalar/ops"]}><ScalarOpsPortal /></RoleGuard>
+      </Route>
+      <Route path="/medialy/ops">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/medialy/ops"]}><MedialyOpsPortal /></RoleGuard>
+      </Route>
+      <Route path="/podcast/ops">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/podcast/ops"]}><PodcastOpsPortal /></RoleGuard>
+      </Route>
+      <Route path="/video/ops">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/video/ops"]}><VideoOpsPortal /></RoleGuard>
+      </Route>
+      <Route path="/faceless/ops">
+        <RoleGuard allowedRoles={ROLE_ACCESS["/faceless/ops"]}><FacelessOpsPortal /></RoleGuard>
       </Route>
 
       {/* ═══ Legacy staff redirects ═══ */}
