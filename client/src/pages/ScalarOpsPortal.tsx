@@ -13,7 +13,7 @@ import PhaseTracker, {
 import AssetChecklist, {
   type AssetItem,
 } from "@/components/ops/AssetChecklist";
-import * as opsStore from "@/lib/opsStore";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import {
   LayoutDashboard,
@@ -48,11 +48,10 @@ import {
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY SCALAR OPS PORTAL — Dajot + Felix (web & automation team).
  * Daily operations for website, mobile app, and automation delivery.
- * Portal storage key: "scalar" via opsStore.
+ * Backed by tRPC `scalar.*` router (MySQL via Drizzle).
  * ══════════════════════════════════════════════════════════════════════ */
 
 // ─── Brand tokens ───────────────────────────────────────────────────────
-const PORTAL = "scalar";
 const ACCENT = "#D4A017";      // Scalar golden yellow
 const SIDEBAR_BG = "#D4A017";  // Sidebar background
 const SIDEBAR_FG = "#1A1A1A";  // Text on sidebar (dark charcoal because yellow is light)
@@ -74,7 +73,7 @@ const ALLOWED_ROLES = new Set([
   "scalar_staff",
 ]);
 
-// ─── Types ──────────────────────────────────────────────────────────────
+// ─── Types (DB row shapes returned by tRPC) ─────────────────────────────
 type Section =
   | "overview"
   | "projects"
@@ -92,73 +91,91 @@ type ProjectStatus =
   | "Completed"
   | "Cancelled";
 
-type Project = opsStore.OpsItem & {
-  ref: string;                 // HMZ-P-XXX
+type Project = {
+  id: number;
+  ref: string;                 // HMZ-P-XXX (server-generated)
   clientName: string;
-  clientContact?: string;
-  clientEmail?: string;
-  clientPhone?: string;
+  clientContact?: string | null;
+  clientEmail?: string | null;
+  clientPhone?: string | null;
   service: ServiceType;
   status: ProjectStatus;
-  week?: number;               // "In Progress · Week N"
-  phaseId?: string;            // current phase id within the service timeline
+  week?: number | null;
+  phaseId?: string | null;
   lead: "Dajot" | "Felix" | "";
-  startDate?: string;          // ISO date
-  targetDelivery?: string;     // ISO date
-  actualDelivery?: string;     // ISO date
-  projectValue?: number;
-  scope?: string;
-  goals?: string;
+  startDate?: string | null;
+  targetDelivery?: string | null;
+  actualDelivery?: string | null;
+  projectValue?: number | null;
+  scope?: string | null;
+  goals?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type Deliverable = opsStore.OpsItem & {
-  projectId: string;
+type Deliverable = {
+  id: number;
+  projectId: number;
   label: string;
-  description?: string;
-  dueDate?: string;
+  description?: string | null;
+  dueDate?: string | null;
   done: boolean;
-  deliveredAt?: string;
-  clientApproved?: boolean;
-  group?: string;              // grouping for AssetChecklist
-  owner?: string;
-  path?: string;
+  deliveredAt?: string | null;
+  clientApproved: boolean;
+  groupName?: string | null;
+  owner?: string | null;
+  path?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type Blocker = opsStore.OpsItem & {
-  projectId: string;
+type Blocker = {
+  id: number;
+  projectId: number;
   issue: string;
-  impact?: string;
+  impact?: string | null;
   status: "Open" | "Resolved";
-  resolution?: string;
-  resolvedAt?: string;
+  resolution?: string | null;
+  resolvedAt?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type Comm = opsStore.OpsItem & {
-  projectId: string;
-  date: string;                // ISO date
-  type: string;                // Email / Call / WhatsApp / Meeting
+type Comm = {
+  id: number;
+  projectId: number;
+  date: string;
+  commType: string;
   summary: string;
-  actionItems?: string;
-  followUpDate?: string;
+  actionItems?: string | null;
+  followUpDate?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type Note = opsStore.OpsItem & {
-  projectId: string;
+type Note = {
+  id: number;
+  projectId: number;
   date: string;
   body: string;
-  decidedBy?: string;
-  impact?: string;
+  decidedBy?: string | null;
+  impact?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type QaCheck = opsStore.OpsItem & {
-  projectId: string;
+type QaCheck = {
+  id: number;
+  projectId: number;
   feature: string;
   testCase: string;
-  expected?: string;
-  actual?: string;
+  expected?: string | null;
+  actual?: string | null;
   status: "Not Tested" | "Pass" | "Fail" | "Fixed";
-  bug?: string;
-  fixedAt?: string;
+  bug?: string | null;
+  fixedAt?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
 // ─── Helpers ────────────────────────────────────────────────────────────
@@ -239,138 +256,6 @@ function phasesForService(s: ServiceType): Phase[] {
   if (s === "Website") return WEBSITE_PHASES;
   if (s === "App") return APP_PHASES;
   return AUTOMATION_PHASES;
-}
-
-// ─── Seed helpers ───────────────────────────────────────────────────────
-/** Seed three sample projects on first load so the portal isn't empty. */
-function ensureSeeded() {
-  const existing = opsStore.readAll<Project>(PORTAL, "projects");
-  if (existing.length > 0) return;
-
-  const now = Date.now();
-  const seedProjects: Array<Omit<Project, "id" | "createdAt" | "updatedAt">> = [
-    {
-      ref: "HMZ-P-001",
-      clientName: "TilzSpa",
-      clientContact: "Tilz owner",
-      service: "Website",
-      status: "In Progress",
-      week: 4,
-      phaseId: "build",
-      lead: "Dajot",
-      startDate: "2026-04-01",
-      targetDelivery: "2026-05-20",
-      scope: "Marketing website with services, team, and booking CTA.",
-      goals: "Lift brand, funnel bookings, look like a proper spa.",
-    },
-    {
-      ref: "HMZ-P-002",
-      clientName: "Ilumni Ltd",
-      clientContact: "Ilumni ops",
-      service: "Website",
-      status: "In Progress",
-      week: 2,
-      phaseId: "design",
-      lead: "Felix",
-      startDate: "2026-04-10",
-      targetDelivery: "2026-05-29",
-      scope: "E-commerce storefront for skincare line.",
-      goals: "Online sales + abandoned cart recovery.",
-    },
-    {
-      ref: "HMZ-P-003",
-      clientName: "Internal — HAMZURY",
-      clientContact: "Founder",
-      service: "Automation",
-      status: "In Progress",
-      week: 3,
-      phaseId: "test",
-      lead: "Dajot",
-      startDate: "2026-04-05",
-      targetDelivery: "2026-05-03",
-      scope: "Zap: CSO deal won → Bizdoc folder + Drive + WhatsApp welcome.",
-      goals: "Kill manual handoff between divisions.",
-    },
-  ];
-
-  for (const p of seedProjects) {
-    opsStore.insert<Project>(PORTAL, "projects", p);
-  }
-
-  // Seed one deliverable set for HMZ-P-001
-  const proj1 = opsStore
-    .readAll<Project>(PORTAL, "projects")
-    .find(p => p.ref === "HMZ-P-001");
-  if (proj1) {
-    const websiteDeliverables: Array<Omit<Deliverable, "id" | "createdAt" | "updatedAt">> = [
-      { projectId: proj1.id, label: "Requirements document", group: "Discovery", done: true, owner: "Scalar" },
-      { projectId: proj1.id, label: "Sitemap", group: "Discovery", done: true, owner: "Scalar" },
-      { projectId: proj1.id, label: "Homepage mockup", group: "Design", done: true, owner: "Scalar" },
-      { projectId: proj1.id, label: "Key pages mockup", group: "Design", done: true, owner: "Scalar" },
-      { projectId: proj1.id, label: "Staging website", group: "Build", done: false, owner: "Scalar" },
-      { projectId: proj1.id, label: "Client content uploaded", group: "Content", done: false, owner: "Client" },
-      { projectId: proj1.id, label: "QA report", group: "QA", done: false, owner: "Scalar" },
-      { projectId: proj1.id, label: "Live domain connected", group: "Launch", done: false, owner: "Scalar" },
-      { projectId: proj1.id, label: "Handover docs", group: "Handover", done: false, owner: "Scalar" },
-    ];
-    for (const d of websiteDeliverables) {
-      opsStore.insert<Deliverable>(PORTAL, "deliverables", d);
-    }
-
-    opsStore.insert<Blocker>(PORTAL, "blockers", {
-      projectId: proj1.id,
-      issue: "Waiting on client brand images",
-      impact: "Content upload blocked (Wk 6 risk).",
-      status: "Open",
-    });
-
-    opsStore.insert<Comm>(PORTAL, "comms", {
-      projectId: proj1.id,
-      date: "2026-04-21",
-      type: "Kickoff Call",
-      summary: "Discussed requirements + timeline. Client approved build scope.",
-      actionItems: "Client to send logo + brand colours by Fri.",
-      followUpDate: "2026-04-28",
-    });
-
-    opsStore.insert<Note>(PORTAL, "notes", {
-      projectId: proj1.id,
-      date: "2026-04-21",
-      body: "Client wants to add e-commerce module post-launch — save for Phase 2 upsell.",
-      decidedBy: "Client + Dajot",
-      impact: "+2 weeks + additional cost (Phase 2).",
-    });
-
-    opsStore.insert<QaCheck>(PORTAL, "qaChecks", {
-      projectId: proj1.id,
-      feature: "Homepage",
-      testCase: "Page loads under 3s",
-      expected: "TTI < 3s on 4G",
-      status: "Not Tested",
-    });
-  }
-
-  void now;
-}
-
-// ─── Reactive helper: re-render whenever opsStore changes ───────────────
-function useOpsCollection<T extends opsStore.OpsItem>(collection: string): T[] {
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (!detail || detail.portal !== PORTAL) return;
-      if (detail.collection && detail.collection !== collection) return;
-      setTick(t => t + 1);
-    };
-    window.addEventListener("opsStoreChange", handler);
-    return () => window.removeEventListener("opsStoreChange", handler);
-  }, [collection]);
-  return useMemo(() => opsStore.readAll<T>(PORTAL, collection), [collection, tick]);
-}
-
-function bump(collection: string) {
-  opsStore.touch(PORTAL, collection);
 }
 
 // ─── Tiny shared primitives for this portal ─────────────────────────────
@@ -582,12 +467,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 export default function ScalarOpsPortal() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
   const [active, setActive] = useState<Section>("overview");
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-
-  // Seed once on first mount
-  useEffect(() => {
-    ensureSeeded();
-  }, []);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
   // Role gate — redirect to "/" if role isn't allowed
   useEffect(() => {
@@ -632,7 +512,7 @@ export default function ScalarOpsPortal() {
     { key: "reports", label: "Reports", icon: FileBarChart },
   ];
 
-  const openWorkspace = (projectId: string) => {
+  const openWorkspace = (projectId: number) => {
     setSelectedProjectId(projectId);
     setActive("workspace");
   };
@@ -679,10 +559,11 @@ function OverviewSection({
   onOpenProject,
   onGoto,
 }: {
-  onOpenProject: (id: string) => void;
+  onOpenProject: (id: number) => void;
   onGoto: (s: Section) => void;
 }) {
-  const projects = useOpsCollection<Project>("projects");
+  const projectsQuery = trpc.scalar.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as Project[];
 
   const byService = (s: ServiceType) => projects.filter(p => p.service === s);
   const active = (p: Project) => p.status === "In Progress";
@@ -896,7 +777,7 @@ function ServiceTile({
 }: {
   service: ServiceType;
   projects: Project[];
-  onOpen: (id: string) => void;
+  onOpen: (id: number) => void;
 }) {
   const Icon = serviceIcon(service);
   const activeCount = projects.filter(p => p.status === "In Progress").length;
@@ -1076,9 +957,10 @@ function LeadCard({
 function ProjectsSection({
   onOpenProject,
 }: {
-  onOpenProject: (id: string) => void;
+  onOpenProject: (id: number) => void;
 }) {
-  const projects = useOpsCollection<Project>("projects");
+  const projectsQuery = trpc.scalar.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as Project[];
   const [search, setSearch] = useState("");
   const [service, setService] = useState<ServiceType | "all">("all");
   const [status, setStatus] = useState<ProjectStatus | "all">("all");
@@ -1173,9 +1055,8 @@ function ProjectsSection({
       {showNew && (
         <NewProjectForm
           onClose={() => setShowNew(false)}
-          onCreated={id => {
+          onCreated={() => {
             setShowNew(false);
-            onOpenProject(id);
           }}
         />
       )}
@@ -1276,31 +1157,50 @@ function NewProjectForm({
   onCreated,
 }: {
   onClose: () => void;
-  onCreated: (id: string) => void;
+  onCreated: () => void;
 }) {
-  const projects = useOpsCollection<Project>("projects");
-
-  const nextRef = useMemo(() => {
-    const nums = projects
-      .map(p => {
-        const m = /HMZ-P-(\d+)/.exec(p.ref || "");
-        return m ? parseInt(m[1], 10) : 0;
-      })
-      .filter(n => !Number.isNaN(n));
-    const next = (nums.length ? Math.max(...nums) : 0) + 1;
-    return `HMZ-P-${String(next).padStart(3, "0")}`;
-  }, [projects]);
-
-  const [form, setForm] = useState<Partial<Project>>({
-    ref: nextRef,
-    clientName: "",
-    service: "Website",
-    status: "Queued",
-    lead: "Dajot",
-    startDate: todayISO(),
+  const utils = trpc.useUtils();
+  const createMut = trpc.scalar.projects.create.useMutation({
+    onSuccess: (res) => {
+      utils.scalar.projects.list.invalidate();
+      toast.success(`Created ${res.ref}`);
+      onCreated();
+    },
   });
 
-  const set = <K extends keyof Project>(k: K, v: Project[K]) =>
+  type FormState = {
+    clientName: string;
+    clientContact: string;
+    clientEmail: string;
+    clientPhone: string;
+    service: ServiceType;
+    status: ProjectStatus;
+    week: string;
+    lead: "Dajot" | "Felix" | "";
+    startDate: string;
+    targetDelivery: string;
+    scope: string;
+    goals: string;
+    projectValue: string;
+  };
+
+  const [form, setForm] = useState<FormState>({
+    clientName: "",
+    clientContact: "",
+    clientEmail: "",
+    clientPhone: "",
+    service: "Website",
+    status: "Queued",
+    week: "",
+    lead: "Dajot",
+    startDate: todayISO(),
+    targetDelivery: "",
+    scope: "",
+    goals: "",
+    projectValue: "",
+  });
+
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(f => ({ ...f, [k]: v }));
 
   const submit = () => {
@@ -1308,26 +1208,22 @@ function NewProjectForm({
       toast.error("Client name is required");
       return;
     }
-    const created = opsStore.insert<Project>(PORTAL, "projects", {
-      ref: form.ref || nextRef,
-      clientName: form.clientName!,
-      clientContact: form.clientContact,
-      clientEmail: form.clientEmail,
-      clientPhone: form.clientPhone,
-      service: (form.service as ServiceType) || "Website",
-      status: (form.status as ProjectStatus) || "Queued",
-      week: form.week,
-      lead: (form.lead as Project["lead"]) || "",
-      startDate: form.startDate,
-      targetDelivery: form.targetDelivery,
-      scope: form.scope,
-      goals: form.goals,
-      projectValue: form.projectValue,
-      phaseId: undefined,
+    createMut.mutate({
+      clientName: form.clientName,
+      clientContact: form.clientContact || null,
+      clientEmail: form.clientEmail || null,
+      clientPhone: form.clientPhone || null,
+      service: form.service,
+      status: form.status,
+      week: form.week === "" ? null : Number(form.week),
+      lead: form.lead,
+      startDate: form.startDate || null,
+      targetDelivery: form.targetDelivery || null,
+      scope: form.scope || null,
+      goals: form.goals || null,
+      projectValue:
+        form.projectValue === "" ? null : Number(form.projectValue),
     });
-    bump("projects");
-    toast.success(`Created ${created.ref}`);
-    onCreated(created.id);
   };
 
   return (
@@ -1353,23 +1249,16 @@ function NewProjectForm({
           gap: 10,
         }}
       >
-        <Field label="Project ID">
-          <TextInput
-            value={form.ref || ""}
-            onChange={v => set("ref", v)}
-            placeholder={nextRef}
-          />
-        </Field>
         <Field label="Client name">
           <TextInput
-            value={form.clientName || ""}
+            value={form.clientName}
             onChange={v => set("clientName", v)}
             placeholder="e.g. TilzSpa"
           />
         </Field>
         <Field label="Service">
           <select
-            value={form.service || "Website"}
+            value={form.service}
             onChange={e => set("service", e.target.value as ServiceType)}
             style={{
               width: "100%",
@@ -1388,8 +1277,8 @@ function NewProjectForm({
         </Field>
         <Field label="Lead">
           <select
-            value={form.lead || "Dajot"}
-            onChange={e => set("lead", e.target.value as Project["lead"])}
+            value={form.lead}
+            onChange={e => set("lead", e.target.value as "Dajot" | "Felix" | "")}
             style={{
               width: "100%",
               padding: "8px 10px",
@@ -1408,27 +1297,27 @@ function NewProjectForm({
         <Field label="Start date">
           <TextInput
             type="date"
-            value={form.startDate || ""}
+            value={form.startDate}
             onChange={v => set("startDate", v)}
           />
         </Field>
         <Field label="Target delivery">
           <TextInput
             type="date"
-            value={form.targetDelivery || ""}
+            value={form.targetDelivery}
             onChange={v => set("targetDelivery", v)}
           />
         </Field>
         <Field label="Client contact">
           <TextInput
-            value={form.clientContact || ""}
+            value={form.clientContact}
             onChange={v => set("clientContact", v)}
             placeholder="Name"
           />
         </Field>
         <Field label="Client phone">
           <TextInput
-            value={form.clientPhone || ""}
+            value={form.clientPhone}
             onChange={v => set("clientPhone", v)}
           />
         </Field>
@@ -1436,21 +1325,26 @@ function NewProjectForm({
 
       <Field label="Scope">
         <TextArea
-          value={form.scope || ""}
+          value={form.scope}
           onChange={v => set("scope", v)}
           placeholder="What are we building?"
         />
       </Field>
       <Field label="Goals">
         <TextArea
-          value={form.goals || ""}
+          value={form.goals}
           onChange={v => set("goals", v)}
           placeholder="What outcomes does the client want?"
         />
       </Field>
 
       <div style={{ marginTop: 8 }}>
-        <InlineButton onClick={submit} icon={Plus} tone="primary">
+        <InlineButton
+          onClick={submit}
+          icon={Plus}
+          tone="primary"
+          disabled={createMut.isPending}
+        >
           Create project
         </InlineButton>
       </div>
@@ -1487,11 +1381,12 @@ function WorkspaceSection({
   onBack,
   onSelect,
 }: {
-  projectId: string | null;
+  projectId: number | null;
   onBack: () => void;
-  onSelect: (id: string | null) => void;
+  onSelect: (id: number | null) => void;
 }) {
-  const projects = useOpsCollection<Project>("projects");
+  const projectsQuery = trpc.scalar.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as Project[];
   const [sub, setSub] = useState<SubTab>("info");
   const project = projects.find(p => p.id === projectId) || null;
 
@@ -1598,7 +1493,7 @@ function WorkspaceSection({
         })}
       </div>
 
-      {sub === "info" && <InfoTab project={project} />}
+      {sub === "info" && <InfoTab project={project} onDeleted={onBack} />}
       {sub === "timeline" && <TimelineTab project={project} />}
       {sub === "deliverables" && <DeliverablesTab project={project} />}
       {sub === "comms" && <CommsTab project={project} />}
@@ -1611,27 +1506,56 @@ function WorkspaceSection({
 }
 
 // ─── 3a · Info ──────────────────────────────────────────────────────────
-function InfoTab({ project }: { project: Project }) {
-  const [form, setForm] = useState<Partial<Project>>(project);
+function InfoTab({
+  project,
+  onDeleted,
+}: {
+  project: Project;
+  onDeleted: () => void;
+}) {
+  const utils = trpc.useUtils();
+  const updateMut = trpc.scalar.projects.update.useMutation({
+    onSuccess: () => {
+      utils.scalar.projects.list.invalidate();
+      toast.success("Saved");
+    },
+  });
+  const removeMut = trpc.scalar.projects.remove.useMutation({
+    onSuccess: () => {
+      utils.scalar.projects.list.invalidate();
+      toast.success("Project deleted");
+      onDeleted();
+    },
+  });
+
+  const [form, setForm] = useState<Project>(project);
 
   useEffect(() => setForm(project), [project.id]);
 
   const save = () => {
-    opsStore.update<Project>(PORTAL, "projects", project.id, form);
-    bump("projects");
-    toast.success("Saved");
+    updateMut.mutate({
+      id: project.id,
+      ref: form.ref,
+      clientName: form.clientName,
+      clientContact: form.clientContact ?? null,
+      clientEmail: form.clientEmail ?? null,
+      clientPhone: form.clientPhone ?? null,
+      service: form.service,
+      status: form.status,
+      week: form.week ?? null,
+      lead: form.lead,
+      startDate: form.startDate ?? null,
+      targetDelivery: form.targetDelivery ?? null,
+      actualDelivery: form.actualDelivery ?? null,
+      projectValue: form.projectValue ?? null,
+      scope: form.scope ?? null,
+      goals: form.goals ?? null,
+    });
   };
 
   const del = () => {
     if (!confirm(`Delete ${project.ref}? This removes all linked records.`)) return;
-    opsStore.remove(PORTAL, "projects", project.id);
-    // cascade
-    for (const c of ["deliverables", "blockers", "comms", "notes", "qaChecks"]) {
-      const items = opsStore.readAll<any>(PORTAL, c).filter(i => i.projectId !== project.id);
-      opsStore.writeAll(PORTAL, c, items);
-    }
-    bump("projects");
-    toast.success("Project deleted");
+    removeMut.mutate({ id: project.id });
   };
 
   const set = <K extends keyof Project>(k: K, v: Project[K]) =>
@@ -1714,7 +1638,7 @@ function InfoTab({ project }: { project: Project }) {
           <TextInput
             type="number"
             value={String(form.week ?? "")}
-            onChange={v => set("week", v === "" ? undefined : Number(v))}
+            onChange={v => set("week", v === "" ? null : Number(v))}
           />
         </Field>
         <Field label="Lead">
@@ -1767,10 +1691,10 @@ function InfoTab({ project }: { project: Project }) {
       </Field>
 
       <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-        <InlineButton onClick={save} tone="primary">
+        <InlineButton onClick={save} tone="primary" disabled={updateMut.isPending}>
           Save
         </InlineButton>
-        <InlineButton onClick={del} tone="danger" icon={Trash2}>
+        <InlineButton onClick={del} tone="danger" icon={Trash2} disabled={removeMut.isPending}>
           Delete project
         </InlineButton>
       </div>
@@ -1780,12 +1704,16 @@ function InfoTab({ project }: { project: Project }) {
 
 // ─── 3b · Timeline ──────────────────────────────────────────────────────
 function TimelineTab({ project }: { project: Project }) {
+  const utils = trpc.useUtils();
+  const updateMut = trpc.scalar.projects.update.useMutation({
+    onSuccess: () => utils.scalar.projects.list.invalidate(),
+  });
+
   const phases = phasesForService(project.service);
   const currentPhaseId = project.phaseId || phases[0]?.id;
 
   const setPhase = (phaseId: string) => {
-    opsStore.update<Project>(PORTAL, "projects", project.id, { phaseId });
-    bump("projects");
+    updateMut.mutate({ id: project.id, phaseId });
   };
 
   return (
@@ -1844,28 +1772,41 @@ function TimelineTab({ project }: { project: Project }) {
 
 // ─── 3c · Deliverables ──────────────────────────────────────────────────
 function DeliverablesTab({ project }: { project: Project }) {
-  const all = useOpsCollection<Deliverable>("deliverables");
-  const items = all.filter(d => d.projectId === project.id);
+  const utils = trpc.useUtils();
+  const deliverablesQuery = trpc.scalar.deliverables.list.useQuery({
+    projectId: project.id,
+  });
+  const all = (deliverablesQuery.data ?? []) as Deliverable[];
+  // Files tab uses groupName === "File" — exclude those here.
+  const items = all.filter(d => d.groupName !== "File");
   const [showAdd, setShowAdd] = useState(false);
 
+  const updateMut = trpc.scalar.deliverables.update.useMutation({
+    onSuccess: () => utils.scalar.deliverables.list.invalidate(),
+  });
+  const removeMut = trpc.scalar.deliverables.remove.useMutation({
+    onSuccess: () => utils.scalar.deliverables.list.invalidate(),
+  });
+
   const assetItems: AssetItem[] = items.map(d => ({
-    id: d.id,
+    id: String(d.id),
     label: d.label,
-    group: d.group,
+    group: d.groupName ?? undefined,
     done: d.done,
-    owner: d.owner,
-    path: d.path,
-    note: d.description,
+    owner: d.owner ?? undefined,
+    path: d.path ?? undefined,
+    note: d.description ?? undefined,
   }));
 
-  const toggle = (id: string) => {
+  const toggle = (idStr: string) => {
+    const id = Number(idStr);
     const item = items.find(d => d.id === id);
     if (!item) return;
-    opsStore.update<Deliverable>(PORTAL, "deliverables", id, {
+    updateMut.mutate({
+      id,
       done: !item.done,
-      deliveredAt: !item.done ? todayISO() : undefined,
+      deliveredAt: !item.done ? todayISO() : null,
     });
-    bump("deliverables");
   };
 
   return (
@@ -1901,10 +1842,7 @@ function DeliverablesTab({ project }: { project: Project }) {
           <div style={{ marginTop: 10 }}>
             <InlineDeliverableList
               items={items}
-              onRemove={id => {
-                opsStore.remove(PORTAL, "deliverables", id);
-                bump("deliverables");
-              }}
+              onRemove={id => removeMut.mutate({ id })}
             />
           </div>
         </>
@@ -1918,7 +1856,7 @@ function InlineDeliverableList({
   onRemove,
 }: {
   items: Deliverable[];
-  onRemove: (id: string) => void;
+  onRemove: (id: number) => void;
 }) {
   return (
     <OpsCard>
@@ -1950,7 +1888,7 @@ function InlineDeliverableList({
             <div style={{ fontSize: 12, color: DARK, minWidth: 0, flex: 1 }}>
               <span style={{ fontWeight: 500 }}>{d.label}</span>
               <span style={{ color: MUTED, marginLeft: 6, fontSize: 10 }}>
-                {d.group || "Other"} · {d.owner || "—"}
+                {d.groupName || "Other"} · {d.owner || "—"}
               </span>
             </div>
             <button
@@ -1977,11 +1915,20 @@ function AddDeliverableForm({
   projectId,
   onClose,
 }: {
-  projectId: string;
+  projectId: number;
   onClose: () => void;
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.scalar.deliverables.create.useMutation({
+    onSuccess: () => {
+      utils.scalar.deliverables.list.invalidate();
+      toast.success("Deliverable added");
+      onClose();
+    },
+  });
+
   const [label, setLabel] = useState("");
-  const [group, setGroup] = useState("");
+  const [groupName, setGroupName] = useState("");
   const [owner, setOwner] = useState<"Scalar" | "Client">("Scalar");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
@@ -1991,18 +1938,15 @@ function AddDeliverableForm({
       toast.error("Label required");
       return;
     }
-    opsStore.insert<Deliverable>(PORTAL, "deliverables", {
+    createMut.mutate({
       projectId,
       label: label.trim(),
-      group: group.trim() || undefined,
+      groupName: groupName.trim() || null,
       owner,
-      description: description.trim() || undefined,
-      dueDate: dueDate || undefined,
+      description: description.trim() || null,
+      dueDate: dueDate || null,
       done: false,
     });
-    bump("deliverables");
-    toast.success("Deliverable added");
-    onClose();
   };
 
   return (
@@ -2018,7 +1962,7 @@ function AddDeliverableForm({
           <TextInput value={label} onChange={setLabel} placeholder="e.g. Staging website" />
         </Field>
         <Field label="Group">
-          <TextInput value={group} onChange={setGroup} placeholder="Build / Design / Launch" />
+          <TextInput value={groupName} onChange={setGroupName} placeholder="Build / Design / Launch" />
         </Field>
         <Field label="Owner">
           <select
@@ -2046,7 +1990,7 @@ function AddDeliverableForm({
         <TextArea value={description} onChange={setDescription} rows={2} />
       </Field>
       <div style={{ display: "flex", gap: 8 }}>
-        <InlineButton onClick={save} tone="primary" icon={Plus}>
+        <InlineButton onClick={save} tone="primary" icon={Plus} disabled={createMut.isPending}>
           Add
         </InlineButton>
         <InlineButton onClick={onClose} tone="ghost">
@@ -2059,13 +2003,24 @@ function AddDeliverableForm({
 
 // ─── 3d · Comms ─────────────────────────────────────────────────────────
 function CommsTab({ project }: { project: Project }) {
-  const all = useOpsCollection<Comm>("comms");
-  const items = all
-    .filter(c => c.projectId === project.id)
+  const utils = trpc.useUtils();
+  const commsQuery = trpc.scalar.comms.list.useQuery({ projectId: project.id });
+  const items = ((commsQuery.data ?? []) as Comm[])
+    .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
+  const createMut = trpc.scalar.comms.create.useMutation({
+    onSuccess: () => {
+      utils.scalar.comms.list.invalidate();
+      toast.success("Comm logged");
+    },
+  });
+  const removeMut = trpc.scalar.comms.remove.useMutation({
+    onSuccess: () => utils.scalar.comms.list.invalidate(),
+  });
+
   const [date, setDate] = useState(todayISO());
-  const [type, setType] = useState("Call");
+  const [commType, setCommType] = useState("Call");
   const [summary, setSummary] = useState("");
   const [actionItems, setActionItems] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
@@ -2075,19 +2030,23 @@ function CommsTab({ project }: { project: Project }) {
       toast.error("Summary required");
       return;
     }
-    opsStore.insert<Comm>(PORTAL, "comms", {
-      projectId: project.id,
-      date,
-      type,
-      summary: summary.trim(),
-      actionItems: actionItems.trim() || undefined,
-      followUpDate: followUpDate || undefined,
-    });
-    bump("comms");
-    toast.success("Comm logged");
-    setSummary("");
-    setActionItems("");
-    setFollowUpDate("");
+    createMut.mutate(
+      {
+        projectId: project.id,
+        date,
+        commType,
+        summary: summary.trim(),
+        actionItems: actionItems.trim() || null,
+        followUpDate: followUpDate || null,
+      },
+      {
+        onSuccess: () => {
+          setSummary("");
+          setActionItems("");
+          setFollowUpDate("");
+        },
+      },
+    );
   };
 
   return (
@@ -2108,8 +2067,8 @@ function CommsTab({ project }: { project: Project }) {
           </Field>
           <Field label="Type">
             <select
-              value={type}
-              onChange={e => setType(e.target.value)}
+              value={commType}
+              onChange={e => setCommType(e.target.value)}
               style={{
                 width: "100%",
                 padding: "8px 10px",
@@ -2138,7 +2097,7 @@ function CommsTab({ project }: { project: Project }) {
         <Field label="Action items">
           <TextArea value={actionItems} onChange={setActionItems} rows={2} />
         </Field>
-        <InlineButton onClick={save} tone="primary" icon={Send}>
+        <InlineButton onClick={save} tone="primary" icon={Send} disabled={createMut.isPending}>
           Log comm
         </InlineButton>
       </OpsCard>
@@ -2162,14 +2121,11 @@ function CommsTab({ project }: { project: Project }) {
                 }}
               >
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                  <StatusPill label={c.type} tone="gold" />
+                  <StatusPill label={c.commType} tone="gold" />
                   <span style={{ fontSize: 11, color: MUTED }}>{fmtDate(c.date)}</span>
                 </div>
                 <button
-                  onClick={() => {
-                    opsStore.remove(PORTAL, "comms", c.id);
-                    bump("comms");
-                  }}
+                  onClick={() => removeMut.mutate({ id: c.id })}
                   style={{
                     background: "transparent",
                     border: "none",
@@ -2225,13 +2181,30 @@ function CommsTab({ project }: { project: Project }) {
 
 // ─── 3e · Blockers ──────────────────────────────────────────────────────
 function BlockersTab({ project }: { project: Project }) {
-  const all = useOpsCollection<Blocker>("blockers");
-  const items = all
-    .filter(b => b.projectId === project.id)
+  const utils = trpc.useUtils();
+  const blockersQuery = trpc.scalar.blockers.list.useQuery({ projectId: project.id });
+  const items = ((blockersQuery.data ?? []) as Blocker[])
+    .slice()
     .sort((a, b) => {
       if (a.status !== b.status) return a.status === "Open" ? -1 : 1;
-      return b.createdAt - a.createdAt;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
+
+  const createMut = trpc.scalar.blockers.create.useMutation({
+    onSuccess: () => {
+      utils.scalar.blockers.list.invalidate();
+      toast.success("Blocker logged");
+    },
+  });
+  const updateMut = trpc.scalar.blockers.update.useMutation({
+    onSuccess: () => {
+      utils.scalar.blockers.list.invalidate();
+      toast.success("Resolved");
+    },
+  });
+  const removeMut = trpc.scalar.blockers.remove.useMutation({
+    onSuccess: () => utils.scalar.blockers.list.invalidate(),
+  });
 
   const [issue, setIssue] = useState("");
   const [impact, setImpact] = useState("");
@@ -2241,27 +2214,30 @@ function BlockersTab({ project }: { project: Project }) {
       toast.error("Issue required");
       return;
     }
-    opsStore.insert<Blocker>(PORTAL, "blockers", {
-      projectId: project.id,
-      issue: issue.trim(),
-      impact: impact.trim() || undefined,
-      status: "Open",
-    });
-    bump("blockers");
-    toast.success("Blocker logged");
-    setIssue("");
-    setImpact("");
+    createMut.mutate(
+      {
+        projectId: project.id,
+        issue: issue.trim(),
+        impact: impact.trim() || null,
+        status: "Open",
+      },
+      {
+        onSuccess: () => {
+          setIssue("");
+          setImpact("");
+        },
+      },
+    );
   };
 
   const resolve = (b: Blocker) => {
     const resolution = prompt("Resolution notes?") || "";
-    opsStore.update<Blocker>(PORTAL, "blockers", b.id, {
+    updateMut.mutate({
+      id: b.id,
       status: "Resolved",
       resolution,
       resolvedAt: todayISO(),
     });
-    bump("blockers");
-    toast.success("Resolved");
   };
 
   return (
@@ -2286,7 +2262,7 @@ function BlockersTab({ project }: { project: Project }) {
             rows={2}
           />
         </Field>
-        <InlineButton onClick={save} tone="primary" icon={Plus}>
+        <InlineButton onClick={save} tone="primary" icon={Plus} disabled={createMut.isPending}>
           Log blocker
         </InlineButton>
       </OpsCard>
@@ -2355,10 +2331,7 @@ function BlockersTab({ project }: { project: Project }) {
                     </InlineButton>
                   )}
                   <button
-                    onClick={() => {
-                      opsStore.remove(PORTAL, "blockers", b.id);
-                      bump("blockers");
-                    }}
+                    onClick={() => removeMut.mutate({ id: b.id })}
                     style={{
                       background: "transparent",
                       border: "none",
@@ -2381,8 +2354,22 @@ function BlockersTab({ project }: { project: Project }) {
 
 // ─── 3f · QA ────────────────────────────────────────────────────────────
 function QaTab({ project }: { project: Project }) {
-  const all = useOpsCollection<QaCheck>("qaChecks");
-  const items = all.filter(q => q.projectId === project.id);
+  const utils = trpc.useUtils();
+  const qaQuery = trpc.scalar.qaChecks.list.useQuery({ projectId: project.id });
+  const items = (qaQuery.data ?? []) as QaCheck[];
+
+  const createMut = trpc.scalar.qaChecks.create.useMutation({
+    onSuccess: () => {
+      utils.scalar.qaChecks.list.invalidate();
+      toast.success("QA check added");
+    },
+  });
+  const updateMut = trpc.scalar.qaChecks.update.useMutation({
+    onSuccess: () => utils.scalar.qaChecks.list.invalidate(),
+  });
+  const removeMut = trpc.scalar.qaChecks.remove.useMutation({
+    onSuccess: () => utils.scalar.qaChecks.list.invalidate(),
+  });
 
   const [feature, setFeature] = useState("");
   const [testCase, setTestCase] = useState("");
@@ -2393,26 +2380,30 @@ function QaTab({ project }: { project: Project }) {
       toast.error("Feature + test case required");
       return;
     }
-    opsStore.insert<QaCheck>(PORTAL, "qaChecks", {
-      projectId: project.id,
-      feature: feature.trim(),
-      testCase: testCase.trim(),
-      expected: expected.trim() || undefined,
-      status: "Not Tested",
-    });
-    bump("qaChecks");
-    toast.success("QA check added");
-    setFeature("");
-    setTestCase("");
-    setExpected("");
+    createMut.mutate(
+      {
+        projectId: project.id,
+        feature: feature.trim(),
+        testCase: testCase.trim(),
+        expected: expected.trim() || null,
+        status: "Not Tested",
+      },
+      {
+        onSuccess: () => {
+          setFeature("");
+          setTestCase("");
+          setExpected("");
+        },
+      },
+    );
   };
 
   const updateStatus = (q: QaCheck, status: QaCheck["status"]) => {
-    opsStore.update<QaCheck>(PORTAL, "qaChecks", q.id, {
+    updateMut.mutate({
+      id: q.id,
       status,
-      fixedAt: status === "Fixed" ? todayISO() : q.fixedAt,
+      fixedAt: status === "Fixed" ? todayISO() : q.fixedAt ?? null,
     });
-    bump("qaChecks");
   };
 
   const pass = items.filter(q => q.status === "Pass" || q.status === "Fixed").length;
@@ -2459,7 +2450,7 @@ function QaTab({ project }: { project: Project }) {
             />
           </Field>
         </div>
-        <InlineButton onClick={save} tone="primary" icon={Plus}>
+        <InlineButton onClick={save} tone="primary" icon={Plus} disabled={createMut.isPending}>
           Add check
         </InlineButton>
       </OpsCard>
@@ -2519,10 +2510,7 @@ function QaTab({ project }: { project: Project }) {
                       <option>Fixed</option>
                     </select>
                     <button
-                      onClick={() => {
-                        opsStore.remove(PORTAL, "qaChecks", q.id);
-                        bump("qaChecks");
-                      }}
+                      onClick={() => removeMut.mutate({ id: q.id })}
                       style={{
                         background: "transparent",
                         border: "none",
@@ -2545,11 +2533,23 @@ function QaTab({ project }: { project: Project }) {
 
 // ─── 3g · Files ─────────────────────────────────────────────────────────
 function FilesTab({ project }: { project: Project }) {
-  const all = useOpsCollection<Deliverable>("deliverables");
+  const utils = trpc.useUtils();
+  const deliverablesQuery = trpc.scalar.deliverables.list.useQuery({
+    projectId: project.id,
+  });
+  const all = (deliverablesQuery.data ?? []) as Deliverable[];
   // Re-use the deliverables collection for files with a `File` group marker.
-  const files = all.filter(
-    d => d.projectId === project.id && (d.group === "File" || d.path),
-  );
+  const files = all.filter(d => d.groupName === "File" || d.path);
+
+  const createMut = trpc.scalar.deliverables.create.useMutation({
+    onSuccess: () => {
+      utils.scalar.deliverables.list.invalidate();
+      toast.success("File added");
+    },
+  });
+  const removeMut = trpc.scalar.deliverables.remove.useMutation({
+    onSuccess: () => utils.scalar.deliverables.list.invalidate(),
+  });
 
   const [name, setName] = useState("");
   const [path, setPath] = useState("");
@@ -2561,21 +2561,25 @@ function FilesTab({ project }: { project: Project }) {
       toast.error("Name + link required");
       return;
     }
-    opsStore.insert<Deliverable>(PORTAL, "deliverables", {
-      projectId: project.id,
-      label: name.trim(),
-      group: "File",
-      owner,
-      path: path.trim(),
-      description: description.trim() || undefined,
-      done: true,
-      deliveredAt: todayISO(),
-    });
-    bump("deliverables");
-    toast.success("File added");
-    setName("");
-    setPath("");
-    setDescription("");
+    createMut.mutate(
+      {
+        projectId: project.id,
+        label: name.trim(),
+        groupName: "File",
+        owner,
+        path: path.trim(),
+        description: description.trim() || null,
+        done: true,
+        deliveredAt: todayISO(),
+      },
+      {
+        onSuccess: () => {
+          setName("");
+          setPath("");
+          setDescription("");
+        },
+      },
+    );
   };
 
   return (
@@ -2619,7 +2623,7 @@ function FilesTab({ project }: { project: Project }) {
         <Field label="Description">
           <TextInput value={description} onChange={setDescription} />
         </Field>
-        <InlineButton onClick={save} tone="primary" icon={Plus}>
+        <InlineButton onClick={save} tone="primary" icon={Plus} disabled={createMut.isPending}>
           Add file
         </InlineButton>
       </OpsCard>
@@ -2670,10 +2674,7 @@ function FilesTab({ project }: { project: Project }) {
                     </a>
                   )}
                   <button
-                    onClick={() => {
-                      opsStore.remove(PORTAL, "deliverables", f.id);
-                      bump("deliverables");
-                    }}
+                    onClick={() => removeMut.mutate({ id: f.id })}
                     style={{
                       background: "transparent",
                       border: "none",
@@ -2695,10 +2696,21 @@ function FilesTab({ project }: { project: Project }) {
 
 // ─── 3h · Notes ─────────────────────────────────────────────────────────
 function NotesTab({ project }: { project: Project }) {
-  const all = useOpsCollection<Note>("notes");
-  const items = all
-    .filter(n => n.projectId === project.id)
+  const utils = trpc.useUtils();
+  const notesQuery = trpc.scalar.notes.list.useQuery({ projectId: project.id });
+  const items = ((notesQuery.data ?? []) as Note[])
+    .slice()
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const createMut = trpc.scalar.notes.create.useMutation({
+    onSuccess: () => {
+      utils.scalar.notes.list.invalidate();
+      toast.success("Note saved");
+    },
+  });
+  const removeMut = trpc.scalar.notes.remove.useMutation({
+    onSuccess: () => utils.scalar.notes.list.invalidate(),
+  });
 
   const [date, setDate] = useState(todayISO());
   const [body, setBody] = useState("");
@@ -2710,18 +2722,22 @@ function NotesTab({ project }: { project: Project }) {
       toast.error("Note body required");
       return;
     }
-    opsStore.insert<Note>(PORTAL, "notes", {
-      projectId: project.id,
-      date,
-      body: body.trim(),
-      decidedBy: decidedBy.trim() || undefined,
-      impact: impact.trim() || undefined,
-    });
-    bump("notes");
-    toast.success("Note saved");
-    setBody("");
-    setDecidedBy("");
-    setImpact("");
+    createMut.mutate(
+      {
+        projectId: project.id,
+        date,
+        body: body.trim(),
+        decidedBy: decidedBy.trim() || null,
+        impact: impact.trim() || null,
+      },
+      {
+        onSuccess: () => {
+          setBody("");
+          setDecidedBy("");
+          setImpact("");
+        },
+      },
+    );
   };
 
   return (
@@ -2750,7 +2766,7 @@ function NotesTab({ project }: { project: Project }) {
         <Field label="Note">
           <TextArea value={body} onChange={setBody} rows={3} />
         </Field>
-        <InlineButton onClick={save} tone="primary" icon={Plus}>
+        <InlineButton onClick={save} tone="primary" icon={Plus} disabled={createMut.isPending}>
           Save note
         </InlineButton>
       </OpsCard>
@@ -2774,10 +2790,7 @@ function NotesTab({ project }: { project: Project }) {
               >
                 <span style={{ fontSize: 11, color: MUTED }}>{fmtDate(n.date)}</span>
                 <button
-                  onClick={() => {
-                    opsStore.remove(PORTAL, "notes", n.id);
-                    bump("notes");
-                  }}
+                  onClick={() => removeMut.mutate({ id: n.id })}
                   style={{
                     background: "transparent",
                     border: "none",
@@ -2816,7 +2829,8 @@ function NotesTab({ project }: { project: Project }) {
  * 4 · CALENDAR
  * ═══════════════════════════════════════════════════════════════════════ */
 function CalendarSection() {
-  const projects = useOpsCollection<Project>("projects");
+  const projectsQuery = trpc.scalar.projects.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as Project[];
 
   // Group deadlines by ISO week
   const byWeek: Record<string, Project[]> = {};
@@ -3240,8 +3254,10 @@ function StandardsSection() {
  * 6 · REPORTS
  * ═══════════════════════════════════════════════════════════════════════ */
 function ReportsSection() {
-  const projects = useOpsCollection<Project>("projects");
-  const qaChecks = useOpsCollection<QaCheck>("qaChecks");
+  const projectsQuery = trpc.scalar.projects.list.useQuery();
+  const qaQuery = trpc.scalar.qaChecks.list.useQuery();
+  const projects = (projectsQuery.data ?? []) as Project[];
+  const qaChecks = (qaQuery.data ?? []) as QaCheck[];
 
   const metrics = useMemo(() => {
     const completed = projects.filter(p => p.status === "Completed");
@@ -3256,7 +3272,7 @@ function ReportsSection() {
         ? null
         : Math.round((onTime.length / completedWithDates.length) * 100);
 
-    const bugsByProject: Record<string, number> = {};
+    const bugsByProject: Record<number, number> = {};
     for (const q of qaChecks) {
       if (q.status === "Fail") {
         bugsByProject[q.projectId] = (bugsByProject[q.projectId] || 0) + 1;
@@ -3332,7 +3348,7 @@ function ReportsSection() {
       lines.push(" · (none logged)");
     } else {
       for (const [pid, n] of bugsEntries) {
-        const p = projects.find(x => x.id === pid);
+        const p = projects.find(x => x.id === Number(pid));
         lines.push(` · ${p?.clientName ?? pid} — ${n} open failure${n === 1 ? "" : "s"}`);
       }
     }
@@ -3403,7 +3419,7 @@ function ReportsSection() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {Object.entries(metrics.bugsByProject).map(([pid, n]) => {
-              const p = projects.find(x => x.id === pid);
+              const p = projects.find(x => x.id === Number(pid));
               if (!p) return null;
               const tone = n <= 2 ? "blue" : n <= 5 ? "orange" : "red";
               return (
@@ -3485,17 +3501,6 @@ function ReportsSection() {
           {snapshot}
         </pre>
       </OpsCard>
-
-      {/* TODO: wire into real tRPC when backend lands — swap opsStore for server. */}
     </div>
   );
 }
-
-/*
- * TODO (hand-off to backend):
- *  1. Swap opsStore reads for `trpc.scalar.projects.*` once schema ships.
- *  2. Add multi-user assignment (currently free-text lead).
- *  3. Beta distribution + app store status fields for App service.
- *  4. Calendar ICS export for client deadlines.
- *  5. Post-launch support window auto-reminder (1-week warranty).
- */

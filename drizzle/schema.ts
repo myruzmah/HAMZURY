@@ -1887,3 +1887,123 @@ export const videoDeliverables = mysqlTable("video_deliverables", {
 export type VideoDeliverable = typeof videoDeliverables.$inferSelect;
 export type InsertVideoDeliverable = typeof videoDeliverables.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * SCALAR OPS PORTAL — Dajot + Felix (web · app · automation team)
+ * Migrated from localStorage (opsStore "scalar" portal) to real DB.
+ * Source shapes mirror client/src/pages/ScalarOpsPortal.tsx.
+ * Project ref convention: HMZ-P-XXX (sequential, generated server-side).
+ * Children FK on the int `projectId`, not the string `ref`.
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** Scalar projects — top-level project records (HMZ-P-XXX). */
+export const scalarProjects = mysqlTable("scalar_projects", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Human-readable sequential code, e.g. "HMZ-P-001". */
+  ref: varchar("ref", { length: 20 }).notNull().default(""),
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  clientContact: varchar("clientContact", { length: 255 }),
+  clientEmail: varchar("clientEmail", { length: 255 }),
+  clientPhone: varchar("clientPhone", { length: 50 }),
+  service: mysqlEnum("scalarProjectService", ["Website", "App", "Automation"])
+    .default("Website").notNull(),
+  status: mysqlEnum("scalarProjectStatus", [
+    "Queued", "In Progress", "On Hold", "Completed", "Cancelled",
+  ]).default("Queued").notNull(),
+  week: int("week"),
+  phaseId: varchar("phaseId", { length: 40 }),
+  lead: mysqlEnum("scalarProjectLead", ["Dajot", "Felix", ""])
+    .default("").notNull(),
+  startDate: varchar("startDate", { length: 10 }),
+  targetDelivery: varchar("targetDelivery", { length: 10 }),
+  actualDelivery: varchar("actualDelivery", { length: 10 }),
+  projectValue: int("projectValue"),
+  scope: text("scope"),
+  goals: text("goals"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ScalarProject = typeof scalarProjects.$inferSelect;
+export type InsertScalarProject = typeof scalarProjects.$inferInsert;
+
+/** Scalar deliverables — artefacts per project (also doubles as files when group="File"). */
+export const scalarDeliverables = mysqlTable("scalar_deliverables", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  description: text("description"),
+  dueDate: varchar("dueDate", { length: 10 }),
+  done: boolean("done").default(false).notNull(),
+  deliveredAt: varchar("deliveredAt", { length: 10 }),
+  clientApproved: boolean("clientApproved").default(false).notNull(),
+  groupName: varchar("groupName", { length: 80 }),
+  owner: varchar("owner", { length: 120 }),
+  path: varchar("path", { length: 1024 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ScalarDeliverable = typeof scalarDeliverables.$inferSelect;
+export type InsertScalarDeliverable = typeof scalarDeliverables.$inferInsert;
+
+/** Scalar blockers — open issues per project. */
+export const scalarBlockers = mysqlTable("scalar_blockers", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  issue: text("issue").notNull(),
+  impact: text("impact"),
+  status: mysqlEnum("scalarBlockerStatus", ["Open", "Resolved"])
+    .default("Open").notNull(),
+  resolution: text("resolution"),
+  resolvedAt: varchar("resolvedAt", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ScalarBlocker = typeof scalarBlockers.$inferSelect;
+export type InsertScalarBlocker = typeof scalarBlockers.$inferInsert;
+
+/** Scalar comms — client communication log per project. */
+export const scalarComms = mysqlTable("scalar_comms", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  commType: varchar("commType", { length: 80 }).notNull(),
+  summary: text("summary").notNull(),
+  actionItems: text("actionItems"),
+  followUpDate: varchar("followUpDate", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ScalarComm = typeof scalarComms.$inferSelect;
+export type InsertScalarComm = typeof scalarComms.$inferInsert;
+
+/** Scalar notes — decisions and notes per project. */
+export const scalarNotes = mysqlTable("scalar_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  body: text("body").notNull(),
+  decidedBy: varchar("decidedBy", { length: 255 }),
+  impact: text("impact"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ScalarNote = typeof scalarNotes.$inferSelect;
+export type InsertScalarNote = typeof scalarNotes.$inferInsert;
+
+/** Scalar QA checks — feature/test-case tracking per project. */
+export const scalarQaChecks = mysqlTable("scalar_qa_checks", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  feature: varchar("feature", { length: 255 }).notNull(),
+  testCase: text("testCase").notNull(),
+  expected: text("expected"),
+  actual: text("actual"),
+  status: mysqlEnum("scalarQaStatus", ["Not Tested", "Pass", "Fail", "Fixed"])
+    .default("Not Tested").notNull(),
+  bug: text("bug"),
+  fixedAt: varchar("fixedAt", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ScalarQaCheck = typeof scalarQaChecks.$inferSelect;
+export type InsertScalarQaCheck = typeof scalarQaChecks.$inferInsert;
+
