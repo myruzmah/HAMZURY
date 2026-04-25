@@ -15,6 +15,7 @@ import AssetChecklist, {
 } from "@/components/ops/AssetChecklist";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard,
   Folder,
@@ -518,6 +519,8 @@ export default function ScalarOpsPortal() {
   };
 
   return (
+    <>
+    <PendingReportsBanner />
     <OpsShell
       title="Scalar Ops"
       subtitle="Websites · Apps · Automation — Dajot + Felix"
@@ -549,6 +552,7 @@ export default function ScalarOpsPortal() {
       {active === "standards" && <StandardsSection />}
       {active === "reports" && <ReportsSection />}
     </OpsShell>
+    </>
   );
 }
 

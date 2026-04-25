@@ -11,6 +11,7 @@ import {
   CheckCircle2, Plus, Trash2, Eye, EyeOff,
   TrendingDown, Coins, Heart,
   Dumbbell, Save, Copy,
+  ClipboardList, Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -47,7 +48,8 @@ type Section =
   | "content"
   | "learning"
   | "vision"
-  | "vault";
+  | "vault"
+  | "reports";
 
 /** DB rows. Server returns these shapes via tRPC. Nullable fields stay null on read. */
 type DebtPayment = {
@@ -331,6 +333,7 @@ export default function FounderPortal() {
     { key: "learning",  label: "Learning",        icon: BookOpen },
     { key: "vision",    label: "Vision & Legacy", icon: Target },
     { key: "vault",     label: "Password Vault",  icon: Lock },
+    { key: "reports",   label: "Reports",         icon: ClipboardList },
   ];
 
   return (
@@ -360,6 +363,7 @@ export default function FounderPortal() {
         {active === "learning"  && <LearningSection />}
         {active === "vision"    && <VisionSection />}
         {active === "vault"     && <VaultSection />}
+        {active === "reports"   && <ReportsSection />}
       </OpsShell>
     </>
   );
@@ -1703,6 +1707,314 @@ function VaultField({ label, value, revealed, onCopy }:
           <Copy size={12} />
         </button>
       </div>
+    </div>
+  );
+}
+
+/* ═════════════════════════ REPORTS ═════════════════════════ */
+type ReportDeptKey =
+  | "cso" | "ceo" | "finance" | "hr" | "bizdev" | "bizdoc" | "hub"
+  | "scalar" | "medialy" | "podcast" | "video" | "faceless";
+
+const DEPT_OPTIONS: Array<{ key: ReportDeptKey; label: string }> = [
+  { key: "cso",      label: "CSO — Sales & Lead Handling" },
+  { key: "ceo",      label: "CEO — Institutional" },
+  { key: "finance",  label: "Finance" },
+  { key: "hr",       label: "HR" },
+  { key: "bizdev",   label: "BizDev" },
+  { key: "bizdoc",   label: "Bizdoc Compliance" },
+  { key: "hub",      label: "Hub Skills" },
+  { key: "scalar",   label: "Scalar Web/App" },
+  { key: "medialy",  label: "Medialy Social" },
+  { key: "podcast",  label: "Podcast" },
+  { key: "video",    label: "Video" },
+  { key: "faceless", label: "Faceless" },
+];
+
+function deptLabel(key: string): string {
+  return DEPT_OPTIONS.find(d => d.key === key)?.label || key;
+}
+
+function ReportsSection() {
+  const utils = trpc.useUtils();
+  const requestsQ = trpc.reports.myRequests.useQuery();
+  const rows = (requestsQ.data || []) as Array<{
+    id: number;
+    subject: string;
+    targetDept: ReportDeptKey;
+    status: "pending" | "responded" | "cancelled";
+    notes?: string | null;
+    response?: string | null;
+    responseBy?: string | null;
+    respondedAt?: Date | string | null;
+    createdAt: Date | string;
+  }>;
+
+  const isEmpty = !requestsQ.isLoading && rows.length === 0;
+  const [formOpen, setFormOpen] = useState<boolean>(true);
+  useEffect(() => {
+    // Collapse the form once requests exist (still openable manually).
+    if (rows.length > 0) setFormOpen(false);
+    else setFormOpen(true);
+  }, [rows.length]);
+
+  const [subject, setSubject] = useState("");
+  const [targetDept, setTargetDept] = useState<ReportDeptKey>("ceo");
+  const [notes, setNotes] = useState("");
+
+  const requestNew = trpc.reports.requestNew.useMutation({
+    onSuccess: (row: any) => {
+      const dept = deptLabel(row?.targetDept || targetDept);
+      toast.success(`Request sent to ${dept}. Reference #${row?.id ?? ""}`);
+      setSubject("");
+      setNotes("");
+      utils.reports.myRequests.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Failed to send request"),
+  });
+
+  const cancelReq = trpc.reports.cancelRequest.useMutation({
+    onSuccess: () => {
+      toast.success("Request cancelled");
+      utils.reports.myRequests.invalidate();
+    },
+    onError: (err) => toast.error(err.message || "Failed to cancel"),
+  });
+
+  const submit = () => {
+    const s = subject.trim();
+    if (!s) return toast.error("Subject is required");
+    if (s.length > 255) return toast.error("Subject must be 255 chars or fewer");
+    requestNew.mutate({ subject: s, targetDept, notes: notes.trim() || undefined });
+  };
+
+  const pending = rows.filter(r => r.status === "pending");
+  const responded = rows.filter(r => r.status === "responded");
+  const cancelled = rows.filter(r => r.status === "cancelled");
+
+  return (
+    <div>
+      <OpsHeader
+        title="Department Reports"
+        sub="Ask any department for what you need to know. They reply here — no need to enter their dashboard."
+      />
+
+      {/* Request a Report */}
+      <OpsCard style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: formOpen ? 12 : 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            Request a Report
+          </div>
+          <button
+            onClick={() => setFormOpen(o => !o)}
+            style={{
+              padding: "5px 11px", borderRadius: 8, border: `1px solid ${BROWN}30`,
+              background: WHITE, color: BROWN, cursor: "pointer",
+              fontSize: 11, fontWeight: 600,
+            }}>
+            {formOpen ? "Hide" : "New Request"}
+          </button>
+        </div>
+
+        {formOpen && (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+              <Field label="Department">
+                <select
+                  value={targetDept}
+                  onChange={e => setTargetDept(e.target.value as ReportDeptKey)}
+                  style={inputStyle}
+                >
+                  {DEPT_OPTIONS.map(opt => (
+                    <option key={opt.key} value={opt.key}>{opt.label}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Subject">
+                <input
+                  type="text"
+                  value={subject}
+                  maxLength={255}
+                  onChange={e => setSubject(e.target.value)}
+                  placeholder="e.g. CSO — pipeline status this week"
+                  style={inputStyle}
+                />
+              </Field>
+            </div>
+            <div style={{ marginTop: 10 }}>
+              <Field label="Notes / your question (optional)">
+                <textarea
+                  value={notes}
+                  maxLength={4000}
+                  onChange={e => setNotes(e.target.value)}
+                  rows={4}
+                  placeholder="What do you need to know? Specifics, scope, deadline…"
+                  style={{ ...inputStyle, minHeight: 80, fontFamily: "inherit", resize: "vertical" }}
+                />
+              </Field>
+            </div>
+            <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+              <button
+                onClick={submit}
+                disabled={requestNew.isPending}
+                style={{
+                  padding: "9px 16px", backgroundColor: BROWN, color: WHITE,
+                  border: "none", borderRadius: 10, fontSize: 12, fontWeight: 600,
+                  cursor: requestNew.isPending ? "wait" : "pointer",
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  opacity: requestNew.isPending ? 0.65 : 1,
+                }}>
+                <Send size={13} /> {requestNew.isPending ? "Sending…" : "Send Request"}
+              </button>
+            </div>
+          </>
+        )}
+      </OpsCard>
+
+      {/* Empty state */}
+      {isEmpty && (
+        <OpsCard>
+          <div style={{ textAlign: "center", padding: "24px 14px", fontSize: 12, color: MUTED }}>
+            No requests yet. Ask any department for what you need to know.
+          </div>
+        </OpsCard>
+      )}
+
+      {/* Pending */}
+      {pending.length > 0 && (
+        <ReportsGroup label="Pending" count={pending.length} tone="orange">
+          {pending.map(r => (
+            <ReportRequestCard
+              key={r.id}
+              row={r}
+              onCancel={() => cancelReq.mutate({ id: r.id })}
+              cancelling={cancelReq.isPending && cancelReq.variables?.id === r.id}
+            />
+          ))}
+        </ReportsGroup>
+      )}
+
+      {/* Responded */}
+      {responded.length > 0 && (
+        <ReportsGroup label="Responded" count={responded.length} tone="green">
+          {responded.map(r => (
+            <ReportRequestCard key={r.id} row={r} />
+          ))}
+        </ReportsGroup>
+      )}
+
+      {/* Cancelled */}
+      {cancelled.length > 0 && (
+        <ReportsGroup label="Cancelled" count={cancelled.length} tone="muted">
+          {cancelled.map(r => (
+            <ReportRequestCard key={r.id} row={r} />
+          ))}
+        </ReportsGroup>
+      )}
+    </div>
+  );
+}
+
+function ReportsGroup({
+  label, count, tone, children,
+}: {
+  label: string;
+  count: number;
+  tone: "orange" | "green" | "muted";
+  children: React.ReactNode;
+}) {
+  const colorMap = { orange: ORANGE, green: SUCCESS, muted: MUTED };
+  const color = colorMap[tone];
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{
+        display: "flex", alignItems: "center", gap: 8, marginBottom: 8,
+        paddingBottom: 6, borderBottom: `1px solid ${color}20`,
+      }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color, textTransform: "uppercase", letterSpacing: "0.06em",
+        }}>{label}</span>
+        <span style={{ fontSize: 11, color: MUTED }}>· {count}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>{children}</div>
+    </div>
+  );
+}
+
+function ReportRequestCard({
+  row, onCancel, cancelling,
+}: {
+  row: {
+    id: number;
+    subject: string;
+    targetDept: string;
+    status: "pending" | "responded" | "cancelled";
+    notes?: string | null;
+    response?: string | null;
+    responseBy?: string | null;
+    respondedAt?: Date | string | null;
+    createdAt: Date | string;
+  };
+  onCancel?: () => void;
+  cancelling?: boolean;
+}) {
+  const statusTone: Record<string, "orange" | "green" | "muted"> = {
+    pending: "orange", responded: "green", cancelled: "muted",
+  };
+  const created = new Date(row.createdAt);
+  const responded = row.respondedAt ? new Date(row.respondedAt) : null;
+
+  return (
+    <div style={{
+      padding: "12px 14px", backgroundColor: BG, border: `1px solid ${DARK}06`,
+      borderRadius: 10,
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: DARK, marginBottom: 4 }}>
+            #{row.id} · {row.subject}
+          </div>
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <Pill label={deptLabel(row.targetDept)} tone="gold" />
+            <Pill label={row.status} tone={statusTone[row.status]} />
+            <span style={{ fontSize: 10, color: MUTED }}>
+              {created.toLocaleDateString("en-NG", { day: "numeric", month: "short", year: "numeric" })}
+            </span>
+          </div>
+          {row.notes && (
+            <div style={{ fontSize: 12, color: DARK, marginTop: 8, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
+              {row.notes}
+            </div>
+          )}
+        </div>
+        {row.status === "pending" && onCancel && (
+          <button
+            onClick={onCancel}
+            disabled={cancelling}
+            style={{
+              padding: "5px 10px", borderRadius: 8, border: `1px solid ${RED}30`,
+              background: WHITE, color: RED, cursor: cancelling ? "wait" : "pointer",
+              fontSize: 10, fontWeight: 600,
+              opacity: cancelling ? 0.65 : 1,
+            }}>
+            {cancelling ? "Cancelling…" : "Cancel"}
+          </button>
+        )}
+      </div>
+
+      {row.status === "responded" && row.response && (
+        <div style={{
+          marginTop: 10, padding: "10px 12px", backgroundColor: `${SUCCESS}08`,
+          borderLeft: `3px solid ${SUCCESS}`, borderRadius: 8,
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, color: SUCCESS, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>
+            Response{row.responseBy ? ` · ${row.responseBy}` : ""}{responded ? ` · ${responded.toLocaleDateString("en-NG", { day: "numeric", month: "short" })}` : ""}
+          </div>
+          <div style={{ fontSize: 13, color: DARK, whiteSpace: "pre-wrap", lineHeight: 1.55 }}>
+            {row.response}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

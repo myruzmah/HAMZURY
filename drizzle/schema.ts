@@ -2535,3 +2535,33 @@ export const facelessTools = mysqlTable("faceless_tools", {
 export type FacelessTool = typeof facelessTools.$inferSelect;
 export type InsertFacelessTool = typeof facelessTools.$inferInsert;
 
+/**
+ * Founder → Department report requests.
+ * Founder is locked out of dept dashboards (strict role separation), so they
+ * use this lightweight ask/answer channel instead. Each row is one question.
+ */
+export const reportRequests = mysqlTable("report_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  /** Which department is being asked. */
+  targetDept: mysqlEnum("reportTargetDept", [
+    "cso", "ceo", "finance", "hr", "bizdev", "bizdoc", "hub",
+    "scalar", "medialy", "podcast", "video", "faceless",
+  ]).notNull(),
+  /** Founder's question / context. */
+  notes: text("notes"),
+  status: mysqlEnum("reportRequestStatus", ["pending", "responded", "cancelled"]).default("pending").notNull(),
+  /** Department's reply. */
+  response: text("response"),
+  /** Staff name who responded. */
+  responseBy: varchar("responseBy", { length: 255 }),
+  respondedAt: timestamp("respondedAt"),
+  /** Founder's openId (so we know who asked, even though only one founder exists right now). */
+  requestedBy: varchar("requestedBy", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ReportRequest = typeof reportRequests.$inferSelect;
+export type InsertReportRequest = typeof reportRequests.$inferInsert;
+

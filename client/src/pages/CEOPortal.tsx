@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, Building2, Target as TargetIcon,
   DollarSign, Calendar as CalendarIcon, LogOut, ArrowLeft, Loader2,
@@ -10,8 +11,12 @@ import {
   Menu, X, Plus, Shield, Wallet, Briefcase, FileText, UserCheck,
   Settings as SettingsIcon, RefreshCw, Activity, Trash2, Send,
   Bell, Key, Eye, EyeOff, Megaphone, Inbox, CheckCheck, ChevronRight,
-  Folder,
+  Folder, Monitor, Cpu, Palette, FileBox, MessageSquare, ImageIcon,
+  CalendarCheck, Edit3, Save, ShieldCheck,
 } from "lucide-react";
+import { readAll, insert, update, remove, type OpsItem } from "@/lib/opsStore";
+
+const CEO_PORTAL = "ceo";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
   CartesianGrid, BarChart, Bar, Cell,
@@ -39,7 +44,9 @@ const PURPLE = "#8B5CF6";
 
 type Section =
   | "dashboard" | "departments" | "targets" | "staff" | "finance" | "calendar"
-  | "clients" | "weekly" | "vault" | "content" | "inbox";
+  | "clients" | "weekly" | "vault" | "content" | "inbox"
+  | "equipment" | "software" | "brandingQa" | "documents"
+  | "divisionUpdates" | "canvaTemplates" | "weeklyMeetings" | "approvals";
 
 /* Utilities */
 function fmtNaira(v: string | number | null | undefined): string {
@@ -156,12 +163,21 @@ export default function CEOPortal() {
     { key: "finance",     icon: DollarSign,      label: "Finance" },
     { key: "content",     icon: Megaphone,       label: "Content Ops" },
     { key: "vault",       icon: Key,             label: "Credentials Vault" },
+    { key: "equipment",       icon: Monitor,         label: "Equipment Tracker" },
+    { key: "software",        icon: Cpu,             label: "Software Vault" },
+    { key: "brandingQa",      icon: Palette,         label: "Branding QA" },
+    { key: "documents",       icon: FileBox,         label: "Documents Vault" },
+    { key: "divisionUpdates", icon: MessageSquare,   label: "Division Updates" },
+    { key: "canvaTemplates",  icon: ImageIcon,       label: "Canva Templates" },
+    { key: "weeklyMeetings",  icon: CalendarCheck,   label: "Weekly Meetings" },
+    { key: "approvals",       icon: ShieldCheck,     label: "Approvals" },
     { key: "calendar",    icon: CalendarIcon,    label: "Calendar & Audit" },
     { key: "inbox",       icon: Inbox,           label: "Notifications" },
   ];
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
+      <PendingReportsBanner />
       <PageMeta title="CEO Portal — HAMZURY" description="HAMZURY Executive Control Center — institutional oversight for the CEO." />
 
       {isMobile && mobileNavOpen && (
@@ -316,6 +332,14 @@ export default function CEOPortal() {
             {active === "finance"     && <FinanceSection />}
             {active === "content"     && <ContentOpsSection />}
             {active === "vault"       && <CredentialsVaultSection />}
+            {active === "equipment"        && <EquipmentTrackerSection />}
+            {active === "software"         && <SoftwareVaultSection />}
+            {active === "brandingQa"       && <BrandingQaSection />}
+            {active === "documents"        && <DocumentsVaultSection />}
+            {active === "divisionUpdates"  && <DivisionUpdatesSection />}
+            {active === "canvaTemplates"   && <CanvaTemplatesSection />}
+            {active === "weeklyMeetings"   && <WeeklyMeetingsSection />}
+            {active === "approvals"        && <ApprovalTiersSection />}
             {active === "calendar"    && <CalendarAuditSection />}
             {active === "inbox"       && <NotificationsSection />}
           </div>
@@ -2352,6 +2376,749 @@ function NotificationsSection() {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * CEO COMMAND CENTER — NEW TABS (from CEO_Strategic_Command_Center.xlsx)
+ * 7 new tabs + Approval Tiers widget. localStorage v1.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+type EquipmentRow = OpsItem & {
+  assetId: string; itemType: string; brandModel: string; serialNumber: string;
+  assignedTo: string; division: string; dateAssigned: string;
+  condition: "New" | "Good" | "Fair" | "Poor" | "Retired";
+  value: number; insurance: boolean; notes?: string;
+};
+type SoftwareRow = OpsItem & {
+  category: string; loginEmail: string; passwordLocation: string;
+  licenseKey: string; subscriptionCost: number; renewalDate: string;
+  whoHasAccess: string; notes?: string;
+};
+type BrandingQaRow = OpsItem & {
+  reviewDate: string; division: string; itemReviewed: string;
+  complianceCheck: string; issuesFound: string;
+  status: "Pass" | "Issue" | "Review";
+  correctiveAction: string; resolvedDate?: string;
+};
+type DocumentRow = OpsItem & {
+  docType: string; docName: string; issueDate: string; expiryDate: string;
+  storageLocation: string; accessLevel: "CEO-Only" | "Division Lead" | "Founder-Only";
+  status: "Active" | "Expiring" | "Expired" | "Renewed";
+};
+type DivisionUpdateRow = OpsItem & {
+  weekOf: string; division: string; highlights: string;
+  challenges: string; requests: string; nextWeekPlans: string;
+};
+type CanvaTemplateRow = OpsItem & {
+  templateName: string; canvaLink: string; lastUpdated: string;
+  category: "Social" | "Proposal" | "Deck" | "Flyer" | "Other";
+  status: "Active" | "Archived";
+};
+type WeeklyMeetingRow = OpsItem & {
+  date: string;
+  kind: "Monday Kickoff" | "Wednesday Midweek" | "Friday Wrap" | "Ad-hoc";
+  attendees: string; agenda: string; decisions: string;
+  actionItems: string; assignedTo: string; dueDate?: string; notesLink?: string;
+};
+
+const ceoInputStyle: React.CSSProperties = {
+  padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+  fontSize: 13, backgroundColor: WHITE, width: "100%",
+};
+function CeoField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>{label}</span>
+      {children}
+    </label>
+  );
+}
+function CeoInput({ value, onChange, type = "text" }: { value: any; onChange: (v: any) => void; type?: string }) {
+  return <input type={type} value={value ?? ""} onChange={e => onChange(type === "number" ? Number(e.target.value) : e.target.value)} style={ceoInputStyle} />;
+}
+function CeoSelect({ value, onChange, options }: { value: any; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <select value={value ?? ""} onChange={e => onChange(e.target.value)} style={ceoInputStyle}>
+      <option value="">—</option>
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+function CeoTextarea({ value, onChange }: { value: any; onChange: (v: string) => void }) {
+  return <textarea value={value ?? ""} onChange={e => onChange(e.target.value)} rows={2} style={{ ...ceoInputStyle, resize: "vertical" }} />;
+}
+const ceoBtnPrimary: React.CSSProperties = {
+  padding: "8px 14px", borderRadius: 999, border: "none",
+  backgroundColor: GREEN, color: WHITE,
+  fontSize: 12, fontWeight: 600, cursor: "pointer",
+  display: "flex", alignItems: "center", gap: 6,
+};
+const ceoBtnGhost: React.CSSProperties = {
+  padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`,
+  backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+};
+
+/* ─── 1. Equipment Tracker ─── */
+function EquipmentTrackerSection() {
+  const [rows, setRows] = useState<EquipmentRow[]>([]);
+  const [editing, setEditing] = useState<Partial<EquipmentRow> | null>(null);
+  const refresh = () => setRows(readAll<EquipmentRow>(CEO_PORTAL, "equipment"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.assetId || !editing?.itemType) { toast.error("Asset ID + Item Type required"); return; }
+    if (editing.id) update<EquipmentRow>(CEO_PORTAL, "equipment", editing.id, editing);
+    else insert<EquipmentRow>(CEO_PORTAL, "equipment", {
+      assetId: editing.assetId!, itemType: editing.itemType!,
+      brandModel: editing.brandModel || "", serialNumber: editing.serialNumber || "",
+      assignedTo: editing.assignedTo || "", division: editing.division || "",
+      dateAssigned: editing.dateAssigned || todayISO(),
+      condition: (editing.condition as any) || "New",
+      value: editing.value ?? 0, insurance: !!editing.insurance,
+      notes: editing.notes,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const totalValue = rows.reduce((a, r) => a + (r.value || 0), 0);
+
+  return (
+    <div>
+      <SectionTitle sub="Full asset register. Serial numbers, assignees, insurance, value.">Equipment Tracker</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GREEN}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN }}>{rows.length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Assets</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GOLD}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GOLD }}>{fmtNaira(totalValue)}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Total Value</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: "#3B82F610" }}><p style={{ fontSize: 20, fontWeight: 700, color: "#3B82F6" }}>{rows.filter(r => r.insurance).length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Insured</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>Company asset register</p>
+          <button onClick={() => setEditing({})} style={ceoBtnPrimary}><Plus size={12} /> Add Asset</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Monitor} title="No assets tracked yet" /> : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead><tr style={{ backgroundColor: `${GOLD}08` }}>
+                {["ID", "Item", "Brand/Model", "Serial", "Assigned To", "Division", "Condition", "Value", ""].map(c => <th key={c} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: DARK }}>{c}</th>)}
+              </tr></thead>
+              <tbody>{rows.map(r => (
+                <tr key={r.id} style={{ borderTop: `1px solid ${DARK}06` }}>
+                  <td style={{ padding: "10px 12px", color: DARK, fontFamily: "monospace" }}>{r.assetId}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.itemType}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.brandModel}</td>
+                  <td style={{ padding: "10px 12px", color: MUTED, fontFamily: "monospace", fontSize: 10 }}>{r.serialNumber}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.assignedTo}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.division}</td>
+                  <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 999, backgroundColor: r.condition === "New" || r.condition === "Good" ? "#22C55E15" : r.condition === "Retired" || r.condition === "Poor" ? "#EF444415" : "#F59E0B15", color: r.condition === "New" || r.condition === "Good" ? "#22C55E" : r.condition === "Retired" || r.condition === "Poor" ? "#EF4444" : "#F59E0B" }}>{r.condition}</span></td>
+                  <td style={{ padding: "10px 12px", color: DARK, fontWeight: 600 }}>{fmtNaira(r.value)}</td>
+                  <td style={{ padding: "6px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer", marginRight: 6 }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(CEO_PORTAL, "equipment", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(600px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Asset</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <CeoField label="Asset ID"><CeoInput value={editing.assetId} onChange={v => setEditing({ ...editing, assetId: v })} /></CeoField>
+              <CeoField label="Item Type"><CeoInput value={editing.itemType} onChange={v => setEditing({ ...editing, itemType: v })} /></CeoField>
+              <CeoField label="Brand / Model"><CeoInput value={editing.brandModel} onChange={v => setEditing({ ...editing, brandModel: v })} /></CeoField>
+              <CeoField label="Serial Number"><CeoInput value={editing.serialNumber} onChange={v => setEditing({ ...editing, serialNumber: v })} /></CeoField>
+              <CeoField label="Assigned To"><CeoInput value={editing.assignedTo} onChange={v => setEditing({ ...editing, assignedTo: v })} /></CeoField>
+              <CeoField label="Division"><CeoSelect value={editing.division} onChange={v => setEditing({ ...editing, division: v })} options={["bizdoc", "scalar", "medialy", "hub", "cso", "ceo", "finance", "hr"]} /></CeoField>
+              <CeoField label="Date Assigned"><CeoInput value={editing.dateAssigned} onChange={v => setEditing({ ...editing, dateAssigned: v })} type="date" /></CeoField>
+              <CeoField label="Condition"><CeoSelect value={editing.condition} onChange={v => setEditing({ ...editing, condition: v as any })} options={["New", "Good", "Fair", "Poor", "Retired"]} /></CeoField>
+              <CeoField label="Value ₦"><CeoInput value={editing.value} onChange={v => setEditing({ ...editing, value: v })} type="number" /></CeoField>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, alignSelf: "end" }}>
+                <input type="checkbox" checked={!!editing.insurance} onChange={e => setEditing({ ...editing, insurance: e.target.checked })} style={{ width: 16, height: 16 }} />
+                <span style={{ fontSize: 13, color: DARK }}>Insured</span>
+              </label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Notes</span><CeoTextarea value={editing.notes} onChange={v => setEditing({ ...editing, notes: v })} /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 2. Software Vault ─── */
+function SoftwareVaultSection() {
+  const [rows, setRows] = useState<SoftwareRow[]>([]);
+  const [editing, setEditing] = useState<Partial<SoftwareRow> | null>(null);
+  const refresh = () => setRows(readAll<SoftwareRow>(CEO_PORTAL, "software"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.category) { toast.error("Category required"); return; }
+    if (editing.id) update<SoftwareRow>(CEO_PORTAL, "software", editing.id, editing);
+    else insert<SoftwareRow>(CEO_PORTAL, "software", {
+      category: editing.category!, loginEmail: editing.loginEmail || "",
+      passwordLocation: editing.passwordLocation || "", licenseKey: editing.licenseKey || "",
+      subscriptionCost: editing.subscriptionCost ?? 0, renewalDate: editing.renewalDate || "",
+      whoHasAccess: editing.whoHasAccess || "", notes: editing.notes,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const daysToRenewal = (date: string) => {
+    if (!date) return 999;
+    const diff = Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
+    return diff;
+  };
+  const expiringSoon = rows.filter(r => daysToRenewal(r.renewalDate) <= 14 && daysToRenewal(r.renewalDate) >= 0).length;
+  const monthlyTotal = rows.reduce((a, r) => a + (r.subscriptionCost || 0), 0);
+
+  return (
+    <div>
+      <SectionTitle sub="Subscriptions with renewal alerts. Password LOCATIONS only (never the password itself).">Software Vault</SectionTitle>
+      {expiringSoon > 0 && (
+        <div style={{ padding: 14, borderRadius: 12, backgroundColor: "#EF444410", border: "1px solid #EF444430", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+          <AlertTriangle size={18} color="#EF4444" />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#EF4444" }}>{expiringSoon} subscription{expiringSoon === 1 ? "" : "s"} renewing in ≤14 days</p>
+          </div>
+        </div>
+      )}
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GREEN}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN }}>{rows.length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Subscriptions</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GOLD}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GOLD }}>{fmtNaira(monthlyTotal)}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Monthly Spend</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>Software inventory</p>
+          <button onClick={() => setEditing({})} style={ceoBtnPrimary}><Plus size={12} /> Add</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Cpu} title="No subscriptions tracked yet" /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(r => {
+              const d = daysToRenewal(r.renewalDate);
+              const renewalTone = d < 0 ? "#EF4444" : d <= 14 ? "#F59E0B" : d <= 30 ? GOLD : GREEN;
+              return (
+                <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08`, borderLeft: `3px solid ${renewalTone}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.category}</p>
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.loginEmail} · {r.passwordLocation}</p>
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Access: {r.whoHasAccess}</p>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{fmtNaira(r.subscriptionCost)}/mo</p>
+                      <p style={{ fontSize: 11, color: renewalTone, marginTop: 2, fontWeight: 600 }}>Renews {r.renewalDate} {d >= 0 ? `(${d}d)` : "(overdue)"}</p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}><Edit3 size={12} /> Edit</button>
+                    <button onClick={() => { remove(CEO_PORTAL, "software", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}><Trash2 size={12} /> Delete</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(560px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Subscription</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <CeoField label="Category / Product"><CeoInput value={editing.category} onChange={v => setEditing({ ...editing, category: v })} /></CeoField>
+              <CeoField label="Login Email"><CeoInput value={editing.loginEmail} onChange={v => setEditing({ ...editing, loginEmail: v })} /></CeoField>
+              <CeoField label="Password Location"><CeoInput value={editing.passwordLocation} onChange={v => setEditing({ ...editing, passwordLocation: v })} /></CeoField>
+              <CeoField label="License Key (last 4)"><CeoInput value={editing.licenseKey} onChange={v => setEditing({ ...editing, licenseKey: v })} /></CeoField>
+              <CeoField label="Monthly Cost ₦"><CeoInput value={editing.subscriptionCost} onChange={v => setEditing({ ...editing, subscriptionCost: v })} type="number" /></CeoField>
+              <CeoField label="Renewal Date"><CeoInput value={editing.renewalDate} onChange={v => setEditing({ ...editing, renewalDate: v })} type="date" /></CeoField>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Who Has Access</span><CeoInput value={editing.whoHasAccess} onChange={v => setEditing({ ...editing, whoHasAccess: v })} /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 3. Branding QA ─── */
+function BrandingQaSection() {
+  const [rows, setRows] = useState<BrandingQaRow[]>([]);
+  const [editing, setEditing] = useState<Partial<BrandingQaRow> | null>(null);
+  const refresh = () => setRows(readAll<BrandingQaRow>(CEO_PORTAL, "brandingQa"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.itemReviewed) { toast.error("Item reviewed required"); return; }
+    if (editing.id) update<BrandingQaRow>(CEO_PORTAL, "brandingQa", editing.id, editing);
+    else insert<BrandingQaRow>(CEO_PORTAL, "brandingQa", {
+      reviewDate: editing.reviewDate || todayISO(),
+      division: editing.division || "", itemReviewed: editing.itemReviewed!,
+      complianceCheck: editing.complianceCheck || "", issuesFound: editing.issuesFound || "",
+      status: (editing.status as any) || "Review",
+      correctiveAction: editing.correctiveAction || "", resolvedDate: editing.resolvedDate,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const startWeeklyCheck = () => {
+    const thursday = new Date();
+    const day = thursday.getDay();
+    const diff = (4 - day + 7) % 7;
+    thursday.setDate(thursday.getDate() + diff);
+    const date = thursday.toISOString().slice(0, 10);
+    setEditing({
+      reviewDate: date,
+      itemReviewed: "Weekly Brand Compliance Check",
+      complianceCheck: "Logo usage ✓ / Color palette ✓ / Typography (Inter only) ✓ / 8px grid ✓ / Copy tone ✓",
+      status: "Review",
+    });
+  };
+
+  const passRate = rows.length ? Math.round((rows.filter(r => r.status === "Pass").length / rows.length) * 100) : 0;
+
+  return (
+    <div>
+      <SectionTitle sub="Weekly Thursday brand compliance check. Logo/color/font/copy.">Branding QA</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GREEN}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN }}>{passRate}%</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Pass rate</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: "#EF444410" }}><p style={{ fontSize: 20, fontWeight: 700, color: "#EF4444" }}>{rows.filter(r => r.status === "Issue").length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Open issues</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>Brand reviews</p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={startWeeklyCheck} style={ceoBtnGhost}>Start Weekly Thursday Check</button>
+            <button onClick={() => setEditing({})} style={ceoBtnPrimary}><Plus size={12} /> Ad-hoc Review</button>
+          </div>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Palette} title="No QA reviews yet" hint="Start your first weekly check above." /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08`, borderLeft: `3px solid ${r.status === "Pass" ? GREEN : r.status === "Issue" ? "#EF4444" : GOLD}` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.itemReviewed} · {r.division}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{fmtDate(r.reviewDate)}</p>
+                    {r.complianceCheck && <p style={{ fontSize: 12, color: DARK, marginTop: 6, lineHeight: 1.5 }}>{r.complianceCheck}</p>}
+                    {r.issuesFound && <p style={{ fontSize: 12, color: "#EF4444", marginTop: 4 }}>⚠ {r.issuesFound}</p>}
+                    {r.correctiveAction && <p style={{ fontSize: 12, color: GREEN, marginTop: 4 }}>✓ {r.correctiveAction}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "4px 10px", borderRadius: 999, backgroundColor: r.status === "Pass" ? "#22C55E15" : r.status === "Issue" ? "#EF444415" : `${GOLD}15`, color: r.status === "Pass" ? "#22C55E" : r.status === "Issue" ? "#EF4444" : GOLD }}>{r.status}</span>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(CEO_PORTAL, "brandingQa", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(560px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Brand Review</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <CeoField label="Review Date"><CeoInput value={editing.reviewDate} onChange={v => setEditing({ ...editing, reviewDate: v })} type="date" /></CeoField>
+              <CeoField label="Division"><CeoSelect value={editing.division} onChange={v => setEditing({ ...editing, division: v })} options={["bizdoc", "scalar", "medialy", "hub", "All"]} /></CeoField>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Item Reviewed</span><CeoInput value={editing.itemReviewed} onChange={v => setEditing({ ...editing, itemReviewed: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Compliance Check</span><CeoTextarea value={editing.complianceCheck} onChange={v => setEditing({ ...editing, complianceCheck: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Issues Found</span><CeoTextarea value={editing.issuesFound} onChange={v => setEditing({ ...editing, issuesFound: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Corrective Action</span><CeoTextarea value={editing.correctiveAction} onChange={v => setEditing({ ...editing, correctiveAction: v })} /></label>
+              <CeoField label="Status"><CeoSelect value={editing.status} onChange={v => setEditing({ ...editing, status: v as any })} options={["Pass", "Issue", "Review"]} /></CeoField>
+              <CeoField label="Resolved Date"><CeoInput value={editing.resolvedDate} onChange={v => setEditing({ ...editing, resolvedDate: v })} type="date" /></CeoField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 4. Documents Vault ─── */
+function DocumentsVaultSection() {
+  const [rows, setRows] = useState<DocumentRow[]>([]);
+  const [editing, setEditing] = useState<Partial<DocumentRow> | null>(null);
+  const refresh = () => setRows(readAll<DocumentRow>(CEO_PORTAL, "documents"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.docName) { toast.error("Document name required"); return; }
+    if (editing.id) update<DocumentRow>(CEO_PORTAL, "documents", editing.id, editing);
+    else insert<DocumentRow>(CEO_PORTAL, "documents", {
+      docType: editing.docType || "", docName: editing.docName!,
+      issueDate: editing.issueDate || "", expiryDate: editing.expiryDate || "",
+      storageLocation: editing.storageLocation || "",
+      accessLevel: (editing.accessLevel as any) || "CEO-Only",
+      status: (editing.status as any) || "Active",
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const daysToExpiry = (date: string) => {
+    if (!date) return 999;
+    return Math.ceil((new Date(date).getTime() - Date.now()) / 86400000);
+  };
+  const expiring30 = rows.filter(r => daysToExpiry(r.expiryDate) >= 0 && daysToExpiry(r.expiryDate) <= 30).length;
+  const expired = rows.filter(r => daysToExpiry(r.expiryDate) < 0).length;
+
+  return (
+    <div>
+      <SectionTitle sub="CAC, Tax TCC, Lease, Insurance — with 30/14/7-day expiry alerts.">Documents Vault</SectionTitle>
+      {(expiring30 > 0 || expired > 0) && (
+        <div style={{ padding: 14, borderRadius: 12, backgroundColor: "#EF444410", border: "1px solid #EF444430", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+          <AlertTriangle size={18} color="#EF4444" />
+          <div>
+            {expired > 0 && <p style={{ fontSize: 13, fontWeight: 700, color: "#EF4444" }}>{expired} expired document{expired === 1 ? "" : "s"}</p>}
+            {expiring30 > 0 && <p style={{ fontSize: 12, color: MUTED, marginTop: 2 }}>{expiring30} expire within 30 days</p>}
+          </div>
+        </div>
+      )}
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} documents</p>
+          <button onClick={() => setEditing({})} style={ceoBtnPrimary}><Plus size={12} /> Add Document</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={FileBox} title="No documents filed yet" /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(r => {
+              const d = daysToExpiry(r.expiryDate);
+              const tone = d < 0 ? "#EF4444" : d <= 7 ? "#EF4444" : d <= 14 ? "#F59E0B" : d <= 30 ? GOLD : GREEN;
+              return (
+                <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08`, borderLeft: `3px solid ${tone}` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.docName}</p>
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.docType} · {r.accessLevel} · {r.storageLocation}</p>
+                      <p style={{ fontSize: 11, color: tone, marginTop: 4, fontWeight: 600 }}>Expires {fmtDate(r.expiryDate)} {d >= 0 ? `(${d}d)` : `(expired ${Math.abs(d)}d ago)`}</p>
+                    </div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                      <button onClick={() => { remove(CEO_PORTAL, "documents", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(560px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Document</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <CeoField label="Type"><CeoSelect value={editing.docType} onChange={v => setEditing({ ...editing, docType: v })} options={["CAC", "TIN", "TCC", "Lease", "Insurance", "Contract", "Licence", "Other"]} /></CeoField>
+              <CeoField label="Access Level"><CeoSelect value={editing.accessLevel} onChange={v => setEditing({ ...editing, accessLevel: v as any })} options={["CEO-Only", "Division Lead", "Founder-Only"]} /></CeoField>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Document Name</span><CeoInput value={editing.docName} onChange={v => setEditing({ ...editing, docName: v })} /></label>
+              <CeoField label="Issue Date"><CeoInput value={editing.issueDate} onChange={v => setEditing({ ...editing, issueDate: v })} type="date" /></CeoField>
+              <CeoField label="Expiry Date"><CeoInput value={editing.expiryDate} onChange={v => setEditing({ ...editing, expiryDate: v })} type="date" /></CeoField>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Storage Location</span><CeoInput value={editing.storageLocation} onChange={v => setEditing({ ...editing, storageLocation: v })} /></label>
+              <CeoField label="Status"><CeoSelect value={editing.status} onChange={v => setEditing({ ...editing, status: v as any })} options={["Active", "Expiring", "Expired", "Renewed"]} /></CeoField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 5. Division Updates (weekly) ─── */
+function DivisionUpdatesSection() {
+  const [rows, setRows] = useState<DivisionUpdateRow[]>([]);
+  const [editing, setEditing] = useState<Partial<DivisionUpdateRow> | null>(null);
+  const refresh = () => setRows(readAll<DivisionUpdateRow>(CEO_PORTAL, "divisionUpdates"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.division) { toast.error("Division required"); return; }
+    if (editing.id) update<DivisionUpdateRow>(CEO_PORTAL, "divisionUpdates", editing.id, editing);
+    else insert<DivisionUpdateRow>(CEO_PORTAL, "divisionUpdates", {
+      weekOf: editing.weekOf || todayISO(),
+      division: editing.division!,
+      highlights: editing.highlights || "", challenges: editing.challenges || "",
+      requests: editing.requests || "", nextWeekPlans: editing.nextWeekPlans || "",
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Weekly entries per division — highlights, challenges, requests, next-week plans.">Division Updates</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} division updates</p>
+          <button onClick={() => setEditing({})} style={ceoBtnPrimary}><Plus size={12} /> Add Update</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={MessageSquare} title="No division updates yet" /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.slice().reverse().map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.division} · Week of {fmtDate(r.weekOf)}</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(CEO_PORTAL, "divisionUpdates", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+                {r.highlights && <p style={{ fontSize: 12, color: GREEN, marginBottom: 4 }}>✓ {r.highlights}</p>}
+                {r.challenges && <p style={{ fontSize: 12, color: "#F59E0B", marginBottom: 4 }}>⚠ {r.challenges}</p>}
+                {r.requests && <p style={{ fontSize: 12, color: DARK, marginBottom: 4 }}>? {r.requests}</p>}
+                {r.nextWeekPlans && <p style={{ fontSize: 12, color: MUTED }}>→ {r.nextWeekPlans}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(600px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Division Update</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <CeoField label="Week Of"><CeoInput value={editing.weekOf} onChange={v => setEditing({ ...editing, weekOf: v })} type="date" /></CeoField>
+              <CeoField label="Division"><CeoSelect value={editing.division} onChange={v => setEditing({ ...editing, division: v })} options={["bizdoc", "scalar", "medialy", "hub", "cso", "finance", "hr", "bizdev"]} /></CeoField>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Highlights</span><CeoTextarea value={editing.highlights} onChange={v => setEditing({ ...editing, highlights: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Challenges</span><CeoTextarea value={editing.challenges} onChange={v => setEditing({ ...editing, challenges: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Requests</span><CeoTextarea value={editing.requests} onChange={v => setEditing({ ...editing, requests: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Next-Week Plans</span><CeoTextarea value={editing.nextWeekPlans} onChange={v => setEditing({ ...editing, nextWeekPlans: v })} /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 6. Canva Templates ─── */
+function CanvaTemplatesSection() {
+  const [rows, setRows] = useState<CanvaTemplateRow[]>([]);
+  const [editing, setEditing] = useState<Partial<CanvaTemplateRow> | null>(null);
+  const refresh = () => setRows(readAll<CanvaTemplateRow>(CEO_PORTAL, "canvaTemplates"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.templateName) { toast.error("Template name required"); return; }
+    if (editing.id) update<CanvaTemplateRow>(CEO_PORTAL, "canvaTemplates", editing.id, editing);
+    else insert<CanvaTemplateRow>(CEO_PORTAL, "canvaTemplates", {
+      templateName: editing.templateName!, canvaLink: editing.canvaLink || "",
+      lastUpdated: editing.lastUpdated || todayISO(),
+      category: (editing.category as any) || "Social",
+      status: (editing.status as any) || "Active",
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Master template library. Links to Canva assets.">Canva Templates</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.filter(r => r.status === "Active").length} active templates</p>
+          <button onClick={() => setEditing({})} style={ceoBtnPrimary}><Plus size={12} /> Add Template</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={ImageIcon} title="No templates yet" /> : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08`, opacity: r.status === "Archived" ? 0.6 : 1 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 999, backgroundColor: `${GOLD}15`, color: GOLD }}>{r.category}</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={12} /></button>
+                    <button onClick={() => { remove(CEO_PORTAL, "canvaTemplates", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={12} /></button>
+                  </div>
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.templateName}</p>
+                <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Updated {fmtDate(r.lastUpdated)}</p>
+                {r.canvaLink && <a href={r.canvaLink} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: GREEN, marginTop: 6, display: "inline-block" }}>Open in Canva →</a>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(480px, 100%)" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Canva Template</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Template Name</span><CeoInput value={editing.templateName} onChange={v => setEditing({ ...editing, templateName: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Canva Link</span><CeoInput value={editing.canvaLink} onChange={v => setEditing({ ...editing, canvaLink: v })} type="url" /></label>
+              <CeoField label="Category"><CeoSelect value={editing.category} onChange={v => setEditing({ ...editing, category: v as any })} options={["Social", "Proposal", "Deck", "Flyer", "Other"]} /></CeoField>
+              <CeoField label="Status"><CeoSelect value={editing.status} onChange={v => setEditing({ ...editing, status: v as any })} options={["Active", "Archived"]} /></CeoField>
+              <CeoField label="Last Updated"><CeoInput value={editing.lastUpdated} onChange={v => setEditing({ ...editing, lastUpdated: v })} type="date" /></CeoField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 7. Weekly Meetings ─── */
+function WeeklyMeetingsSection() {
+  const [rows, setRows] = useState<WeeklyMeetingRow[]>([]);
+  const [editing, setEditing] = useState<Partial<WeeklyMeetingRow> | null>(null);
+  const refresh = () => setRows(readAll<WeeklyMeetingRow>(CEO_PORTAL, "weeklyMeetings"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.date) { toast.error("Date required"); return; }
+    if (editing.id) update<WeeklyMeetingRow>(CEO_PORTAL, "weeklyMeetings", editing.id, editing);
+    else insert<WeeklyMeetingRow>(CEO_PORTAL, "weeklyMeetings", {
+      date: editing.date!, kind: (editing.kind as any) || "Monday Kickoff",
+      attendees: editing.attendees || "", agenda: editing.agenda || "",
+      decisions: editing.decisions || "", actionItems: editing.actionItems || "",
+      assignedTo: editing.assignedTo || "", dueDate: editing.dueDate, notesLink: editing.notesLink,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Mon kickoff / Wed midweek / Fri wrap — structured meeting log.">Weekly Meetings</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} meetings logged</p>
+          <button onClick={() => setEditing({ date: todayISO() })} style={ceoBtnPrimary}><Plus size={12} /> Log Meeting</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={CalendarCheck} title="No meetings logged yet" /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.slice().reverse().map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.kind} · {fmtDate(r.date)}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.attendees}</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(CEO_PORTAL, "weeklyMeetings", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+                {r.agenda && <p style={{ fontSize: 12, color: DARK, marginTop: 4 }}><b>Agenda:</b> {r.agenda}</p>}
+                {r.decisions && <p style={{ fontSize: 12, color: GREEN, marginTop: 4 }}><b>Decisions:</b> {r.decisions}</p>}
+                {r.actionItems && <p style={{ fontSize: 12, color: GOLD, marginTop: 4 }}><b>Actions:</b> {r.actionItems}{r.assignedTo ? ` → ${r.assignedTo}` : ""}{r.dueDate ? ` (by ${r.dueDate})` : ""}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(600px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Log"} Meeting</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <CeoField label="Date"><CeoInput value={editing.date} onChange={v => setEditing({ ...editing, date: v })} type="date" /></CeoField>
+              <CeoField label="Kind"><CeoSelect value={editing.kind} onChange={v => setEditing({ ...editing, kind: v as any })} options={["Monday Kickoff", "Wednesday Midweek", "Friday Wrap", "Ad-hoc"]} /></CeoField>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Attendees</span><CeoInput value={editing.attendees} onChange={v => setEditing({ ...editing, attendees: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Agenda</span><CeoTextarea value={editing.agenda} onChange={v => setEditing({ ...editing, agenda: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Decisions Made</span><CeoTextarea value={editing.decisions} onChange={v => setEditing({ ...editing, decisions: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>Action Items</span><CeoTextarea value={editing.actionItems} onChange={v => setEditing({ ...editing, actionItems: v })} /></label>
+              <CeoField label="Assigned To"><CeoInput value={editing.assignedTo} onChange={v => setEditing({ ...editing, assignedTo: v })} /></CeoField>
+              <CeoField label="Due Date"><CeoInput value={editing.dueDate} onChange={v => setEditing({ ...editing, dueDate: v })} type="date" /></CeoField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={ceoBtnGhost}>Cancel</button>
+              <button onClick={save} style={ceoBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 8. Approval Tiers (read-only reference + quick calculator) ─── */
+function ApprovalTiersSection() {
+  const [amount, setAmount] = useState<number>(0);
+  const approver =
+    amount < 50_000 ? { tier: "Division Lead", color: GREEN, note: "Any division lead can approve." } :
+    amount <= 500_000 ? { tier: "CEO", color: GOLD, note: "CEO approval required." } :
+    { tier: "Founder", color: "#8B4513", note: "Founder sign-off required (>₦500k)." };
+
+  return (
+    <div>
+      <SectionTitle sub="Purchase approval tiers. Escalation SLAs for severity.">Approvals & Thresholds</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+          Purchase approval calculator
+        </p>
+        <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <CeoInput value={amount} onChange={v => setAmount(Number(v))} type="number" />
+          <div style={{
+            padding: "12px 20px", borderRadius: 12, backgroundColor: `${approver.color}15`,
+            color: approver.color, fontWeight: 700, fontSize: 14,
+          }}>
+            → {approver.tier} approves
+          </div>
+        </div>
+        <p style={{ fontSize: 11, color: MUTED, marginTop: 8 }}>{approver.note}</p>
+      </Card>
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+          Purchase approval tiers
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
+          {[
+            { tier: "< ₦50,000",      who: "Division Lead", color: GREEN },
+            { tier: "₦50k – ₦500k",   who: "CEO",           color: GOLD },
+            { tier: "> ₦500,000",     who: "Founder",       color: "#8B4513" },
+          ].map(t => (
+            <div key={t.tier} style={{ padding: 14, borderRadius: 10, backgroundColor: `${t.color}10`, border: `1px solid ${t.color}30` }}>
+              <p style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.tier}</p>
+              <p style={{ fontSize: 18, fontWeight: 700, color: t.color, marginTop: 4 }}>{t.who}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+          Escalation severity (SLA to understand: 4 hours)
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+          {[
+            { s: "Emergency", color: "#EF4444", sla: "Respond in 15min" },
+            { s: "Urgent",    color: "#F59E0B", sla: "Respond in 1h" },
+            { s: "Important", color: GOLD,      sla: "Respond in 4h" },
+            { s: "Normal",    color: GREEN,     sla: "Respond same day" },
+          ].map(t => (
+            <div key={t.s} style={{ padding: 14, borderRadius: 10, border: `1px solid ${t.color}30`, borderLeft: `3px solid ${t.color}` }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: t.color }}>{t.s}</p>
+              <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>{t.sla}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

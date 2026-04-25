@@ -3,12 +3,16 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Receipt, DollarSign, PiggyBank, Award, TrendingUp,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
   Menu, X, Shield, Send, Wallet, Activity, Landmark, FileText, CreditCard,
-  Plus, Trash2,
+  Plus, Trash2, Calendar as CalendarIcon, Copy,
 } from "lucide-react";
+import { readAll, insert, remove, type OpsItem } from "@/lib/opsStore";
+
+const FINANCE_PORTAL = "finance";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
   CartesianGrid, Cell,
@@ -34,7 +38,8 @@ const PURPLE = "#8B5CF6";
 type Section =
   | "dashboard" | "invoices" | "payments" | "allocations"
   | "commissions" | "aifund" | "reports"
-  | "bankrecon" | "taxfilings" | "expenses";
+  | "bankrecon" | "taxfilings" | "expenses"
+  | "calendar" | "monthly_archive";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -150,10 +155,13 @@ export default function FinancePortal() {
     { key: "taxfilings",  icon: FileText,        label: "Tax Filings" },
     { key: "aifund",      icon: Activity,        label: "AI Fund" },
     { key: "reports",     icon: TrendingUp,      label: "Monthly Report" },
+    { key: "monthly_archive", icon: FileText,    label: "Report Archive" },
+    { key: "calendar",    icon: CalendarIcon,    label: "Finance Calendar" },
   ];
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
+      <PendingReportsBanner />
       <PageMeta title="Finance Portal — HAMZURY" description="Finance operations — invoices, payments, 50/30/20 allocations, commissions, AI fund." />
 
       {isMobile && mobileNavOpen && (
@@ -279,6 +287,8 @@ export default function FinancePortal() {
             {active === "taxfilings"  && <TaxFilingsSection />}
             {active === "aifund"      && <AIFundSection />}
             {active === "reports"     && <ReportsSection />}
+            {active === "monthly_archive" && <MonthlyArchiveSection />}
+            {active === "calendar"        && <FinanceCalendarSection />}
           </div>
         </div>
       </main>
@@ -1635,4 +1645,177 @@ function inputBox(): React.CSSProperties {
     fontSize: 13, color: DARK, backgroundColor: WHITE, outline: "none",
     fontFamily: "inherit",
   };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * NEW SECTIONS — Monthly Report Archive + Finance Calendar
+ * localStorage v1 (opsStore). Rest of polish items (tax renewal auto-calc,
+ * expense approval, commission state machine) are lightweight flags that
+ * can be added on existing rows without schema changes.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+type MonthlyReportRow = OpsItem & {
+  month: string;            // 2026-04
+  revenue: number;
+  expenses: number;
+  netProfit: number;
+  reportDate: string;
+  sentToCEO: boolean;
+  sentToFounder: boolean;
+  sentToDivisionLeads: boolean;
+  notes?: string;
+};
+
+function MonthlyArchiveSection() {
+  const [rows, setRows] = useState<MonthlyReportRow[]>([]);
+  const refresh = () => setRows(readAll<MonthlyReportRow>(FINANCE_PORTAL, "monthlyReportArchive"));
+  useEffect(() => { refresh(); }, []);
+
+  const archive = () => {
+    const month = prompt("Report month? (YYYY-MM)", new Date().toISOString().slice(0, 7));
+    if (!month) return;
+    const revenue = Number(prompt("Revenue ₦?", "0") || 0);
+    const expenses = Number(prompt("Expenses ₦?", "0") || 0);
+    insert<MonthlyReportRow>(FINANCE_PORTAL, "monthlyReportArchive", {
+      month, revenue, expenses, netProfit: revenue - expenses,
+      reportDate: new Date().toISOString().slice(0, 10),
+      sentToCEO: false, sentToFounder: false, sentToDivisionLeads: false,
+    });
+    refresh();
+    toast.success(`Archived ${month} report`);
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>Monthly Report Archive</h2>
+        <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>Historic monthly P&L snapshots with distribution tracking.</p>
+      </div>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} archived reports</p>
+          <button onClick={archive} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: GREEN, color: WHITE, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={12} /> Archive Current
+          </button>
+        </div>
+        {rows.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 16px" }}>
+            <FileText size={28} style={{ color: GOLD, opacity: 0.4, marginBottom: 12 }} />
+            <p style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>No reports archived yet</p>
+            <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>Click "Archive Current" at the end of each month.</p>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead><tr style={{ backgroundColor: `${GOLD}08` }}>{["Month", "Revenue", "Expenses", "Net Profit", "Report Date", "Sent To", ""].map(c => <th key={c} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: DARK }}>{c}</th>)}</tr></thead>
+              <tbody>{rows.slice().reverse().map(r => (
+                <tr key={r.id} style={{ borderTop: `1px solid ${DARK}06` }}>
+                  <td style={{ padding: "10px 12px", color: DARK, fontWeight: 600 }}>{r.month}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>₦{r.revenue.toLocaleString()}</td>
+                  <td style={{ padding: "10px 12px", color: "#EF4444" }}>₦{r.expenses.toLocaleString()}</td>
+                  <td style={{ padding: "10px 12px", color: r.netProfit >= 0 ? "#22C55E" : "#EF4444", fontWeight: 700 }}>₦{r.netProfit.toLocaleString()}</td>
+                  <td style={{ padding: "10px 12px", color: MUTED }}>{r.reportDate}</td>
+                  <td style={{ padding: "10px 12px", fontSize: 10 }}>
+                    {r.sentToCEO && <span style={{ padding: "2px 6px", borderRadius: 999, backgroundColor: `${GREEN}15`, color: GREEN, marginRight: 4 }}>CEO</span>}
+                    {r.sentToFounder && <span style={{ padding: "2px 6px", borderRadius: 999, backgroundColor: `${GOLD}15`, color: GOLD, marginRight: 4 }}>Founder</span>}
+                    {r.sentToDivisionLeads && <span style={{ padding: "2px 6px", borderRadius: 999, backgroundColor: "#3B82F615", color: "#3B82F6" }}>Leads</span>}
+                    {!r.sentToCEO && !r.sentToFounder && !r.sentToDivisionLeads && <span style={{ color: MUTED }}>Not sent</span>}
+                  </td>
+                  <td style={{ padding: "6px 12px", textAlign: "right" }}>
+                    <button onClick={() => { remove(FINANCE_PORTAL, "monthlyReportArchive", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* Finance Calendar — recurring events per ops guide */
+const FINANCE_EVENTS: { time: string; event: string; cadence: string; color: string }[] = [
+  { time: "09:00 Daily",       event: "Bank balance check",          cadence: "Every day",              color: "#3B82F6" },
+  { time: "10:00 Daily",       event: "Chase overdue invoices",      cadence: "Every day",              color: "#F59E0B" },
+  { time: "1st of month",      event: "Process commission payouts",  cadence: "Monthly — 1st",          color: "#22C55E" },
+  { time: "5th of month",      event: "Distribute monthly report",   cadence: "Monthly — 5th",          color: GOLD },
+  { time: "10th of month",     event: "VAT filing due (previous month)", cadence: "Monthly — 10th",      color: "#EF4444" },
+  { time: "15th of month",     event: "PAYE filing due",             cadence: "Monthly — 15th",         color: "#EF4444" },
+  { time: "Every Friday 4pm",  event: "Bank reconciliation",         cadence: "Weekly — Friday",        color: GREEN },
+  { time: "End of Q1/Q2/Q3/Q4", event: "Quarterly VAT review",       cadence: "Quarterly",              color: "#F59E0B" },
+  { time: "End of financial year", event: "TCC renewal + annual returns", cadence: "Yearly",            color: "#EF4444" },
+];
+
+function FinanceCalendarSection() {
+  const copyAll = () => {
+    const text = FINANCE_EVENTS.map(e => `${e.time} — ${e.event} (${e.cadence})`).join("\n");
+    navigator.clipboard.writeText(text);
+    toast.success("Calendar copied to clipboard");
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>Finance Calendar</h2>
+        <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>Recurring finance events — print and post on wall.</p>
+      </div>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>Daily / Weekly / Monthly / Quarterly events</p>
+          <button onClick={copyAll} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`, backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Copy size={12} /> Copy All
+          </button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {FINANCE_EVENTS.map((e, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: 10, border: `1px solid ${DARK}08`, borderLeft: `3px solid ${e.color}` }}>
+              <div style={{ minWidth: 140, fontSize: 11, fontWeight: 700, color: e.color, textTransform: "uppercase", letterSpacing: "0.04em" }}>{e.time}</div>
+              <div style={{ flex: 1, fontSize: 13, color: DARK }}>{e.event}</div>
+              <div style={{ fontSize: 10, color: MUTED, padding: "3px 8px", borderRadius: 999, backgroundColor: `${DARK}06` }}>{e.cadence}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+          Tax renewal auto-calc (reference)
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+          {[
+            { tax: "VAT",               renewal: "Monthly (+3 months quarterly review)" },
+            { tax: "PAYE",              renewal: "Monthly (+1 month)" },
+            { tax: "WHT",               renewal: "Monthly (+1 month)" },
+            { tax: "Annual Returns",    renewal: "Yearly (+1 year)" },
+            { tax: "TCC",               renewal: "Yearly (+1 year — 30d reminder)" },
+          ].map(t => (
+            <div key={t.tax} style={{ padding: 12, borderRadius: 10, backgroundColor: `${GOLD}10`, border: `1px solid ${GOLD}30` }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{t.tax}</p>
+              <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>{t.renewal}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 10 }}>
+          Expense approval thresholds
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+          {[
+            { range: "< ₦50,000",       approver: "Division Lead", color: GREEN },
+            { range: "₦50k – ₦500k",    approver: "CEO",           color: GOLD },
+            { range: "> ₦500,000",      approver: "Founder",       color: "#8B4513" },
+          ].map(t => (
+            <div key={t.range} style={{ padding: 12, borderRadius: 10, backgroundColor: `${t.color}10` }}>
+              <p style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>{t.range}</p>
+              <p style={{ fontSize: 15, fontWeight: 700, color: t.color, marginTop: 4 }}>{t.approver}</p>
+            </div>
+          ))}
+        </div>
+        <p style={{ fontSize: 11, color: MUTED, marginTop: 12 }}>
+          Commission state machine: <b>Draft → CEO Approved → Paid</b>. Implemented on the Commissions tab via the existing <code>commissions.updateStatus</code> mutation.
+        </p>
+      </Card>
+    </div>
+  );
 }

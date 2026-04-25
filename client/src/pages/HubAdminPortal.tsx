@@ -10,12 +10,17 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, UserCheck, Trophy, Share2, Award, CalendarDays,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
   Menu, X, Shield, Send, GraduationCap, Plus, Trash2, Eye,
+  BadgeCheck, GraduationCap as AlumniIcon, BookOpen, Briefcase, Wrench, Edit3, Save,
 } from "lucide-react";
 import { toast } from "sonner";
+import { readAll, insert, update, remove, type OpsItem } from "@/lib/opsStore";
+
+const HUB_PORTAL = "hub";
 
 /* Palette — HUB uses aged navy as accent (Brand Bible) */
 const BG = "#FFFAF6";
@@ -32,7 +37,8 @@ const GREEN_OK = "#22C55E";
 
 type Section =
   | "dashboard" | "enrollments" | "cohorts" | "attendance"
-  | "competition" | "social" | "calendar" | "reports";
+  | "competition" | "social" | "calendar" | "reports"
+  | "certification" | "alumni" | "lms" | "interns" | "metfix";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -249,12 +255,18 @@ export default function HubAdminPortal() {
     { key: "attendance",  icon: UserCheck,       label: "Attendance" },
     { key: "competition", icon: Trophy,          label: "Team Competition" },
     { key: "social",      icon: Share2,          label: "Social Verification" },
+    { key: "lms",         icon: BookOpen,        label: "LMS & Assignments" },
+    { key: "certification", icon: BadgeCheck,    label: "Certification" },
+    { key: "alumni",      icon: AlumniIcon,      label: "Alumni" },
+    { key: "interns",     icon: Briefcase,       label: "Intern Coordination" },
+    { key: "metfix",      icon: Wrench,          label: "MetFix" },
     { key: "calendar",    icon: CalendarDays,    label: "Operations Calendar" },
     { key: "reports",     icon: Award,           label: "Reports" },
   ];
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
+      <PendingReportsBanner />
       <PageMeta title="HUB Admin — HAMZURY" description="HAMZURY HUB admin — enrollments, cohorts, attendance, team competitions, social verification." />
 
       {isMobile && mobileNavOpen && (
@@ -372,6 +384,11 @@ export default function HubAdminPortal() {
             {active === "attendance"  && <AttendanceSection />}
             {active === "competition" && <CompetitionSection />}
             {active === "social"      && <SocialSection />}
+            {active === "lms"           && <LmsSection />}
+            {active === "certification" && <CertificationSection />}
+            {active === "alumni"        && <AlumniSection />}
+            {active === "interns"       && <InternCoordSection />}
+            {active === "metfix"        && <MetFixSection />}
             {active === "calendar"    && <OpsCalendarSection />}
             {active === "reports"     && <ReportsSection />}
           </div>
@@ -1494,6 +1511,519 @@ Built to Last.`;
           <Send size={12} /> Copy Report
         </button>
       </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * NEW HUB TABS — Certification / Alumni / LMS / Interns / MetFix
+ * localStorage v1 (opsStore), no backend.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+type CertRow = OpsItem & {
+  studentName: string;
+  programme: string;
+  cohort: string;
+  lmsComplete: boolean;
+  assignmentsSubmitted: boolean;
+  externalCertUrl?: string;  // Google/Coursera link
+  socialVerified: boolean;
+  attendance: number;        // %
+  finalProjectDone: boolean;
+  certificateIssued: boolean;
+  issueDate?: string;
+};
+
+type AlumniRow = OpsItem & {
+  name: string;
+  programme: string;
+  cohort: string;
+  graduationDate: string;
+  employmentStatus: "Employed" | "Self-Employed" | "Unplaced" | "Further Study";
+  currentRole?: string;
+  testimonial?: string;
+  discountCode?: string;
+  lastCheckIn?: string;
+};
+
+type LmsRow = OpsItem & {
+  studentName: string;
+  programme: string;
+  cohort: string;
+  module: string;
+  moduleCompletion: number;  // 0-100
+  assignment: string;
+  assignmentGrade?: number;  // 0-100
+  assignmentSubmitted: boolean;
+};
+
+type InternDutyRow = OpsItem & {
+  internName: string;         // Isa or Musa
+  internId: string;           // HMZ-I-001 / HMZ-I-002
+  attendanceOwned: boolean;
+  lmsGradingOwned: boolean;
+  hrHandoffLogged: boolean;
+  notes?: string;
+};
+
+type MetFixRow = OpsItem & {
+  item: string;
+  kind: "Hardware" | "Service";
+  price: number;
+  monthlySales: number;
+  revenueToHub: number;
+};
+
+function TinyInput({ value, onChange, placeholder, type = "text", rows }: {
+  value: any; onChange: (v: any) => void; placeholder?: string;
+  type?: "text" | "number" | "date" | "url" | "textarea"; rows?: number;
+}) {
+  if (type === "textarea") return (
+    <textarea value={value ?? ""} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows ?? 2}
+      style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`, fontSize: 13, width: "100%", resize: "vertical" }} />
+  );
+  return (
+    <input type={type} value={value ?? ""} onChange={e => onChange(type === "number" ? Number(e.target.value) : e.target.value)} placeholder={placeholder}
+      style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`, fontSize: 13, width: "100%" }} />
+  );
+}
+function TinySelect({ value, onChange, options }: { value: any; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <select value={value ?? ""} onChange={e => onChange(e.target.value)}
+      style={{ padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`, fontSize: 13, width: "100%", backgroundColor: WHITE }}>
+      <option value="">—</option>
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+
+/* ─── 1. Certification ─── */
+function CertificationSection() {
+  const [rows, setRows] = useState<CertRow[]>([]);
+  const [editing, setEditing] = useState<Partial<CertRow> | null>(null);
+  const refresh = () => setRows(readAll<CertRow>(HUB_PORTAL, "certifications"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.studentName) { toast.error("Student name required"); return; }
+    if (editing.id) update<CertRow>(HUB_PORTAL, "certifications", editing.id, editing);
+    else insert<CertRow>(HUB_PORTAL, "certifications", {
+      studentName: editing.studentName!, programme: editing.programme || "",
+      cohort: editing.cohort || "", lmsComplete: !!editing.lmsComplete,
+      assignmentsSubmitted: !!editing.assignmentsSubmitted,
+      externalCertUrl: editing.externalCertUrl || "",
+      socialVerified: !!editing.socialVerified,
+      attendance: editing.attendance ?? 0,
+      finalProjectDone: !!editing.finalProjectDone,
+      certificateIssued: !!editing.certificateIssued,
+      issueDate: editing.issueDate,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const issue = (r: CertRow) => {
+    const eligible = r.lmsComplete && r.assignmentsSubmitted && r.socialVerified && r.attendance >= 80 && r.finalProjectDone;
+    if (!eligible) { toast.error("Student does not meet all cert requirements"); return; }
+    update<CertRow>(HUB_PORTAL, "certifications", r.id, { certificateIssued: true, issueDate: new Date().toISOString().slice(0, 10) });
+    refresh(); toast.success(`HAMZURY certificate issued to ${r.studentName}`);
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Per-student cert checklist. Must pass 6 gates before HAMZURY certificate issues.">Certification</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.filter(r => r.certificateIssued).length} issued · {rows.length} total</p>
+          <button onClick={() => setEditing({})} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={12} /> Add Student
+          </button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={BadgeCheck} title="No certification candidates yet." /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(r => {
+              const gates = [
+                { k: "LMS 100%", v: r.lmsComplete },
+                { k: "Assignments", v: r.assignmentsSubmitted },
+                { k: "External cert", v: !!r.externalCertUrl },
+                { k: "Social", v: r.socialVerified },
+                { k: `Attendance ${r.attendance}%`, v: r.attendance >= 80 },
+                { k: "Final project", v: r.finalProjectDone },
+              ];
+              const passed = gates.filter(g => g.v).length;
+              return (
+                <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08` }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.studentName}</p>
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.programme} · {r.cohort}</p>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      {!r.certificateIssued && <button onClick={() => issue(r)} style={{ padding: "6px 12px", borderRadius: 999, border: "none", backgroundColor: GREEN_OK, color: WHITE, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>Issue Cert</button>}
+                      {r.certificateIssued && <span style={{ padding: "6px 12px", borderRadius: 999, backgroundColor: `${GREEN_OK}15`, color: GREEN_OK, fontSize: 11, fontWeight: 700 }}>✓ Issued {r.issueDate}</span>}
+                      <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: BLUE, cursor: "pointer" }}><Edit3 size={13} /></button>
+                      <button onClick={() => { remove(HUB_PORTAL, "certifications", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: RED, cursor: "pointer" }}><Trash2 size={13} /></button>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 6 }}>
+                    {gates.map(g => (
+                      <div key={g.k} style={{ padding: "6px 10px", borderRadius: 8, backgroundColor: g.v ? `${GREEN_OK}12` : `${DARK}06`, display: "flex", alignItems: "center", gap: 6 }}>
+                        <CheckCircle2 size={12} color={g.v ? GREEN_OK : MUTED} />
+                        <span style={{ fontSize: 11, color: DARK }}>{g.k}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 8 }}>{passed}/6 gates passed</p>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(560px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Certification Track</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Student Name</span><TinyInput value={editing.studentName} onChange={v => setEditing({ ...editing, studentName: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Programme</span><TinyInput value={editing.programme} onChange={v => setEditing({ ...editing, programme: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cohort</span><TinyInput value={editing.cohort} onChange={v => setEditing({ ...editing, cohort: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Attendance %</span><TinyInput value={editing.attendance} onChange={v => setEditing({ ...editing, attendance: v })} type="number" /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>External Cert URL (Google/Coursera)</span><TinyInput value={editing.externalCertUrl} onChange={v => setEditing({ ...editing, externalCertUrl: v })} type="url" placeholder="https://..." /></label>
+              {[
+                { k: "lmsComplete", l: "LMS 100% complete" },
+                { k: "assignmentsSubmitted", l: "All assignments submitted" },
+                { k: "socialVerified", l: "Social posting verified" },
+                { k: "finalProjectDone", l: "Final project done" },
+              ].map(g => (
+                <label key={g.k} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <input type="checkbox" checked={!!(editing as any)[g.k]} onChange={e => setEditing({ ...editing, [g.k]: e.target.checked })} style={{ width: 16, height: 16 }} />
+                  <span style={{ fontSize: 13, color: DARK }}>{g.l}</span>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`, backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={save} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 2. Alumni ─── */
+function AlumniSection() {
+  const [rows, setRows] = useState<AlumniRow[]>([]);
+  const [editing, setEditing] = useState<Partial<AlumniRow> | null>(null);
+  const refresh = () => setRows(readAll<AlumniRow>(HUB_PORTAL, "alumni"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.name) { toast.error("Name required"); return; }
+    if (editing.id) update<AlumniRow>(HUB_PORTAL, "alumni", editing.id, editing);
+    else insert<AlumniRow>(HUB_PORTAL, "alumni", {
+      name: editing.name!, programme: editing.programme || "",
+      cohort: editing.cohort || "", graduationDate: editing.graduationDate || "",
+      employmentStatus: (editing.employmentStatus as any) || "Unplaced",
+      currentRole: editing.currentRole, testimonial: editing.testimonial,
+      discountCode: editing.discountCode || `ALUM20-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+      lastCheckIn: editing.lastCheckIn,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const logCheckIn = (id: string) => {
+    update<AlumniRow>(HUB_PORTAL, "alumni", id, { lastCheckIn: new Date().toISOString().slice(0, 10) });
+    refresh(); toast.success("Check-in logged");
+  };
+
+  const employed = rows.filter(r => r.employmentStatus === "Employed" || r.employmentStatus === "Self-Employed").length;
+
+  return (
+    <div>
+      <SectionTitle sub="3-month check-ins. Employment tracking. Testimonials. 20% alumni discount.">Alumni</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 14, borderRadius: 10, backgroundColor: `${GREEN_OK}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN_OK }}>{rows.length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Alumni</p></div>
+          <div style={{ padding: 14, borderRadius: 10, backgroundColor: `${BLUE}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: BLUE }}>{employed}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Employed</p></div>
+          <div style={{ padding: 14, borderRadius: 10, backgroundColor: `${GOLD}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GOLD }}>{rows.filter(r => r.testimonial).length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Testimonials</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} alumni tracked</p>
+          <button onClick={() => setEditing({})} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={12} /> Add Alumnus
+          </button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={AlumniIcon} title="No alumni yet" hint="First cohort completes soon." /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 12, borderRadius: 10, border: `1px solid ${DARK}08`, display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.name}</p>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.programme} · {r.cohort} · Graduated {r.graduationDate}</p>
+                  {r.currentRole && <p style={{ fontSize: 12, color: DARK, marginTop: 4 }}>💼 {r.currentRole}</p>}
+                  {r.testimonial && <p style={{ fontSize: 12, color: DARK, fontStyle: "italic", marginTop: 4, lineHeight: 1.5 }}>"{r.testimonial}"</p>}
+                  <div style={{ display: "flex", gap: 8, marginTop: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 999, backgroundColor: r.employmentStatus === "Employed" || r.employmentStatus === "Self-Employed" ? `${GREEN_OK}15` : `${ORANGE}15`, color: r.employmentStatus === "Employed" || r.employmentStatus === "Self-Employed" ? GREEN_OK : ORANGE }}>{r.employmentStatus}</span>
+                    {r.discountCode && <span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 999, backgroundColor: `${GOLD}15`, color: GOLD, fontFamily: "monospace" }}>{r.discountCode}</span>}
+                    {r.lastCheckIn && <span style={{ fontSize: 10, color: MUTED }}>Last check-in: {r.lastCheckIn}</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
+                  <button onClick={() => logCheckIn(r.id)} style={{ padding: "4px 10px", borderRadius: 999, border: `1px solid ${BLUE}30`, backgroundColor: WHITE, color: BLUE, fontSize: 10, fontWeight: 600, cursor: "pointer" }}>Log check-in</button>
+                  <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: BLUE, cursor: "pointer" }}><Edit3 size={13} /></button>
+                  <button onClick={() => { remove(HUB_PORTAL, "alumni", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: RED, cursor: "pointer" }}><Trash2 size={13} /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(560px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Alumnus</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Name</span><TinyInput value={editing.name} onChange={v => setEditing({ ...editing, name: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Programme</span><TinyInput value={editing.programme} onChange={v => setEditing({ ...editing, programme: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cohort</span><TinyInput value={editing.cohort} onChange={v => setEditing({ ...editing, cohort: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Graduation</span><TinyInput value={editing.graduationDate} onChange={v => setEditing({ ...editing, graduationDate: v })} type="date" /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Employment</span><TinySelect value={editing.employmentStatus} onChange={v => setEditing({ ...editing, employmentStatus: v as any })} options={["Employed", "Self-Employed", "Unplaced", "Further Study"]} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Current Role</span><TinyInput value={editing.currentRole} onChange={v => setEditing({ ...editing, currentRole: v })} /></label>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Testimonial</span><TinyInput value={editing.testimonial} onChange={v => setEditing({ ...editing, testimonial: v })} type="textarea" /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Discount Code</span><TinyInput value={editing.discountCode} onChange={v => setEditing({ ...editing, discountCode: v })} /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`, backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={save} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 3. LMS & Assignments ─── */
+function LmsSection() {
+  const [rows, setRows] = useState<LmsRow[]>([]);
+  const [editing, setEditing] = useState<Partial<LmsRow> | null>(null);
+  const refresh = () => setRows(readAll<LmsRow>(HUB_PORTAL, "lmsProgress"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.studentName) { toast.error("Student required"); return; }
+    if (editing.id) update<LmsRow>(HUB_PORTAL, "lmsProgress", editing.id, editing);
+    else insert<LmsRow>(HUB_PORTAL, "lmsProgress", {
+      studentName: editing.studentName!, programme: editing.programme || "",
+      cohort: editing.cohort || "", module: editing.module || "",
+      moduleCompletion: editing.moduleCompletion ?? 0,
+      assignment: editing.assignment || "",
+      assignmentGrade: editing.assignmentGrade,
+      assignmentSubmitted: !!editing.assignmentSubmitted,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Module completion + assignment grading. Required to gate certification.">LMS & Assignments</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} progress records</p>
+          <button onClick={() => setEditing({})} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={12} /> Log Progress
+          </button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={BookOpen} title="No LMS data yet" /> : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead><tr style={{ backgroundColor: `${GOLD}08` }}>
+                {["Student", "Programme", "Module", "Completion", "Assignment", "Grade", "Submitted", ""].map(c => <th key={c} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: DARK }}>{c}</th>)}
+              </tr></thead>
+              <tbody>{rows.map(r => (
+                <tr key={r.id} style={{ borderTop: `1px solid ${DARK}06` }}>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.studentName}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.programme}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.module}</td>
+                  <td style={{ padding: "10px 12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <div style={{ flex: 1, maxWidth: 80, height: 6, backgroundColor: `${DARK}10`, borderRadius: 999, overflow: "hidden" }}>
+                        <div style={{ width: `${r.moduleCompletion}%`, height: "100%", backgroundColor: r.moduleCompletion >= 100 ? GREEN_OK : NAVY, borderRadius: 999 }} />
+                      </div>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: DARK, minWidth: 40 }}>{r.moduleCompletion}%</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.assignment}</td>
+                  <td style={{ padding: "10px 12px", color: DARK }}>{r.assignmentGrade != null ? `${r.assignmentGrade}/100` : "—"}</td>
+                  <td style={{ padding: "10px 12px" }}>{r.assignmentSubmitted ? <CheckCircle2 size={14} color={GREEN_OK} /> : <Clock size={14} color={MUTED} />}</td>
+                  <td style={{ padding: "6px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: BLUE, cursor: "pointer", marginRight: 6 }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(HUB_PORTAL, "lmsProgress", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: RED, cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(560px, 100%)" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Log"} LMS Progress</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Student</span><TinyInput value={editing.studentName} onChange={v => setEditing({ ...editing, studentName: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Programme</span><TinyInput value={editing.programme} onChange={v => setEditing({ ...editing, programme: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Cohort</span><TinyInput value={editing.cohort} onChange={v => setEditing({ ...editing, cohort: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Module</span><TinyInput value={editing.module} onChange={v => setEditing({ ...editing, module: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Completion %</span><TinyInput value={editing.moduleCompletion} onChange={v => setEditing({ ...editing, moduleCompletion: v })} type="number" /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Assignment</span><TinyInput value={editing.assignment} onChange={v => setEditing({ ...editing, assignment: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Grade (0-100)</span><TinyInput value={editing.assignmentGrade} onChange={v => setEditing({ ...editing, assignmentGrade: v })} type="number" /></label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, alignSelf: "end" }}>
+                <input type="checkbox" checked={!!editing.assignmentSubmitted} onChange={e => setEditing({ ...editing, assignmentSubmitted: e.target.checked })} style={{ width: 16, height: 16 }} />
+                <span style={{ fontSize: 13, color: DARK }}>Submitted</span>
+              </label>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`, backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={save} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── 4. Intern Coordination (Isa + Musa duties) ─── */
+function InternCoordSection() {
+  const [rows, setRows] = useState<InternDutyRow[]>([]);
+  const refresh = () => setRows(readAll<InternDutyRow>(HUB_PORTAL, "internDuties"));
+  useEffect(() => { refresh(); }, []);
+
+  const seed = () => {
+    if (rows.length > 0) return;
+    insert<InternDutyRow>(HUB_PORTAL, "internDuties", { internName: "Isa", internId: "HMZ-I-001", attendanceOwned: false, lmsGradingOwned: false, hrHandoffLogged: false });
+    insert<InternDutyRow>(HUB_PORTAL, "internDuties", { internName: "Musa", internId: "HMZ-I-002", attendanceOwned: false, lmsGradingOwned: false, hrHandoffLogged: false });
+    refresh();
+  };
+  useEffect(() => { if (rows.length === 0) seed(); /* eslint-disable-next-line */ }, [rows.length]);
+
+  const toggle = (id: string, field: keyof InternDutyRow) => {
+    const row = rows.find(r => r.id === id); if (!row) return;
+    update<InternDutyRow>(HUB_PORTAL, "internDuties", id, { [field]: !(row as any)[field] } as any);
+    refresh();
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Isa (HMZ-I-001) + Musa (HMZ-I-002) duty tracker. HR handoffs to Khadija.">Intern Coordination</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        {rows.length === 0 ? <EmptyState icon={Briefcase} title="Seeding interns..." /> : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 16, borderRadius: 12, border: `1px solid ${DARK}08` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{r.internName}</p>
+                    <p style={{ fontSize: 11, color: MUTED, fontFamily: "monospace", marginTop: 2 }}>{r.internId}</p>
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {[
+                    { k: "attendanceOwned", l: "Attendance Tracking Owner" },
+                    { k: "lmsGradingOwned", l: "LMS Grading Owner" },
+                    { k: "hrHandoffLogged", l: "HR Handoff Logged (→ Khadija)" },
+                  ].map(g => (
+                    <label key={g.k} onClick={() => toggle(r.id, g.k as any)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 8, backgroundColor: (r as any)[g.k] ? `${GREEN_OK}10` : `${DARK}04`, cursor: "pointer" }}>
+                      <CheckCircle2 size={14} color={(r as any)[g.k] ? GREEN_OK : MUTED} />
+                      <span style={{ fontSize: 12, color: DARK }}>{g.l}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── 5. MetFix (hardware + service sales feeding HUB P&L) ─── */
+function MetFixSection() {
+  const [rows, setRows] = useState<MetFixRow[]>([]);
+  const [editing, setEditing] = useState<Partial<MetFixRow> | null>(null);
+  const refresh = () => setRows(readAll<MetFixRow>(HUB_PORTAL, "metfix"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.item) { toast.error("Item required"); return; }
+    if (editing.id) update<MetFixRow>(HUB_PORTAL, "metfix", editing.id, editing);
+    else insert<MetFixRow>(HUB_PORTAL, "metfix", {
+      item: editing.item!, kind: (editing.kind as any) || "Hardware",
+      price: editing.price ?? 0, monthlySales: editing.monthlySales ?? 0,
+      revenueToHub: editing.revenueToHub ?? 0,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const totalRevenue = rows.reduce((a, r) => a + (r.revenueToHub || 0), 0);
+
+  return (
+    <div>
+      <SectionTitle sub="Abdulmalik + Abubakar. Hardware catalog + service menu. Sales feed HUB P&L.">MetFix</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 14, borderRadius: 10, backgroundColor: `${NAVY}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: NAVY }}>{rows.length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Items</p></div>
+          <div style={{ padding: 14, borderRadius: 10, backgroundColor: `${GREEN_OK}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN_OK }}>₦{totalRevenue.toLocaleString()}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Revenue to HUB</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>Catalog + service menu</p>
+          <button onClick={() => setEditing({})} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Plus size={12} /> Add Item
+          </button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Wrench} title="No MetFix items yet" /> : (
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+            <thead><tr style={{ backgroundColor: `${GOLD}08` }}>
+              {["Item", "Kind", "Price", "Monthly Sales", "Revenue to HUB", ""].map(c => <th key={c} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.04em", color: DARK }}>{c}</th>)}
+            </tr></thead>
+            <tbody>{rows.map(r => (
+              <tr key={r.id} style={{ borderTop: `1px solid ${DARK}06` }}>
+                <td style={{ padding: "10px 12px", color: DARK, fontWeight: 600 }}>{r.item}</td>
+                <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 999, backgroundColor: r.kind === "Hardware" ? `${BLUE}15` : `${PURPLE}15`, color: r.kind === "Hardware" ? BLUE : PURPLE }}>{r.kind}</span></td>
+                <td style={{ padding: "10px 12px", color: DARK }}>₦{(r.price || 0).toLocaleString()}</td>
+                <td style={{ padding: "10px 12px", color: DARK }}>{r.monthlySales}</td>
+                <td style={{ padding: "10px 12px", color: GREEN_OK, fontWeight: 600 }}>₦{(r.revenueToHub || 0).toLocaleString()}</td>
+                <td style={{ padding: "6px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                  <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: BLUE, cursor: "pointer", marginRight: 6 }}><Edit3 size={13} /></button>
+                  <button onClick={() => { remove(HUB_PORTAL, "metfix", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: RED, cursor: "pointer" }}><Trash2 size={13} /></button>
+                </td>
+              </tr>
+            ))}</tbody>
+          </table>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(480px, 100%)" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} MetFix Item</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <label style={{ gridColumn: "1/-1" }}><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Item</span><TinyInput value={editing.item} onChange={v => setEditing({ ...editing, item: v })} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Kind</span><TinySelect value={editing.kind} onChange={v => setEditing({ ...editing, kind: v as any })} options={["Hardware", "Service"]} /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Price ₦</span><TinyInput value={editing.price} onChange={v => setEditing({ ...editing, price: v })} type="number" /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Monthly Sales</span><TinyInput value={editing.monthlySales} onChange={v => setEditing({ ...editing, monthlySales: v })} type="number" /></label>
+              <label><span style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: "0.06em", textTransform: "uppercase" }}>Revenue to HUB ₦</span><TinyInput value={editing.revenueToHub} onChange={v => setEditing({ ...editing, revenueToHub: v })} type="number" /></label>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={{ padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`, backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>Cancel</button>
+              <button onClick={save} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: NAVY, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

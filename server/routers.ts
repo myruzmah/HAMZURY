@@ -120,8 +120,8 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
-import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users } from "../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users, reportRequests } from "../drizzle/schema";
+import { eq, desc, and } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
 import { invokeLLM } from "./_core/llm";
@@ -130,6 +130,55 @@ import { TRPCError } from "@trpc/server";
 import { nanoid } from "nanoid";
 import { calculateCommission } from "@shared/commission";
 import { executeAgent, getAgentStatus, toggleAgent } from "./agents/agent-runner";
+
+/**
+ * Map a hamzuryRole to its report-request target department key.
+ * Returns null for roles that should never receive report requests
+ * (founder asks but does not respond; affiliate has no dept). Used by
+ * `reports.pendingForMyDept` and `reports.respond`.
+ */
+type ReportDept =
+  | "cso" | "ceo" | "finance" | "hr" | "bizdev" | "bizdoc" | "hub"
+  | "scalar" | "medialy" | "podcast" | "video" | "faceless";
+function mapHamzuryRoleToReportDept(role: string | null | undefined): ReportDept | null {
+  switch (role) {
+    case "cso":
+    case "cso_staff":
+      return "cso";
+    case "ceo":
+      return "ceo";
+    case "finance":
+      return "finance";
+    case "hr":
+      return "hr";
+    case "bizdev":
+    case "bizdev_staff":
+      return "bizdev";
+    case "compliance_staff":
+      return "bizdoc";
+    case "skills_staff":
+      return "hub";
+    case "scalar_lead":
+    case "scalar_staff":
+    case "tech_lead":
+      return "scalar";
+    case "media":
+    case "medialy_lead":
+    case "medialy_staff":
+      return "medialy";
+    case "podcast_lead":
+    case "podcast_staff":
+      return "podcast";
+    case "video_lead":
+    case "video_staff":
+      return "video";
+    case "faceless_lead":
+    case "faceless_staff":
+      return "faceless";
+    default:
+      return null;
+  }
+}
 
 export const appRouter = router({
   system: systemRouter,
@@ -2129,6 +2178,95 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
       }),
 
     list: protectedProcedure.query(async () => getWeeklyReports()),
+
+    // ─── Founder ↔ Department report requests ────────────────────────────────
+    // Founder is locked out of dept dashboards. These four procedures power a
+    // lightweight ask/answer channel: founder asks, dept replies.
+    requestNew: protectedProcedure
+      .input(z.object({
+        subject: z.string().min(1).max(255),
+        targetDept: z.enum([
+          "cso", "ceo", "finance", "hr", "bizdev", "bizdoc", "hub",
+          "scalar", "medialy", "podcast", "video", "faceless",
+        ]),
+        notes: z.string().max(4000).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.hamzuryRole !== "founder") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only the Founder can request reports." });
+        }
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [result] = await db.insert(reportRequests).values({
+          subject: input.subject,
+          targetDept: input.targetDept,
+          notes: input.notes ?? null,
+          status: "pending",
+          requestedBy: ctx.user.openId,
+        }).$returningId();
+        const id = (result as any)?.id;
+        const [row] = await db.select().from(reportRequests).where(eq(reportRequests.id, id));
+        return row;
+      }),
+
+    myRequests: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.hamzuryRole !== "founder") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only the Founder can view this list." });
+      }
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db.select().from(reportRequests).orderBy(desc(reportRequests.createdAt));
+    }),
+
+    pendingForMyDept: protectedProcedure.query(async ({ ctx }) => {
+      const dept = mapHamzuryRoleToReportDept(ctx.user.hamzuryRole);
+      if (!dept) return [];
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db.select().from(reportRequests)
+        .where(and(eq(reportRequests.targetDept, dept), eq(reportRequests.status, "pending")))
+        .orderBy(desc(reportRequests.createdAt));
+    }),
+
+    respond: protectedProcedure
+      .input(z.object({
+        id: z.number().int().positive(),
+        response: z.string().min(1).max(8000),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [existing] = await db.select().from(reportRequests).where(eq(reportRequests.id, input.id));
+        if (!existing) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Report request not found." });
+        }
+        const dept = mapHamzuryRoleToReportDept(ctx.user.hamzuryRole);
+        if (!dept || dept !== existing.targetDept) {
+          throw new TRPCError({ code: "FORBIDDEN", message: "This request was not addressed to your department." });
+        }
+        await db.update(reportRequests).set({
+          response: input.response,
+          responseBy: ctx.user.name || ctx.user.email || "Staff",
+          respondedAt: new Date(),
+          status: "responded",
+        }).where(eq(reportRequests.id, input.id));
+        const [row] = await db.select().from(reportRequests).where(eq(reportRequests.id, input.id));
+        return row;
+      }),
+
+    cancelRequest: protectedProcedure
+      .input(z.object({ id: z.number().int().positive() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.hamzuryRole !== "founder") {
+          throw new TRPCError({ code: "FORBIDDEN", message: "Only the Founder can cancel a report request." });
+        }
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        await db.update(reportRequests).set({ status: "cancelled" })
+          .where(and(eq(reportRequests.id, input.id), eq(reportRequests.status, "pending")));
+        const [row] = await db.select().from(reportRequests).where(eq(reportRequests.id, input.id));
+        return row;
+      }),
   }),
 
   // ─── Audit Logs ───────────────────────────────────────────────────────────

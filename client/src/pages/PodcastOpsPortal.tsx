@@ -11,6 +11,7 @@ import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell"
 import PhaseTracker, { KanbanLane, PhaseCard } from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
 import { trpc } from "@/lib/trpc";
+import PendingReportsBanner from "@/components/PendingReportsBanner";
 
 /* ══════════════════════════════════════════════════════════════════════════
  * HAMZURY PODCAST OPS PORTAL
@@ -275,6 +276,8 @@ export default function PodcastOpsPortal() {
   ];
 
   return (
+    <>
+    <PendingReportsBanner />
     <OpsShell
       title="Podcast Ops"
       subtitle="HAMZURY Podcast Unit — production, guests, publishing"
@@ -319,6 +322,7 @@ export default function PodcastOpsPortal() {
       {active === "equipment"  && <EquipmentSection />}
       {active === "pricing"    && <PricingSection />}
     </OpsShell>
+    </>
   );
 }
 

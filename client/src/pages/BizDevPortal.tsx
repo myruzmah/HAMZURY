@@ -3,14 +3,19 @@ import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
+import PendingReportsBanner from "@/components/PendingReportsBanner";
 import {
   LayoutDashboard, Users, Handshake, Megaphone, Gift, Award,
   Calendar as CalendarIcon, LogOut, ArrowLeft, Loader2,
   TrendingUp, AlertCircle, Menu, X, Plus, Shield, Briefcase,
   Target as TargetIcon, CheckCircle2, Clock, Trash2, Send,
   Folder, ChevronRight, ExternalLink, DollarSign,
+  Edit3, Save, FileText, Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import { readAll, insert, update, remove, type OpsItem } from "@/lib/opsStore";
+
+const BIZDEV_PORTAL = "bizdev";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY BIZDEV PORTAL — Growth Engine Control
@@ -199,6 +204,7 @@ export default function BizDevPortal() {
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", backgroundColor: BG, position: "relative" }}>
+      <PendingReportsBanner />
       <PageMeta title="BizDev Portal — HAMZURY" description="HAMZURY Business Development — growth, partnerships, and affiliate operations." />
 
       {isMobile && mobileNavOpen && (
@@ -337,22 +343,10 @@ export default function BizDevPortal() {
             {active === "targets"      && <WeeklyTargetsInboxSection />}
             {active === "tasks"        && <TasksSection />}
             {active === "calendar"     && <CalendarSection />}
-            {active === "campaigns"    && <ComingSoonCard
-              title="Campaigns"
-              description="Campaign register, objectives, CTA, budget, leads generated."
-              backend="Requires a new 'campaigns' table: objective, owner, target audience, CTA, budget, status, leads_generated. Once added you'll see campaigns listed here and tied to leads via campaignId." />}
-            {active === "grants"       && <ComingSoonCard
-              title="Grants"
-              description="Grant opportunity register, deadlines, application stages."
-              backend="Requires a new 'grants' table: opportunity, provider, deadline, application_stage, documents, submission_status, reporting_obligations." />}
-            {active === "sponsorships" && <ComingSoonCard
-              title="Sponsorships"
-              description="Sponsor target list, deck status, expected value, follow-ups."
-              backend="Requires a new 'sponsorships' table: target, stage, deck_sent, follow_up_date, expected_value, status, closed_lost_reason." />}
-            {active === "backoffice"   && <ComingSoonCard
-              title="Back Office"
-              description="Templates, scripts, campaign briefs, outreach standards."
-              backend="Can reuse the existing 'documents' table or a new 'bizdevTemplates' table. Will hold reusable outreach messages, pitch brief templates, and campaign playbooks." />}
+            {active === "campaigns"    && <CampaignsSection />}
+            {active === "grants"       && <GrantsSection />}
+            {active === "sponsorships" && <SponsorshipsSection />}
+            {active === "backoffice"   && <BackOfficeSection />}
           </div>
         </div>
       </main>
@@ -1490,3 +1484,421 @@ function WeeklyTargetsInboxSection() {
   );
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * NEW TABS — Campaigns · Grants · Sponsorships · Back Office
+ * localStorage v1 (opsStore).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+type CampaignRow = OpsItem & {
+  name: string;
+  kind: "Webinar" | "Outreach" | "Email Drip" | "Paid Ad" | "Event" | "Other";
+  startDate: string;
+  endDate: string;
+  targetAudience: string;
+  budget: number;
+  kpiTarget: string;
+  actualResult?: string;
+  status: "Planned" | "Active" | "Paused" | "Complete" | "Cancelled";
+  owner: string;
+};
+
+type GrantRow = OpsItem & {
+  grantName: string;
+  funder: string;
+  amount: number;
+  deadline: string;
+  status: "Research" | "Writing" | "Submitted" | "Under Review" | "Awarded" | "Declined";
+  nextStep: string;
+  owner: string;
+  notes?: string;
+};
+
+type SponsorshipRow = OpsItem & {
+  sponsorName: string;
+  eventOrInitiative: string;
+  amount: number;
+  duration: string;
+  deliverables: string;
+  contractStatus: "Negotiating" | "Signed" | "Delivered" | "Complete";
+  closedLostReason?: string;
+};
+
+type BizdevTemplateRow = OpsItem & {
+  templateName: string;
+  category: "Grant Proposal" | "Partnership Pitch" | "Cold Email" | "Meeting Agenda" | "Outreach" | "Other";
+  body: string;
+};
+
+const bizdevInputStyle: React.CSSProperties = {
+  padding: "8px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+  fontSize: 13, backgroundColor: WHITE, width: "100%",
+};
+function BdField({ label, children, fullWidth }: { label: string; children: React.ReactNode; fullWidth?: boolean }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 4, gridColumn: fullWidth ? "1/-1" : undefined }}>
+      <span style={{ fontSize: 10, color: MUTED, letterSpacing: "0.06em", textTransform: "uppercase", fontWeight: 600 }}>{label}</span>
+      {children}
+    </label>
+  );
+}
+function BdInput({ value, onChange, type = "text" }: { value: any; onChange: (v: any) => void; type?: string }) {
+  return <input type={type} value={value ?? ""} onChange={e => onChange(type === "number" ? Number(e.target.value) : e.target.value)} style={bizdevInputStyle} />;
+}
+function BdSelect({ value, onChange, options }: { value: any; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <select value={value ?? ""} onChange={e => onChange(e.target.value)} style={bizdevInputStyle}>
+      <option value="">—</option>
+      {options.map(o => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
+}
+function BdTextarea({ value, onChange, rows = 2 }: { value: any; onChange: (v: string) => void; rows?: number }) {
+  return <textarea value={value ?? ""} onChange={e => onChange(e.target.value)} rows={rows} style={{ ...bizdevInputStyle, resize: "vertical" }} />;
+}
+const bdBtnPrimary: React.CSSProperties = {
+  padding: "8px 14px", borderRadius: 999, border: "none",
+  backgroundColor: GREEN, color: WHITE,
+  fontSize: 12, fontWeight: 600, cursor: "pointer",
+  display: "flex", alignItems: "center", gap: 6,
+};
+const bdBtnGhost: React.CSSProperties = {
+  padding: "8px 14px", borderRadius: 999, border: `1px solid ${DARK}15`,
+  backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+};
+
+function fmtN(v: number) { return `₦${(v || 0).toLocaleString("en-NG")}`; }
+function daysTo(d: string) {
+  if (!d) return 999;
+  return Math.ceil((new Date(d).getTime() - Date.now()) / 86400000);
+}
+
+/* ─── Campaigns ─── */
+function CampaignsSection() {
+  const [rows, setRows] = useState<CampaignRow[]>([]);
+  const [editing, setEditing] = useState<Partial<CampaignRow> | null>(null);
+  const refresh = () => setRows(readAll<CampaignRow>(BIZDEV_PORTAL, "campaigns"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.name) { toast.error("Campaign name required"); return; }
+    if (editing.id) update<CampaignRow>(BIZDEV_PORTAL, "campaigns", editing.id, editing);
+    else insert<CampaignRow>(BIZDEV_PORTAL, "campaigns", {
+      name: editing.name!, kind: (editing.kind as any) || "Outreach",
+      startDate: editing.startDate || "", endDate: editing.endDate || "",
+      targetAudience: editing.targetAudience || "", budget: editing.budget ?? 0,
+      kpiTarget: editing.kpiTarget || "", actualResult: editing.actualResult,
+      status: (editing.status as any) || "Planned", owner: editing.owner || "",
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Webinars, outreach, email drips, paid ads. Track budget vs results.">Campaigns</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.filter(r => r.status === "Active").length} active · {rows.length} total</p>
+          <button onClick={() => setEditing({})} style={bdBtnPrimary}><Plus size={12} /> New Campaign</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Megaphone} title="No campaigns yet" /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.name}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.kind} · {r.targetAudience} · Owner: {r.owner}</p>
+                    <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}>Budget: {fmtN(r.budget)} · KPI: {r.kpiTarget || "—"}</p>
+                    {r.actualResult && <p style={{ fontSize: 11, color: GREEN, marginTop: 4 }}>✓ {r.actualResult}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 999, backgroundColor: r.status === "Active" ? `${GREEN}20` : r.status === "Cancelled" ? "#EF444415" : `${GOLD}15`, color: r.status === "Active" ? GREEN : r.status === "Cancelled" ? "#EF4444" : GOLD }}>{r.status}</span>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(BIZDEV_PORTAL, "campaigns", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(600px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "New"} Campaign</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <BdField label="Name" fullWidth><BdInput value={editing.name} onChange={v => setEditing({ ...editing, name: v })} /></BdField>
+              <BdField label="Kind"><BdSelect value={editing.kind} onChange={v => setEditing({ ...editing, kind: v as any })} options={["Webinar", "Outreach", "Email Drip", "Paid Ad", "Event", "Other"]} /></BdField>
+              <BdField label="Owner"><BdInput value={editing.owner} onChange={v => setEditing({ ...editing, owner: v })} /></BdField>
+              <BdField label="Start Date"><BdInput value={editing.startDate} onChange={v => setEditing({ ...editing, startDate: v })} type="date" /></BdField>
+              <BdField label="End Date"><BdInput value={editing.endDate} onChange={v => setEditing({ ...editing, endDate: v })} type="date" /></BdField>
+              <BdField label="Target Audience" fullWidth><BdInput value={editing.targetAudience} onChange={v => setEditing({ ...editing, targetAudience: v })} /></BdField>
+              <BdField label="Budget ₦"><BdInput value={editing.budget} onChange={v => setEditing({ ...editing, budget: v })} type="number" /></BdField>
+              <BdField label="Status"><BdSelect value={editing.status} onChange={v => setEditing({ ...editing, status: v as any })} options={["Planned", "Active", "Paused", "Complete", "Cancelled"]} /></BdField>
+              <BdField label="KPI Target" fullWidth><BdInput value={editing.kpiTarget} onChange={v => setEditing({ ...editing, kpiTarget: v })} /></BdField>
+              <BdField label="Actual Result" fullWidth><BdInput value={editing.actualResult} onChange={v => setEditing({ ...editing, actualResult: v })} /></BdField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={bdBtnGhost}>Cancel</button>
+              <button onClick={save} style={bdBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Grants ─── */
+function GrantsSection() {
+  const [rows, setRows] = useState<GrantRow[]>([]);
+  const [editing, setEditing] = useState<Partial<GrantRow> | null>(null);
+  const refresh = () => setRows(readAll<GrantRow>(BIZDEV_PORTAL, "grants"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.grantName) { toast.error("Grant name required"); return; }
+    if (editing.id) update<GrantRow>(BIZDEV_PORTAL, "grants", editing.id, editing);
+    else insert<GrantRow>(BIZDEV_PORTAL, "grants", {
+      grantName: editing.grantName!, funder: editing.funder || "",
+      amount: editing.amount ?? 0, deadline: editing.deadline || "",
+      status: (editing.status as any) || "Research",
+      nextStep: editing.nextStep || "", owner: editing.owner || "",
+      notes: editing.notes,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const totalAwarded = rows.filter(r => r.status === "Awarded").reduce((a, r) => a + (r.amount || 0), 0);
+  const totalSubmitted = rows.filter(r => r.status === "Submitted" || r.status === "Under Review").reduce((a, r) => a + (r.amount || 0), 0);
+  const upcoming = rows.filter(r => r.status !== "Awarded" && r.status !== "Declined" && daysTo(r.deadline) >= 0 && daysTo(r.deadline) <= 30).length;
+
+  return (
+    <div>
+      <SectionTitle sub="Grant pipeline. Target: 2-3/quarter, 1-2 awarded/year.">Grants</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GREEN}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN }}>{fmtN(totalAwarded)}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Awarded</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GOLD}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GOLD }}>{fmtN(totalSubmitted)}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>In review</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: "#EF444410" }}><p style={{ fontSize: 20, fontWeight: 700, color: "#EF4444" }}>{upcoming}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Due &lt;30d</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} grants tracked</p>
+          <button onClick={() => setEditing({})} style={bdBtnPrimary}><Plus size={12} /> Add Grant</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Gift} title="No grants tracked yet" hint="Tue is grant-writing day per BizDev ops guide." /> : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead><tr style={{ backgroundColor: `${GOLD}08` }}>{["Grant", "Funder", "Amount", "Deadline", "Status", "Next Step", "Owner", ""].map(c => <th key={c} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: DARK }}>{c}</th>)}</tr></thead>
+              <tbody>{rows.map(r => {
+                const d = daysTo(r.deadline);
+                const tone = r.status === "Awarded" ? GREEN : r.status === "Declined" ? "#EF4444" : d <= 14 ? "#EF4444" : d <= 30 ? GOLD : "#3B82F6";
+                return (
+                  <tr key={r.id} style={{ borderTop: `1px solid ${DARK}06` }}>
+                    <td style={{ padding: "10px 12px", color: DARK, fontWeight: 600 }}>{r.grantName}</td>
+                    <td style={{ padding: "10px 12px", color: DARK }}>{r.funder}</td>
+                    <td style={{ padding: "10px 12px", color: DARK }}>{fmtN(r.amount)}</td>
+                    <td style={{ padding: "10px 12px", color: tone, fontWeight: 600 }}>{r.deadline || "—"} {d >= 0 && d <= 30 && r.status !== "Awarded" && r.status !== "Declined" ? `(${d}d)` : ""}</td>
+                    <td style={{ padding: "10px 12px" }}><span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 999, backgroundColor: `${tone}15`, color: tone }}>{r.status}</span></td>
+                    <td style={{ padding: "10px 12px", color: DARK, fontSize: 11 }}>{r.nextStep}</td>
+                    <td style={{ padding: "10px 12px", color: MUTED }}>{r.owner}</td>
+                    <td style={{ padding: "6px 12px", textAlign: "right", whiteSpace: "nowrap" }}>
+                      <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer", marginRight: 6 }}><Edit3 size={13} /></button>
+                      <button onClick={() => { remove(BIZDEV_PORTAL, "grants", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                    </td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(600px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Grant</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <BdField label="Grant Name" fullWidth><BdInput value={editing.grantName} onChange={v => setEditing({ ...editing, grantName: v })} /></BdField>
+              <BdField label="Funder"><BdInput value={editing.funder} onChange={v => setEditing({ ...editing, funder: v })} /></BdField>
+              <BdField label="Amount ₦"><BdInput value={editing.amount} onChange={v => setEditing({ ...editing, amount: v })} type="number" /></BdField>
+              <BdField label="Deadline"><BdInput value={editing.deadline} onChange={v => setEditing({ ...editing, deadline: v })} type="date" /></BdField>
+              <BdField label="Status"><BdSelect value={editing.status} onChange={v => setEditing({ ...editing, status: v as any })} options={["Research", "Writing", "Submitted", "Under Review", "Awarded", "Declined"]} /></BdField>
+              <BdField label="Next Step" fullWidth><BdInput value={editing.nextStep} onChange={v => setEditing({ ...editing, nextStep: v })} /></BdField>
+              <BdField label="Owner"><BdInput value={editing.owner} onChange={v => setEditing({ ...editing, owner: v })} /></BdField>
+              <BdField label="Notes" fullWidth><BdTextarea value={editing.notes} onChange={v => setEditing({ ...editing, notes: v })} /></BdField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={bdBtnGhost}>Cancel</button>
+              <button onClick={save} style={bdBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Sponsorships ─── */
+function SponsorshipsSection() {
+  const [rows, setRows] = useState<SponsorshipRow[]>([]);
+  const [editing, setEditing] = useState<Partial<SponsorshipRow> | null>(null);
+  const refresh = () => setRows(readAll<SponsorshipRow>(BIZDEV_PORTAL, "sponsorships"));
+  useEffect(() => { refresh(); }, []);
+
+  const save = () => {
+    if (!editing?.sponsorName) { toast.error("Sponsor name required"); return; }
+    if (editing.id) update<SponsorshipRow>(BIZDEV_PORTAL, "sponsorships", editing.id, editing);
+    else insert<SponsorshipRow>(BIZDEV_PORTAL, "sponsorships", {
+      sponsorName: editing.sponsorName!, eventOrInitiative: editing.eventOrInitiative || "",
+      amount: editing.amount ?? 0, duration: editing.duration || "",
+      deliverables: editing.deliverables || "",
+      contractStatus: (editing.contractStatus as any) || "Negotiating",
+      closedLostReason: editing.closedLostReason,
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const totalValue = rows.filter(r => r.contractStatus === "Signed" || r.contractStatus === "Delivered" || r.contractStatus === "Complete").reduce((a, r) => a + (r.amount || 0), 0);
+
+  return (
+    <div>
+      <SectionTitle sub="Sponsor register. Signed value, deliverables, delivery status.">Sponsorships</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 16 }}>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GREEN}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GREEN }}>{fmtN(totalValue)}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Signed value</p></div>
+          <div style={{ padding: 12, borderRadius: 10, backgroundColor: `${GOLD}10` }}><p style={{ fontSize: 20, fontWeight: 700, color: GOLD }}>{rows.filter(r => r.contractStatus === "Negotiating").length}</p><p style={{ fontSize: 11, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em" }}>Negotiating</p></div>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} sponsorships</p>
+          <button onClick={() => setEditing({})} style={bdBtnPrimary}><Plus size={12} /> Add Sponsor</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={Award} title="No sponsorships yet" /> : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.sponsorName}</p>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{r.eventOrInitiative} · {r.duration}</p>
+                    <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}>{fmtN(r.amount)} · {r.deliverables}</p>
+                    {r.closedLostReason && <p style={{ fontSize: 11, color: "#EF4444", marginTop: 4, fontStyle: "italic" }}>Lost: {r.closedLostReason}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 999, backgroundColor: r.contractStatus === "Complete" ? `${GREEN}20` : r.contractStatus === "Signed" ? `${GOLD}15` : "#3B82F615", color: r.contractStatus === "Complete" ? GREEN : r.contractStatus === "Signed" ? GOLD : "#3B82F6" }}>{r.contractStatus}</span>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(BIZDEV_PORTAL, "sponsorships", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(600px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "Add"} Sponsorship</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <BdField label="Sponsor Name" fullWidth><BdInput value={editing.sponsorName} onChange={v => setEditing({ ...editing, sponsorName: v })} /></BdField>
+              <BdField label="Event / Initiative" fullWidth><BdInput value={editing.eventOrInitiative} onChange={v => setEditing({ ...editing, eventOrInitiative: v })} /></BdField>
+              <BdField label="Amount ₦"><BdInput value={editing.amount} onChange={v => setEditing({ ...editing, amount: v })} type="number" /></BdField>
+              <BdField label="Duration"><BdInput value={editing.duration} onChange={v => setEditing({ ...editing, duration: v })} /></BdField>
+              <BdField label="Deliverables" fullWidth><BdTextarea value={editing.deliverables} onChange={v => setEditing({ ...editing, deliverables: v })} /></BdField>
+              <BdField label="Contract Status"><BdSelect value={editing.contractStatus} onChange={v => setEditing({ ...editing, contractStatus: v as any })} options={["Negotiating", "Signed", "Delivered", "Complete"]} /></BdField>
+              <BdField label="Lost Reason (if any)" fullWidth><BdInput value={editing.closedLostReason} onChange={v => setEditing({ ...editing, closedLostReason: v })} /></BdField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={bdBtnGhost}>Cancel</button>
+              <button onClick={save} style={bdBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Back Office (templates) ─── */
+const SEED_TEMPLATES: Omit<BizdevTemplateRow, "id" | "createdAt" | "updatedAt">[] = [
+  { templateName: "Grant Proposal — Executive Summary", category: "Grant Proposal", body: "HAMZURY is a Nigerian tech-training and business-services company serving underserved founders...\n\n[Problem: ...]\n[Solution: ...]\n[Ask: ₦___ over ___ months]\n[Outcomes: ...]" },
+  { templateName: "Partnership Pitch — Intro", category: "Partnership Pitch", body: "Hi [Name],\n\nI'm Muhammad Hamzury, founder of HAMZURY. We run four divisions — Bizdoc (compliance), Scalar (web/automation), Medialy (social), HUB (training).\n\nThe reason I'm reaching out: [specific synergy]. Our clients would benefit from [their service], and yours would benefit from [our service].\n\nOpen to a 20-min call next week?" },
+  { templateName: "Cold Email — Corporate Training", category: "Cold Email", body: "Subject: Quick question about your team's AI skills\n\nHi [Name],\n\nNoticed your team at [Company] has been growing fast. Quick question — how are you upskilling them on AI tools?\n\nWe run corporate AI training for Nigerian teams. Typical outcome: 15% productivity lift in 60 days.\n\nWorth a 15-min chat? No pitch, just a quick scan." },
+  { templateName: "Meeting Agenda — First Partner Call", category: "Meeting Agenda", body: "1. Intros (5 min)\n2. Our work + your work (10 min)\n3. Where we see overlap (10 min)\n4. Proposed pilot (10 min)\n5. Next steps + owners (5 min)\n\nOutcome: A 2-page written proposal within 5 business days." },
+  { templateName: "Outreach — Affiliate Recruitment", category: "Outreach", body: "Hey [Name],\n\nWe're building an affiliate programme for HAMZURY. You'll get 18% commission on every client you refer that closes — no cap, paid monthly.\n\nInterested? I'll send the deck." },
+];
+
+function BackOfficeSection() {
+  const [rows, setRows] = useState<BizdevTemplateRow[]>([]);
+  const [editing, setEditing] = useState<Partial<BizdevTemplateRow> | null>(null);
+  const refresh = () => setRows(readAll<BizdevTemplateRow>(BIZDEV_PORTAL, "templates"));
+  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    if (rows.length === 0) {
+      SEED_TEMPLATES.forEach(t => insert<BizdevTemplateRow>(BIZDEV_PORTAL, "templates", t));
+      refresh();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows.length]);
+
+  const save = () => {
+    if (!editing?.templateName) { toast.error("Name required"); return; }
+    if (editing.id) update<BizdevTemplateRow>(BIZDEV_PORTAL, "templates", editing.id, editing);
+    else insert<BizdevTemplateRow>(BIZDEV_PORTAL, "templates", {
+      templateName: editing.templateName!, category: (editing.category as any) || "Outreach",
+      body: editing.body || "",
+    });
+    setEditing(null); refresh(); toast.success("Saved");
+  };
+
+  const copy = (body: string) => {
+    navigator.clipboard.writeText(body);
+    toast.success("Copied to clipboard");
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Reusable outreach scripts, grant intros, pitch templates. Click Copy to send.">Back Office Templates</SectionTitle>
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} templates</p>
+          <button onClick={() => setEditing({})} style={bdBtnPrimary}><Plus size={12} /> New Template</button>
+        </div>
+        {rows.length === 0 ? <EmptyState icon={FileText} title="Seeding templates..." /> : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 }}>
+            {rows.map(r => (
+              <div key={r.id} style={{ padding: 14, borderRadius: 10, border: `1px solid ${DARK}08` }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 999, backgroundColor: `${GOLD}15`, color: GOLD }}>{r.category}</span>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button onClick={() => copy(r.body)} style={{ border: "none", background: "transparent", color: GREEN, cursor: "pointer" }} title="Copy"><Copy size={13} /></button>
+                    <button onClick={() => setEditing(r)} style={{ border: "none", background: "transparent", color: "#3B82F6", cursor: "pointer" }}><Edit3 size={13} /></button>
+                    <button onClick={() => { remove(BIZDEV_PORTAL, "templates", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
+                  </div>
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: DARK, marginBottom: 6 }}>{r.templateName}</p>
+                <p style={{ fontSize: 11, color: MUTED, whiteSpace: "pre-wrap", lineHeight: 1.5, maxHeight: 120, overflow: "hidden" }}>{r.body.slice(0, 200)}{r.body.length > 200 ? "…" : ""}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+      {editing && (
+        <div onClick={() => setEditing(null)} style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div onClick={e => e.stopPropagation()} style={{ backgroundColor: WHITE, borderRadius: 16, padding: 24, width: "min(640px, 100%)", maxHeight: "90vh", overflowY: "auto" }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, color: DARK, marginBottom: 16 }}>{editing.id ? "Edit" : "New"} Template</h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <BdField label="Name" fullWidth><BdInput value={editing.templateName} onChange={v => setEditing({ ...editing, templateName: v })} /></BdField>
+              <BdField label="Category" fullWidth><BdSelect value={editing.category} onChange={v => setEditing({ ...editing, category: v as any })} options={["Grant Proposal", "Partnership Pitch", "Cold Email", "Meeting Agenda", "Outreach", "Other"]} /></BdField>
+              <BdField label="Body" fullWidth><BdTextarea value={editing.body} onChange={v => setEditing({ ...editing, body: v })} rows={10} /></BdField>
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 20 }}>
+              <button onClick={() => setEditing(null)} style={bdBtnGhost}>Cancel</button>
+              <button onClick={save} style={bdBtnPrimary}><Save size={12} /> Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
