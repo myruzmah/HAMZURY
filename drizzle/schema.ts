@@ -3167,3 +3167,30 @@ export const hubMetfix = mysqlTable("hub_metfix", {
 export type HubMetfix = typeof hubMetfix.$inferSelect;
 export type InsertHubMetfix = typeof hubMetfix.$inferInsert;
 
+/**
+ * Finance Monthly Reports — archived monthly P&L summaries.
+ * One row per (month, archive event). Restored 2026-04 after the
+ * launch-time cut from FinancePortal.tsx (was localStorage-backed).
+ *   month       — "YYYY-MM" (e.g. "2026-04")
+ *   revenue     — total revenue for the month
+ *   expenses    — total expenses for the month
+ *   profit      — usually revenue − expenses, but stored explicitly so
+ *                 small reconciliations don't break the audit trail
+ *   notes       — free-form commentary
+ *   archivedBy  — name/email of the staff member who archived it
+ */
+export const financeMonthlyReports = mysqlTable("finance_monthly_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  month: varchar("month", { length: 7 }).notNull(),
+  revenue: decimal("revenue", { precision: 14, scale: 2 }),
+  expenses: decimal("expenses", { precision: 14, scale: 2 }),
+  profit: decimal("profit", { precision: 14, scale: 2 }),
+  notes: text("notes"),
+  archivedBy: varchar("archivedBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type FinanceMonthlyReport = typeof financeMonthlyReports.$inferSelect;
+export type InsertFinanceMonthlyReport = typeof financeMonthlyReports.$inferInsert;
+

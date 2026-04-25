@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Receipt, DollarSign, PiggyBank, Award, TrendingUp,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
   Menu, X, Shield, Send, Wallet, Activity, Landmark, FileText, CreditCard,
-  Plus, Trash2, Calendar as CalendarIcon, Copy,
+  Plus, Trash2, Calendar as CalendarIcon, Copy, Archive,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
@@ -17,7 +17,9 @@ import {
 import { toast } from "sonner";
 
 /* 2026-04 founder decision: 1 section (monthly report archive) was on
-   localStorage and removed for launch. Re-add when migrated to MySQL. */
+   localStorage and removed for launch. Restored 2026-04 — now backed by
+   MySQL via tRPC `financeOps.monthlyReports.*`
+   (server/financeOps/router.ts). */
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY FINANCE PORTAL — Abubakar + senior staff.
@@ -37,7 +39,7 @@ const PURPLE = "#8B5CF6";
 
 type Section =
   | "dashboard" | "invoices" | "payments" | "allocations"
-  | "commissions" | "aifund" | "reports"
+  | "commissions" | "aifund" | "reports" | "reportArchive"
   | "bankrecon" | "taxfilings" | "expenses"
   | "calendar";
 
@@ -155,6 +157,7 @@ export default function FinancePortal() {
     { key: "taxfilings",  icon: FileText,        label: "Tax Filings" },
     { key: "aifund",      icon: Activity,        label: "AI Fund" },
     { key: "reports",     icon: TrendingUp,      label: "Monthly Report" },
+    { key: "reportArchive", icon: Archive,       label: "Report Archive" },
     { key: "calendar",    icon: CalendarIcon,    label: "Finance Calendar" },
   ];
 
@@ -286,6 +289,7 @@ export default function FinancePortal() {
             {active === "taxfilings"  && <TaxFilingsSection />}
             {active === "aifund"      && <AIFundSection />}
             {active === "reports"     && <ReportsSection />}
+            {active === "reportArchive" && <ReportArchiveSection />}
             {active === "calendar"        && <FinanceCalendarSection />}
           </div>
         </div>
@@ -1726,6 +1730,365 @@ function FinanceCalendarSection() {
         <p style={{ fontSize: 11, color: MUTED, marginTop: 12 }}>
           Commission state machine: <b>Draft → CEO Approved → Paid</b>. Implemented on the Commissions tab via the existing <code>commissions.updateStatus</code> mutation.
         </p>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * RESTORED SECTION — MySQL via tRPC `financeOps.monthlyReports.*`
+ * (server/financeOps/router.ts). The 1 section that was cut for launch
+ * is brought back here. Pattern mirrors HubAdminPortal.tsx restoration:
+ * inline form helpers, ids are int end-to-end, toast on success,
+ * invalidate on mutate.
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+function PrimaryButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{
+        padding: "8px 14px", borderRadius: 10,
+        backgroundColor: GREEN, color: WHITE, border: "none",
+        fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        display: "inline-flex", alignItems: "center", gap: 6,
+      }}>{children}</button>
+  );
+}
+function GhostButton({ onClick, children, color = MUTED }: { onClick: () => void; children: React.ReactNode; color?: string }) {
+  return (
+    <button onClick={onClick}
+      style={{
+        padding: "5px 10px", borderRadius: 8,
+        backgroundColor: `${color}10`, color, border: "none",
+        fontSize: 10, fontWeight: 600, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 4,
+      }}>{children}</button>
+  );
+}
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontSize: 10, color: MUTED, textTransform: "uppercase",
+      letterSpacing: "0.06em", fontWeight: 600,
+    }}>{children}</span>
+  );
+}
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }} />
+  );
+}
+function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%", minHeight: 60, resize: "vertical", fontFamily: "inherit",
+        ...props.style,
+      }} />
+  );
+}
+function FormGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+    </label>
+  );
+}
+
+/** Current month as "YYYY-MM". */
+function thisMonthYM(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+/** Format "YYYY-MM" as "April 2026". */
+function fmtMonthYM(ym: string | null | undefined): string {
+  if (!ym) return "—";
+  const m = /^(\d{4})-(\d{2})$/.exec(ym);
+  if (!m) return ym;
+  const year = parseInt(m[1], 10);
+  const monthIdx = parseInt(m[2], 10) - 1;
+  if (Number.isNaN(year) || monthIdx < 0 || monthIdx > 11) return ym;
+  const d = new Date(year, monthIdx, 1);
+  return d.toLocaleDateString("en-NG", { month: "long", year: "numeric" });
+}
+
+function ReportArchiveSection() {
+  const { user } = useAuth({ redirectOnUnauthenticated: true });
+  const utils = trpc.useUtils();
+  const q = trpc.financeOps.monthlyReports.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    month: thisMonthYM(),
+    revenue: "",
+    expenses: "",
+    profit: "",
+    profitTouched: false,
+    notes: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  // Auto-derive profit unless the user has explicitly edited it.
+  const autoProfit = useMemo(() => {
+    const r = parseFloat(form.revenue);
+    const e = parseFloat(form.expenses);
+    if (isNaN(r) && isNaN(e)) return "";
+    return ((isNaN(r) ? 0 : r) - (isNaN(e) ? 0 : e)).toString();
+  }, [form.revenue, form.expenses]);
+  const profitValue = form.profitTouched ? form.profit : autoProfit;
+
+  const createMut = trpc.financeOps.monthlyReports.create.useMutation({
+    onSuccess: () => {
+      toast.success("Monthly report archived");
+      utils.financeOps.monthlyReports.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.financeOps.monthlyReports.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.financeOps.monthlyReports.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.financeOps.monthlyReports.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.financeOps.monthlyReports.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<{
+    month: string; revenue: string; expenses: string; profit: string; notes: string;
+  }>({ month: "", revenue: "", expenses: "", profit: "", notes: "" });
+
+  const openEdit = (r: any) => {
+    setEditingId(r.id);
+    setEditDraft({
+      month: r.month || "",
+      revenue: r.revenue ?? "",
+      expenses: r.expenses ?? "",
+      profit: r.profit ?? "",
+      notes: r.notes ?? "",
+    });
+  };
+  const cancelEdit = () => { setEditingId(null); };
+  const saveEdit = () => {
+    if (editingId == null) return;
+    if (!/^\d{4}-\d{2}$/.test(editDraft.month)) {
+      toast.error("Month must be YYYY-MM");
+      return;
+    }
+    updateMut.mutate({
+      id: editingId,
+      month: editDraft.month,
+      revenue: editDraft.revenue || null,
+      expenses: editDraft.expenses || null,
+      profit: editDraft.profit || null,
+      notes: editDraft.notes || null,
+    });
+    setEditingId(null);
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Archive each month's P&L summary for the audit trail. View past months any time.">
+        Monthly Report Archive
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Months Archived" value={rows.length} color={GREEN} />
+        <MiniStat
+          label="Latest Revenue"
+          value={fmtNaira(rows[0]?.revenue)}
+          color={GOLD}
+        />
+        <MiniStat
+          label="Latest Profit"
+          value={fmtNaira(rows[0]?.profit)}
+          color={
+            rows[0]?.profit !== null && rows[0]?.profit !== undefined && parseFloat(rows[0].profit) >= 0
+              ? GREEN : RED
+          }
+        />
+        <MiniStat label="Latest Month" value={fmtMonthYM(rows[0]?.month)} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+            Archive a Month
+          </p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Archive Report"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Month (YYYY-MM)">
+                <TextInput
+                  type="month"
+                  value={form.month}
+                  onChange={e => setForm({ ...form, month: e.target.value })}
+                />
+              </FormField>
+              <FormField label="Revenue (₦)">
+                <TextInput
+                  type="number" step="0.01" min="0"
+                  value={form.revenue}
+                  onChange={e => setForm({ ...form, revenue: e.target.value })}
+                  placeholder="0.00"
+                />
+              </FormField>
+              <FormField label="Expenses (₦)">
+                <TextInput
+                  type="number" step="0.01" min="0"
+                  value={form.expenses}
+                  onChange={e => setForm({ ...form, expenses: e.target.value })}
+                  placeholder="0.00"
+                />
+              </FormField>
+              <FormField label="Profit (₦) — auto from rev − exp">
+                <TextInput
+                  type="number" step="0.01"
+                  value={profitValue}
+                  onChange={e => setForm({ ...form, profit: e.target.value, profitTouched: true })}
+                  placeholder="0.00"
+                />
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Notes (commentary, anomalies, context)">
+                <TextArea
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  placeholder="e.g. Big retainer paid this month, one-off equipment expense, etc."
+                />
+              </FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!/^\d{4}-\d{2}$/.test(form.month)) { toast.error("Month must be YYYY-MM"); return; }
+                createMut.mutate({
+                  month: form.month,
+                  revenue: form.revenue || null,
+                  expenses: form.expenses || null,
+                  profit: profitValue || null,
+                  notes: form.notes || null,
+                  archivedBy: user?.name || user?.email || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Archive Report</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Archive} title="No reports archived" hint="Archive each month's summary so the audit trail is complete." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => {
+              const isEditing = editingId === r.id;
+              const profitNum = r.profit !== null && r.profit !== undefined ? parseFloat(r.profit) : NaN;
+              const profitOk = !isNaN(profitNum) && profitNum >= 0;
+              return (
+                <div key={r.id} style={{
+                  padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                }}>
+                  {!isEditing ? (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{fmtMonthYM(r.month)}</p>
+                          <StatusPill
+                            label={!isNaN(profitNum) ? (profitOk ? "Profit" : "Loss") : "—"}
+                            tone={!isNaN(profitNum) ? (profitOk ? "green" : "red") : "muted"}
+                          />
+                        </div>
+                        <div style={{ display: "flex", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, color: MUTED }}>
+                            Revenue: <b style={{ color: DARK }}>{fmtNaira(r.revenue)}</b>
+                          </span>
+                          <span style={{ fontSize: 11, color: MUTED }}>
+                            Expenses: <b style={{ color: DARK }}>{fmtNaira(r.expenses)}</b>
+                          </span>
+                          <span style={{ fontSize: 11, color: MUTED }}>
+                            Profit: <b style={{ color: profitOk ? GREEN : RED }}>{fmtNaira(r.profit)}</b>
+                          </span>
+                        </div>
+                        {r.notes && (
+                          <p style={{ fontSize: 11, color: MUTED, marginTop: 6, fontStyle: "italic" }}>{r.notes}</p>
+                        )}
+                        <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
+                          {r.archivedBy ? <>Archived by {r.archivedBy} · </> : null}
+                          {fmtDate(r.createdAt)}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 100 }}>
+                        <GhostButton onClick={() => openEdit(r)} color={GREEN}>
+                          Edit
+                        </GhostButton>
+                        <GhostButton onClick={() => { if (confirm(`Remove archive for ${fmtMonthYM(r.month)}?`)) removeMut.mutate({ id: r.id }); }} color={RED}>
+                          <Trash2 size={10} /> Remove
+                        </GhostButton>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <FormGrid>
+                        <FormField label="Month (YYYY-MM)">
+                          <TextInput type="month" value={editDraft.month}
+                            onChange={e => setEditDraft({ ...editDraft, month: e.target.value })} />
+                        </FormField>
+                        <FormField label="Revenue (₦)">
+                          <TextInput type="number" step="0.01" value={editDraft.revenue}
+                            onChange={e => setEditDraft({ ...editDraft, revenue: e.target.value })} />
+                        </FormField>
+                        <FormField label="Expenses (₦)">
+                          <TextInput type="number" step="0.01" value={editDraft.expenses}
+                            onChange={e => setEditDraft({ ...editDraft, expenses: e.target.value })} />
+                        </FormField>
+                        <FormField label="Profit (₦)">
+                          <TextInput type="number" step="0.01" value={editDraft.profit}
+                            onChange={e => setEditDraft({ ...editDraft, profit: e.target.value })} />
+                        </FormField>
+                      </FormGrid>
+                      <div style={{ marginBottom: 10 }}>
+                        <FormField label="Notes">
+                          <TextArea value={editDraft.notes}
+                            onChange={e => setEditDraft({ ...editDraft, notes: e.target.value })} />
+                        </FormField>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <PrimaryButton onClick={saveEdit} disabled={updateMut.isPending}>Save</PrimaryButton>
+                        <GhostButton onClick={cancelEdit} color={MUTED}>Cancel</GhostButton>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </Card>
     </div>
   );

@@ -11,6 +11,7 @@ import { hrRouter } from "./hr/router";
 import { bizdevRestoredRouter } from "./bizdev/router";
 import { ceoOpsRouter } from "./ceoOps/router";
 import { hubAdminRouter } from "./hubAdmin/router";
+import { financeOpsRouter } from "./financeOps/router";
 import { diagnosticsRouter } from "./diagnostics/router";
 import { requirementsRouter } from "./requirements/router";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
@@ -196,6 +197,7 @@ export const appRouter = router({
   bizdevRestored: bizdevRestoredRouter,
   ceoOps: ceoOpsRouter,
   hubAdmin: hubAdminRouter,
+  financeOps: financeOpsRouter,
   diagnostics: diagnosticsRouter,
   requirements: requirementsRouter,
   auth: router({
