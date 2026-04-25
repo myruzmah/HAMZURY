@@ -2167,3 +2167,187 @@ export const podcastEquipment = mysqlTable("podcast_equipment", {
 export type PodcastEquipment = typeof podcastEquipment.$inferSelect;
 export type InsertPodcastEquipment = typeof podcastEquipment.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * MEDIALY OPS PORTAL — Hikma (Lead) + Ahmad (Content) + Salis (Video)
+ * Migrated from localStorage (opsStore "medialy" portal) to real DB.
+ * Source shapes mirror client/src/pages/MedialyOpsPortal.tsx.
+ *
+ * Note: a separate `clients` table (line ~108) serves the CRM/lead pipeline —
+ * it is intentionally distinct from `medialy_clients`. The latter is the
+ * retainer record (tier, monthly fee, posts quota, satisfaction). A separate
+ * `socialPlatformStats` table also exists; `medialy_performance` is
+ * client-scoped weekly/monthly entries and is kept separate.
+ *
+ * Two server-generated ref formats:
+ *   - medialy_approvals.ref → CNT-NNN
+ *   - medialy_tasks.ref     → TSK-NNN
+ *
+ * Multi-value JSON columns (stringified text):
+ *   - medialy_clients.platforms → Platform[]
+ *   - medialy_performance.platformBreakdown → already string label, not JSON
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** Medialy retainer clients — tier-based monthly fee + posts quota. */
+export const medialyClients = mysqlTable("medialy_clients", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  brand: varchar("brand", { length: 255 }),
+  tier: mysqlEnum("medialyClientTier", [
+    "Setup", "Manage", "Accelerate", "Authority",
+  ]).default("Manage").notNull(),
+  monthlyFee: int("monthlyFee").default(0).notNull(),
+  /** JSON-stringified Platform[] (Instagram | TikTok | Facebook | LinkedIn | Twitter | YouTube). */
+  platforms: text("platforms"),
+  postsPerMonth: int("postsPerMonth").default(0).notNull(),
+  postsRemaining: int("postsRemaining").default(0).notNull(),
+  paymentStatus: mysqlEnum("medialyClientPayStatus", [
+    "Paid", "Due", "Overdue",
+  ]).default("Paid").notNull(),
+  nextPaymentDue: varchar("nextPaymentDue", { length: 10 }),
+  satisfaction: int("satisfaction").default(5).notNull(),
+  startedAt: varchar("startedAt", { length: 10 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyClient = typeof medialyClients.$inferSelect;
+export type InsertMedialyClient = typeof medialyClients.$inferInsert;
+
+/** Medialy content calendar — every post per client, drafting → posted. */
+export const medialyContent = mysqlTable("medialy_content", {
+  id: int("id").autoincrement().primaryKey(),
+  /** FK to medialy_clients.id (no formal constraint). */
+  clientId: int("clientId").notNull(),
+  date: varchar("date", { length: 10 }).notNull(),
+  platform: mysqlEnum("medialyContentPlatform", [
+    "Instagram", "TikTok", "Facebook", "LinkedIn", "Twitter", "YouTube",
+  ]).default("Instagram").notNull(),
+  postType: mysqlEnum("medialyContentType", [
+    "Feed", "Reel", "Story", "Carousel", "Flyer", "Video",
+  ]).default("Feed").notNull(),
+  caption: text("caption"),
+  hashtags: text("hashtags"),
+  assetLink: varchar("assetLink", { length: 1024 }),
+  status: mysqlEnum("medialyContentStatus", [
+    "Draft", "Review", "Approved", "Scheduled", "Posted",
+  ]).default("Draft").notNull(),
+  postTime: varchar("postTime", { length: 10 }),
+  assignee: mysqlEnum("medialyContentAssignee", [
+    "Hikma", "Ahmad", "Salis",
+  ]).default("Ahmad").notNull(),
+  likes: int("likes"),
+  comments: int("comments"),
+  shares: int("shares"),
+  engagementPct: int("engagementPct"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyContent = typeof medialyContent.$inferSelect;
+export type InsertMedialyContent = typeof medialyContent.$inferInsert;
+
+/** Medialy approvals — CNT-NNN ref, Friday-submit / Weekend-approve loop. */
+export const medialyApprovals = mysqlTable("medialy_approvals", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Server-generated, e.g. "CNT-001". */
+  ref: varchar("ref", { length: 20 }).notNull().unique(),
+  /** FK to medialy_clients.id. */
+  clientId: int("clientId").notNull(),
+  /** Snapshot of client name at submission time. */
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  weekLabel: varchar("weekLabel", { length: 80 }).notNull(),
+  itemCount: int("itemCount").default(0).notNull(),
+  previewLink: varchar("previewLink", { length: 1024 }),
+  submittedAt: varchar("submittedAt", { length: 10 }),
+  feedback: text("feedback"),
+  revisionCount: int("revisionCount").default(0).notNull(),
+  approvedAt: varchar("approvedAt", { length: 10 }),
+  status: mysqlEnum("medialyApprovalStatus", [
+    "Pending", "Changes Requested", "Approved", "Rejected",
+  ]).default("Pending").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyApproval = typeof medialyApprovals.$inferSelect;
+export type InsertMedialyApproval = typeof medialyApprovals.$inferInsert;
+
+/** Medialy tasks — TSK-NNN ref for the 3-person team. */
+export const medialyTasks = mysqlTable("medialy_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Server-generated, e.g. "TSK-001". */
+  ref: varchar("ref", { length: 20 }).notNull().unique(),
+  title: varchar("title", { length: 255 }).notNull(),
+  taskType: mysqlEnum("medialyTaskType", [
+    "Content Creation", "Photography", "Reporting", "Meeting", "Editing", "Admin",
+  ]).default("Content Creation").notNull(),
+  /** FK to medialy_clients.id (nullable — internal tasks have no client). */
+  clientId: int("clientId"),
+  /** Free-form varchar (not a strict enum) so future hires don't break the schema. */
+  assignee: varchar("assignee", { length: 120 }).notNull(),
+  dueDate: varchar("dueDate", { length: 10 }).notNull(),
+  status: mysqlEnum("medialyTaskStatus", [
+    "Not Started", "In Progress", "Done", "Blocked",
+  ]).default("Not Started").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyTask = typeof medialyTasks.$inferSelect;
+export type InsertMedialyTask = typeof medialyTasks.$inferInsert;
+
+/** Medialy performance — weekly + monthly metrics per client. */
+export const medialyPerformance = mysqlTable("medialy_performance", {
+  id: int("id").autoincrement().primaryKey(),
+  /** FK to medialy_clients.id. */
+  clientId: int("clientId").notNull(),
+  period: mysqlEnum("medialyPerfPeriod", ["Week", "Month"])
+    .default("Week").notNull(),
+  /** e.g. "2026-W17" or "April 2026". */
+  label: varchar("label", { length: 80 }).notNull(),
+  reach: int("reach").default(0).notNull(),
+  engagement: int("engagement").default(0).notNull(),
+  /** Float-as-int: caller may multiply by 10; store as int for simplicity. */
+  followerGrowthPct: int("followerGrowthPct").default(0).notNull(),
+  bestPost: varchar("bestPost", { length: 1024 }),
+  worstPost: varchar("worstPost", { length: 1024 }),
+  /** Free-form string in source ("IG 60% · TikTok 30%"); kept as text. */
+  platformBreakdown: text("platformBreakdown"),
+  bestContentType: mysqlEnum("medialyPerfBestType", [
+    "Feed", "Reel", "Story", "Carousel", "Flyer", "Video",
+  ]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyPerformance = typeof medialyPerformance.$inferSelect;
+export type InsertMedialyPerformance = typeof medialyPerformance.$inferInsert;
+
+/** Medialy comms log — touchpoints per client. */
+export const medialyComms = mysqlTable("medialy_comms", {
+  id: int("id").autoincrement().primaryKey(),
+  /** FK to medialy_clients.id. */
+  clientId: int("clientId").notNull(),
+  whenDate: varchar("whenDate", { length: 10 }).notNull(),
+  commType: mysqlEnum("medialyCommType", [
+    "WhatsApp", "Video Call", "Email", "Phone", "In Person",
+  ]).default("WhatsApp").notNull(),
+  summary: text("summary").notNull(),
+  followUpOn: varchar("followUpOn", { length: 10 }),
+  owner: mysqlEnum("medialyCommOwner", ["Hikma", "Ahmad", "Salis"])
+    .default("Hikma").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyComms = typeof medialyComms.$inferSelect;
+export type InsertMedialyComms = typeof medialyComms.$inferInsert;
+
+/** Medialy reports — saved weekly CSO summaries. */
+export const medialyReports = mysqlTable("medialy_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  label: varchar("label", { length: 255 }).notNull(),
+  weekOf: varchar("weekOf", { length: 10 }).notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type MedialyReport = typeof medialyReports.$inferSelect;
+export type InsertMedialyReport = typeof medialyReports.$inferInsert;
+

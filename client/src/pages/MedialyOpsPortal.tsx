@@ -4,16 +4,14 @@ import type { StaffUser } from "@/lib/types";
 import {
   LayoutDashboard, Users, Calendar as CalendarIcon, CheckSquare,
   ListTodo, BarChart3, MessageSquare, FileText, Loader2,
-  Plus, Trash2, Copy, CheckCircle2, Clock, AlertCircle, X,
-  Instagram, Video as VideoIcon, Link2, Edit3, Send,
+  Plus, Trash2, Copy, CheckCircle2, Clock,
+  Instagram, Video as VideoIcon, Link2, Edit3, Send, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell";
 import PhaseTracker from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
-import {
-  readAll, insert, update, remove, touch, type OpsItem,
-} from "@/lib/opsStore";
+import { trpc } from "@/lib/trpc";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY MEDIALY OPS PORTAL — Hikma (lead) + Ahmad (content) + Salis (video).
@@ -30,12 +28,17 @@ import {
  *   7. Comms Log          — touchpoint history per client
  *   8. Reports            — copy-paste weekly CSO summary
  *
- * Storage: localStorage via opsStore, portal = "medialy"
- * Collections: clients | content | approvals | tasks | performance | comms | reports
+ * Storage:  tRPC `medialy.*` (MySQL via Drizzle).
+ * Auth:    soft role gate (founder | ceo | medialy_lead | medialy_staff).
+ *
+ * NOTE: ids are now `number` end-to-end. The legacy localStorage shape used
+ * string ids; this file flips everything to int. The `platforms` field on
+ * clients is parsed/stringified server-side so the client always sees a
+ * real Platform[]. Approvals + tasks refs (CNT-NNN, TSK-NNN) are server-
+ * generated and returned via mutation.
  * ══════════════════════════════════════════════════════════════════════ */
 
 /* ─── BRAND ──────────────────────────────────────────────────────────── */
-const PORTAL = "medialy";
 const BLUE = "#1D4ED8";         // Medialy accent — royal blue
 const BLUE_SOFT = "#1D4ED815";
 const BG = "#FFFAF6";           // HAMZURY milk
@@ -66,95 +69,119 @@ type Assignee = "Hikma" | "Ahmad" | "Salis";
 type TaskType = "Content Creation" | "Photography" | "Reporting" | "Meeting" | "Editing" | "Admin";
 type TaskStatus = "Not Started" | "In Progress" | "Done" | "Blocked";
 type CommsType = "WhatsApp" | "Video Call" | "Email" | "Phone" | "In Person";
+type ApprovalStatus = "Pending" | "Changes Requested" | "Approved" | "Rejected";
 
-type ClientRow = OpsItem & {
+/* ─── DB row types (returned by tRPC) ──────────────────────────────────── */
+type ClientRec = {
+  id: number;
   name: string;
-  brand?: string;
+  brand?: string | null;
   tier: PackageTier;
   monthlyFee: number;
+  /** Already-parsed array (server stringifies to text on storage). */
   platforms: Platform[];
   postsPerMonth: number;
   postsRemaining: number;
   paymentStatus: PayStatus;
-  nextPaymentDue?: string;
-  satisfaction: number; // 1-5
-  startedAt?: string;
-  notes?: string;
+  nextPaymentDue?: string | null;
+  satisfaction: number;
+  startedAt?: string | null;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ContentRow = OpsItem & {
-  clientId: string;
-  date: string;          // post date
+type ContentRec = {
+  id: number;
+  clientId: number;
+  date: string;
   platform: Platform;
-  type: PostType;
-  caption: string;
-  hashtags: string;
-  assetLink?: string;
+  postType: PostType;
+  caption?: string | null;
+  hashtags?: string | null;
+  assetLink?: string | null;
   status: ContentStatus;
-  postTime?: string;
+  postTime?: string | null;
   assignee: Assignee;
-  likes?: number;
-  comments?: number;
-  shares?: number;
-  engagementPct?: number;
+  likes?: number | null;
+  comments?: number | null;
+  shares?: number | null;
+  engagementPct?: number | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ApprovalRow = OpsItem & {
-  ref: string;                // CNT-XXX
-  clientId: string;
+type ApprovalRec = {
+  id: number;
+  ref: string;                 // CNT-NNN
+  clientId: number;
   clientName: string;
-  weekLabel: string;          // "Week 12"
+  weekLabel: string;
   itemCount: number;
-  previewLink?: string;
-  submittedAt?: string;
-  feedback?: string;
+  previewLink?: string | null;
+  submittedAt?: string | null;
+  feedback?: string | null;
   revisionCount: number;
-  approvedAt?: string;
-  status: "Pending" | "Changes Requested" | "Approved" | "Rejected";
+  approvedAt?: string | null;
+  status: ApprovalStatus;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type TaskRow = OpsItem & {
-  ref: string;                // TSK-XXX
+type TaskRec = {
+  id: number;
+  ref: string;                 // TSK-NNN
   title: string;
-  type: TaskType;
-  clientId?: string;
-  assignee: Assignee;
+  taskType: TaskType;
+  clientId?: number | null;
+  assignee: string;
   dueDate: string;
   status: TaskStatus;
-  notes?: string;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type PerfRow = OpsItem & {
-  clientId: string;
+type PerfRec = {
+  id: number;
+  clientId: number;
   period: "Week" | "Month";
-  label: string;              // e.g. "2026-W17" or "April 2026"
+  label: string;
   reach: number;
   engagement: number;
   followerGrowthPct: number;
-  bestPost?: string;
-  worstPost?: string;
-  platformBreakdown?: string;
-  bestContentType?: PostType;
+  bestPost?: string | null;
+  worstPost?: string | null;
+  platformBreakdown?: string | null;
+  bestContentType?: PostType | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type CommsRow = OpsItem & {
-  clientId: string;
-  when: string;
-  type: CommsType;
+type CommsRec = {
+  id: number;
+  clientId: number;
+  whenDate: string;
+  commType: CommsType;
   summary: string;
-  followUpOn?: string;
+  followUpOn?: string | null;
   owner: Assignee;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ReportRow = OpsItem & {
+type ReportRec = {
+  id: number;
   label: string;
   weekOf: string;
   body: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
 /* ─── UTIL ───────────────────────────────────────────────────────────── */
 
-function fmtDate(d: string | null | undefined): string {
+function fmtDate(d: string | Date | null | undefined): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-NG", {
@@ -179,17 +206,6 @@ function weekLabel(d: Date = new Date()): string {
   const onejan = new Date(year, 0, 1);
   const week = Math.ceil(((d.getTime() - onejan.getTime()) / 86400000 + onejan.getDay() + 1) / 7);
   return `${year}-W${String(week).padStart(2, "0")}`;
-}
-
-function nextRef(rows: { ref?: string }[], prefix: string): string {
-  const nums = rows
-    .map(r => {
-      const m = (r.ref || "").match(new RegExp(`${prefix}-(\\d+)`));
-      return m ? parseInt(m[1], 10) : 0;
-    })
-    .filter(n => !Number.isNaN(n));
-  const next = (nums.length ? Math.max(...nums) : 0) + 1;
-  return `${prefix}-${String(next).padStart(3, "0")}`;
 }
 
 const TIER_FEES: Record<PackageTier, number> = {
@@ -227,7 +243,7 @@ function Pill({ label, tone = "muted" }: { label: string; tone?: "green" | "blue
   );
 }
 
-function StatusTone(s: ContentStatus | TaskStatus | ApprovalRow["status"] | PayStatus):
+function StatusTone(s: ContentStatus | TaskStatus | ApprovalStatus | PayStatus):
   "green" | "blue" | "red" | "orange" | "muted" | "gold" {
   switch (s) {
     case "Posted":
@@ -265,18 +281,20 @@ function EmptyState({ icon: Icon, title, hint }: { icon: React.ElementType; titl
   );
 }
 
-function BlueButton({ children, onClick, icon: Icon, variant = "solid", type = "button" }: {
+function BlueButton({ children, onClick, icon: Icon, variant = "solid", type = "button", disabled = false }: {
   children: React.ReactNode;
   onClick?: () => void;
   icon?: React.ElementType;
   variant?: "solid" | "ghost";
   type?: "button" | "submit";
+  disabled?: boolean;
 }) {
   const solid = variant === "solid";
   return (
     <button
       type={type}
       onClick={onClick}
+      disabled={disabled}
       style={{
         display: "inline-flex", alignItems: "center", gap: 6,
         padding: "8px 14px", borderRadius: 10,
@@ -284,7 +302,8 @@ function BlueButton({ children, onClick, icon: Icon, variant = "solid", type = "
         backgroundColor: solid ? BLUE : "transparent",
         color: solid ? WHITE : BLUE,
         border: solid ? "none" : `1px solid ${BLUE}40`,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
       }}
     >
       {Icon && <Icon size={13} />} {children}
@@ -437,14 +456,6 @@ export default function MedialyOpsPortal() {
     }
   }, [loading, user]);
 
-  /* bump state to force re-reads from opsStore */
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    const handler = () => setTick(t => t + 1);
-    window.addEventListener("opsStoreChange", handler);
-    return () => window.removeEventListener("opsStoreChange", handler);
-  }, []);
-
   if (loading) {
     return (
       <div style={{ minHeight: "100vh", backgroundColor: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -483,9 +494,6 @@ export default function MedialyOpsPortal() {
       onLogout={logout}
       pageTitle="Medialy Ops — HAMZURY"
     >
-      {/* eslint-disable-next-line @typescript-eslint/no-unused-expressions */}
-      {tick >= 0 && null /* re-render key */}
-
       {active === "overview" && <OverviewSection onGoto={setActive} />}
       {active === "clients" && <ClientsSection />}
       {active === "calendar" && <CalendarSection />}
@@ -502,11 +510,17 @@ export default function MedialyOpsPortal() {
  * 1. OVERVIEW
  * ═══════════════════════════════════════════════════════════════════════ */
 function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
-  const content = readAll<ContentRow>(PORTAL, "content");
-  const approvals = readAll<ApprovalRow>(PORTAL, "approvals");
-  const tasks = readAll<TaskRow>(PORTAL, "tasks");
-  const perf = readAll<PerfRow>(PORTAL, "performance");
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const contentQ = trpc.medialy.content.list.useQuery();
+  const approvalsQ = trpc.medialy.approvals.list.useQuery();
+  const tasksQ = trpc.medialy.tasks.list.useQuery();
+  const perfQ = trpc.medialy.performance.list.useQuery();
+
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+  const content = (contentQ.data ?? []) as ContentRec[];
+  const approvals = (approvalsQ.data ?? []) as ApprovalRec[];
+  const tasks = (tasksQ.data ?? []) as TaskRec[];
+  const perf = (perfQ.data ?? []) as PerfRec[];
 
   const activeClients = clients.filter(c => c.paymentStatus !== "Overdue");
   const monthlyRecurring = activeClients
@@ -673,9 +687,11 @@ function TierRow({ tier, monthly }: { tier: string; monthly: string }) {
  * 2. CLIENTS / WORKSPACES
  * ═══════════════════════════════════════════════════════════════════════ */
 function ClientsSection() {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+
   const [addOpen, setAddOpen] = useState(false);
-  const [drillId, setDrillId] = useState<string | null>(null);
+  const [drillId, setDrillId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -688,7 +704,7 @@ function ClientsSection() {
     );
   }, [clients, search]);
 
-  const drill = drillId ? clients.find(c => c.id === drillId) : null;
+  const drill = drillId !== null ? clients.find(c => c.id === drillId) : null;
 
   return (
     <div>
@@ -734,7 +750,7 @@ function ClientsSection() {
   );
 }
 
-function ClientCard({ row, onOpen }: { row: ClientRow; onOpen: () => void }) {
+function ClientCard({ row, onOpen }: { row: ClientRec; onOpen: () => void }) {
   const utilisation = row.postsPerMonth === 0
     ? 0
     : Math.max(0, Math.min(100, Math.round(((row.postsPerMonth - row.postsRemaining) / row.postsPerMonth) * 100)));
@@ -808,6 +824,17 @@ function ClientCard({ row, onOpen }: { row: ClientRow; onOpen: () => void }) {
 }
 
 function AddClientModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.medialy.clients.create.useMutation({
+    onSuccess: () => {
+      utils.medialy.clients.list.invalidate();
+      toast.success("Client added");
+      reset();
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Failed to add client"),
+  });
+
   const [name, setName] = useState("");
   const [brand, setBrand] = useState("");
   const [tier, setTier] = useState<PackageTier>("Manage");
@@ -829,9 +856,9 @@ function AddClientModal({ open, onClose }: { open: boolean; onClose: () => void 
       .map(s => s.trim())
       .filter(Boolean) as Platform[];
 
-    insert<ClientRow>(PORTAL, "clients", {
+    createMut.mutate({
       name: name.trim(),
-      brand: brand.trim() || undefined,
+      brand: brand.trim() || null,
       tier,
       monthlyFee: fee,
       platforms,
@@ -841,10 +868,6 @@ function AddClientModal({ open, onClose }: { open: boolean; onClose: () => void 
       satisfaction,
       startedAt: todayISO(),
     });
-    toast.success("Client added");
-    touch(PORTAL, "clients");
-    reset();
-    onClose();
   }
 
   return (
@@ -878,7 +901,7 @@ function AddClientModal({ open, onClose }: { open: boolean; onClose: () => void 
         />
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
           <BlueButton variant="ghost" onClick={onClose}>Cancel</BlueButton>
-          <BlueButton onClick={submit} icon={Plus}>Add Client</BlueButton>
+          <BlueButton onClick={submit} icon={Plus} disabled={createMut.isPending}>Add Client</BlueButton>
         </div>
       </div>
     </Modal>
@@ -888,32 +911,54 @@ function AddClientModal({ open, onClose }: { open: boolean; onClose: () => void 
 function ClientDrillModal({ open, onClose, row }: {
   open: boolean;
   onClose: () => void;
-  row: ClientRow | null | undefined;
+  row: ClientRec | null | undefined;
 }) {
   if (!row) return <Modal open={open} onClose={onClose} title="Workspace">—</Modal>;
-  const client: ClientRow = row;
+  return <ClientDrillModalInner open={open} onClose={onClose} row={row} />;
+}
 
-  const content = readAll<ContentRow>(PORTAL, "content").filter(c => c.clientId === client.id);
-  const approvals = readAll<ApprovalRow>(PORTAL, "approvals").filter(a => a.clientId === client.id);
-  const comms = readAll<CommsRow>(PORTAL, "comms").filter(c => c.clientId === client.id);
+function ClientDrillModalInner({ open, onClose, row }: {
+  open: boolean;
+  onClose: () => void;
+  row: ClientRec;
+}) {
+  const utils = trpc.useUtils();
+  const client: ClientRec = row;
+
+  const contentQ = trpc.medialy.content.list.useQuery({ clientId: client.id });
+  const approvalsQ = trpc.medialy.approvals.list.useQuery({ clientId: client.id });
+  const commsQ = trpc.medialy.comms.list.useQuery({ clientId: client.id });
+
+  const content = (contentQ.data ?? []) as ContentRec[];
+  const approvals = (approvalsQ.data ?? []) as ApprovalRec[];
+  const comms = (commsQ.data ?? []) as CommsRec[];
+
+  const updateMut = trpc.medialy.clients.update.useMutation({
+    onSuccess: () => utils.medialy.clients.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Update failed"),
+  });
+  const removeMut = trpc.medialy.clients.remove.useMutation({
+    onSuccess: () => {
+      utils.medialy.clients.list.invalidate();
+      toast.success("Client removed");
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
 
   function del() {
     if (!window.confirm(`Remove ${client.name}? This will not delete linked content.`)) return;
-    remove(PORTAL, "clients", client.id);
-    touch(PORTAL, "clients");
-    toast.success("Client removed");
-    onClose();
+    removeMut.mutate({ id: client.id });
   }
 
   function setPay(s: PayStatus) {
-    update<ClientRow>(PORTAL, "clients", client.id, { paymentStatus: s });
-    touch(PORTAL, "clients");
+    updateMut.mutate({ id: client.id, paymentStatus: s });
   }
   function setRemaining(delta: number) {
-    update<ClientRow>(PORTAL, "clients", client.id, {
+    updateMut.mutate({
+      id: client.id,
       postsRemaining: Math.max(0, (client.postsRemaining || 0) + delta),
     });
-    touch(PORTAL, "clients");
   }
 
   return (
@@ -962,7 +1007,7 @@ function ClientDrillModal({ open, onClose, row }: {
                 }}>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
-                      {c.platform} · {c.type}
+                      {c.platform} · {c.postType}
                     </p>
                     <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>{fmtDate(c.date)}</p>
                   </div>
@@ -1007,7 +1052,7 @@ function ClientDrillModal({ open, onClose, row }: {
               }}>
                 <p style={{ fontSize: 12, color: DARK, fontWeight: 500 }}>{c.summary}</p>
                 <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                  {c.type} · {fmtDate(c.when)} · {c.owner}
+                  {c.commType} · {fmtDate(c.whenDate)} · {c.owner}
                 </p>
               </div>
             ))
@@ -1042,8 +1087,12 @@ function Mini({ label, value }: { label: string; value: number | string }) {
  * 3. CONTENT CALENDAR
  * ═══════════════════════════════════════════════════════════════════════ */
 function CalendarSection() {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
-  const content = readAll<ContentRow>(PORTAL, "content");
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const contentQ = trpc.medialy.content.list.useQuery();
+
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+  const content = (contentQ.data ?? []) as ContentRec[];
+
   const [addOpen, setAddOpen] = useState(false);
   const [view, setView] = useState<"list" | "phase">("list");
   const [filterStatus, setFilterStatus] = useState<"All" | ContentStatus>("All");
@@ -1051,7 +1100,7 @@ function CalendarSection() {
 
   const filtered = content.filter(c =>
     (filterStatus === "All" || c.status === filterStatus) &&
-    (filterClient === "All" || c.clientId === filterClient)
+    (filterClient === "All" || String(c.clientId) === filterClient)
   );
 
   const sorted = [...filtered].sort((a, b) => {
@@ -1117,7 +1166,7 @@ function CalendarSection() {
             >
               <option value="All">All clients</option>
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
               ))}
             </select>
           </label>
@@ -1161,7 +1210,7 @@ function CalendarSection() {
                       borderRadius: 8, marginBottom: 6,
                     }}>
                       <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>
-                        {c.platform} · {c.type}
+                        {c.platform} · {c.postType}
                       </p>
                       <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
                         {clients.find(cl => cl.id === c.clientId)?.name || "—"} · {fmtDate(c.date)}
@@ -1180,7 +1229,17 @@ function CalendarSection() {
   );
 }
 
-function ContentRowCard({ row, clients }: { row: ContentRow; clients: ClientRow[] }) {
+function ContentRowCard({ row, clients }: { row: ContentRec; clients: ClientRec[] }) {
+  const utils = trpc.useUtils();
+  const updateMut = trpc.medialy.content.update.useMutation({
+    onSuccess: () => utils.medialy.content.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Update failed"),
+  });
+  const removeMut = trpc.medialy.content.remove.useMutation({
+    onSuccess: () => utils.medialy.content.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
+
   const [open, setOpen] = useState(false);
   const clientName = clients.find(c => c.id === row.clientId)?.name || "—";
 
@@ -1188,19 +1247,18 @@ function ContentRowCard({ row, clients }: { row: ContentRow; clients: ClientRow[
     const order: ContentStatus[] = ["Draft", "Review", "Approved", "Scheduled", "Posted"];
     const idx = order.indexOf(row.status);
     const next = order[Math.min(order.length - 1, idx + 1)];
-    update<ContentRow>(PORTAL, "content", row.id, { status: next });
-    touch(PORTAL, "content");
-    toast.success(`Moved to ${next}`);
+    updateMut.mutate({ id: row.id, status: next }, {
+      onSuccess: () => toast.success(`Moved to ${next}`),
+    });
   }
 
   function del() {
     if (!window.confirm("Delete this content item?")) return;
-    remove(PORTAL, "content", row.id);
-    touch(PORTAL, "content");
+    removeMut.mutate({ id: row.id });
   }
 
   const Icon = row.platform === "Instagram" ? Instagram
-    : row.platform === "TikTok" || row.type === "Reel" || row.type === "Video" ? VideoIcon
+    : row.platform === "TikTok" || row.postType === "Reel" || row.postType === "Video" ? VideoIcon
     : CalendarIcon;
 
   return (
@@ -1225,7 +1283,7 @@ function ContentRowCard({ row, clients }: { row: ContentRow; clients: ClientRow[
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>
-              {row.platform} · {row.type}
+              {row.platform} · {row.postType}
             </p>
             <Pill label={row.status} tone={StatusTone(row.status)} />
           </div>
@@ -1272,12 +1330,23 @@ function ContentRowCard({ row, clients }: { row: ContentRow; clients: ClientRow[
 }
 
 function AddContentModal({ open, onClose, clients }: {
-  open: boolean; onClose: () => void; clients: ClientRow[];
+  open: boolean; onClose: () => void; clients: ClientRec[];
 }) {
-  const [clientId, setClientId] = useState<string>("");
+  const utils = trpc.useUtils();
+  const createMut = trpc.medialy.content.create.useMutation({
+    onSuccess: () => {
+      utils.medialy.content.list.invalidate();
+      toast.success("Content added");
+      setCaption(""); setHashtags(""); setAssetLink("");
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Failed to add content"),
+  });
+
+  const [clientId, setClientId] = useState<number | "">("");
   const [date, setDate] = useState(todayISO());
   const [platform, setPlatform] = useState<Platform>("Instagram");
-  const [type, setType] = useState<PostType>("Feed");
+  const [postType, setPostType] = useState<PostType>("Feed");
   const [caption, setCaption] = useState("");
   const [hashtags, setHashtags] = useState("");
   const [assetLink, setAssetLink] = useState("");
@@ -1286,24 +1355,20 @@ function AddContentModal({ open, onClose, clients }: {
   const [assignee, setAssignee] = useState<Assignee>("Ahmad");
 
   useEffect(() => {
-    if (open && clients.length > 0 && !clientId) {
+    if (open && clients.length > 0 && clientId === "") {
       setClientId(clients[0].id);
     }
   }, [open, clients, clientId]);
 
   function submit() {
-    if (!clientId) { toast.error("Select a client"); return; }
-    insert<ContentRow>(PORTAL, "content", {
-      clientId, date, platform, type,
-      caption: caption.trim(), hashtags: hashtags.trim(),
-      assetLink: assetLink.trim() || undefined,
-      status, postTime: postTime || undefined,
+    if (clientId === "") { toast.error("Select a client"); return; }
+    createMut.mutate({
+      clientId: Number(clientId), date, platform, postType,
+      caption: caption.trim() || null, hashtags: hashtags.trim() || null,
+      assetLink: assetLink.trim() || null,
+      status, postTime: postTime || null,
       assignee,
     });
-    toast.success("Content added");
-    touch(PORTAL, "content");
-    setCaption(""); setHashtags(""); setAssetLink("");
-    onClose();
   }
 
   return (
@@ -1315,8 +1380,8 @@ function AddContentModal({ open, onClose, clients }: {
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
             Client
             <select
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
+              value={String(clientId)}
+              onChange={e => setClientId(Number(e.target.value))}
               style={{
                 padding: "9px 11px", borderRadius: 8,
                 border: `1px solid ${DARK}15`, fontSize: 13, color: DARK,
@@ -1325,7 +1390,7 @@ function AddContentModal({ open, onClose, clients }: {
               }}
             >
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
               ))}
             </select>
           </label>
@@ -1344,8 +1409,8 @@ function AddContentModal({ open, onClose, clients }: {
             />
             <Select<PostType>
               label="Type"
-              value={type}
-              onChange={setType}
+              value={postType}
+              onChange={setPostType}
               options={["Feed", "Reel", "Story", "Carousel", "Flyer", "Video"]}
             />
           </div>
@@ -1371,7 +1436,7 @@ function AddContentModal({ open, onClose, clients }: {
 
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             <BlueButton variant="ghost" onClick={onClose}>Cancel</BlueButton>
-            <BlueButton onClick={submit} icon={Plus}>Add Post</BlueButton>
+            <BlueButton onClick={submit} icon={Plus} disabled={createMut.isPending}>Add Post</BlueButton>
           </div>
         </div>
       )}
@@ -1383,8 +1448,12 @@ function AddContentModal({ open, onClose, clients }: {
  * 4. APPROVALS QUEUE
  * ═══════════════════════════════════════════════════════════════════════ */
 function ApprovalsSection() {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
-  const approvals = readAll<ApprovalRow>(PORTAL, "approvals");
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const approvalsQ = trpc.medialy.approvals.list.useQuery();
+
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+  const approvals = (approvalsQ.data ?? []) as ApprovalRec[];
+
   const [addOpen, setAddOpen] = useState(false);
 
   const pending = approvals.filter(a => a.status === "Pending" || a.status === "Changes Requested");
@@ -1420,39 +1489,50 @@ function ApprovalsSection() {
         </div>
       )}
 
-      <AddApprovalModal open={addOpen} onClose={() => setAddOpen(false)} clients={clients} approvals={approvals} />
+      <AddApprovalModal open={addOpen} onClose={() => setAddOpen(false)} clients={clients} />
     </div>
   );
 }
 
-function ApprovalCard({ row, clients }: { row: ApprovalRow; clients: ClientRow[] }) {
+function ApprovalCard({ row, clients }: { row: ApprovalRec; clients: ClientRec[] }) {
+  const utils = trpc.useUtils();
+  const updateMut = trpc.medialy.approvals.update.useMutation({
+    onSuccess: () => utils.medialy.approvals.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Update failed"),
+  });
+  const removeMut = trpc.medialy.approvals.remove.useMutation({
+    onSuccess: () => utils.medialy.approvals.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
+
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState(row.feedback || "");
   const clientName = clients.find(c => c.id === row.clientId)?.name || row.clientName || "—";
 
-  function setStatus(s: ApprovalRow["status"]) {
-    update<ApprovalRow>(PORTAL, "approvals", row.id, {
+  function setStatus(s: ApprovalStatus) {
+    updateMut.mutate({
+      id: row.id,
       status: s,
-      approvedAt: s === "Approved" ? todayISO() : row.approvedAt,
+      approvedAt: s === "Approved" ? todayISO() : (row.approvedAt ?? null),
+    }, {
+      onSuccess: () => toast.success(`Marked ${s}`),
     });
-    touch(PORTAL, "approvals");
-    toast.success(`Marked ${s}`);
   }
 
   function bumpRevisions() {
-    update<ApprovalRow>(PORTAL, "approvals", row.id, {
+    updateMut.mutate({
+      id: row.id,
       revisionCount: (row.revisionCount || 0) + 1,
       feedback,
       status: "Changes Requested",
+    }, {
+      onSuccess: () => toast.success("Revision logged"),
     });
-    touch(PORTAL, "approvals");
-    toast.success("Revision logged");
   }
 
   function del() {
     if (!window.confirm(`Delete submission ${row.ref}?`)) return;
-    remove(PORTAL, "approvals", row.id);
-    touch(PORTAL, "approvals");
+    removeMut.mutate({ id: row.id });
   }
 
   return (
@@ -1511,37 +1591,43 @@ function ApprovalCard({ row, clients }: { row: ApprovalRow; clients: ClientRow[]
   );
 }
 
-function AddApprovalModal({ open, onClose, clients, approvals }: {
+function AddApprovalModal({ open, onClose, clients }: {
   open: boolean; onClose: () => void;
-  clients: ClientRow[]; approvals: ApprovalRow[];
+  clients: ClientRec[];
 }) {
-  const [clientId, setClientId] = useState<string>("");
+  const utils = trpc.useUtils();
+  const createMut = trpc.medialy.approvals.create.useMutation({
+    onSuccess: (res) => {
+      utils.medialy.approvals.list.invalidate();
+      toast.success(`Submission ${res.ref ?? ""} logged`);
+      setPreviewLink("");
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Failed to submit"),
+  });
+
+  const [clientId, setClientId] = useState<number | "">("");
   const [weekLabelV, setWeekLabelV] = useState(weekLabel());
   const [itemCount, setItemCount] = useState(5);
   const [previewLink, setPreviewLink] = useState("");
 
   useEffect(() => {
-    if (open && clients.length > 0 && !clientId) setClientId(clients[0].id);
+    if (open && clients.length > 0 && clientId === "") setClientId(clients[0].id);
   }, [open, clients, clientId]);
 
   function submit() {
-    if (!clientId) { toast.error("Select a client"); return; }
+    if (clientId === "") { toast.error("Select a client"); return; }
     const client = clients.find(c => c.id === clientId);
-    insert<ApprovalRow>(PORTAL, "approvals", {
-      ref: nextRef(approvals, "CNT"),
-      clientId,
+    createMut.mutate({
+      clientId: Number(clientId),
       clientName: client?.name || "—",
       weekLabel: weekLabelV,
       itemCount,
-      previewLink: previewLink.trim() || undefined,
+      previewLink: previewLink.trim() || null,
       submittedAt: todayISO(),
       revisionCount: 0,
       status: "Pending",
     });
-    toast.success("Submission logged");
-    touch(PORTAL, "approvals");
-    setPreviewLink("");
-    onClose();
   }
 
   return (
@@ -1553,8 +1639,8 @@ function AddApprovalModal({ open, onClose, clients, approvals }: {
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
             Client
             <select
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
+              value={String(clientId)}
+              onChange={e => setClientId(Number(e.target.value))}
               style={{
                 padding: "9px 11px", borderRadius: 8,
                 border: `1px solid ${DARK}15`, fontSize: 13, color: DARK,
@@ -1563,7 +1649,7 @@ function AddApprovalModal({ open, onClose, clients, approvals }: {
               }}
             >
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
               ))}
             </select>
           </label>
@@ -1572,7 +1658,7 @@ function AddApprovalModal({ open, onClose, clients, approvals }: {
           <TextField label="Preview Link" type="url" value={previewLink} onChange={setPreviewLink} placeholder="Drive / Canva / Drive folder…" />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             <BlueButton variant="ghost" onClick={onClose}>Cancel</BlueButton>
-            <BlueButton onClick={submit} icon={Send}>Submit for Approval</BlueButton>
+            <BlueButton onClick={submit} icon={Send} disabled={createMut.isPending}>Submit for Approval</BlueButton>
           </div>
         </div>
       )}
@@ -1584,8 +1670,18 @@ function AddApprovalModal({ open, onClose, clients, approvals }: {
  * 5. TASKS
  * ═══════════════════════════════════════════════════════════════════════ */
 function TasksSection({ userName }: { userName: string }) {
-  const tasks = readAll<TaskRow>(PORTAL, "tasks");
-  const clients = readAll<ClientRow>(PORTAL, "clients");
+  const utils = trpc.useUtils();
+  const tasksQ = trpc.medialy.tasks.list.useQuery();
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+
+  const tasks = (tasksQ.data ?? []) as TaskRec[];
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+
+  const updateMut = trpc.medialy.tasks.update.useMutation({
+    onSuccess: () => utils.medialy.tasks.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Update failed"),
+  });
+
   const [addOpen, setAddOpen] = useState(false);
   const [mineOnly, setMineOnly] = useState(false);
 
@@ -1595,20 +1691,20 @@ function TasksSection({ userName }: { userName: string }) {
 
   // Asset-style checklist view for quick completion
   const checklistItems: AssetItem[] = visible.map(t => ({
-    id: t.id,
+    id: String(t.id),
     label: `${t.ref} · ${t.title}`,
     group: t.assignee,
     done: t.status === "Done",
     owner: t.assignee,
-    note: `${t.type} · Due ${fmtDate(t.dueDate)}`,
+    note: `${t.taskType} · Due ${fmtDate(t.dueDate)}`,
   }));
 
   function toggleDone(id: string) {
-    const t = tasks.find(x => x.id === id);
+    const numId = Number(id);
+    const t = tasks.find(x => x.id === numId);
     if (!t) return;
     const nextStatus: TaskStatus = t.status === "Done" ? "In Progress" : "Done";
-    update<TaskRow>(PORTAL, "tasks", id, { status: nextStatus });
-    touch(PORTAL, "tasks");
+    updateMut.mutate({ id: numId, status: nextStatus });
   }
 
   return (
@@ -1684,25 +1780,33 @@ function TasksSection({ userName }: { userName: string }) {
         </>
       )}
 
-      <AddTaskModal open={addOpen} onClose={() => setAddOpen(false)} tasks={tasks} clients={clients} />
+      <AddTaskModal open={addOpen} onClose={() => setAddOpen(false)} clients={clients} />
     </div>
   );
 }
 
-function TaskRowCard({ row, clients }: { row: TaskRow; clients: ClientRow[] }) {
+function TaskRowCard({ row, clients }: { row: TaskRec; clients: ClientRec[] }) {
+  const utils = trpc.useUtils();
+  const updateMut = trpc.medialy.tasks.update.useMutation({
+    onSuccess: () => utils.medialy.tasks.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Update failed"),
+  });
+  const removeMut = trpc.medialy.tasks.remove.useMutation({
+    onSuccess: () => utils.medialy.tasks.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
+
   const clientName = row.clientId ? clients.find(c => c.id === row.clientId)?.name : undefined;
 
   function cycleStatus() {
     const order: TaskStatus[] = ["Not Started", "In Progress", "Done", "Blocked"];
     const next = order[(order.indexOf(row.status) + 1) % order.length];
-    update<TaskRow>(PORTAL, "tasks", row.id, { status: next });
-    touch(PORTAL, "tasks");
+    updateMut.mutate({ id: row.id, status: next });
   }
 
   function del() {
     if (!window.confirm(`Delete task ${row.ref}?`)) return;
-    remove(PORTAL, "tasks", row.id);
-    touch(PORTAL, "tasks");
+    removeMut.mutate({ id: row.id });
   }
 
   return (
@@ -1712,7 +1816,7 @@ function TaskRowCard({ row, clients }: { row: TaskRow; clients: ClientRow[] }) {
         {row.title}
         {clientName && <span style={{ color: MUTED, fontWeight: 400 }}> · {clientName}</span>}
       </td>
-      <td style={{ padding: "9px 6px", color: MUTED }}>{row.type}</td>
+      <td style={{ padding: "9px 6px", color: MUTED }}>{row.taskType}</td>
       <td style={{ padding: "9px 6px", color: DARK }}>{row.assignee}</td>
       <td style={{ padding: "9px 6px", color: MUTED }}>{fmtDate(row.dueDate)}</td>
       <td style={{ padding: "9px 6px" }}>
@@ -1729,31 +1833,37 @@ function TaskRowCard({ row, clients }: { row: TaskRow; clients: ClientRow[] }) {
   );
 }
 
-function AddTaskModal({ open, onClose, tasks, clients }: {
+function AddTaskModal({ open, onClose, clients }: {
   open: boolean; onClose: () => void;
-  tasks: TaskRow[]; clients: ClientRow[];
+  clients: ClientRec[];
 }) {
+  const utils = trpc.useUtils();
+  const createMut = trpc.medialy.tasks.create.useMutation({
+    onSuccess: (res) => {
+      utils.medialy.tasks.list.invalidate();
+      toast.success(`Task ${res.ref ?? ""} added`);
+      setTitle(""); setNotes("");
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Failed to add task"),
+  });
+
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<TaskType>("Content Creation");
+  const [taskType, setTaskType] = useState<TaskType>("Content Creation");
   const [assignee, setAssignee] = useState<Assignee>("Ahmad");
   const [dueDate, setDueDate] = useState(todayISO());
-  const [clientId, setClientId] = useState<string>("");
+  const [clientId, setClientId] = useState<number | "">("");
   const [notes, setNotes] = useState("");
 
   function submit() {
     if (!title.trim()) { toast.error("Title required"); return; }
-    insert<TaskRow>(PORTAL, "tasks", {
-      ref: nextRef(tasks, "TSK"),
+    createMut.mutate({
       title: title.trim(),
-      type, assignee, dueDate,
-      clientId: clientId || undefined,
+      taskType, assignee, dueDate,
+      clientId: clientId === "" ? null : Number(clientId),
       status: "Not Started",
-      notes: notes.trim() || undefined,
+      notes: notes.trim() || null,
     });
-    toast.success("Task added");
-    touch(PORTAL, "tasks");
-    setTitle(""); setNotes("");
-    onClose();
   }
 
   return (
@@ -1763,8 +1873,8 @@ function AddTaskModal({ open, onClose, tasks, clients }: {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <Select<TaskType>
             label="Type"
-            value={type}
-            onChange={setType}
+            value={taskType}
+            onChange={setTaskType}
             options={["Content Creation", "Photography", "Reporting", "Meeting", "Editing", "Admin"]}
           />
           <Select<Assignee>
@@ -1778,8 +1888,8 @@ function AddTaskModal({ open, onClose, tasks, clients }: {
         <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
           Client (optional)
           <select
-            value={clientId}
-            onChange={e => setClientId(e.target.value)}
+            value={clientId === "" ? "" : String(clientId)}
+            onChange={e => setClientId(e.target.value === "" ? "" : Number(e.target.value))}
             style={{
               padding: "9px 11px", borderRadius: 8,
               border: `1px solid ${DARK}15`, fontSize: 13, color: DARK,
@@ -1789,14 +1899,14 @@ function AddTaskModal({ open, onClose, tasks, clients }: {
           >
             <option value="">—</option>
             {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
         </label>
         <TextArea label="Notes" value={notes} onChange={setNotes} rows={2} />
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
           <BlueButton variant="ghost" onClick={onClose}>Cancel</BlueButton>
-          <BlueButton onClick={submit} icon={Plus}>Add Task</BlueButton>
+          <BlueButton onClick={submit} icon={Plus} disabled={createMut.isPending}>Add Task</BlueButton>
         </div>
       </div>
     </Modal>
@@ -1807,8 +1917,12 @@ function AddTaskModal({ open, onClose, tasks, clients }: {
  * 6. PERFORMANCE
  * ═══════════════════════════════════════════════════════════════════════ */
 function PerformanceSection() {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
-  const rows = readAll<PerfRow>(PORTAL, "performance");
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const perfQ = trpc.medialy.performance.list.useQuery();
+
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+  const rows = (perfQ.data ?? []) as PerfRec[];
+
   const [addOpen, setAddOpen] = useState(false);
   const [tab, setTab] = useState<"Week" | "Month">("Week");
 
@@ -1863,12 +1977,16 @@ function PerformanceSection() {
   );
 }
 
-function PerfRowCard({ row, clients }: { row: PerfRow; clients: ClientRow[] }) {
+function PerfRowCard({ row, clients }: { row: PerfRec; clients: ClientRec[] }) {
+  const utils = trpc.useUtils();
+  const removeMut = trpc.medialy.performance.remove.useMutation({
+    onSuccess: () => utils.medialy.performance.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
   const clientName = clients.find(c => c.id === row.clientId)?.name || "—";
   function del() {
     if (!window.confirm("Delete performance entry?")) return;
-    remove(PORTAL, "performance", row.id);
-    touch(PORTAL, "performance");
+    removeMut.mutate({ id: row.id });
   }
   return (
     <tr style={{ borderTop: `1px solid ${DARK}06` }}>
@@ -1893,9 +2011,21 @@ function PerfRowCard({ row, clients }: { row: PerfRow; clients: ClientRow[] }) {
 
 function AddPerfModal({ open, onClose, clients, period }: {
   open: boolean; onClose: () => void;
-  clients: ClientRow[]; period: "Week" | "Month";
+  clients: ClientRec[]; period: "Week" | "Month";
 }) {
-  const [clientId, setClientId] = useState<string>("");
+  const utils = trpc.useUtils();
+  const createMut = trpc.medialy.performance.create.useMutation({
+    onSuccess: () => {
+      utils.medialy.performance.list.invalidate();
+      toast.success("Performance logged");
+      setReach(0); setEngagement(0); setFollowerGrowthPct(0);
+      setBestPost(""); setWorstPost(""); setPlatformBreakdown("");
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Failed to log entry"),
+  });
+
+  const [clientId, setClientId] = useState<number | "">("");
   const [label, setLabel] = useState(period === "Week" ? weekLabel() : new Date().toLocaleString("en-NG", { month: "long", year: "numeric" }));
   const [reach, setReach] = useState(0);
   const [engagement, setEngagement] = useState(0);
@@ -1906,24 +2036,19 @@ function AddPerfModal({ open, onClose, clients, period }: {
   const [bestContentType, setBestContentType] = useState<PostType>("Reel");
 
   useEffect(() => {
-    if (open && clients.length > 0 && !clientId) setClientId(clients[0].id);
+    if (open && clients.length > 0 && clientId === "") setClientId(clients[0].id);
   }, [open, clients, clientId]);
 
   function submit() {
-    if (!clientId) { toast.error("Select a client"); return; }
-    insert<PerfRow>(PORTAL, "performance", {
-      clientId, period, label,
+    if (clientId === "") { toast.error("Select a client"); return; }
+    createMut.mutate({
+      clientId: Number(clientId), period, label,
       reach, engagement, followerGrowthPct,
-      bestPost: bestPost.trim() || undefined,
-      worstPost: worstPost.trim() || undefined,
-      platformBreakdown: platformBreakdown.trim() || undefined,
+      bestPost: bestPost.trim() || null,
+      worstPost: worstPost.trim() || null,
+      platformBreakdown: platformBreakdown.trim() || null,
       bestContentType,
     });
-    toast.success("Performance logged");
-    touch(PORTAL, "performance");
-    setReach(0); setEngagement(0); setFollowerGrowthPct(0);
-    setBestPost(""); setWorstPost(""); setPlatformBreakdown("");
-    onClose();
   }
 
   return (
@@ -1935,8 +2060,8 @@ function AddPerfModal({ open, onClose, clients, period }: {
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
             Client
             <select
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
+              value={String(clientId)}
+              onChange={e => setClientId(Number(e.target.value))}
               style={{
                 padding: "9px 11px", borderRadius: 8,
                 border: `1px solid ${DARK}15`, fontSize: 13, color: DARK,
@@ -1945,7 +2070,7 @@ function AddPerfModal({ open, onClose, clients, period }: {
               }}
             >
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
               ))}
             </select>
           </label>
@@ -1953,7 +2078,7 @@ function AddPerfModal({ open, onClose, clients, period }: {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
             <TextField label="Reach" type="number" value={String(reach)} onChange={v => setReach(parseInt(v, 10) || 0)} />
             <TextField label="Engagement" type="number" value={String(engagement)} onChange={v => setEngagement(parseInt(v, 10) || 0)} />
-            <TextField label="Growth %" type="number" value={String(followerGrowthPct)} onChange={v => setFollowerGrowthPct(parseFloat(v) || 0)} />
+            <TextField label="Growth %" type="number" value={String(followerGrowthPct)} onChange={v => setFollowerGrowthPct(parseInt(v, 10) || 0)} />
           </div>
           <TextField label="Best Post" value={bestPost} onChange={setBestPost} placeholder="Caption snippet / link" />
           <TextField label="Worst Post" value={worstPost} onChange={setWorstPost} placeholder="Caption snippet / link" />
@@ -1966,7 +2091,7 @@ function AddPerfModal({ open, onClose, clients, period }: {
           />
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             <BlueButton variant="ghost" onClick={onClose}>Cancel</BlueButton>
-            <BlueButton onClick={submit} icon={Plus}>Log Entry</BlueButton>
+            <BlueButton onClick={submit} icon={Plus} disabled={createMut.isPending}>Log Entry</BlueButton>
           </div>
         </div>
       )}
@@ -1978,14 +2103,18 @@ function AddPerfModal({ open, onClose, clients, period }: {
  * 7. COMMS LOG
  * ═══════════════════════════════════════════════════════════════════════ */
 function CommsSection() {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
-  const rows = readAll<CommsRow>(PORTAL, "comms");
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const commsQ = trpc.medialy.comms.list.useQuery();
+
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+  const rows = (commsQ.data ?? []) as CommsRec[];
+
   const [addOpen, setAddOpen] = useState(false);
   const [filterClient, setFilterClient] = useState<"All" | string>("All");
 
   const filtered = rows
-    .filter(r => filterClient === "All" || r.clientId === filterClient)
-    .sort((a, b) => b.when.localeCompare(a.when));
+    .filter(r => filterClient === "All" || String(r.clientId) === filterClient)
+    .sort((a, b) => b.whenDate.localeCompare(a.whenDate));
 
   const followUps = rows.filter(r => r.followUpOn);
 
@@ -2002,12 +2131,12 @@ function CommsSection() {
         <OpsKpi label="Pending Follow-Ups" value={followUps.length} accent={ORANGE} />
         <OpsKpi
           label="WhatsApp"
-          value={rows.filter(r => r.type === "WhatsApp").length}
+          value={rows.filter(r => r.commType === "WhatsApp").length}
           accent={GREEN}
         />
         <OpsKpi
           label="Video Calls"
-          value={rows.filter(r => r.type === "Video Call").length}
+          value={rows.filter(r => r.commType === "Video Call").length}
           accent={BLUE}
         />
       </div>
@@ -2027,7 +2156,7 @@ function CommsSection() {
           >
             <option value="All">All clients</option>
             {clients.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
+              <option key={c.id} value={String(c.id)}>{c.name}</option>
             ))}
           </select>
         </label>
@@ -2048,12 +2177,16 @@ function CommsSection() {
   );
 }
 
-function CommsRowCard({ row, clients }: { row: CommsRow; clients: ClientRow[] }) {
+function CommsRowCard({ row, clients }: { row: CommsRec; clients: ClientRec[] }) {
+  const utils = trpc.useUtils();
+  const removeMut = trpc.medialy.comms.remove.useMutation({
+    onSuccess: () => utils.medialy.comms.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
   const clientName = clients.find(c => c.id === row.clientId)?.name || "—";
   function del() {
     if (!window.confirm("Delete log?")) return;
-    remove(PORTAL, "comms", row.id);
-    touch(PORTAL, "comms");
+    removeMut.mutate({ id: row.id });
   }
   return (
     <div style={{
@@ -2070,8 +2203,8 @@ function CommsRowCard({ row, clients }: { row: CommsRow; clients: ClientRow[] })
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{clientName}</p>
-          <Pill label={row.type} tone="blue" />
-          <span style={{ fontSize: 11, color: MUTED }}>{fmtDate(row.when)} · {row.owner}</span>
+          <Pill label={row.commType} tone="blue" />
+          <span style={{ fontSize: 11, color: MUTED }}>{fmtDate(row.whenDate)} · {row.owner}</span>
         </div>
         <p style={{ fontSize: 12, color: DARK, marginTop: 6, whiteSpace: "pre-wrap", lineHeight: 1.5 }}>
           {row.summary}
@@ -2090,32 +2223,39 @@ function CommsRowCard({ row, clients }: { row: CommsRow; clients: ClientRow[] })
 }
 
 function AddCommsModal({ open, onClose, clients }: {
-  open: boolean; onClose: () => void; clients: ClientRow[];
+  open: boolean; onClose: () => void; clients: ClientRec[];
 }) {
-  const [clientId, setClientId] = useState<string>("");
-  const [when, setWhen] = useState(todayISO());
-  const [type, setType] = useState<CommsType>("WhatsApp");
+  const utils = trpc.useUtils();
+  const createMut = trpc.medialy.comms.create.useMutation({
+    onSuccess: () => {
+      utils.medialy.comms.list.invalidate();
+      toast.success("Logged");
+      setSummary(""); setFollowUpOn("");
+      onClose();
+    },
+    onError: (err) => toast.error(err.message || "Failed to log"),
+  });
+
+  const [clientId, setClientId] = useState<number | "">("");
+  const [whenDate, setWhenDate] = useState(todayISO());
+  const [commType, setCommType] = useState<CommsType>("WhatsApp");
   const [summary, setSummary] = useState("");
   const [followUpOn, setFollowUpOn] = useState("");
   const [owner, setOwner] = useState<Assignee>("Hikma");
 
   useEffect(() => {
-    if (open && clients.length > 0 && !clientId) setClientId(clients[0].id);
+    if (open && clients.length > 0 && clientId === "") setClientId(clients[0].id);
   }, [open, clients, clientId]);
 
   function submit() {
-    if (!clientId) { toast.error("Select a client"); return; }
+    if (clientId === "") { toast.error("Select a client"); return; }
     if (!summary.trim()) { toast.error("Summary required"); return; }
-    insert<CommsRow>(PORTAL, "comms", {
-      clientId, when, type,
+    createMut.mutate({
+      clientId: Number(clientId), whenDate, commType,
       summary: summary.trim(),
-      followUpOn: followUpOn || undefined,
+      followUpOn: followUpOn || null,
       owner,
     });
-    toast.success("Logged");
-    touch(PORTAL, "comms");
-    setSummary(""); setFollowUpOn("");
-    onClose();
   }
 
   return (
@@ -2127,8 +2267,8 @@ function AddCommsModal({ open, onClose, clients }: {
           <label style={{ display: "flex", flexDirection: "column", gap: 4, fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
             Client
             <select
-              value={clientId}
-              onChange={e => setClientId(e.target.value)}
+              value={String(clientId)}
+              onChange={e => setClientId(Number(e.target.value))}
               style={{
                 padding: "9px 11px", borderRadius: 8,
                 border: `1px solid ${DARK}15`, fontSize: 13, color: DARK,
@@ -2137,16 +2277,16 @@ function AddCommsModal({ open, onClose, clients }: {
               }}
             >
               {clients.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+                <option key={c.id} value={String(c.id)}>{c.name}</option>
               ))}
             </select>
           </label>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <TextField label="When" type="date" value={when} onChange={setWhen} />
+            <TextField label="When" type="date" value={whenDate} onChange={setWhenDate} />
             <Select<CommsType>
               label="Type"
-              value={type}
-              onChange={setType}
+              value={commType}
+              onChange={setCommType}
               options={["WhatsApp", "Video Call", "Email", "Phone", "In Person"]}
             />
           </div>
@@ -2162,7 +2302,7 @@ function AddCommsModal({ open, onClose, clients }: {
           </div>
           <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
             <BlueButton variant="ghost" onClick={onClose}>Cancel</BlueButton>
-            <BlueButton onClick={submit} icon={Plus}>Log Touchpoint</BlueButton>
+            <BlueButton onClick={submit} icon={Plus} disabled={createMut.isPending}>Log Touchpoint</BlueButton>
           </div>
         </div>
       )}
@@ -2174,12 +2314,33 @@ function AddCommsModal({ open, onClose, clients }: {
  * 8. REPORTS
  * ═══════════════════════════════════════════════════════════════════════ */
 function ReportsSection() {
-  const clients = readAll<ClientRow>(PORTAL, "clients");
-  const content = readAll<ContentRow>(PORTAL, "content");
-  const approvals = readAll<ApprovalRow>(PORTAL, "approvals");
-  const tasks = readAll<TaskRow>(PORTAL, "tasks");
-  const perf = readAll<PerfRow>(PORTAL, "performance");
-  const reports = readAll<ReportRow>(PORTAL, "reports");
+  const utils = trpc.useUtils();
+  const clientsQ = trpc.medialy.clients.list.useQuery();
+  const contentQ = trpc.medialy.content.list.useQuery();
+  const approvalsQ = trpc.medialy.approvals.list.useQuery();
+  const tasksQ = trpc.medialy.tasks.list.useQuery();
+  const perfQ = trpc.medialy.performance.list.useQuery();
+  const reportsQ = trpc.medialy.reports.list.useQuery();
+
+  const clients = (clientsQ.data ?? []) as ClientRec[];
+  const content = (contentQ.data ?? []) as ContentRec[];
+  const approvals = (approvalsQ.data ?? []) as ApprovalRec[];
+  const tasks = (tasksQ.data ?? []) as TaskRec[];
+  const perf = (perfQ.data ?? []) as PerfRec[];
+  const reports = (reportsQ.data ?? []) as ReportRec[];
+
+  const createMut = trpc.medialy.reports.create.useMutation({
+    onSuccess: () => {
+      utils.medialy.reports.list.invalidate();
+      toast.success("Report saved");
+    },
+    onError: (err) => toast.error(err.message || "Save failed"),
+  });
+  const removeMut = trpc.medialy.reports.remove.useMutation({
+    onSuccess: () => utils.medialy.reports.list.invalidate(),
+    onError: (err) => toast.error(err.message || "Delete failed"),
+  });
+
   const [label, setLabel] = useState("Weekly CSO Summary");
   const [weekOf, setWeekOf] = useState(todayISO());
 
@@ -2257,17 +2418,12 @@ function ReportsSection() {
   }
 
   function saveReport() {
-    insert<ReportRow>(PORTAL, "reports", {
-      label, weekOf, body: generated,
-    });
-    toast.success("Report saved");
-    touch(PORTAL, "reports");
+    createMut.mutate({ label, weekOf, body: generated });
   }
 
-  function delReport(id: string) {
+  function delReport(id: number) {
     if (!window.confirm("Delete saved report?")) return;
-    remove(PORTAL, "reports", id);
-    touch(PORTAL, "reports");
+    removeMut.mutate({ id });
   }
 
   return (
