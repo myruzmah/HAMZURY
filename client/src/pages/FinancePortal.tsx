@@ -10,14 +10,14 @@ import {
   Menu, X, Shield, Send, Wallet, Activity, Landmark, FileText, CreditCard,
   Plus, Trash2, Calendar as CalendarIcon, Copy,
 } from "lucide-react";
-import { readAll, insert, remove, type OpsItem } from "@/lib/opsStore";
-
-const FINANCE_PORTAL = "finance";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RTooltip,
   CartesianGrid, Cell,
 } from "recharts";
 import { toast } from "sonner";
+
+/* 2026-04 founder decision: 1 section (monthly report archive) was on
+   localStorage and removed for launch. Re-add when migrated to MySQL. */
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY FINANCE PORTAL — Abubakar + senior staff.
@@ -39,7 +39,7 @@ type Section =
   | "dashboard" | "invoices" | "payments" | "allocations"
   | "commissions" | "aifund" | "reports"
   | "bankrecon" | "taxfilings" | "expenses"
-  | "calendar" | "monthly_archive";
+  | "calendar";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -155,7 +155,6 @@ export default function FinancePortal() {
     { key: "taxfilings",  icon: FileText,        label: "Tax Filings" },
     { key: "aifund",      icon: Activity,        label: "AI Fund" },
     { key: "reports",     icon: TrendingUp,      label: "Monthly Report" },
-    { key: "monthly_archive", icon: FileText,    label: "Report Archive" },
     { key: "calendar",    icon: CalendarIcon,    label: "Finance Calendar" },
   ];
 
@@ -287,7 +286,6 @@ export default function FinancePortal() {
             {active === "taxfilings"  && <TaxFilingsSection />}
             {active === "aifund"      && <AIFundSection />}
             {active === "reports"     && <ReportsSection />}
-            {active === "monthly_archive" && <MonthlyArchiveSection />}
             {active === "calendar"        && <FinanceCalendarSection />}
           </div>
         </div>
@@ -1645,93 +1643,6 @@ function inputBox(): React.CSSProperties {
     fontSize: 13, color: DARK, backgroundColor: WHITE, outline: "none",
     fontFamily: "inherit",
   };
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
- * NEW SECTIONS — Monthly Report Archive + Finance Calendar
- * localStorage v1 (opsStore). Rest of polish items (tax renewal auto-calc,
- * expense approval, commission state machine) are lightweight flags that
- * can be added on existing rows without schema changes.
- * ═══════════════════════════════════════════════════════════════════════ */
-
-type MonthlyReportRow = OpsItem & {
-  month: string;            // 2026-04
-  revenue: number;
-  expenses: number;
-  netProfit: number;
-  reportDate: string;
-  sentToCEO: boolean;
-  sentToFounder: boolean;
-  sentToDivisionLeads: boolean;
-  notes?: string;
-};
-
-function MonthlyArchiveSection() {
-  const [rows, setRows] = useState<MonthlyReportRow[]>([]);
-  const refresh = () => setRows(readAll<MonthlyReportRow>(FINANCE_PORTAL, "monthlyReportArchive"));
-  useEffect(() => { refresh(); }, []);
-
-  const archive = () => {
-    const month = prompt("Report month? (YYYY-MM)", new Date().toISOString().slice(0, 7));
-    if (!month) return;
-    const revenue = Number(prompt("Revenue ₦?", "0") || 0);
-    const expenses = Number(prompt("Expenses ₦?", "0") || 0);
-    insert<MonthlyReportRow>(FINANCE_PORTAL, "monthlyReportArchive", {
-      month, revenue, expenses, netProfit: revenue - expenses,
-      reportDate: new Date().toISOString().slice(0, 10),
-      sentToCEO: false, sentToFounder: false, sentToDivisionLeads: false,
-    });
-    refresh();
-    toast.success(`Archived ${month} report`);
-  };
-
-  return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>Monthly Report Archive</h2>
-        <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>Historic monthly P&L snapshots with distribution tracking.</p>
-      </div>
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <p style={{ fontSize: 13, color: DARK, fontWeight: 600 }}>{rows.length} archived reports</p>
-          <button onClick={archive} style={{ padding: "8px 14px", borderRadius: 999, border: "none", backgroundColor: GREEN, color: WHITE, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
-            <Plus size={12} /> Archive Current
-          </button>
-        </div>
-        {rows.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px 16px" }}>
-            <FileText size={28} style={{ color: GOLD, opacity: 0.4, marginBottom: 12 }} />
-            <p style={{ fontSize: 13, color: DARK, fontWeight: 500 }}>No reports archived yet</p>
-            <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>Click "Archive Current" at the end of each month.</p>
-          </div>
-        ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-              <thead><tr style={{ backgroundColor: `${GOLD}08` }}>{["Month", "Revenue", "Expenses", "Net Profit", "Report Date", "Sent To", ""].map(c => <th key={c} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, letterSpacing: "0.04em", textTransform: "uppercase", color: DARK }}>{c}</th>)}</tr></thead>
-              <tbody>{rows.slice().reverse().map(r => (
-                <tr key={r.id} style={{ borderTop: `1px solid ${DARK}06` }}>
-                  <td style={{ padding: "10px 12px", color: DARK, fontWeight: 600 }}>{r.month}</td>
-                  <td style={{ padding: "10px 12px", color: DARK }}>₦{r.revenue.toLocaleString()}</td>
-                  <td style={{ padding: "10px 12px", color: "#EF4444" }}>₦{r.expenses.toLocaleString()}</td>
-                  <td style={{ padding: "10px 12px", color: r.netProfit >= 0 ? "#22C55E" : "#EF4444", fontWeight: 700 }}>₦{r.netProfit.toLocaleString()}</td>
-                  <td style={{ padding: "10px 12px", color: MUTED }}>{r.reportDate}</td>
-                  <td style={{ padding: "10px 12px", fontSize: 10 }}>
-                    {r.sentToCEO && <span style={{ padding: "2px 6px", borderRadius: 999, backgroundColor: `${GREEN}15`, color: GREEN, marginRight: 4 }}>CEO</span>}
-                    {r.sentToFounder && <span style={{ padding: "2px 6px", borderRadius: 999, backgroundColor: `${GOLD}15`, color: GOLD, marginRight: 4 }}>Founder</span>}
-                    {r.sentToDivisionLeads && <span style={{ padding: "2px 6px", borderRadius: 999, backgroundColor: "#3B82F615", color: "#3B82F6" }}>Leads</span>}
-                    {!r.sentToCEO && !r.sentToFounder && !r.sentToDivisionLeads && <span style={{ color: MUTED }}>Not sent</span>}
-                  </td>
-                  <td style={{ padding: "6px 12px", textAlign: "right" }}>
-                    <button onClick={() => { remove(FINANCE_PORTAL, "monthlyReportArchive", r.id); refresh(); }} style={{ border: "none", background: "transparent", color: "#EF4444", cursor: "pointer" }}><Trash2 size={13} /></button>
-                  </td>
-                </tr>
-              ))}</tbody>
-            </table>
-          </div>
-        )}
-      </Card>
-    </div>
-  );
 }
 
 /* Finance Calendar — recurring events per ops guide */
