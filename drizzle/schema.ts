@@ -1710,3 +1710,105 @@ export const contentCreators = mysqlTable("content_creators", {
 });
 export type ContentCreator = typeof contentCreators.$inferSelect;
 export type InsertContentCreator = typeof contentCreators.$inferInsert;
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * FOUNDER PORTAL — Life & Legacy System
+ * Founder-only. Migrated from localStorage (opsStore) to real DB.
+ * Source shapes mirror client/src/pages/FounderPortal.tsx.
+ * Vault `secret` + `recovery` fields are encrypted at rest (server/_core/crypto.ts).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** Debt repayment log — every payment toward founder debt freedom. */
+export const founderDebtPayments = mysqlTable("founder_debt_payments", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 10 }).notNull(),       // ISO YYYY-MM-DD
+  amount: int("amount").notNull(),                        // NGN
+  source: varchar("source", { length: 255 }).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FounderDebtPayment = typeof founderDebtPayments.$inferSelect;
+export type InsertFounderDebtPayment = typeof founderDebtPayments.$inferInsert;
+
+/** Weekly schedule completion ticks. (week, slot) is unique per row. */
+export const founderScheduleChecks = mysqlTable("founder_schedule_checks", {
+  id: int("id").autoincrement().primaryKey(),
+  week: varchar("week", { length: 10 }).notNull(),        // ISO week, e.g. "2026-W17"
+  slot: varchar("slot", { length: 200 }).notNull(),       // "Monday|6:30 AM|Gym"
+  done: boolean("done").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FounderScheduleCheck = typeof founderScheduleChecks.$inferSelect;
+export type InsertFounderScheduleCheck = typeof founderScheduleChecks.$inferInsert;
+
+/** Content tracker — what was posted, where, performance. */
+export const founderContent = mysqlTable("founder_content", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 10 }).notNull(),
+  platform: varchar("platform", { length: 80 }).notNull(),
+  contentType: varchar("contentType", { length: 80 }).notNull(),
+  theme: varchar("theme", { length: 255 }),
+  mentor: varchar("mentor", { length: 120 }),
+  posted: varchar("posted", { length: 20 }).notNull(),    // "Yes" | "No" | "Scheduled"
+  engagement: varchar("engagement", { length: 100 }),
+  saved: boolean("saved").default(false).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FounderContentRow = typeof founderContent.$inferSelect;
+export type InsertFounderContentRow = typeof founderContent.$inferInsert;
+
+/** Learning journal — lessons from mentors / books / podcasts. */
+export const founderLearning = mysqlTable("founder_learning", {
+  id: int("id").autoincrement().primaryKey(),
+  date: varchar("date", { length: 10 }).notNull(),
+  source: varchar("source", { length: 255 }).notNull(),
+  mentor: varchar("mentor", { length: 120 }),
+  lesson: text("lesson").notNull(),
+  screenshot: boolean("screenshot").default(false).notNull(),
+  whyWorth: text("whyWorth"),
+  howApply: text("howApply"),
+  applied: mysqlEnum("founderLearningApplied", ["Not Yet", "In Progress", "Yes"])
+    .default("Not Yet").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FounderLearningRow = typeof founderLearning.$inferSelect;
+export type InsertFounderLearningRow = typeof founderLearning.$inferInsert;
+
+/** Vision milestones toward 2027 freedom. */
+export const founderMilestones = mysqlTable("founder_milestones", {
+  id: int("id").autoincrement().primaryKey(),
+  label: varchar("label", { length: 255 }).notNull(),
+  target: varchar("target", { length: 10 }),               // ISO date
+  status: mysqlEnum("founderMilestoneStatus", [
+    "Not Started", "Planning", "In Progress", "Done",
+  ]).default("Not Started").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FounderMilestone = typeof founderMilestones.$inferSelect;
+export type InsertFounderMilestone = typeof founderMilestones.$inferInsert;
+
+/** Encrypted vault — passwords, recovery info. `secret` + `recovery` are AES-256-GCM blobs. */
+export const founderVault = mysqlTable("founder_vault", {
+  id: int("id").autoincrement().primaryKey(),
+  kind: mysqlEnum("founderVaultKind", ["account", "doc"]).default("account").notNull(),
+  service: varchar("service", { length: 255 }).notNull(),
+  username: varchar("username", { length: 255 }),
+  /** ENCRYPTED — never read raw. Use decryptString() in server. */
+  secret: text("secret"),
+  securityQ: text("securityQ"),
+  /** ENCRYPTED — never read raw. */
+  recovery: text("recovery"),
+  storageLocation: varchar("storageLocation", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type FounderVaultRow = typeof founderVault.$inferSelect;
+export type InsertFounderVaultRow = typeof founderVault.$inferInsert;
+
