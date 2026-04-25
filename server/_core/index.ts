@@ -125,11 +125,14 @@ async function startServer() {
 
       // 2026-04 cleanup: only CSO is active. All other roles land on "/"
       // until their dashboards are re-added one at a time.
+      // Each role lands on its own dashboard. Founder gets the personal
+      // Founder Portal (Life & Legacy system); CEO gets institutional.
+      // Both are real, distinct pages.
       const ROLE_DASHBOARDS: Record<string, string> = {
         cso:          "/cso",
         cso_staff:    "/cso",
         ceo:          "/ceo",
-        founder:      "/ceo",
+        founder:      "/founder/portal",
         bizdev:       "/bizdev",
         bizdev_staff: "/bizdev",
         finance:      "/finance",
