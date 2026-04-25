@@ -32,34 +32,34 @@ import { storagePut } from "../storage";
  * Adding a new service means adding it here AND in the FORMS object on the client.
  */
 const SERVICE_IDS = [
-  // Business (8)
+  // Business (6)
   "cac",
-  "compliance",
   "tin",
   "licences",
   "plan",
   "trademark",
-  "audit",
-  "advisory",
-  // Software (5)
+  "compliance",
+  // Software (6)
   "website",
-  "webapp",
-  "ecommerce",
+  "crm",
+  "ai_integration",
   "automation",
-  "softwareplus",
-  // Media (8)
+  "ecommerce",
+  "software_mgmt",
+  // Media (6)
   "brand",
   "social",
-  "content",
   "podcast",
+  "content_strategy",
   "video",
-  "photography",
-  "ads",
-  "mediaplus",
-  // Skills/HUB (3)
-  "training",
-  "coaching",
-  "consult",
+  "media_mgmt",
+  // Skills (6)
+  "tech_training",
+  "ai_business",
+  "entrepreneurship",
+  "team_training",
+  "certification",
+  "skills_mgmt",
 ] as const;
 
 const MAX_BYTES = 10 * 1024 * 1024; // 10 MB per file

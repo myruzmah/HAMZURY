@@ -133,6 +133,29 @@ function Router() {
 
       {/* ═══ Post-payment requirement intake (?ref=HMZ-YY/M-XXXX) ═══ */}
       <Route path="/requirements/cac"><RequirementForm serviceId="cac" /></Route>
+      <Route path="/requirements/tin"><RequirementForm serviceId="tin" /></Route>
+      <Route path="/requirements/licences"><RequirementForm serviceId="licences" /></Route>
+      <Route path="/requirements/plan"><RequirementForm serviceId="plan" /></Route>
+      <Route path="/requirements/trademark"><RequirementForm serviceId="trademark" /></Route>
+      <Route path="/requirements/compliance"><RequirementForm serviceId="compliance" /></Route>
+      <Route path="/requirements/website"><RequirementForm serviceId="website" /></Route>
+      <Route path="/requirements/crm"><RequirementForm serviceId="crm" /></Route>
+      <Route path="/requirements/ai_integration"><RequirementForm serviceId="ai_integration" /></Route>
+      <Route path="/requirements/automation"><RequirementForm serviceId="automation" /></Route>
+      <Route path="/requirements/ecommerce"><RequirementForm serviceId="ecommerce" /></Route>
+      <Route path="/requirements/software_mgmt"><RequirementForm serviceId="software_mgmt" /></Route>
+      <Route path="/requirements/brand"><RequirementForm serviceId="brand" /></Route>
+      <Route path="/requirements/social"><RequirementForm serviceId="social" /></Route>
+      <Route path="/requirements/podcast"><RequirementForm serviceId="podcast" /></Route>
+      <Route path="/requirements/content_strategy"><RequirementForm serviceId="content_strategy" /></Route>
+      <Route path="/requirements/video"><RequirementForm serviceId="video" /></Route>
+      <Route path="/requirements/media_mgmt"><RequirementForm serviceId="media_mgmt" /></Route>
+      <Route path="/requirements/tech_training"><RequirementForm serviceId="tech_training" /></Route>
+      <Route path="/requirements/ai_business"><RequirementForm serviceId="ai_business" /></Route>
+      <Route path="/requirements/entrepreneurship"><RequirementForm serviceId="entrepreneurship" /></Route>
+      <Route path="/requirements/team_training"><RequirementForm serviceId="team_training" /></Route>
+      <Route path="/requirements/certification"><RequirementForm serviceId="certification" /></Route>
+      <Route path="/requirements/skills_mgmt"><RequirementForm serviceId="skills_mgmt" /></Route>
 
       {/* ═══ Legacy public redirects (old division names) ═══ */}
       <Route path="/systemise">{() => <Redirect to="/scalar" />}</Route>
