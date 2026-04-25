@@ -139,6 +139,16 @@ async function startServer() {
         hr:           "/hr",
         compliance_staff: "/bizdoc/ops",
         skills_staff:     "/hub/admin",
+        scalar_lead:      "/scalar/ops",
+        scalar_staff:     "/scalar/ops",
+        medialy_lead:     "/medialy/ops",
+        medialy_staff:    "/medialy/ops",
+        podcast_lead:     "/podcast/ops",
+        podcast_staff:    "/podcast/ops",
+        video_lead:       "/video/ops",
+        video_staff:      "/video/ops",
+        faceless_lead:    "/faceless/ops",
+        faceless_staff:   "/faceless/ops",
       };
 
       res.json({
