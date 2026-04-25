@@ -2007,3 +2007,163 @@ export const scalarQaChecks = mysqlTable("scalar_qa_checks", {
 export type ScalarQaCheck = typeof scalarQaChecks.$inferSelect;
 export type InsertScalarQaCheck = typeof scalarQaChecks.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * PODCAST OPS PORTAL — Maryam Lalo (Host) + Habeeba (Producer)
+ * Migrated from localStorage (opsStore "podcast" portal) to real DB.
+ * Source shapes mirror client/src/pages/PodcastOpsPortal.tsx.
+ *
+ * Note: a separate `podcastEpisodes` table (see line ~1339) serves the CEO
+ * dashboard — it is intentionally distinct from `podcast_episodes_ops`. The
+ * latter is the production-ops record (kanban phases, raw assets, host).
+ * Children FK on int parent ids (showId, episodeId).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** Podcast shows — corporate clients / season-based productions. */
+export const podcastShows = mysqlTable("podcast_shows", {
+  id: int("id").autoincrement().primaryKey(),
+  clientName: varchar("clientName", { length: 255 }).notNull(),
+  showName: varchar("showName", { length: 255 }).notNull(),
+  tier: mysqlEnum("podcastShowTier", [
+    "10ep", "15ep", "20ep", "interview", "edit-only", "corporate",
+  ]).default("10ep").notNull(),
+  episodesTotal: int("episodesTotal").default(0).notNull(),
+  episodesDelivered: int("episodesDelivered").default(0).notNull(),
+  priceNGN: int("priceNGN").default(0).notNull(),
+  startDate: varchar("startDate", { length: 10 }),
+  releaseCadence: mysqlEnum("podcastShowCadence", [
+    "Weekly", "Biweekly", "Monthly", "Ad-hoc",
+  ]).default("Weekly").notNull(),
+  contact: varchar("contact", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PodcastShow = typeof podcastShows.$inferSelect;
+export type InsertPodcastShow = typeof podcastShows.$inferInsert;
+
+/**
+ * Podcast episodes — per-episode production tracker (kanban phases).
+ * Distinct from `podcastEpisodes` (CEO dashboard). The `assets` column stores
+ * a JSON-stringified AssetItem[] to preserve the original UI's checklist UX
+ * without splitting into a separate child table.
+ */
+export const podcastEpisodesOps = mysqlTable("podcast_episodes_ops", {
+  id: int("id").autoincrement().primaryKey(),
+  epNumber: varchar("epNumber", { length: 40 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  topic: varchar("topic", { length: 255 }),
+  /** FK to podcast_shows.id (nullable — internal HAMZURY episodes have no show). */
+  showId: int("showId"),
+  guestName: varchar("guestName", { length: 255 }),
+  /** FK to podcast_guests.id (nullable). */
+  guestId: int("guestId"),
+  host: mysqlEnum("podcastEpisodeHost", ["Maryam", "Habeeba", "Co-host"])
+    .default("Maryam").notNull(),
+  phase: mysqlEnum("podcastEpisodePhase", [
+    "topic", "research", "script", "booked", "recorded",
+    "assembly", "cleaning", "mixing", "qc", "published",
+  ]).default("topic").notNull(),
+  recordingDate: varchar("recordingDate", { length: 10 }),
+  publishDate: varchar("publishDate", { length: 10 }),
+  durationTarget: varchar("durationTarget", { length: 40 }),
+  notes: text("notes"),
+  /** JSON-stringified AssetItem[] — checklist of episode assets. */
+  assets: text("assets"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PodcastEpisodeOps = typeof podcastEpisodesOps.$inferSelect;
+export type InsertPodcastEpisodeOps = typeof podcastEpisodesOps.$inferInsert;
+
+/** Podcast guests — guest roster + prep status. */
+export const podcastGuests = mysqlTable("podcast_guests", {
+  id: int("id").autoincrement().primaryKey(),
+  fullName: varchar("fullName", { length: 255 }).notNull(),
+  preferredName: varchar("preferredName", { length: 255 }),
+  title: varchar("title", { length: 255 }),
+  company: varchar("company", { length: 255 }),
+  email: varchar("email", { length: 255 }),
+  phone: varchar("phone", { length: 50 }),
+  bio: text("bio"),
+  headshotUrl: varchar("headshotUrl", { length: 1024 }),
+  expertise: text("expertise"),
+  talkingPoints: text("talkingPoints"),
+  avoidTopics: text("avoidTopics"),
+  availability: varchar("availability", { length: 255 }),
+  timezone: varchar("timezone", { length: 60 }),
+  recordingPreference: mysqlEnum("podcastGuestRecPref", ["Remote", "In-Person"])
+    .default("Remote").notNull(),
+  micSetup: varchar("micSetup", { length: 255 }),
+  briefSent: boolean("briefSent").default(false).notNull(),
+  techCheckDone: boolean("techCheckDone").default(false).notNull(),
+  formReceived: boolean("formReceived").default(false).notNull(),
+  episodeTitle: varchar("episodeTitle", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PodcastGuest = typeof podcastGuests.$inferSelect;
+export type InsertPodcastGuest = typeof podcastGuests.$inferInsert;
+
+/** Podcast publishing — release calendar + platform verification. */
+export const podcastPublishing = mysqlTable("podcast_publishing", {
+  id: int("id").autoincrement().primaryKey(),
+  /** FK to podcast_episodes_ops.id (nullable — freeform entries allowed). */
+  episodeId: int("episodeId"),
+  epLabel: varchar("epLabel", { length: 255 }).notNull(),
+  /** FK to podcast_shows.id (nullable). */
+  showId: int("showId"),
+  scheduledDate: varchar("scheduledDate", { length: 10 }).notNull(),
+  apple: boolean("apple").default(false).notNull(),
+  spotify: boolean("spotify").default(false).notNull(),
+  google: boolean("google").default(false).notNull(),
+  amazon: boolean("amazon").default(false).notNull(),
+  audiogramReady: boolean("audiogramReady").default(false).notNull(),
+  quoteCardsReady: boolean("quoteCardsReady").default(false).notNull(),
+  socialPostScheduled: boolean("socialPostScheduled").default(false).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PodcastPublishing = typeof podcastPublishing.$inferSelect;
+export type InsertPodcastPublishing = typeof podcastPublishing.$inferInsert;
+
+/** Podcast analytics — per-episode 7-day / 30-day download tracking. */
+export const podcastAnalytics = mysqlTable("podcast_analytics", {
+  id: int("id").autoincrement().primaryKey(),
+  /** FK to podcast_episodes_ops.id (nullable). */
+  episodeId: int("episodeId"),
+  epLabel: varchar("epLabel", { length: 255 }).notNull(),
+  publishedOn: varchar("publishedOn", { length: 10 }).notNull(),
+  downloads7d: int("downloads7d").default(0).notNull(),
+  downloads30d: int("downloads30d").default(0),
+  topPlatform: varchar("topPlatform", { length: 60 }),
+  completionPct: int("completionPct"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PodcastAnalytics = typeof podcastAnalytics.$inferSelect;
+export type InsertPodcastAnalytics = typeof podcastAnalytics.$inferInsert;
+
+/** Podcast equipment — mics, interfaces, headphones, software inventory. */
+export const podcastEquipment = mysqlTable("podcast_equipment", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  category: mysqlEnum("podcastEquipmentCategory", [
+    "Microphone", "Interface", "Headphones", "Software", "Other",
+  ]).default("Microphone").notNull(),
+  brand: varchar("brand", { length: 255 }),
+  assignedTo: varchar("assignedTo", { length: 120 }),
+  condition: mysqlEnum("podcastEquipmentCondition", [
+    "Good", "Needs Repair", "Retired",
+  ]).default("Good").notNull(),
+  location: varchar("location", { length: 255 }),
+  serial: varchar("serial", { length: 255 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PodcastEquipment = typeof podcastEquipment.$inferSelect;
+export type InsertPodcastEquipment = typeof podcastEquipment.$inferInsert;
+

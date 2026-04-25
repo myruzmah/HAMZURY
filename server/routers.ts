@@ -4,6 +4,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { founderRouter } from "./founder/router";
 import { videoRouter } from "./video/router";
 import { scalarRouter } from "./scalar/router";
+import { podcastOpsRouter } from "./podcastOps/router";
 import { diagnosticsRouter } from "./diagnostics/router";
 import { requirementsRouter } from "./requirements/router";
 import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
@@ -133,6 +134,7 @@ export const appRouter = router({
   founder: founderRouter,
   video: videoRouter,
   scalar: scalarRouter,
+  podcastOps: podcastOpsRouter,
   diagnostics: diagnosticsRouter,
   requirements: requirementsRouter,
   auth: router({

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import {
   LayoutDashboard, Mic, Users, Library, CalendarDays,
@@ -6,13 +6,11 @@ import {
   ExternalLink, Clock, CheckCircle2, AlertCircle, Send,
   Music2, FileAudio, Radio, ClipboardList,
 } from "lucide-react";
+import { toast } from "sonner";
 import OpsShell, { OpsCard, OpsKpi, OpsHeader } from "@/components/ops/OpsShell";
 import PhaseTracker, { KanbanLane, PhaseCard } from "@/components/ops/PhaseTracker";
 import AssetChecklist, { type AssetItem } from "@/components/ops/AssetChecklist";
-import {
-  readAll, insert, update, remove, touch,
-  type OpsItem,
-} from "@/lib/opsStore";
+import { trpc } from "@/lib/trpc";
 
 /* ══════════════════════════════════════════════════════════════════════════
  * HAMZURY PODCAST OPS PORTAL
@@ -29,12 +27,15 @@ import {
  *  6. Equipment & Assets    — Mic/interface inventory, raw+mastered paths
  *  7. Pricing & Invoicing   — 4 service tiers + CSO lead handoff
  *
- * Storage:  opsStore portal "podcast".
+ * Storage:  tRPC `podcastOps.*` (MySQL via Drizzle).
  * Auth:    soft role gate (founder | ceo | podcast_lead | podcast_staff).
  * Brand:   accent #9333EA (purple), milk #FFFAF6.
+ *
+ * NOTE: ids are now `number` end-to-end. The legacy localStorage shape used
+ * string ids; this file flips everything to int. The `assets` field on
+ * episodes is parsed/stringified server-side so the client always sees a
+ * real AssetItem[].
  * ════════════════════════════════════════════════════════════════════════ */
-
-const PORTAL = "podcast";
 
 /* Brand */
 const PURPLE   = "#9333EA";
@@ -76,64 +77,75 @@ const EPISODE_PHASES = [
 
 type PhaseId = (typeof EPISODE_PHASES)[number]["id"];
 
-/* ─── Types ────────────────────────────────────────────────────────────── */
-type EpisodeRec = OpsItem & {
+/* ─── DB row types (returned by tRPC) ──────────────────────────────────── */
+type EpisodeRec = {
+  id: number;
   epNumber: string;
   title: string;
-  topic?: string;
-  showId?: string;                // FK to shows collection
-  guestName?: string;             // snapshot (guest id may or may not exist)
-  guestId?: string;
+  topic?: string | null;
+  showId?: number | null;
+  guestName?: string | null;
+  guestId?: number | null;
   host: "Maryam" | "Habeeba" | "Co-host";
   phase: PhaseId;
-  recordingDate?: string;
-  publishDate?: string;
-  durationTarget?: string;
-  notes?: string;
-  assets?: AssetItem[];           // per-episode checklist
+  recordingDate?: string | null;
+  publishDate?: string | null;
+  durationTarget?: string | null;
+  notes?: string | null;
+  /** Already-parsed array (server stringifies to text on storage). */
+  assets?: AssetItem[];
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type GuestRec = OpsItem & {
+type GuestRec = {
+  id: number;
   fullName: string;
-  preferredName?: string;
-  title?: string;
-  company?: string;
-  email?: string;
-  phone?: string;
-  bio?: string;
-  headshotUrl?: string;
-  expertise?: string;
-  talkingPoints?: string;
-  avoidTopics?: string;
-  availability?: string;
-  timezone?: string;
+  preferredName?: string | null;
+  title?: string | null;
+  company?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  bio?: string | null;
+  headshotUrl?: string | null;
+  expertise?: string | null;
+  talkingPoints?: string | null;
+  avoidTopics?: string | null;
+  availability?: string | null;
+  timezone?: string | null;
   recordingPreference?: "Remote" | "In-Person";
-  micSetup?: string;
+  micSetup?: string | null;
   briefSent?: boolean;
   techCheckDone?: boolean;
   formReceived?: boolean;
-  episodeTitle?: string;
-  notes?: string;
+  episodeTitle?: string | null;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type ShowRec = OpsItem & {
+type ShowRec = {
+  id: number;
   clientName: string;
   showName: string;
   tier: "10ep" | "15ep" | "20ep" | "interview" | "edit-only" | "corporate";
   episodesTotal: number;
   episodesDelivered: number;
   priceNGN: number;
-  startDate?: string;
+  startDate?: string | null;
   releaseCadence?: "Weekly" | "Biweekly" | "Monthly" | "Ad-hoc";
-  contact?: string;
-  notes?: string;
+  contact?: string | null;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type PubRec = OpsItem & {
-  episodeId?: string;
-  epLabel: string;                // free-text fallback (eg "S1E04 — Fintech")
-  showId?: string;
-  scheduledDate: string;          // ISO
+type PubRec = {
+  id: number;
+  episodeId?: number | null;
+  epLabel: string;
+  showId?: number | null;
+  scheduledDate: string;
   apple?: boolean;
   spotify?: boolean;
   google?: boolean;
@@ -141,33 +153,41 @@ type PubRec = OpsItem & {
   audiogramReady?: boolean;
   quoteCardsReady?: boolean;
   socialPostScheduled?: boolean;
-  notes?: string;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type EquipmentRec = OpsItem & {
+type EquipmentRec = {
+  id: number;
   name: string;
   category: "Microphone" | "Interface" | "Headphones" | "Software" | "Other";
-  brand?: string;
-  assignedTo?: string;
+  brand?: string | null;
+  assignedTo?: string | null;
   condition?: "Good" | "Needs Repair" | "Retired";
-  location?: string;
-  serial?: string;
-  notes?: string;
+  location?: string | null;
+  serial?: string | null;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
-type AnalyticsRec = OpsItem & {
-  episodeId?: string;
+type AnalyticsRec = {
+  id: number;
+  episodeId?: number | null;
   epLabel: string;
   publishedOn: string;
   downloads7d: number;
-  downloads30d?: number;
-  topPlatform?: string;
-  completionPct?: number;
-  notes?: string;
+  downloads30d?: number | null;
+  topPlatform?: string | null;
+  completionPct?: number | null;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
 };
 
 /* ─── Helpers ──────────────────────────────────────────────────────────── */
-function fmtDate(d: string | null | undefined): string {
+function fmtDate(d: string | Date | null | undefined): string {
   if (!d) return "—";
   try {
     return new Date(d).toLocaleDateString("en-NG", {
@@ -175,7 +195,7 @@ function fmtDate(d: string | null | undefined): string {
     });
   } catch { return String(d); }
 }
-function daysSince(d: string | null | undefined | number): number | null {
+function daysSince(d: string | Date | null | undefined | number): number | null {
   if (!d) return null;
   try {
     const t = typeof d === "number" ? d : new Date(d).getTime();
@@ -214,30 +234,6 @@ function defaultEpisodeAssets(): AssetItem[] {
     { id: "notes",  label: "Show notes written",        group: "Publishing", done: false, owner: "Maryam" },
     { id: "audio",  label: "Audiogram clip exported",   group: "Promo",      done: false, owner: "Maryam" },
   ];
-}
-
-/* ─── Reactive store hook ──────────────────────────────────────────────── */
-function useCollection<T extends OpsItem>(collection: string): [T[], () => void] {
-  const [items, setItems] = useState<T[]>(() => readAll<T>(PORTAL, collection));
-  const refresh = useCallback(() => {
-    setItems(readAll<T>(PORTAL, collection));
-  }, [collection]);
-  useEffect(() => {
-    const onChange = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.portal === PORTAL && detail?.collection === collection) {
-        refresh();
-      }
-    };
-    const onStorage = () => refresh();
-    window.addEventListener("opsStoreChange", onChange as EventListener);
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener("opsStoreChange", onChange as EventListener);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, [collection, refresh]);
-  return [items, refresh];
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -330,11 +326,17 @@ export default function PodcastOpsPortal() {
  * 0) OVERVIEW
  * ════════════════════════════════════════════════════════════════════════ */
 function OverviewSection({ onGoto }: { onGoto: (s: Section) => void }) {
-  const [episodes]   = useCollection<EpisodeRec>("episodes");
-  const [guests]     = useCollection<GuestRec>("guests");
-  const [shows]      = useCollection<ShowRec>("shows");
-  const [publishing] = useCollection<PubRec>("publishing");
-  const [analytics]  = useCollection<AnalyticsRec>("analytics");
+  const episodesQ   = trpc.podcastOps.episodes.list.useQuery();
+  const guestsQ     = trpc.podcastOps.guests.list.useQuery();
+  const showsQ      = trpc.podcastOps.shows.list.useQuery();
+  const publishingQ = trpc.podcastOps.publishing.list.useQuery();
+  const analyticsQ  = trpc.podcastOps.analytics.list.useQuery();
+
+  const episodes   = (episodesQ.data ?? []) as EpisodeRec[];
+  const guests     = (guestsQ.data ?? []) as GuestRec[];
+  const shows      = (showsQ.data ?? []) as ShowRec[];
+  const publishing = (publishingQ.data ?? []) as PubRec[];
+  const analytics  = (analyticsQ.data ?? []) as AnalyticsRec[];
 
   const inFlight = episodes.filter(e => e.phase !== "published").length;
   const publishedThisMonth = episodes.filter(e => {
@@ -496,12 +498,26 @@ function QuickBtn({ label, onClick }: { label: string; onClick: () => void }) {
  * 1) EPISODE PIPELINE
  * ════════════════════════════════════════════════════════════════════════ */
 function PipelineSection() {
-  const [episodes, refresh] = useCollection<EpisodeRec>("episodes");
-  const [shows]             = useCollection<ShowRec>("shows");
-  const [guests]            = useCollection<GuestRec>("guests");
+  const utils = trpc.useUtils();
+  const episodesQ = trpc.podcastOps.episodes.list.useQuery();
+  const showsQ    = trpc.podcastOps.shows.list.useQuery();
+  const guestsQ   = trpc.podcastOps.guests.list.useQuery();
+  const episodes = (episodesQ.data ?? []) as EpisodeRec[];
+  const shows    = (showsQ.data ?? []) as ShowRec[];
+  const guests   = (guestsQ.data ?? []) as GuestRec[];
+
+  const updateEpMut = trpc.podcastOps.episodes.update.useMutation({
+    onSuccess: () => utils.podcastOps.episodes.list.invalidate(),
+  });
+  const removeEpMut = trpc.podcastOps.episodes.remove.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.episodes.list.invalidate();
+      toast.success("Episode deleted");
+    },
+  });
 
   const [showNew, setShowNew] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [focusPhase, setFocusPhase] = useState<PhaseId | null>(null);
 
   const byPhase = useMemo(() => {
@@ -523,28 +539,20 @@ function PipelineSection() {
       EPISODE_PHASES.length - 1,
       Math.max(0, idx + dir),
     );
-    update<EpisodeRec>(PORTAL, "episodes", ep.id, {
-      phase: EPISODE_PHASES[next].id,
-    });
-    touch(PORTAL, "episodes");
-    refresh();
+    updateEpMut.mutate({ id: ep.id, phase: EPISODE_PHASES[next].id });
   };
 
-  const del = (id: string) => {
+  const del = (id: number) => {
     if (!confirm("Delete this episode?")) return;
-    remove(PORTAL, "episodes", id);
-    touch(PORTAL, "episodes");
-    refresh();
+    removeEpMut.mutate({ id });
   };
 
   const toggleAsset = (ep: EpisodeRec, assetId: string) => {
-    const current = ep.assets || defaultEpisodeAssets();
+    const current = ep.assets && ep.assets.length ? ep.assets : defaultEpisodeAssets();
     const next = current.map(a =>
       a.id === assetId ? { ...a, done: !a.done } : a,
     );
-    update<EpisodeRec>(PORTAL, "episodes", ep.id, { assets: next });
-    touch(PORTAL, "episodes");
-    refresh();
+    updateEpMut.mutate({ id: ep.id, assets: next });
   };
 
   const lanesToShow = focusPhase
@@ -590,11 +598,7 @@ function PipelineSection() {
           shows={shows}
           guests={guests}
           onClose={() => setShowNew(false)}
-          onSaved={() => {
-            touch(PORTAL, "episodes");
-            refresh();
-            setShowNew(false);
-          }}
+          onSaved={() => setShowNew(false)}
         />
       )}
 
@@ -654,7 +658,7 @@ function PipelineSection() {
                         </div>
                       )}
                       <AssetChecklist
-                        items={ep.assets || defaultEpisodeAssets()}
+                        items={(ep.assets && ep.assets.length) ? ep.assets : defaultEpisodeAssets()}
                         onToggle={id => toggleAsset(ep, id)}
                         accent={PURPLE}
                         grouped
@@ -700,6 +704,20 @@ function PipelineSection() {
   );
 }
 
+type NewEpisodeFormState = {
+  epNumber?: string;
+  title?: string;
+  topic?: string;
+  showId?: number;
+  guestId?: number;
+  host?: EpisodeRec["host"];
+  phase?: PhaseId;
+  recordingDate?: string;
+  publishDate?: string;
+  durationTarget?: string;
+  notes?: string;
+};
+
 function NewEpisodeForm({
   shows,
   guests,
@@ -711,7 +729,8 @@ function NewEpisodeForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<Partial<EpisodeRec>>({
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState<NewEpisodeFormState>({
     epNumber: "",
     title: "",
     topic: "",
@@ -723,28 +742,35 @@ function NewEpisodeForm({
     notes: "",
   });
 
+  const createMut = trpc.podcastOps.episodes.create.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.episodes.list.invalidate();
+      toast.success("Episode saved");
+      onSaved();
+    },
+  });
+
   const save = () => {
     if (!form.epNumber || !form.title) {
-      alert("Episode number and title are required.");
+      toast.error("Episode number and title are required.");
       return;
     }
     const guest = guests.find(g => g.id === form.guestId);
-    insert<EpisodeRec>(PORTAL, "episodes", {
-      epNumber: form.epNumber!,
-      title: form.title!,
-      topic: form.topic,
+    createMut.mutate({
+      epNumber: form.epNumber,
+      title: form.title,
+      topic: form.topic || undefined,
       showId: form.showId,
       guestId: form.guestId,
-      guestName: guest?.preferredName || guest?.fullName,
-      host: (form.host as EpisodeRec["host"]) || "Maryam",
-      phase: (form.phase as PhaseId) || "topic",
-      recordingDate: form.recordingDate,
-      publishDate: form.publishDate,
-      durationTarget: form.durationTarget,
-      notes: form.notes,
+      guestName: guest?.preferredName || guest?.fullName || undefined,
+      host: form.host || "Maryam",
+      phase: form.phase || "topic",
+      recordingDate: form.recordingDate || undefined,
+      publishDate: form.publishDate || undefined,
+      durationTarget: form.durationTarget || undefined,
+      notes: form.notes || undefined,
       assets: defaultEpisodeAssets(),
     });
-    onSaved();
   };
 
   return (
@@ -768,21 +794,21 @@ function NewEpisodeForm({
         />
         <Select
           label="Show / Client"
-          value={form.showId || ""}
-          onChange={v => setForm({ ...form, showId: v || undefined })}
+          value={form.showId != null ? String(form.showId) : ""}
+          onChange={v => setForm({ ...form, showId: v ? Number(v) : undefined })}
           options={[
             { value: "", label: "— Internal HAMZURY —" },
-            ...shows.map(s => ({ value: s.id, label: `${s.showName} · ${s.clientName}` })),
+            ...shows.map(s => ({ value: String(s.id), label: `${s.showName} · ${s.clientName}` })),
           ]}
         />
         <Select
           label="Guest"
-          value={form.guestId || ""}
-          onChange={v => setForm({ ...form, guestId: v || undefined })}
+          value={form.guestId != null ? String(form.guestId) : ""}
+          onChange={v => setForm({ ...form, guestId: v ? Number(v) : undefined })}
           options={[
             { value: "", label: "— No guest / Solo —" },
             ...guests.map(g => ({
-              value: g.id,
+              value: String(g.id),
               label: `${g.preferredName || g.fullName}${g.company ? " · " + g.company : ""}`,
             })),
           ]}
@@ -815,21 +841,30 @@ function NewEpisodeForm({
  * 2) GUEST COORDINATION
  * ════════════════════════════════════════════════════════════════════════ */
 function GuestsSection() {
-  const [guests, refresh] = useCollection<GuestRec>("guests");
-  const [showNew, setShowNew] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const guestsQ = trpc.podcastOps.guests.list.useQuery();
+  const guests = (guestsQ.data ?? []) as GuestRec[];
 
-  const del = (id: string) => {
+  const [showNew, setShowNew] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const updateMut = trpc.podcastOps.guests.update.useMutation({
+    onSuccess: () => utils.podcastOps.guests.list.invalidate(),
+  });
+  const removeMut = trpc.podcastOps.guests.remove.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.guests.list.invalidate();
+      toast.success("Guest removed");
+    },
+  });
+
+  const del = (id: number) => {
     if (!confirm("Remove this guest?")) return;
-    remove(PORTAL, "guests", id);
-    touch(PORTAL, "guests");
-    refresh();
+    removeMut.mutate({ id });
   };
 
   const toggle = (g: GuestRec, field: "briefSent" | "techCheckDone" | "formReceived") => {
-    update<GuestRec>(PORTAL, "guests", g.id, { [field]: !g[field] });
-    touch(PORTAL, "guests");
-    refresh();
+    updateMut.mutate({ id: g.id, [field]: !g[field] } as any);
   };
 
   const pendingCount = guests.filter(g => !g.briefSent || !g.techCheckDone).length;
@@ -849,19 +884,15 @@ function GuestsSection() {
       {showNew && (
         <GuestForm
           onClose={() => setShowNew(false)}
-          onSaved={() => {
-            touch(PORTAL, "guests"); refresh(); setShowNew(false);
-          }}
+          onSaved={() => setShowNew(false)}
         />
       )}
 
-      {editingId && (
+      {editingId != null && (
         <GuestForm
           initial={guests.find(g => g.id === editingId)}
           onClose={() => setEditingId(null)}
-          onSaved={() => {
-            touch(PORTAL, "guests"); refresh(); setEditingId(null);
-          }}
+          onSaved={() => setEditingId(null)}
         />
       )}
 
@@ -976,6 +1007,8 @@ function GuestsSection() {
   );
 }
 
+type GuestFormState = Partial<Omit<GuestRec, "id" | "createdAt" | "updatedAt">>;
+
 function GuestForm({
   initial,
   onClose,
@@ -985,40 +1018,76 @@ function GuestForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<Partial<GuestRec>>(
-    initial || {
-      fullName: "",
-      preferredName: "",
-      title: "",
-      company: "",
-      email: "",
-      phone: "",
-      bio: "",
-      headshotUrl: "",
-      expertise: "",
-      talkingPoints: "",
-      avoidTopics: "",
-      availability: "",
-      timezone: "WAT",
-      recordingPreference: "Remote",
-      micSetup: "",
-      briefSent: false,
-      techCheckDone: false,
-      formReceived: false,
-    },
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState<GuestFormState>(
+    initial
+      ? {
+          fullName: initial.fullName,
+          preferredName: initial.preferredName,
+          title: initial.title,
+          company: initial.company,
+          email: initial.email,
+          phone: initial.phone,
+          bio: initial.bio,
+          headshotUrl: initial.headshotUrl,
+          expertise: initial.expertise,
+          talkingPoints: initial.talkingPoints,
+          avoidTopics: initial.avoidTopics,
+          availability: initial.availability,
+          timezone: initial.timezone,
+          recordingPreference: initial.recordingPreference,
+          micSetup: initial.micSetup,
+          briefSent: initial.briefSent,
+          techCheckDone: initial.techCheckDone,
+          formReceived: initial.formReceived,
+        }
+      : {
+          fullName: "",
+          preferredName: "",
+          title: "",
+          company: "",
+          email: "",
+          phone: "",
+          bio: "",
+          headshotUrl: "",
+          expertise: "",
+          talkingPoints: "",
+          avoidTopics: "",
+          availability: "",
+          timezone: "WAT",
+          recordingPreference: "Remote",
+          micSetup: "",
+          briefSent: false,
+          techCheckDone: false,
+          formReceived: false,
+        },
   );
+
+  const createMut = trpc.podcastOps.guests.create.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.guests.list.invalidate();
+      toast.success("Guest added");
+      onSaved();
+    },
+  });
+  const updateMut = trpc.podcastOps.guests.update.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.guests.list.invalidate();
+      toast.success("Guest saved");
+      onSaved();
+    },
+  });
 
   const save = () => {
     if (!form.fullName) {
-      alert("Full name is required.");
+      toast.error("Full name is required.");
       return;
     }
     if (initial) {
-      update<GuestRec>(PORTAL, "guests", initial.id, form);
+      updateMut.mutate({ id: initial.id, ...form } as any);
     } else {
-      insert<GuestRec>(PORTAL, "guests", form as Omit<GuestRec, "id" | "createdAt" | "updatedAt">);
+      createMut.mutate(form as any);
     }
-    onSaved();
   };
 
   return (
@@ -1090,15 +1159,23 @@ const TIER_PRICES: Record<ShowRec["tier"], { label: string; ngn: number; eps: nu
 };
 
 function ShowsSection() {
-  const [shows, refresh] = useCollection<ShowRec>("shows");
-  const [showNew, setShowNew] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const showsQ = trpc.podcastOps.shows.list.useQuery();
+  const shows = (showsQ.data ?? []) as ShowRec[];
 
-  const del = (id: string) => {
+  const [showNew, setShowNew] = useState(false);
+  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const removeMut = trpc.podcastOps.shows.remove.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.shows.list.invalidate();
+      toast.success("Show removed");
+    },
+  });
+
+  const del = (id: number) => {
     if (!confirm("Remove this show?")) return;
-    remove(PORTAL, "shows", id);
-    touch(PORTAL, "shows");
-    refresh();
+    removeMut.mutate({ id });
   };
 
   const totalRevenue = shows.reduce((s, x) => s + (x.priceNGN || 0), 0);
@@ -1144,14 +1221,14 @@ function ShowsSection() {
       {showNew && (
         <ShowForm
           onClose={() => setShowNew(false)}
-          onSaved={() => { touch(PORTAL, "shows"); refresh(); setShowNew(false); }}
+          onSaved={() => setShowNew(false)}
         />
       )}
-      {editingId && (
+      {editingId != null && (
         <ShowForm
           initial={shows.find(s => s.id === editingId)}
           onClose={() => setEditingId(null)}
-          onSaved={() => { touch(PORTAL, "shows"); refresh(); setEditingId(null); }}
+          onSaved={() => setEditingId(null)}
         />
       )}
 
@@ -1239,6 +1316,8 @@ function ShowsSection() {
   );
 }
 
+type ShowFormState = Partial<Omit<ShowRec, "id" | "createdAt" | "updatedAt">>;
+
 function ShowForm({
   initial, onClose, onSaved,
 }: {
@@ -1246,20 +1325,49 @@ function ShowForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<Partial<ShowRec>>(
-    initial || {
-      clientName: "",
-      showName: "",
-      tier: "10ep",
-      episodesTotal: TIER_PRICES["10ep"].eps,
-      episodesDelivered: 0,
-      priceNGN: TIER_PRICES["10ep"].ngn,
-      startDate: "",
-      releaseCadence: "Weekly",
-      contact: "",
-      notes: "",
-    },
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState<ShowFormState>(
+    initial
+      ? {
+          clientName: initial.clientName,
+          showName: initial.showName,
+          tier: initial.tier,
+          episodesTotal: initial.episodesTotal,
+          episodesDelivered: initial.episodesDelivered,
+          priceNGN: initial.priceNGN,
+          startDate: initial.startDate,
+          releaseCadence: initial.releaseCadence,
+          contact: initial.contact,
+          notes: initial.notes,
+        }
+      : {
+          clientName: "",
+          showName: "",
+          tier: "10ep",
+          episodesTotal: TIER_PRICES["10ep"].eps,
+          episodesDelivered: 0,
+          priceNGN: TIER_PRICES["10ep"].ngn,
+          startDate: "",
+          releaseCadence: "Weekly",
+          contact: "",
+          notes: "",
+        },
   );
+
+  const createMut = trpc.podcastOps.shows.create.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.shows.list.invalidate();
+      toast.success("Show added");
+      onSaved();
+    },
+  });
+  const updateMut = trpc.podcastOps.shows.update.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.shows.list.invalidate();
+      toast.success("Show saved");
+      onSaved();
+    },
+  });
 
   const setTier = (tier: ShowRec["tier"]) => {
     const preset = TIER_PRICES[tier];
@@ -1272,15 +1380,14 @@ function ShowForm({
 
   const save = () => {
     if (!form.showName || !form.clientName) {
-      alert("Show name and client name are required.");
+      toast.error("Show name and client name are required.");
       return;
     }
     if (initial) {
-      update<ShowRec>(PORTAL, "shows", initial.id, form);
+      updateMut.mutate({ id: initial.id, ...form } as any);
     } else {
-      insert<ShowRec>(PORTAL, "shows", form as Omit<ShowRec, "id" | "createdAt" | "updatedAt">);
+      createMut.mutate(form as any);
     }
-    onSaved();
   };
 
   return (
@@ -1341,26 +1448,37 @@ function ShowForm({
  * 4) PUBLISHING CALENDAR
  * ════════════════════════════════════════════════════════════════════════ */
 function PublishingSection() {
-  const [publishing, refresh] = useCollection<PubRec>("publishing");
-  const [episodes]            = useCollection<EpisodeRec>("episodes");
-  const [shows]               = useCollection<ShowRec>("shows");
+  const utils = trpc.useUtils();
+  const publishingQ = trpc.podcastOps.publishing.list.useQuery();
+  const episodesQ   = trpc.podcastOps.episodes.list.useQuery();
+  const showsQ      = trpc.podcastOps.shows.list.useQuery();
+  const publishing = (publishingQ.data ?? []) as PubRec[];
+  const episodes   = (episodesQ.data ?? []) as EpisodeRec[];
+  const shows      = (showsQ.data ?? []) as ShowRec[];
+
   const [showNew, setShowNew] = useState(false);
+
+  const updateMut = trpc.podcastOps.publishing.update.useMutation({
+    onSuccess: () => utils.podcastOps.publishing.list.invalidate(),
+  });
+  const removeMut = trpc.podcastOps.publishing.remove.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.publishing.list.invalidate();
+      toast.success("Removed from calendar");
+    },
+  });
 
   const togglePlatform = (
     p: PubRec,
     field: "apple" | "spotify" | "google" | "amazon"
       | "audiogramReady" | "quoteCardsReady" | "socialPostScheduled",
   ) => {
-    update<PubRec>(PORTAL, "publishing", p.id, { [field]: !p[field] });
-    touch(PORTAL, "publishing");
-    refresh();
+    updateMut.mutate({ id: p.id, [field]: !p[field] } as any);
   };
 
-  const del = (id: string) => {
+  const del = (id: number) => {
     if (!confirm("Remove from calendar?")) return;
-    remove(PORTAL, "publishing", id);
-    touch(PORTAL, "publishing");
-    refresh();
+    removeMut.mutate({ id });
   };
 
   const sorted = [...publishing].sort(
@@ -1393,9 +1511,7 @@ function PublishingSection() {
           episodes={episodes}
           shows={shows}
           onClose={() => setShowNew(false)}
-          onSaved={() => {
-            touch(PORTAL, "publishing"); refresh(); setShowNew(false);
-          }}
+          onSaved={() => setShowNew(false)}
         />
       )}
 
@@ -1444,7 +1560,7 @@ function PubRow({
 }: {
   pub: PubRec;
   onToggle: (p: PubRec, field: any) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   past?: boolean;
 }) {
   const du = daysUntil(pub.scheduledDate);
@@ -1505,6 +1621,18 @@ function PubRow({
   );
 }
 
+type PubFormState = {
+  episodeId?: number;
+  epLabel?: string;
+  showId?: number;
+  scheduledDate?: string;
+  apple?: boolean;
+  spotify?: boolean;
+  google?: boolean;
+  amazon?: boolean;
+  notes?: string;
+};
+
 function PublishingForm({
   episodes, shows, onClose, onSaved,
 }: {
@@ -1513,32 +1641,49 @@ function PublishingForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<Partial<PubRec>>({
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState<PubFormState>({
     epLabel: "",
     scheduledDate: "",
     apple: false, spotify: false, google: false, amazon: false,
   });
 
-  const linkToEpisode = (id: string) => {
+  const createMut = trpc.podcastOps.publishing.create.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.publishing.list.invalidate();
+      toast.success("Episode scheduled");
+      onSaved();
+    },
+  });
+
+  const linkToEpisode = (id: number) => {
     const ep = episodes.find(e => e.id === id);
     if (!ep) return;
     setForm(f => ({
       ...f,
       episodeId: id,
       epLabel: `${ep.epNumber} · ${ep.title}`,
-      showId: ep.showId,
+      showId: ep.showId ?? undefined,
       scheduledDate: ep.publishDate || f.scheduledDate,
     }));
   };
 
   const save = () => {
     if (!form.epLabel || !form.scheduledDate) {
-      alert("Episode label and date are required.");
+      toast.error("Episode label and date are required.");
       return;
     }
-    insert<PubRec>(PORTAL, "publishing",
-      form as Omit<PubRec, "id" | "createdAt" | "updatedAt">);
-    onSaved();
+    createMut.mutate({
+      episodeId: form.episodeId,
+      epLabel: form.epLabel,
+      showId: form.showId,
+      scheduledDate: form.scheduledDate,
+      apple: !!form.apple,
+      spotify: !!form.spotify,
+      google: !!form.google,
+      amazon: !!form.amazon,
+      notes: form.notes,
+    });
   };
 
   return (
@@ -1549,11 +1694,11 @@ function PublishingForm({
       <div style={formGrid}>
         <Select
           label="Link episode (optional)"
-          value={form.episodeId || ""}
-          onChange={v => v ? linkToEpisode(v) : setForm({ ...form, episodeId: undefined })}
+          value={form.episodeId != null ? String(form.episodeId) : ""}
+          onChange={v => v ? linkToEpisode(Number(v)) : setForm({ ...form, episodeId: undefined })}
           options={[
             { value: "", label: "— Freeform (not linked) —" },
-            ...episodes.map(e => ({ value: e.id, label: `${e.epNumber} · ${e.title}` })),
+            ...episodes.map(e => ({ value: String(e.id), label: `${e.epNumber} · ${e.title}` })),
           ]}
         />
         <Input label="Episode label" value={form.epLabel}
@@ -1561,11 +1706,11 @@ function PublishingForm({
           placeholder="EP-012 · Fintech in Kano" />
         <Select
           label="Show (optional)"
-          value={form.showId || ""}
-          onChange={v => setForm({ ...form, showId: v || undefined })}
+          value={form.showId != null ? String(form.showId) : ""}
+          onChange={v => setForm({ ...form, showId: v ? Number(v) : undefined })}
           options={[
             { value: "", label: "— None —" },
-            ...shows.map(s => ({ value: s.id, label: s.showName })),
+            ...shows.map(s => ({ value: String(s.id), label: s.showName })),
           ]}
         />
         <Input type="date" label="Release date" value={form.scheduledDate}
@@ -1585,15 +1730,24 @@ function PublishingForm({
  * 5) ANALYTICS
  * ════════════════════════════════════════════════════════════════════════ */
 function AnalyticsSection() {
-  const [analytics, refresh] = useCollection<AnalyticsRec>("analytics");
-  const [episodes]           = useCollection<EpisodeRec>("episodes");
+  const utils = trpc.useUtils();
+  const analyticsQ = trpc.podcastOps.analytics.list.useQuery();
+  const episodesQ  = trpc.podcastOps.episodes.list.useQuery();
+  const analytics = (analyticsQ.data ?? []) as AnalyticsRec[];
+  const episodes  = (episodesQ.data ?? []) as EpisodeRec[];
+
   const [showNew, setShowNew] = useState(false);
 
-  const del = (id: string) => {
+  const removeMut = trpc.podcastOps.analytics.remove.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.analytics.list.invalidate();
+      toast.success("Analytics row deleted");
+    },
+  });
+
+  const del = (id: number) => {
     if (!confirm("Delete this analytics row?")) return;
-    remove(PORTAL, "analytics", id);
-    touch(PORTAL, "analytics");
-    refresh();
+    removeMut.mutate({ id });
   };
 
   const totalDownloads = analytics.reduce((s, a) => s + (a.downloads7d || 0), 0);
@@ -1655,9 +1809,7 @@ function AnalyticsSection() {
         <AnalyticsForm
           episodes={episodes}
           onClose={() => setShowNew(false)}
-          onSaved={() => {
-            touch(PORTAL, "analytics"); refresh(); setShowNew(false);
-          }}
+          onSaved={() => setShowNew(false)}
         />
       )}
 
@@ -1734,6 +1886,17 @@ function AnalyticsSection() {
   );
 }
 
+type AnalyticsFormState = {
+  episodeId?: number;
+  epLabel?: string;
+  publishedOn?: string;
+  downloads7d?: number;
+  downloads30d?: number;
+  topPlatform?: string;
+  completionPct?: number;
+  notes?: string;
+};
+
 function AnalyticsForm({
   episodes, onClose, onSaved,
 }: {
@@ -1741,7 +1904,8 @@ function AnalyticsForm({
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<Partial<AnalyticsRec>>({
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState<AnalyticsFormState>({
     epLabel: "",
     publishedOn: "",
     downloads7d: 0,
@@ -1750,7 +1914,15 @@ function AnalyticsForm({
     completionPct: 0,
   });
 
-  const linkEp = (id: string) => {
+  const createMut = trpc.podcastOps.analytics.create.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.analytics.list.invalidate();
+      toast.success("Analytics logged");
+      onSaved();
+    },
+  });
+
+  const linkEp = (id: number) => {
     const ep = episodes.find(e => e.id === id);
     if (!ep) return;
     setForm(f => ({
@@ -1763,12 +1935,19 @@ function AnalyticsForm({
 
   const save = () => {
     if (!form.epLabel || !form.publishedOn) {
-      alert("Episode label and publish date are required.");
+      toast.error("Episode label and publish date are required.");
       return;
     }
-    insert<AnalyticsRec>(PORTAL, "analytics",
-      form as Omit<AnalyticsRec, "id" | "createdAt" | "updatedAt">);
-    onSaved();
+    createMut.mutate({
+      episodeId: form.episodeId,
+      epLabel: form.epLabel,
+      publishedOn: form.publishedOn,
+      downloads7d: form.downloads7d ?? 0,
+      downloads30d: form.downloads30d ?? undefined,
+      topPlatform: form.topPlatform,
+      completionPct: form.completionPct ?? undefined,
+      notes: form.notes,
+    });
   };
 
   return (
@@ -1779,11 +1958,11 @@ function AnalyticsForm({
       <div style={formGrid}>
         <Select
           label="Link episode (optional)"
-          value={form.episodeId || ""}
-          onChange={v => v ? linkEp(v) : setForm({ ...form, episodeId: undefined })}
+          value={form.episodeId != null ? String(form.episodeId) : ""}
+          onChange={v => v ? linkEp(Number(v)) : setForm({ ...form, episodeId: undefined })}
           options={[
             { value: "", label: "— Freeform —" },
-            ...episodes.map(e => ({ value: e.id, label: `${e.epNumber} · ${e.title}` })),
+            ...episodes.map(e => ({ value: String(e.id), label: `${e.epNumber} · ${e.title}` })),
           ]}
         />
         <Input label="Episode label" value={form.epLabel}
@@ -1826,14 +2005,22 @@ function AnalyticsForm({
  * 6) EQUIPMENT & ASSETS
  * ════════════════════════════════════════════════════════════════════════ */
 function EquipmentSection() {
-  const [equipment, refresh] = useCollection<EquipmentRec>("equipment");
+  const utils = trpc.useUtils();
+  const equipmentQ = trpc.podcastOps.equipment.list.useQuery();
+  const equipment = (equipmentQ.data ?? []) as EquipmentRec[];
+
   const [showNew, setShowNew] = useState(false);
 
-  const del = (id: string) => {
+  const removeMut = trpc.podcastOps.equipment.remove.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.equipment.list.invalidate();
+      toast.success("Item removed");
+    },
+  });
+
+  const del = (id: number) => {
     if (!confirm("Remove from inventory?")) return;
-    remove(PORTAL, "equipment", id);
-    touch(PORTAL, "equipment");
-    refresh();
+    removeMut.mutate({ id });
   };
 
   const byCategory = useMemo(() => {
@@ -1894,7 +2081,7 @@ function EquipmentSection() {
       {showNew && (
         <EquipmentForm
           onClose={() => setShowNew(false)}
-          onSaved={() => { touch(PORTAL, "equipment"); refresh(); setShowNew(false); }}
+          onSaved={() => setShowNew(false)}
         />
       )}
 
@@ -1980,13 +2167,16 @@ function EquipmentSection() {
   );
 }
 
+type EquipmentFormState = Partial<Omit<EquipmentRec, "id" | "createdAt" | "updatedAt">>;
+
 function EquipmentForm({
   onClose, onSaved,
 }: {
   onClose: () => void;
   onSaved: () => void;
 }) {
-  const [form, setForm] = useState<Partial<EquipmentRec>>({
+  const utils = trpc.useUtils();
+  const [form, setForm] = useState<EquipmentFormState>({
     name: "",
     category: "Microphone",
     brand: "",
@@ -1996,14 +2186,20 @@ function EquipmentForm({
     serial: "",
   });
 
+  const createMut = trpc.podcastOps.equipment.create.useMutation({
+    onSuccess: () => {
+      utils.podcastOps.equipment.list.invalidate();
+      toast.success("Equipment item saved");
+      onSaved();
+    },
+  });
+
   const save = () => {
     if (!form.name) {
-      alert("Item name is required.");
+      toast.error("Item name is required.");
       return;
     }
-    insert<EquipmentRec>(PORTAL, "equipment",
-      form as Omit<EquipmentRec, "id" | "createdAt" | "updatedAt">);
-    onSaved();
+    createMut.mutate(form as any);
   };
 
   return (
@@ -2108,7 +2304,8 @@ const SERVICE_TIERS = [
 ] as const;
 
 function PricingSection() {
-  const [shows] = useCollection<ShowRec>("shows");
+  const showsQ = trpc.podcastOps.shows.list.useQuery();
+  const shows = (showsQ.data ?? []) as ShowRec[];
 
   const committed = shows.reduce((s, x) => s + (x.priceNGN || 0), 0);
   const delivered = shows.reduce(
