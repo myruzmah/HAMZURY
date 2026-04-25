@@ -2565,3 +2565,177 @@ export const reportRequests = mysqlTable("report_requests", {
 export type ReportRequest = typeof reportRequests.$inferSelect;
 export type InsertReportRequest = typeof reportRequests.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * HR PORTAL — Khadija Saad (HR Manager)
+ * Six sections that previously lived in the localStorage opsStore are restored
+ * here as MySQL tables. Field schemas derived from the HR Operations Guide
+ * (recruitment requests, day-1/week-1/month-1 onboarding checklists, dual-coord
+ * HUB hours, quarterly performance reviews, offboarding workflow).
+ *
+ * Multi-value JSON columns (stringified text):
+ *   - hr_onboarding.day1Tasks/week1Tasks/month1Tasks/month3Tasks → string[]
+ *   - hr_performance.nextGoals                                    → string[]
+ *   - hr_exits.handoverItems                                       → string[]
+ *
+ * No FKs between these tables (each is independent). No server-generated ref —
+ * rows are int-id only. Auth: founder | ceo | hr (matches existing portal pattern).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+
+/** HR interns roster — HMZ-I-XXX, dual-role (Division + HUB) coordination data. */
+export const hrInterns = mysqlTable("hr_interns", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Free-form intern ID label, e.g. "HMZ-I-001". */
+  internId: varchar("internId", { length: 40 }).notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  division: varchar("division", { length: 120 }).notNull(),
+  hubCommitment: boolean("hubCommitment").default(false).notNull(),
+  hubHoursPerWeek: int("hubHoursPerWeek"),
+  divisionHoursPerWeek: int("divisionHoursPerWeek"),
+  startDate: varchar("startDate", { length: 10 }),
+  durationMonths: int("durationMonths"),
+  status: mysqlEnum("hrInternStatus", [
+    "Selecting", "Onboarding", "Active", "Converting", "Exited",
+  ]).default("Active").notNull(),
+  performanceNotes: text("performanceNotes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrIntern = typeof hrInterns.$inferSelect;
+export type InsertHrIntern = typeof hrInterns.$inferInsert;
+
+/** HR new-hire requisitions — division leads request roles, CEO approves. */
+export const hrRequisitions = mysqlTable("hr_requisitions", {
+  id: int("id").autoincrement().primaryKey(),
+  role: varchar("role", { length: 255 }).notNull(),
+  division: varchar("division", { length: 120 }).notNull(),
+  requesterLead: varchar("requesterLead", { length: 255 }).notNull(),
+  responsibilities: text("responsibilities"),
+  requirements: text("requirements"),
+  salaryRange: varchar("salaryRange", { length: 120 }),
+  timeline: varchar("timeline", { length: 120 }),
+  status: mysqlEnum("hrReqStatus", [
+    "Requested", "CEO Approved", "Posted", "Screening",
+    "Interviewing", "Offer", "Hired", "Closed",
+  ]).default("Requested").notNull(),
+  ceoApproved: boolean("ceoApproved").default(false).notNull(),
+  postedAt: varchar("postedAt", { length: 10 }),
+  closedAt: varchar("closedAt", { length: 10 }),
+  shortlistCount: int("shortlistCount"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrRequisition = typeof hrRequisitions.$inferSelect;
+export type InsertHrRequisition = typeof hrRequisitions.$inferInsert;
+
+/** HR onboarding tracker — Day 1 / Week 1 / Month 1 / Month 3 checklists. */
+export const hrOnboarding = mysqlTable("hr_onboarding", {
+  id: int("id").autoincrement().primaryKey(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  staffId: varchar("staffId", { length: 40 }),
+  division: varchar("division", { length: 120 }),
+  hireDate: varchar("hireDate", { length: 10 }).notNull(),
+  /** JSON-stringified string[] checklist for Day 1 (welcome, docs, equipment, etc). */
+  day1Tasks: text("day1Tasks"),
+  /** JSON-stringified string[] checklist for Week 1. */
+  week1Tasks: text("week1Tasks"),
+  /** JSON-stringified string[] checklist for Month 1 (probation). */
+  month1Tasks: text("month1Tasks"),
+  /** JSON-stringified string[] checklist for Month 3 (end-of-probation review). */
+  month3Tasks: text("month3Tasks"),
+  day1Done: boolean("day1Done").default(false).notNull(),
+  week1Done: boolean("week1Done").default(false).notNull(),
+  month1Done: boolean("month1Done").default(false).notNull(),
+  month3Done: boolean("month3Done").default(false).notNull(),
+  status: mysqlEnum("hrOnboardStatus", [
+    "Day 1", "Week 1", "Month 1", "Probation", "Confirmed", "Parted Ways",
+  ]).default("Day 1").notNull(),
+  probationOutcome: varchar("probationOutcome", { length: 120 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrOnboarding = typeof hrOnboarding.$inferSelect;
+export type InsertHrOnboarding = typeof hrOnboarding.$inferInsert;
+
+/** HR intern coordination — HUB ↔ Division dual-tracking workflow. */
+export const hrInternCoord = mysqlTable("hr_intern_coord", {
+  id: int("id").autoincrement().primaryKey(),
+  internId: varchar("internId", { length: 40 }).notNull(),
+  internName: varchar("internName", { length: 255 }).notNull(),
+  division: varchar("division", { length: 120 }).notNull(),
+  divisionLead: varchar("divisionLead", { length: 255 }),
+  hubManager: varchar("hubManager", { length: 255 }),
+  divisionHoursPerWeek: int("divisionHoursPerWeek"),
+  hubHoursPerWeek: int("hubHoursPerWeek"),
+  lastReviewAt: varchar("lastReviewAt", { length: 10 }),
+  divisionFeedback: text("divisionFeedback"),
+  hubFeedback: text("hubFeedback"),
+  status: mysqlEnum("hrCoordStatus", [
+    "Onboarding", "Active", "Review", "Converting", "Ended",
+  ]).default("Active").notNull(),
+  conversionDecision: varchar("conversionDecision", { length: 120 }),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrInternCoord = typeof hrInternCoord.$inferSelect;
+export type InsertHrInternCoord = typeof hrInternCoord.$inferInsert;
+
+/** HR quarterly performance reviews — Lead + HR + (CEO at end-of-probation). */
+export const hrPerformance = mysqlTable("hr_performance", {
+  id: int("id").autoincrement().primaryKey(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  staffId: varchar("staffId", { length: 40 }),
+  division: varchar("division", { length: 120 }),
+  reviewerLead: varchar("reviewerLead", { length: 255 }).notNull(),
+  /** e.g. "2026 Q2" or "April 2026". */
+  quarter: varchar("quarter", { length: 20 }).notNull(),
+  achievements: text("achievements"),
+  challenges: text("challenges"),
+  growth: text("growth"),
+  goalsMet: varchar("goalsMet", { length: 120 }),
+  /** JSON-stringified string[] of goals for next quarter. */
+  nextGoals: text("nextGoals"),
+  supportNeeded: text("supportNeeded"),
+  /** 1–5 self/lead rating; nullable until completed. */
+  rating: int("rating"),
+  status: mysqlEnum("hrPerfStatus", [
+    "Scheduled", "In Progress", "Completed", "Improvement Plan", "Escalated",
+  ]).default("Scheduled").notNull(),
+  reviewedAt: varchar("reviewedAt", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrPerformance = typeof hrPerformance.$inferSelect;
+export type InsertHrPerformance = typeof hrPerformance.$inferInsert;
+
+/** HR offboarding tracker — resignation/termination workflow + final-week checklist. */
+export const hrExits = mysqlTable("hr_exits", {
+  id: int("id").autoincrement().primaryKey(),
+  staffName: varchar("staffName", { length: 255 }).notNull(),
+  staffId: varchar("staffId", { length: 40 }),
+  division: varchar("division", { length: 120 }),
+  exitType: mysqlEnum("hrExitType", [
+    "Resignation", "Termination", "End of Contract", "Other",
+  ]).default("Resignation").notNull(),
+  noticeDate: varchar("noticeDate", { length: 10 }),
+  lastDay: varchar("lastDay", { length: 10 }),
+  reason: text("reason"),
+  /** JSON-stringified string[] of handover items / responsibilities. */
+  handoverItems: text("handoverItems"),
+  feedback: text("feedback"),
+  equipmentReturned: boolean("equipmentReturned").default(false).notNull(),
+  accessRevoked: boolean("accessRevoked").default(false).notNull(),
+  finalPayProcessed: boolean("finalPayProcessed").default(false).notNull(),
+  exitInterviewDone: boolean("exitInterviewDone").default(false).notNull(),
+  status: mysqlEnum("hrExitStatus", [
+    "Notified", "Transition", "Final Week", "Departed", "Post-Exit",
+  ]).default("Notified").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrExit = typeof hrExits.$inferSelect;
+export type InsertHrExit = typeof hrExits.$inferInsert;
+

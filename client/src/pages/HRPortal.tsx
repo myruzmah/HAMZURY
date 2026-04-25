@@ -8,6 +8,8 @@ import {
   LayoutDashboard, Users, Calendar as CalendarIcon, AlertCircle, ClipboardList,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock,
   Menu, X, Shield, Send, UserCheck, UserX,
+  GraduationCap, FilePlus2, Sparkles, Workflow, Star, DoorOpen,
+  Plus, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,11 +33,16 @@ type Section =
   | "leave"
   | "discipline"
   | "attendance"
-  | "reports";
+  | "reports"
+  | "interns"
+  | "requisitions"
+  | "onboarding"
+  | "internCoord"
+  | "performance"
+  | "exits";
 
-/* 2026-04 founder decision: 6 sections (interns, requisitions, onboarding,
-   intern coord, performance reviews, exits) were on localStorage and
-   removed for launch. Re-add when migrated to MySQL. */
+/* 2026-04 — restored. The 6 ops sections are now MySQL-backed via tRPC
+   `hr.*` (see server/hr/router.ts). int autoincrement ids end-to-end. */
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -128,12 +135,18 @@ export default function HRPortal() {
   if (!user) return null;
 
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
-    { key: "dashboard",   icon: LayoutDashboard, label: "Overview" },
-    { key: "roster",      icon: Users,           label: "Staff Roster" },
-    { key: "leave",       icon: CalendarIcon,    label: "Leave Requests" },
-    { key: "discipline",  icon: AlertCircle,     label: "Discipline" },
-    { key: "attendance",  icon: UserCheck,       label: "Attendance" },
-    { key: "reports",     icon: ClipboardList,   label: "Reports" },
+    { key: "dashboard",    icon: LayoutDashboard, label: "Overview" },
+    { key: "roster",       icon: Users,           label: "Staff Roster" },
+    { key: "requisitions", icon: FilePlus2,       label: "Requisitions" },
+    { key: "onboarding",   icon: Sparkles,        label: "Onboarding" },
+    { key: "interns",      icon: GraduationCap,   label: "Interns" },
+    { key: "internCoord",  icon: Workflow,        label: "Intern Coord" },
+    { key: "performance",  icon: Star,            label: "Performance" },
+    { key: "leave",        icon: CalendarIcon,    label: "Leave Requests" },
+    { key: "discipline",   icon: AlertCircle,     label: "Discipline" },
+    { key: "attendance",   icon: UserCheck,       label: "Attendance" },
+    { key: "exits",        icon: DoorOpen,        label: "Exits" },
+    { key: "reports",      icon: ClipboardList,   label: "Reports" },
   ];
 
   return (
@@ -250,12 +263,18 @@ export default function HRPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
-            {active === "dashboard"   && <OverviewSection onGoto={setActive} />}
-            {active === "roster"      && <RosterSection />}
-            {active === "leave"       && <LeaveSection />}
-            {active === "discipline"  && <DisciplineSection />}
-            {active === "attendance"  && <AttendanceSection />}
-            {active === "reports"     && <ReportsSection />}
+            {active === "dashboard"    && <OverviewSection onGoto={setActive} />}
+            {active === "roster"       && <RosterSection />}
+            {active === "requisitions" && <RequisitionsSection />}
+            {active === "onboarding"   && <OnboardingSection />}
+            {active === "interns"      && <InternsSection />}
+            {active === "internCoord"  && <InternCoordSection />}
+            {active === "performance"  && <PerformanceSection />}
+            {active === "leave"        && <LeaveSection />}
+            {active === "discipline"   && <DisciplineSection />}
+            {active === "attendance"   && <AttendanceSection />}
+            {active === "exits"        && <ExitsSection />}
+            {active === "reports"      && <ReportsSection />}
           </div>
         </div>
       </main>
@@ -741,6 +760,974 @@ Built to Last.`;
           }}>
           <Send size={12} /> Copy Report
         </button>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * Restored sections — MySQL via tRPC `hr.*` (server/hr/router.ts).
+ * Patterns mirror MedialyOpsPortal.tsx (multi-section CRUD, ids are int
+ * end-to-end, toast on success, invalidate on mutate).
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+function PrimaryButton({ onClick, children, disabled }: { onClick: () => void; children: React.ReactNode; disabled?: boolean }) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      style={{
+        padding: "8px 14px", borderRadius: 10,
+        backgroundColor: GREEN, color: WHITE, border: "none",
+        fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.6 : 1,
+        display: "inline-flex", alignItems: "center", gap: 6,
+      }}>{children}</button>
+  );
+}
+function GhostButton({ onClick, children, color = MUTED }: { onClick: () => void; children: React.ReactNode; color?: string }) {
+  return (
+    <button onClick={onClick}
+      style={{
+        padding: "5px 10px", borderRadius: 8,
+        backgroundColor: `${color}10`, color, border: "none",
+        fontSize: 10, fontWeight: 600, cursor: "pointer",
+        display: "inline-flex", alignItems: "center", gap: 4,
+      }}>{children}</button>
+  );
+}
+function FieldLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <span style={{
+      fontSize: 10, color: MUTED, textTransform: "uppercase",
+      letterSpacing: "0.06em", fontWeight: 600,
+    }}>{children}</span>
+  );
+}
+function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return (
+    <input {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }} />
+  );
+}
+function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%", minHeight: 60, resize: "vertical", fontFamily: "inherit",
+        ...props.style,
+      }} />
+  );
+}
+function Select({ children, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { children: React.ReactNode }) {
+  return (
+    <select {...props}
+      style={{
+        padding: "9px 11px", borderRadius: 8, border: `1px solid ${DARK}15`,
+        fontSize: 12, color: DARK, backgroundColor: WHITE, outline: "none",
+        width: "100%",
+        ...props.style,
+      }}>{children}</select>
+  );
+}
+function FormGrid({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10, marginBottom: 10 }}>
+      {children}
+    </div>
+  );
+}
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+    </label>
+  );
+}
+
+/* ─── Requisitions ────────────────────────────────────────────────────── */
+function RequisitionsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hr.requisitions.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    role: "", division: "", requesterLead: "",
+    responsibilities: "", requirements: "",
+    salaryRange: "", timeline: "",
+    status: "Requested" as const,
+    notes: "",
+  });
+
+  const createMut = trpc.hr.requisitions.create.useMutation({
+    onSuccess: () => {
+      toast.success("Requisition added");
+      utils.hr.requisitions.list.invalidate();
+      setShowForm(false);
+      setForm({ role: "", division: "", requesterLead: "", responsibilities: "", requirements: "", salaryRange: "", timeline: "", status: "Requested" as const, notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.requisitions.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.requisitions.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.requisitions.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.requisitions.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const open = rows.filter(r => !["Hired", "Closed"].includes(r.status));
+  const closed = rows.filter(r => ["Hired", "Closed"].includes(r.status));
+
+  return (
+    <div>
+      <SectionTitle sub="Recruitment pipeline. Lead requests → CEO approves → HR runs the loop.">
+        Requisitions
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Open"   value={open.length}   color={GOLD} />
+        <MiniStat label="Closed" value={closed.length} color={GREEN} />
+        <MiniStat label="Total"  value={rows.length}   color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Requisition</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Role"><TextInput value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} placeholder="e.g. Backend Engineer" /></FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} placeholder="e.g. Scalar" /></FormField>
+              <FormField label="Requester Lead"><TextInput value={form.requesterLead} onChange={e => setForm({ ...form, requesterLead: e.target.value })} placeholder="e.g. Tech Lead" /></FormField>
+              <FormField label="Salary Range"><TextInput value={form.salaryRange} onChange={e => setForm({ ...form, salaryRange: e.target.value })} placeholder="e.g. ₦150k–₦220k" /></FormField>
+              <FormField label="Timeline"><TextInput value={form.timeline} onChange={e => setForm({ ...form, timeline: e.target.value })} placeholder="e.g. 2–4 weeks" /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Responsibilities"><TextArea value={form.responsibilities} onChange={e => setForm({ ...form, responsibilities: e.target.value })} /></FormField>
+              <FormField label="Requirements"><TextArea value={form.requirements} onChange={e => setForm({ ...form, requirements: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.role.trim() || !form.division.trim() || !form.requesterLead.trim()) {
+                  toast.error("Role, Division, and Requester Lead are required");
+                  return;
+                }
+                createMut.mutate({ ...form });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 12 }}>
+          Pipeline ({rows.length})
+        </p>
+        {rows.length === 0 ? (
+          <EmptyState icon={FilePlus2} title="No requisitions yet" hint="Add the first one above." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.role}</p>
+                      <StatusPill label={r.status} tone={r.status === "Hired" ? "green" : r.status === "Closed" ? "muted" : "gold"} />
+                      {r.ceoApproved && <StatusPill label="CEO ✓" tone="green" />}
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.division} · Requested by {r.requesterLead}
+                      {r.salaryRange ? <> · {r.salaryRange}</> : null}
+                      {r.timeline ? <> · {r.timeline}</> : null}
+                    </p>
+                    {r.responsibilities && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Resp:</strong> {r.responsibilities}</p>}
+                    {r.requirements && <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}><strong>Req:</strong> {r.requirements}</p>}
+                    {typeof r.shortlistCount === "number" && r.shortlistCount > 0 && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Shortlist: {r.shortlistCount}</p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Requested", "CEO Approved", "Posted", "Screening", "Interviewing", "Offer", "Hired", "Closed"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </Select>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <GhostButton onClick={() => updateMut.mutate({ id: r.id, ceoApproved: !r.ceoApproved })} color={r.ceoApproved ? GREEN : GOLD}>
+                        {r.ceoApproved ? "Unapprove" : "CEO ✓"}
+                      </GhostButton>
+                      <GhostButton onClick={() => { if (confirm("Remove this requisition?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                        <Trash2 size={10} />
+                      </GhostButton>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Onboarding ──────────────────────────────────────────────────────── */
+function OnboardingSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hr.onboarding.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    staffName: "", staffId: "", division: "",
+    hireDate: new Date().toISOString().slice(0, 10),
+    day1: "", week1: "", month1: "", month3: "",
+    notes: "",
+  });
+
+  const createMut = trpc.hr.onboarding.create.useMutation({
+    onSuccess: () => {
+      toast.success("Onboarding plan created");
+      utils.hr.onboarding.list.invalidate();
+      setShowForm(false);
+      setForm({ staffName: "", staffId: "", division: "", hireDate: new Date().toISOString().slice(0, 10), day1: "", week1: "", month1: "", month3: "", notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.onboarding.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.onboarding.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.onboarding.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.onboarding.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
+
+  return (
+    <div>
+      <SectionTitle sub="Day 1 / Week 1 / Month 1 / Month 3 checklists per new hire.">
+        Onboarding
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Active" value={rows.filter(r => !["Confirmed", "Parted Ways"].includes(r.status)).length} color={BLUE} />
+        <MiniStat label="Confirmed" value={rows.filter(r => r.status === "Confirmed").length} color={GREEN} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Onboarding Plan</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Staff Name"><TextInput value={form.staffName} onChange={e => setForm({ ...form, staffName: e.target.value })} /></FormField>
+              <FormField label="Staff ID"><TextInput value={form.staffId} onChange={e => setForm({ ...form, staffId: e.target.value })} placeholder="e.g. HMZ-S-019" /></FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
+              <FormField label="Hire Date"><TextInput type="date" value={form.hireDate} onChange={e => setForm({ ...form, hireDate: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Day 1 Tasks (one per line)"><TextArea value={form.day1} onChange={e => setForm({ ...form, day1: e.target.value })} placeholder="Office tour&#10;Sign contract&#10;Set up email" /></FormField>
+              <FormField label="Week 1 Tasks (one per line)"><TextArea value={form.week1} onChange={e => setForm({ ...form, week1: e.target.value })} /></FormField>
+              <FormField label="Month 1 Tasks (one per line)"><TextArea value={form.month1} onChange={e => setForm({ ...form, month1: e.target.value })} /></FormField>
+              <FormField label="Month 3 Tasks (one per line)"><TextArea value={form.month3} onChange={e => setForm({ ...form, month3: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.staffName.trim() || !form.hireDate) {
+                  toast.error("Staff Name and Hire Date are required");
+                  return;
+                }
+                createMut.mutate({
+                  staffName: form.staffName,
+                  staffId: form.staffId || null,
+                  division: form.division || null,
+                  hireDate: form.hireDate,
+                  day1Tasks: splitLines(form.day1),
+                  week1Tasks: splitLines(form.week1),
+                  month1Tasks: splitLines(form.month1),
+                  month3Tasks: splitLines(form.month3),
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {rows.length === 0 ? (
+          <Card><EmptyState icon={Sparkles} title="No onboarding plans yet" /></Card>
+        ) : rows.map((r: any) => (
+          <Card key={r.id}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", marginBottom: 10 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{r.staffName}</p>
+                  {r.staffId && <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.staffId}</span>}
+                  <StatusPill label={r.status} tone={r.status === "Confirmed" ? "green" : r.status === "Parted Ways" ? "red" : "blue"} />
+                </div>
+                <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>{r.division || "—"} · Hired {fmtDate(r.hireDate)}</p>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 180 }}>
+                <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                  {["Day 1", "Week 1", "Month 1", "Probation", "Confirmed", "Parted Ways"].map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+                <GhostButton onClick={() => { if (confirm("Remove this plan?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                  <Trash2 size={10} /> Remove
+                </GhostButton>
+              </div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
+              {[
+                { key: "day1", label: "Day 1", tasks: r.day1Tasks as string[], done: r.day1Done, donePatch: { id: r.id, day1Done: !r.day1Done } },
+                { key: "week1", label: "Week 1", tasks: r.week1Tasks as string[], done: r.week1Done, donePatch: { id: r.id, week1Done: !r.week1Done } },
+                { key: "month1", label: "Month 1", tasks: r.month1Tasks as string[], done: r.month1Done, donePatch: { id: r.id, month1Done: !r.month1Done } },
+                { key: "month3", label: "Month 3", tasks: r.month3Tasks as string[], done: r.month3Done, donePatch: { id: r.id, month3Done: !r.month3Done } },
+              ].map(p => (
+                <div key={p.key} style={{
+                  padding: 10, backgroundColor: BG, borderRadius: 8, border: `1px solid ${DARK}06`,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>{p.label}</p>
+                    <button
+                      onClick={() => updateMut.mutate(p.donePatch as any)}
+                      style={{
+                        padding: "3px 8px", borderRadius: 6, border: "none", cursor: "pointer",
+                        fontSize: 10, fontWeight: 600,
+                        backgroundColor: p.done ? `${GREEN}15` : `${MUTED}15`,
+                        color: p.done ? GREEN : MUTED,
+                      }}>{p.done ? "Done" : "Mark"}</button>
+                  </div>
+                  {p.tasks.length === 0 ? (
+                    <p style={{ fontSize: 10, color: MUTED, fontStyle: "italic" }}>No tasks</p>
+                  ) : (
+                    <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: DARK, lineHeight: 1.6 }}>
+                      {p.tasks.map((t, i) => <li key={i}>{t}</li>)}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+            {r.notes && (
+              <p style={{ fontSize: 11, color: MUTED, marginTop: 10, fontStyle: "italic" }}>
+                Notes: {r.notes}
+              </p>
+            )}
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Interns ─────────────────────────────────────────────────────────── */
+function InternsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hr.interns.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    internId: "", name: "", division: "",
+    hubCommitment: false, hubHoursPerWeek: 0, divisionHoursPerWeek: 0,
+    startDate: "", durationMonths: 0,
+    status: "Active" as const,
+    performanceNotes: "",
+  });
+
+  const createMut = trpc.hr.interns.create.useMutation({
+    onSuccess: () => {
+      toast.success("Intern added");
+      utils.hr.interns.list.invalidate();
+      setShowForm(false);
+      setForm({ internId: "", name: "", division: "", hubCommitment: false, hubHoursPerWeek: 0, divisionHoursPerWeek: 0, startDate: "", durationMonths: 0, status: "Active" as const, performanceNotes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.interns.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.interns.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.interns.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.interns.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="HMZ-I-XXX. Dual-role: Division + HUB.">
+        Interns
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Active" value={rows.filter(r => r.status === "Active").length} color={BLUE} />
+        <MiniStat label="Converting" value={rows.filter(r => r.status === "Converting").length} color={GOLD} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Intern</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Intern ID"><TextInput value={form.internId} onChange={e => setForm({ ...form, internId: e.target.value })} placeholder="HMZ-I-003" /></FormField>
+              <FormField label="Name"><TextInput value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} placeholder="e.g. Medialy" /></FormField>
+              <FormField label="Start Date"><TextInput type="date" value={form.startDate} onChange={e => setForm({ ...form, startDate: e.target.value })} /></FormField>
+              <FormField label="Duration (months)"><TextInput type="number" value={form.durationMonths || ""} onChange={e => setForm({ ...form, durationMonths: Number(e.target.value) })} /></FormField>
+              <FormField label="Division hrs/week"><TextInput type="number" value={form.divisionHoursPerWeek || ""} onChange={e => setForm({ ...form, divisionHoursPerWeek: Number(e.target.value) })} /></FormField>
+              <FormField label="HUB hrs/week"><TextInput type="number" value={form.hubHoursPerWeek || ""} onChange={e => setForm({ ...form, hubHoursPerWeek: Number(e.target.value) })} /></FormField>
+              <FormField label="HUB commitment?">
+                <Select value={form.hubCommitment ? "yes" : "no"} onChange={e => setForm({ ...form, hubCommitment: e.target.value === "yes" })}>
+                  <option value="no">No</option><option value="yes">Yes</option>
+                </Select>
+              </FormField>
+            </FormGrid>
+            <div style={{ marginBottom: 10 }}>
+              <FormField label="Performance Notes"><TextArea value={form.performanceNotes} onChange={e => setForm({ ...form, performanceNotes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.internId.trim() || !form.name.trim() || !form.division.trim()) {
+                  toast.error("Intern ID, Name, and Division are required");
+                  return;
+                }
+                createMut.mutate({ ...form });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={GraduationCap} title="No interns logged yet" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap",
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.name}</p>
+                    <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.internId}</span>
+                    <StatusPill label={r.status} tone={r.status === "Active" ? "blue" : r.status === "Exited" ? "muted" : "gold"} />
+                    {r.hubCommitment && <StatusPill label="HUB" tone="orange" />}
+                  </div>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                    {r.division}
+                    {r.startDate && <> · Started {fmtDate(r.startDate)}</>}
+                    {r.durationMonths ? <> · {r.durationMonths}mo</> : null}
+                    {(r.divisionHoursPerWeek || r.hubHoursPerWeek) && (
+                      <> · {r.divisionHoursPerWeek || 0}h division / {r.hubHoursPerWeek || 0}h HUB</>
+                    )}
+                  </p>
+                  {r.performanceNotes && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}>{r.performanceNotes}</p>}
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                  <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                    {["Selecting", "Onboarding", "Active", "Converting", "Exited"].map(s => <option key={s} value={s}>{s}</option>)}
+                  </Select>
+                  <GhostButton onClick={() => { if (confirm("Remove this intern?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                    <Trash2 size={10} /> Remove
+                  </GhostButton>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Intern Coord ────────────────────────────────────────────────────── */
+function InternCoordSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hr.internCoord.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    internId: "", internName: "", division: "",
+    divisionLead: "", hubManager: "",
+    divisionHoursPerWeek: 0, hubHoursPerWeek: 0,
+    lastReviewAt: "",
+    divisionFeedback: "", hubFeedback: "",
+    status: "Active" as const,
+    conversionDecision: "", notes: "",
+  });
+
+  const createMut = trpc.hr.internCoord.create.useMutation({
+    onSuccess: () => {
+      toast.success("Coordination added");
+      utils.hr.internCoord.list.invalidate();
+      setShowForm(false);
+      setForm({ internId: "", internName: "", division: "", divisionLead: "", hubManager: "", divisionHoursPerWeek: 0, hubHoursPerWeek: 0, lastReviewAt: "", divisionFeedback: "", hubFeedback: "", status: "Active" as const, conversionDecision: "", notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.internCoord.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.internCoord.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.internCoord.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.internCoord.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  return (
+    <div>
+      <SectionTitle sub="HUB ↔ Division dual-coordination. Both leads feed back to HR.">
+        Intern Coord
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Coordination Entry</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Intern ID"><TextInput value={form.internId} onChange={e => setForm({ ...form, internId: e.target.value })} placeholder="HMZ-I-001" /></FormField>
+              <FormField label="Intern Name"><TextInput value={form.internName} onChange={e => setForm({ ...form, internName: e.target.value })} /></FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
+              <FormField label="Division Lead"><TextInput value={form.divisionLead} onChange={e => setForm({ ...form, divisionLead: e.target.value })} /></FormField>
+              <FormField label="HUB Manager"><TextInput value={form.hubManager} onChange={e => setForm({ ...form, hubManager: e.target.value })} /></FormField>
+              <FormField label="Division hrs/week"><TextInput type="number" value={form.divisionHoursPerWeek || ""} onChange={e => setForm({ ...form, divisionHoursPerWeek: Number(e.target.value) })} /></FormField>
+              <FormField label="HUB hrs/week"><TextInput type="number" value={form.hubHoursPerWeek || ""} onChange={e => setForm({ ...form, hubHoursPerWeek: Number(e.target.value) })} /></FormField>
+              <FormField label="Last Review Date"><TextInput type="date" value={form.lastReviewAt} onChange={e => setForm({ ...form, lastReviewAt: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Division Feedback"><TextArea value={form.divisionFeedback} onChange={e => setForm({ ...form, divisionFeedback: e.target.value })} /></FormField>
+              <FormField label="HUB Feedback"><TextArea value={form.hubFeedback} onChange={e => setForm({ ...form, hubFeedback: e.target.value })} /></FormField>
+              <FormField label="Conversion Decision"><TextInput value={form.conversionDecision} onChange={e => setForm({ ...form, conversionDecision: e.target.value })} placeholder="Convert / Extend / End" /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.internId.trim() || !form.internName.trim() || !form.division.trim()) {
+                  toast.error("Intern ID, Name, and Division are required");
+                  return;
+                }
+                createMut.mutate({ ...form });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Workflow} title="No coordination entries yet" hint="Track HUB + Division feedback per intern." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.internName}</p>
+                      <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.internId}</span>
+                      <StatusPill label={r.status} tone={r.status === "Active" ? "blue" : r.status === "Converting" ? "gold" : r.status === "Ended" ? "muted" : "green"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.division}
+                      {r.divisionLead && <> · Lead: {r.divisionLead}</>}
+                      {r.hubManager && <> · HUB: {r.hubManager}</>}
+                    </p>
+                    {(r.divisionHoursPerWeek || r.hubHoursPerWeek) && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                        {r.divisionHoursPerWeek || 0}h division / {r.hubHoursPerWeek || 0}h HUB
+                        {r.lastReviewAt && <> · Last review {fmtDate(r.lastReviewAt)}</>}
+                      </p>
+                    )}
+                    {r.divisionFeedback && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Division:</strong> {r.divisionFeedback}</p>}
+                    {r.hubFeedback && <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}><strong>HUB:</strong> {r.hubFeedback}</p>}
+                    {r.conversionDecision && <p style={{ fontSize: 11, color: GOLD, marginTop: 4, fontWeight: 600 }}>Decision: {r.conversionDecision}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Onboarding", "Active", "Review", "Converting", "Ended"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </Select>
+                    <GhostButton onClick={() => { if (confirm("Remove this entry?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Performance ─────────────────────────────────────────────────────── */
+function PerformanceSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hr.performance.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    staffName: "", staffId: "", division: "",
+    reviewerLead: "", quarter: "",
+    achievements: "", challenges: "", growth: "",
+    goalsMet: "", nextGoals: "", supportNeeded: "",
+    rating: 0,
+    status: "Scheduled" as const,
+    reviewedAt: "",
+  });
+
+  const createMut = trpc.hr.performance.create.useMutation({
+    onSuccess: () => {
+      toast.success("Performance review created");
+      utils.hr.performance.list.invalidate();
+      setShowForm(false);
+      setForm({ staffName: "", staffId: "", division: "", reviewerLead: "", quarter: "", achievements: "", challenges: "", growth: "", goalsMet: "", nextGoals: "", supportNeeded: "", rating: 0, status: "Scheduled" as const, reviewedAt: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.performance.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.performance.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.performance.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.performance.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
+
+  return (
+    <div>
+      <SectionTitle sub="Quarterly reviews. Lead leads, HR documents, both sign.">
+        Performance
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Scheduled" value={rows.filter(r => r.status === "Scheduled").length} color={GOLD} />
+        <MiniStat label="Completed" value={rows.filter(r => r.status === "Completed").length} color={GREEN} />
+        <MiniStat label="Improvement" value={rows.filter(r => r.status === "Improvement Plan").length} color={ORANGE} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Review</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Staff Name"><TextInput value={form.staffName} onChange={e => setForm({ ...form, staffName: e.target.value })} /></FormField>
+              <FormField label="Staff ID"><TextInput value={form.staffId} onChange={e => setForm({ ...form, staffId: e.target.value })} placeholder="HMZ-S-001" /></FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
+              <FormField label="Reviewer / Lead"><TextInput value={form.reviewerLead} onChange={e => setForm({ ...form, reviewerLead: e.target.value })} /></FormField>
+              <FormField label="Quarter"><TextInput value={form.quarter} onChange={e => setForm({ ...form, quarter: e.target.value })} placeholder="2026 Q2" /></FormField>
+              <FormField label="Goals Met"><TextInput value={form.goalsMet} onChange={e => setForm({ ...form, goalsMet: e.target.value })} placeholder="3 of 4" /></FormField>
+              <FormField label="Rating (1–5)"><TextInput type="number" min={1} max={5} value={form.rating || ""} onChange={e => setForm({ ...form, rating: Number(e.target.value) })} /></FormField>
+              <FormField label="Reviewed At"><TextInput type="date" value={form.reviewedAt} onChange={e => setForm({ ...form, reviewedAt: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Achievements"><TextArea value={form.achievements} onChange={e => setForm({ ...form, achievements: e.target.value })} /></FormField>
+              <FormField label="Challenges"><TextArea value={form.challenges} onChange={e => setForm({ ...form, challenges: e.target.value })} /></FormField>
+              <FormField label="Growth"><TextArea value={form.growth} onChange={e => setForm({ ...form, growth: e.target.value })} /></FormField>
+              <FormField label="Next Goals (one per line)"><TextArea value={form.nextGoals} onChange={e => setForm({ ...form, nextGoals: e.target.value })} /></FormField>
+              <FormField label="Support Needed"><TextArea value={form.supportNeeded} onChange={e => setForm({ ...form, supportNeeded: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.staffName.trim() || !form.reviewerLead.trim() || !form.quarter.trim()) {
+                  toast.error("Staff Name, Reviewer, and Quarter are required");
+                  return;
+                }
+                createMut.mutate({
+                  staffName: form.staffName,
+                  staffId: form.staffId || null,
+                  division: form.division || null,
+                  reviewerLead: form.reviewerLead,
+                  quarter: form.quarter,
+                  achievements: form.achievements || null,
+                  challenges: form.challenges || null,
+                  growth: form.growth || null,
+                  goalsMet: form.goalsMet || null,
+                  nextGoals: splitLines(form.nextGoals),
+                  supportNeeded: form.supportNeeded || null,
+                  rating: form.rating || null,
+                  status: form.status,
+                  reviewedAt: form.reviewedAt || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={Star} title="No reviews recorded yet" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.staffName}</p>
+                      {r.staffId && <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.staffId}</span>}
+                      <StatusPill label={r.quarter} tone="muted" />
+                      <StatusPill label={r.status} tone={r.status === "Completed" ? "green" : r.status === "Improvement Plan" ? "orange" : r.status === "Escalated" ? "red" : "gold"} />
+                      {typeof r.rating === "number" && r.rating > 0 && <StatusPill label={`★ ${r.rating}`} tone="gold" />}
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.division || "—"} · Reviewer: {r.reviewerLead}
+                      {r.reviewedAt && <> · {fmtDate(r.reviewedAt)}</>}
+                    </p>
+                    {r.achievements && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Achievements:</strong> {r.achievements}</p>}
+                    {r.challenges && <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}><strong>Challenges:</strong> {r.challenges}</p>}
+                    {r.growth && <p style={{ fontSize: 11, color: DARK, marginTop: 4 }}><strong>Growth:</strong> {r.growth}</p>}
+                    {r.goalsMet && <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>Goals met: {r.goalsMet}</p>}
+                    {Array.isArray(r.nextGoals) && r.nextGoals.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 6 }}>
+                        <strong>Next goals:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.nextGoals.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {r.supportNeeded && <p style={{ fontSize: 11, color: MUTED, marginTop: 6, fontStyle: "italic" }}>Support: {r.supportNeeded}</p>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Scheduled", "In Progress", "Completed", "Improvement Plan", "Escalated"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </Select>
+                    <GhostButton onClick={() => { if (confirm("Remove this review?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Exits ───────────────────────────────────────────────────────────── */
+function ExitsSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.hr.exits.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({
+    staffName: "", staffId: "", division: "",
+    exitType: "Resignation" as const,
+    noticeDate: "", lastDay: "",
+    reason: "", handover: "", feedback: "",
+    status: "Notified" as const,
+    notes: "",
+  });
+
+  const createMut = trpc.hr.exits.create.useMutation({
+    onSuccess: () => {
+      toast.success("Exit logged");
+      utils.hr.exits.list.invalidate();
+      setShowForm(false);
+      setForm({ staffName: "", staffId: "", division: "", exitType: "Resignation" as const, noticeDate: "", lastDay: "", reason: "", handover: "", feedback: "", status: "Notified" as const, notes: "" });
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.exits.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.exits.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.exits.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.exits.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const splitLines = (s: string): string[] => s.split("\n").map(x => x.trim()).filter(Boolean);
+
+  return (
+    <div>
+      <SectionTitle sub="Offboarding workflow — handover, equipment, access, final pay, exit interview.">
+        Exits
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="In Progress" value={rows.filter(r => !["Departed", "Post-Exit"].includes(r.status)).length} color={GOLD} />
+        <MiniStat label="Departed" value={rows.filter(r => ["Departed", "Post-Exit"].includes(r.status)).length} color={MUTED} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Exit Record</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Staff Name"><TextInput value={form.staffName} onChange={e => setForm({ ...form, staffName: e.target.value })} /></FormField>
+              <FormField label="Staff ID"><TextInput value={form.staffId} onChange={e => setForm({ ...form, staffId: e.target.value })} placeholder="HMZ-S-XXX" /></FormField>
+              <FormField label="Division"><TextInput value={form.division} onChange={e => setForm({ ...form, division: e.target.value })} /></FormField>
+              <FormField label="Exit Type">
+                <Select value={form.exitType} onChange={e => setForm({ ...form, exitType: e.target.value as any })}>
+                  {["Resignation", "Termination", "End of Contract", "Other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              </FormField>
+              <FormField label="Notice Date"><TextInput type="date" value={form.noticeDate} onChange={e => setForm({ ...form, noticeDate: e.target.value })} /></FormField>
+              <FormField label="Last Day"><TextInput type="date" value={form.lastDay} onChange={e => setForm({ ...form, lastDay: e.target.value })} /></FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Reason"><TextArea value={form.reason} onChange={e => setForm({ ...form, reason: e.target.value })} /></FormField>
+              <FormField label="Handover Items (one per line)"><TextArea value={form.handover} onChange={e => setForm({ ...form, handover: e.target.value })} /></FormField>
+              <FormField label="Feedback (exit interview)"><TextArea value={form.feedback} onChange={e => setForm({ ...form, feedback: e.target.value })} /></FormField>
+              <FormField label="Notes"><TextArea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} /></FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.staffName.trim()) {
+                  toast.error("Staff Name is required");
+                  return;
+                }
+                createMut.mutate({
+                  staffName: form.staffName,
+                  staffId: form.staffId || null,
+                  division: form.division || null,
+                  exitType: form.exitType,
+                  noticeDate: form.noticeDate || null,
+                  lastDay: form.lastDay || null,
+                  reason: form.reason || null,
+                  handoverItems: splitLines(form.handover),
+                  feedback: form.feedback || null,
+                  status: form.status,
+                  notes: form.notes || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={DoorOpen} title="No exits logged" hint="Hopefully this stays empty." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.staffName}</p>
+                      {r.staffId && <span style={{ fontSize: 10, fontFamily: "monospace", color: MUTED }}>{r.staffId}</span>}
+                      <StatusPill label={r.exitType} tone={r.exitType === "Termination" ? "red" : "muted"} />
+                      <StatusPill label={r.status} tone={r.status === "Departed" ? "green" : r.status === "Post-Exit" ? "muted" : "gold"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {r.division || "—"}
+                      {r.noticeDate && <> · Notice {fmtDate(r.noticeDate)}</>}
+                      {r.lastDay && <> · Last day {fmtDate(r.lastDay)}</>}
+                    </p>
+                    {r.reason && <p style={{ fontSize: 11, color: DARK, marginTop: 6 }}><strong>Reason:</strong> {r.reason}</p>}
+                    {Array.isArray(r.handoverItems) && r.handoverItems.length > 0 && (
+                      <div style={{ fontSize: 11, color: DARK, marginTop: 4 }}>
+                        <strong>Handover:</strong>
+                        <ul style={{ margin: "4px 0 0 0", paddingLeft: 18, lineHeight: 1.6 }}>
+                          {r.handoverItems.map((g: string, i: number) => <li key={i}>{g}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {r.feedback && <p style={{ fontSize: 11, color: MUTED, marginTop: 4, fontStyle: "italic" }}>Feedback: {r.feedback}</p>}
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                      {[
+                        { key: "equipmentReturned", label: "Equipment" },
+                        { key: "accessRevoked", label: "Access" },
+                        { key: "finalPayProcessed", label: "Final Pay" },
+                        { key: "exitInterviewDone", label: "Interview" },
+                      ].map(b => (
+                        <button key={b.key}
+                          onClick={() => updateMut.mutate({ id: r.id, [b.key]: !r[b.key] } as any)}
+                          style={{
+                            padding: "3px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                            fontSize: 10, fontWeight: 600,
+                            backgroundColor: r[b.key] ? `${GREEN}15` : `${MUTED}15`,
+                            color: r[b.key] ? GREEN : MUTED,
+                          }}>
+                          {r[b.key] ? "✓" : "○"} {b.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <Select value={r.status} onChange={e => updateMut.mutate({ id: r.id, status: e.target.value as any })}>
+                      {["Notified", "Transition", "Final Week", "Departed", "Post-Exit"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </Select>
+                    <GhostButton onClick={() => { if (confirm("Remove this exit record?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );
