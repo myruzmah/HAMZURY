@@ -38,6 +38,7 @@ import {
   ceoDivisionUpdates,
   ceoCanvaTemplates,
   ceoWeeklyMeetings,
+  ceoNotes,
 } from "../../drizzle/schema";
 
 // ─── Local procedure builder (CEO + Founder) ──────────────────────────────────
@@ -115,6 +116,9 @@ const WEEKLY_MEETING_TYPE = [
   "Monday Kickoff", "Wednesday Midweek", "Friday Wrap", "Branding QA", "Ad-hoc", "Other",
 ] as const;
 const WEEKLY_MEETING_STATUS = ["Planned", "Held", "Cancelled", "Postponed"] as const;
+const NOTE_CATEGORY = [
+  "strategy", "observation", "idea", "decision", "parking", "other",
+] as const;
 
 // ─── Input schemas ────────────────────────────────────────────────────────────
 const idIn = z.object({ id: z.number().int().positive() });
@@ -190,6 +194,14 @@ const canvaTemplateCreateIn = z.object({
   usageCount: z.number().int().nonnegative().optional().default(0),
   lastUsedAt: z.string().max(10).optional().nullable(),
   notes: z.string().max(8000).optional().nullable(),
+});
+
+const noteCreateIn = z.object({
+  title: z.string().min(1).max(255),
+  body: z.string().min(1).max(20000),
+  category: z.enum(NOTE_CATEGORY).optional().default("other"),
+  pinned: z.boolean().optional().default(false),
+  tags: z.array(z.string()).optional().nullable(),
 });
 
 const weeklyMeetingCreateIn = z.object({
@@ -434,6 +446,39 @@ const weeklyMeetingsRouter = router({
   }),
 });
 
+const notesRouter = router({
+  list: ceoOpsProcedure.query(async () => {
+    const conn = await db();
+    // Pinned first, newest first within each group.
+    const rows = await conn.select().from(ceoNotes).orderBy(desc(ceoNotes.pinned), desc(ceoNotes.createdAt));
+    return rows.map(r => ({ ...r, tags: parseArr(r.tags) }));
+  }),
+  create: ceoOpsProcedure.input(noteCreateIn).mutation(async ({ input }) => {
+    const conn = await db();
+    const { tags, ...rest } = input;
+    await conn.insert(ceoNotes).values({
+      ...rest,
+      tags: serializeArr(tags ?? null),
+    } as any);
+    return { success: true };
+  }),
+  update: ceoOpsProcedure
+    .input(idIn.merge(noteCreateIn.partial()))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      const { id, tags, ...patch } = input;
+      const finalPatch: Record<string, unknown> = { ...patch };
+      if (tags !== undefined) finalPatch.tags = serializeArr(tags);
+      await conn.update(ceoNotes).set(finalPatch as any).where(eq(ceoNotes.id, id));
+      return { success: true };
+    }),
+  remove: ceoOpsProcedure.input(idIn).mutation(async ({ input }) => {
+    const conn = await db();
+    await conn.delete(ceoNotes).where(eq(ceoNotes.id, input.id));
+    return { success: true };
+  }),
+});
+
 // ─── Top-level CEO Ops router ─────────────────────────────────────────────────
 export const ceoOpsRouter = router({
   equipment: equipmentRouter,
@@ -443,4 +488,5 @@ export const ceoOpsRouter = router({
   divisionUpdates: divisionUpdatesRouter,
   canvaTemplates: canvaTemplatesRouter,
   weeklyMeetings: weeklyMeetingsRouter,
+  notes: notesRouter,
 });

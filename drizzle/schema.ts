@@ -3194,3 +3194,59 @@ export const financeMonthlyReports = mysqlTable("finance_monthly_reports", {
 export type FinanceMonthlyReport = typeof financeMonthlyReports.$inferSelect;
 export type InsertFinanceMonthlyReport = typeof financeMonthlyReports.$inferInsert;
 
+/* ══════════════════════════════════════════════════════════════════════════════
+ * CEO NOTES — Tab 9 of the Phase 2 CEO Strategic Command Center spec
+ * (PHASE2_EXECUTIVE/CEO/DASHBOARD: Notes is the 9th tab in
+ * CEO_Strategic_Command_Center.xlsx). Strategic decisions, observations,
+ * ideas, and a "parking lot" for non-urgent thinking. Per the CEO
+ * Operations Guide the CEO needs a place to capture strategic thought
+ * separate from documents/meetings/branding QA — this is that surface.
+ *
+ * JSON-stringified columns (parsed on read, stringified on write):
+ *   - ceo_notes.tags                       → string[]
+ *
+ * No FKs. Auth: founder | ceo (ceoOpsProcedure).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+export const ceoNotes = mysqlTable("ceo_notes", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  category: mysqlEnum("ceoNotesCategory", [
+    "strategy", "observation", "idea", "decision", "parking", "other",
+  ]).default("other").notNull(),
+  pinned: boolean("pinned").default(false).notNull(),
+  /** JSON-stringified string[] — searchable tags. */
+  tags: text("tags"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CeoNote = typeof ceoNotes.$inferSelect;
+export type InsertCeoNote = typeof ceoNotes.$inferInsert;
+
+/* ══════════════════════════════════════════════════════════════════════════════
+ * HR CALENDAR EVENTS — Tab 8 of the Phase 2 HR Master Dashboard spec
+ * (PHASE2_EXECUTIVE/HR/DASHBOARD: Calendar is the 8th tab; cadence
+ * shapes derived from PHASE2_EXECUTIVE/HR/CALENDAR/HR_Calendar.ics:
+ * daily attendance check, daily new-staff check-in, quarterly
+ * performance reviews, monthly attendance report, plus ad-hoc training
+ * sessions and leave events).
+ *
+ * No FKs. Auth: founder | ceo | hr (hrProcedure).
+ * ══════════════════════════════════════════════════════════════════════════════ */
+export const hrCalendarEvents = mysqlTable("hr_calendar_events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  startAt: timestamp("startAt").notNull(),
+  endAt: timestamp("endAt"),
+  eventType: mysqlEnum("hrCalendarEventType", [
+    "attendance", "checkin", "review", "report", "training", "leave", "other",
+  ]).default("other").notNull(),
+  assignee: varchar("assignee", { length: 255 }),
+  reminderSent: boolean("reminderSent").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HrCalendarEvent = typeof hrCalendarEvents.$inferSelect;
+export type InsertHrCalendarEvent = typeof hrCalendarEvents.$inferInsert;
+

@@ -8,7 +8,7 @@ import {
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock,
   Menu, X, Shield, Send, UserCheck, UserX,
   GraduationCap, FilePlus2, Sparkles, Workflow, Star, DoorOpen,
-  Plus, Trash2,
+  Plus, Trash2, CalendarDays,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,9 +28,10 @@ const BLUE = "#3B82F6";
 
 // 2026-04-25 — Section list aligned to Phase 2 HR Master Dashboard 8-tab
 // spec (Overview, Staff, Interns, Attendance, Leave, Performance,
-// Recruitment, Calendar). Cut: discipline, reports, onboarding,
-// internCoord, exits (not in spec — data layer + tRPC retained for HR
-// SOPs that can run outside the dashboard UI).
+// Recruitment, Calendar). Calendar added 2026-04-25 — see
+// CalendarSection at the bottom of the file. Cut: discipline, reports,
+// onboarding, internCoord, exits (not in spec — data layer + tRPC
+// retained for HR SOPs that can run outside the dashboard UI).
 type Section =
   | "dashboard"
   | "roster"
@@ -38,7 +39,8 @@ type Section =
   | "attendance"
   | "interns"
   | "requisitions"
-  | "performance";
+  | "performance"
+  | "calendar";
 
 /* 2026-04 — restored. The 6 ops sections are now MySQL-backed via tRPC
    `hr.*` (see server/hr/router.ts). int autoincrement ids end-to-end. */
@@ -133,9 +135,9 @@ export default function HRPortal() {
   }
   if (!user) return null;
 
-  // 2026-04-25 — NAV reduced to Phase 2 HR Master Dashboard 7 of 8 tabs
-  // (Calendar deferred — no UI built yet). Spec: Overview, Staff, Interns,
-  // Attendance, Leave, Performance, Recruitment, Calendar.
+  // 2026-04-25 — NAV is the full Phase 2 HR Master Dashboard 8-tab spec.
+  // Spec: Overview, Staff, Interns, Attendance, Leave, Performance,
+  // Recruitment, Calendar.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",    icon: LayoutDashboard, label: "Overview" },
     { key: "roster",       icon: Users,           label: "Staff Roster" },
@@ -144,6 +146,7 @@ export default function HRPortal() {
     { key: "leave",        icon: CalendarIcon,    label: "Leave Requests" },
     { key: "performance",  icon: Star,            label: "Performance" },
     { key: "requisitions", icon: FilePlus2,       label: "Recruitment" },
+    { key: "calendar",     icon: CalendarDays,    label: "Calendar" },
   ];
 
   return (
@@ -259,7 +262,7 @@ export default function HRPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
-            {/* 2026-04-25 — Dispatcher reduced to Phase 2 HR 7-of-8 tabs (Calendar deferred). */}
+            {/* 2026-04-25 — Dispatcher covers all 8 Phase 2 HR tabs. */}
             {active === "dashboard"    && <OverviewSection onGoto={setActive} />}
             {active === "roster"       && <RosterSection />}
             {active === "interns"      && <InternsSection />}
@@ -267,6 +270,7 @@ export default function HRPortal() {
             {active === "leave"        && <LeaveSection />}
             {active === "performance"  && <PerformanceSection />}
             {active === "requisitions" && <RequisitionsSection />}
+            {active === "calendar"     && <CalendarSection />}
           </div>
         </div>
       </main>
@@ -1125,3 +1129,228 @@ function PerformanceSection() {
 
 /* ─── Exits ───────────────────────────────────────────────────────────── */
 /* ── CUT 2026-04-25 — Exits section removed (not in Phase 2 HR Master Dashboard 8-tab spec). ── */
+
+/* ─── Calendar (Phase 2 HR tab 8) ─────────────────────────────────────────
+ * Daily attendance check, daily new-staff check-ins, quarterly
+ * performance reviews, monthly attendance report, training, leave.
+ * Shapes derived from PHASE2_EXECUTIVE/HR/CALENDAR/HR_Calendar.ics.
+ * MySQL via tRPC `hr.calendar.*`. */
+function CalendarSection() {
+  const utils = trpc.useUtils();
+  // Default list view: next 30 days. Server-side filter on startAt.
+  const today = new Date();
+  const thirtyOut = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const q = trpc.hr.calendar.list.useQuery(
+    { from: today, to: thirtyOut },
+    { retry: false },
+  );
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    title: "",
+    description: "",
+    startAt: "",
+    endAt: "",
+    eventType: "other" as const,
+    assignee: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.hr.calendar.create.useMutation({
+    onSuccess: () => {
+      toast.success("Event added");
+      utils.hr.calendar.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hr.calendar.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.hr.calendar.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hr.calendar.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.hr.calendar.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const fmtTime = (d: string | Date | null | undefined): string => {
+    if (!d) return "";
+    try { return new Date(d).toLocaleTimeString("en-NG", { hour: "2-digit", minute: "2-digit" }); }
+    catch { return ""; }
+  };
+
+  // Group rows by ISO date (YYYY-MM-DD).
+  const groupedByDay = rows.reduce<Record<string, any[]>>((acc, r) => {
+    if (!r.startAt) return acc;
+    const key = new Date(r.startAt).toISOString().slice(0, 10);
+    (acc[key] ||= []).push(r);
+    return acc;
+  }, {});
+  const dayKeys = Object.keys(groupedByDay).sort();
+
+  // "This week" preview: events in the next 7 days.
+  const weekOut = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const thisWeek = rows.filter(r => {
+    if (!r.startAt) return false;
+    const t = new Date(r.startAt).getTime();
+    return t >= today.getTime() && t <= weekOut.getTime();
+  });
+
+  const eventTypeTone = (t: string): "green" | "gold" | "red" | "blue" | "muted" | "orange" => {
+    switch (t) {
+      case "attendance": return "green";
+      case "checkin":    return "blue";
+      case "review":     return "gold";
+      case "report":     return "orange";
+      case "training":   return "blue";
+      case "leave":      return "red";
+      default:           return "muted";
+    }
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Daily attendance, new-staff check-ins, quarterly reviews, monthly reports, training, leave.">
+        HR Calendar
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Next 7 days" value={thisWeek.length} color={GREEN} />
+        <MiniStat label="Reviews" value={rows.filter(r => r.eventType === "review").length} color={GOLD} />
+        <MiniStat label="Reports" value={rows.filter(r => r.eventType === "report").length} color={ORANGE} />
+        <MiniStat label="Total (30d)" value={rows.length} color={DARK} />
+      </div>
+
+      {thisWeek.length > 0 && (
+        <Card style={{ marginBottom: 12 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+            This Week
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {thisWeek.slice(0, 8).map((r: any) => (
+              <div key={`tw-${r.id}`} style={{
+                padding: "8px 12px", backgroundColor: BG, borderRadius: 8,
+                display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8,
+              }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{r.title}</p>
+                  <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                    {fmtDate(r.startAt)} · {fmtTime(r.startAt)}{r.endAt ? `–${fmtTime(r.endAt)}` : ""}
+                    {r.assignee ? ` · ${r.assignee}` : ""}
+                  </p>
+                </div>
+                <StatusPill label={r.eventType} tone={eventTypeTone(r.eventType)} />
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Event</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Title">
+                <TextInput value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Quarterly Performance Reviews" />
+              </FormField>
+              <FormField label="Type">
+                <Select value={form.eventType} onChange={e => setForm({ ...form, eventType: e.target.value as any })}>
+                  {["attendance", "checkin", "review", "report", "training", "leave", "other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </Select>
+              </FormField>
+              <FormField label="Start (date + time)">
+                <TextInput type="datetime-local" value={form.startAt} onChange={e => setForm({ ...form, startAt: e.target.value })} />
+              </FormField>
+              <FormField label="End (optional)">
+                <TextInput type="datetime-local" value={form.endAt} onChange={e => setForm({ ...form, endAt: e.target.value })} />
+              </FormField>
+              <FormField label="Assignee">
+                <TextInput value={form.assignee} onChange={e => setForm({ ...form, assignee: e.target.value })} placeholder="Staff name / division lead" />
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Description">
+                <TextArea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="What's the event for? Notes or agenda." />
+              </FormField>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.title.trim())   { toast.error("Title is required"); return; }
+                if (!form.startAt.trim()) { toast.error("Start date/time is required"); return; }
+                createMut.mutate({
+                  title: form.title,
+                  description: form.description || null,
+                  startAt: new Date(form.startAt),
+                  endAt: form.endAt ? new Date(form.endAt) : null,
+                  eventType: form.eventType,
+                  assignee: form.assignee || null,
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={CalendarDays} title="No events in the next 30 days" hint="Add daily attendance, new-staff check-ins, reviews, reports, training, leave." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {dayKeys.map(day => (
+              <div key={day}>
+                <p style={{
+                  fontSize: 11, fontWeight: 700, color: GREEN, textTransform: "uppercase", letterSpacing: "0.08em",
+                  marginBottom: 8, paddingBottom: 4, borderBottom: `1px solid ${GREEN}20`,
+                }}>
+                  {fmtDate(day)}
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {groupedByDay[day].map((r: any) => (
+                    <div key={r.id} style={{
+                      padding: "12px 14px", backgroundColor: BG, borderRadius: 10, border: `1px solid ${DARK}06`,
+                    }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 0, flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{r.title}</p>
+                            <StatusPill label={r.eventType} tone={eventTypeTone(r.eventType)} />
+                          </div>
+                          <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                            {fmtTime(r.startAt)}{r.endAt ? `–${fmtTime(r.endAt)}` : ""}
+                            {r.assignee ? ` · ${r.assignee}` : ""}
+                          </p>
+                          {r.description && (
+                            <p style={{ fontSize: 11, color: DARK, marginTop: 6, whiteSpace: "pre-wrap", lineHeight: 1.55 }}>
+                              {r.description}
+                            </p>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                          <Select value={r.eventType} onChange={e => updateMut.mutate({ id: r.id, eventType: e.target.value as any })}>
+                            {["attendance", "checkin", "review", "report", "training", "leave", "other"].map(s => <option key={s} value={s}>{s}</option>)}
+                          </Select>
+                          <GhostButton onClick={() => { if (confirm("Remove this event?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                            <Trash2 size={10} /> Remove
+                          </GhostButton>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

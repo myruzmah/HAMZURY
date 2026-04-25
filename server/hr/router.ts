@@ -23,7 +23,7 @@
 
 import { TRPCError, initTRPC } from "@trpc/server";
 import { z } from "zod";
-import { desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
 import superjson from "superjson";
 import type { TrpcContext } from "../_core/context";
 import { getDb } from "../db";
@@ -34,6 +34,7 @@ import {
   hrInternCoord,
   hrPerformance,
   hrExits,
+  hrCalendarEvents,
 } from "../../drizzle/schema";
 
 // ─── Local procedure builder (HR + CEO + Founder) ─────────────────────────────
@@ -99,6 +100,9 @@ const PERF_STATUS = [
 ] as const;
 const EXIT_TYPE = ["Resignation", "Termination", "End of Contract", "Other"] as const;
 const EXIT_STATUS = ["Notified", "Transition", "Final Week", "Departed", "Post-Exit"] as const;
+const CAL_EVENT_TYPE = [
+  "attendance", "checkin", "review", "report", "training", "leave", "other",
+] as const;
 
 // ─── Input schemas ────────────────────────────────────────────────────────────
 const idIn = z.object({ id: z.number().int().positive() });
@@ -201,6 +205,21 @@ const exitCreateIn = z.object({
   status: z.enum(EXIT_STATUS).optional().default("Notified"),
   notes: z.string().max(8000).optional().nullable(),
 });
+
+const calendarCreateIn = z.object({
+  title: z.string().min(1).max(255),
+  description: z.string().max(8000).optional().nullable(),
+  startAt: z.coerce.date(),
+  endAt: z.coerce.date().optional().nullable(),
+  eventType: z.enum(CAL_EVENT_TYPE).optional().default("other"),
+  assignee: z.string().max(255).optional().nullable(),
+  reminderSent: z.boolean().optional().default(false),
+});
+
+const calendarListIn = z.object({
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+}).optional();
 
 // ─── Sub-routers ──────────────────────────────────────────────────────────────
 const internsRouter = router({
@@ -386,6 +405,38 @@ const exitsRouter = router({
   }),
 });
 
+const calendarRouter = router({
+  list: hrProcedure.input(calendarListIn).query(async ({ input }) => {
+    const conn = await db();
+    const filters = [];
+    if (input?.from) filters.push(gte(hrCalendarEvents.startAt, input.from));
+    if (input?.to)   filters.push(lte(hrCalendarEvents.startAt, input.to));
+    const where = filters.length > 0 ? and(...filters) : undefined;
+    const rows = where
+      ? await conn.select().from(hrCalendarEvents).where(where).orderBy(asc(hrCalendarEvents.startAt))
+      : await conn.select().from(hrCalendarEvents).orderBy(asc(hrCalendarEvents.startAt));
+    return rows;
+  }),
+  create: hrProcedure.input(calendarCreateIn).mutation(async ({ input }) => {
+    const conn = await db();
+    await conn.insert(hrCalendarEvents).values(input as any);
+    return { success: true };
+  }),
+  update: hrProcedure
+    .input(idIn.merge(calendarCreateIn.partial()))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      const { id, ...patch } = input;
+      await conn.update(hrCalendarEvents).set(patch as any).where(eq(hrCalendarEvents.id, id));
+      return { success: true };
+    }),
+  remove: hrProcedure.input(idIn).mutation(async ({ input }) => {
+    const conn = await db();
+    await conn.delete(hrCalendarEvents).where(eq(hrCalendarEvents.id, input.id));
+    return { success: true };
+  }),
+});
+
 // ─── Top-level HR router ──────────────────────────────────────────────────────
 export const hrRouter = router({
   interns: internsRouter,
@@ -394,4 +445,5 @@ export const hrRouter = router({
   internCoord: internCoordRouter,
   performance: performanceRouter,
   exits: exitsRouter,
+  calendar: calendarRouter,
 });

@@ -12,6 +12,7 @@ import {
   Bell, Key, Eye, EyeOff, Megaphone, Inbox, CheckCheck, ChevronRight,
   Folder, ShieldCheck,
   Monitor, Cpu, Palette, FileBox, MessageSquare, Image as ImageIcon, CalendarCheck,
+  StickyNote, Pin,
 } from "lucide-react";
 
 import {
@@ -41,14 +42,16 @@ const PURPLE = "#8B5CF6";
 
 // 2026-04-25 — Section list aligned to Phase 2 CEO Strategic Command Center spec
 // (9 tabs: Overview, Equipment, Software, Targets, Meetings, Branding QA,
-// Documents Vault, Calendar, Notes). Non-spec sections cut: departments,
-// staff, finance, clients, weekly, vault, content, inbox, approvals,
-// divisionUpdates, canvaTemplates. Data tables + tRPC routers retained for
-// other portals; only the UI surfaces were removed.
+// Documents Vault, Calendar, Notes). All 9 are now wired (Notes added
+// 2026-04-25 — see NotesSection at the bottom of the file). Non-spec
+// sections cut: departments, staff, finance, clients, weekly, vault,
+// content, inbox, approvals, divisionUpdates, canvaTemplates. Data
+// tables + tRPC routers retained for other portals; only the UI surfaces
+// were removed.
 type Section =
   | "dashboard" | "targets" | "calendar"
   | "equipment" | "software" | "brandingQa" | "documents"
-  | "weeklyMeetings";
+  | "weeklyMeetings" | "notes";
 
 /* Utilities */
 function fmtNaira(v: string | number | null | undefined): string {
@@ -155,9 +158,9 @@ export default function CEOPortal() {
   }
   if (!user) return null;
 
-  // 2026-04-25 — NAV reduced to the 9 tabs in Phase 2 CEO spec.
+  // 2026-04-25 — NAV is now all 9 tabs in Phase 2 CEO spec.
   // Spec: Overview, Equipment, Software, Targets, Meetings, Branding QA,
-  // Documents Vault, Calendar, Notes. We have 8 of 9 wired (Notes deferred).
+  // Documents Vault, Calendar, Notes.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",       icon: LayoutDashboard, label: "Overview" },
     { key: "targets",         icon: TargetIcon,      label: "Targets & Alerts" },
@@ -167,6 +170,7 @@ export default function CEOPortal() {
     { key: "software",        icon: Cpu,             label: "Software Vault" },
     { key: "documents",       icon: FileBox,         label: "Documents Vault" },
     { key: "calendar",        icon: CalendarIcon,    label: "Calendar & Audit" },
+    { key: "notes",           icon: StickyNote,      label: "Notes" },
   ];
 
   return (
@@ -316,7 +320,7 @@ export default function CEOPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
-            {/* 2026-04-25 — Dispatcher reduced to Phase 2 spec (9 tabs minus Notes). */}
+            {/* 2026-04-25 — Dispatcher covers all 9 Phase 2 CEO tabs. */}
             {active === "dashboard"       && <CommandCenter onGoto={setActive} />}
             {active === "targets"         && <TargetsSection />}
             {active === "weeklyMeetings"  && <WeeklyMeetingsSection />}
@@ -325,6 +329,7 @@ export default function CEOPortal() {
             {active === "software"        && <SoftwareSection />}
             {active === "documents"       && <DocumentsSection />}
             {active === "calendar"        && <CalendarAuditSection />}
+            {active === "notes"           && <NotesSection />}
           </div>
         </div>
       </main>
@@ -1898,6 +1903,174 @@ function WeeklyMeetingsSection() {
                       {["Planned", "Held", "Cancelled", "Postponed"].map(s => <option key={s} value={s}>{s}</option>)}
                     </SelectInput>
                     <GhostButton onClick={() => { if (confirm("Remove this meeting?")) removeMut.mutate({ id: r.id }); }} color={RED}>
+                      <Trash2 size={10} /> Remove
+                    </GhostButton>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
+/* ─── Notes (Phase 2 CEO tab 9) ───────────────────────────────────────────
+ * Strategic decisions, observations, ideas, and a parking lot for
+ * non-urgent thinking. MySQL via tRPC `ceoOps.notes.*`. */
+function NotesSection() {
+  const utils = trpc.useUtils();
+  const q = trpc.ceoOps.notes.list.useQuery(undefined, { retry: false });
+  const rows = ((q.data || []) as any[]);
+
+  const [showForm, setShowForm] = useState(false);
+  const initForm = {
+    title: "",
+    body: "",
+    category: "other" as const,
+    pinned: false,
+    tags: "",
+  };
+  const [form, setForm] = useState(initForm);
+
+  const createMut = trpc.ceoOps.notes.create.useMutation({
+    onSuccess: () => {
+      toast.success("Note saved");
+      utils.ceoOps.notes.list.invalidate();
+      setShowForm(false);
+      setForm(initForm);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.ceoOps.notes.update.useMutation({
+    onSuccess: () => { toast.success("Updated"); utils.ceoOps.notes.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.ceoOps.notes.remove.useMutation({
+    onSuccess: () => { toast.success("Removed"); utils.ceoOps.notes.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const categoryTone = (c: string): "green" | "gold" | "red" | "blue" | "muted" | "orange" => {
+    switch (c) {
+      case "strategy":    return "green";
+      case "observation": return "blue";
+      case "idea":        return "gold";
+      case "decision":    return "orange";
+      case "parking":     return "muted";
+      default:            return "muted";
+    }
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="Strategic decisions, observations, ideas, and the parking lot for non-urgent thinking.">
+        Notes
+      </SectionTitle>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <MiniStat label="Pinned" value={rows.filter(r => r.pinned).length} color={GOLD} />
+        <MiniStat label="Strategy" value={rows.filter(r => r.category === "strategy").length} color={GREEN} />
+        <MiniStat label="Decisions" value={rows.filter(r => r.category === "decision").length} color={ORANGE} />
+        <MiniStat label="Total" value={rows.length} color={DARK} />
+      </div>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: showForm ? 12 : 0 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>New Note</p>
+          <PrimaryButton onClick={() => setShowForm(!showForm)}>
+            {showForm ? <X size={12} /> : <Plus size={12} />} {showForm ? "Cancel" : "Add"}
+          </PrimaryButton>
+        </div>
+        {showForm && (
+          <>
+            <FormGrid>
+              <FormField label="Title"><TextInput value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="e.g. Pivot Bizdoc pricing" /></FormField>
+              <FormField label="Category">
+                <SelectInput value={form.category} onChange={e => setForm({ ...form, category: e.target.value as any })}>
+                  {["strategy", "observation", "idea", "decision", "parking", "other"].map(s => <option key={s} value={s}>{s}</option>)}
+                </SelectInput>
+              </FormField>
+            </FormGrid>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+              <FormField label="Body">
+                <TextArea
+                  value={form.body}
+                  onChange={e => setForm({ ...form, body: e.target.value })}
+                  placeholder="What's the thought? Capture the why, not just the what."
+                  style={{ minHeight: 120 }}
+                />
+              </FormField>
+              <FormField label="Tags (one per line)">
+                <TextArea value={form.tags} onChange={e => setForm({ ...form, tags: e.target.value })} placeholder="pricing&#10;q3&#10;cso" />
+              </FormField>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: DARK, cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={form.pinned}
+                  onChange={e => setForm({ ...form, pinned: e.target.checked })}
+                />
+                <Pin size={12} style={{ color: GOLD }} /> Pin this note to the top
+              </label>
+            </div>
+            <PrimaryButton
+              onClick={() => {
+                if (!form.title.trim()) { toast.error("Title is required"); return; }
+                if (!form.body.trim())  { toast.error("Body is required");  return; }
+                createMut.mutate({
+                  title: form.title,
+                  body: form.body,
+                  category: form.category,
+                  pinned: form.pinned,
+                  tags: splitLines(form.tags),
+                });
+              }}
+              disabled={createMut.isPending}
+            >Save</PrimaryButton>
+          </>
+        )}
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <EmptyState icon={StickyNote} title="No notes captured yet" hint="Use this for strategic thoughts, decisions, and the parking lot." />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {rows.map((r: any) => (
+              <div key={r.id} style={{
+                padding: "12px 14px", backgroundColor: BG, borderRadius: 10,
+                border: `1px solid ${r.pinned ? GOLD + "40" : DARK + "06"}`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      {r.pinned && <Pin size={12} style={{ color: GOLD }} />}
+                      <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{r.title}</p>
+                      <StatusPill label={r.category} tone={categoryTone(r.category)} />
+                    </div>
+                    <p style={{ fontSize: 12, color: DARK, marginTop: 6, whiteSpace: "pre-wrap", lineHeight: 1.55 }}>
+                      {r.body}
+                    </p>
+                    {Array.isArray(r.tags) && r.tags.length > 0 && (
+                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>
+                        {r.tags.map((tag: string, i: number) => (
+                          <span key={i} style={{ fontSize: 10, padding: "2px 8px", borderRadius: 10, backgroundColor: WHITE, color: GOLD, fontWeight: 600 }}>{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 6 }}>
+                      {fmtDateTime(r.createdAt)}
+                    </p>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 160 }}>
+                    <SelectInput value={r.category} onChange={e => updateMut.mutate({ id: r.id, category: e.target.value as any })}>
+                      {["strategy", "observation", "idea", "decision", "parking", "other"].map(s => <option key={s} value={s}>{s}</option>)}
+                    </SelectInput>
+                    <GhostButton onClick={() => updateMut.mutate({ id: r.id, pinned: !r.pinned })} color={r.pinned ? GOLD : MUTED}>
+                      <Pin size={10} /> {r.pinned ? "Unpin" : "Pin"}
+                    </GhostButton>
+                    <GhostButton onClick={() => { if (confirm("Remove this note?")) removeMut.mutate({ id: r.id }); }} color={RED}>
                       <Trash2 size={10} /> Remove
                     </GhostButton>
                   </div>
