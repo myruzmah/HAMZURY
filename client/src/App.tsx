@@ -25,6 +25,11 @@ import HubEnroll from "./pages/HubEnroll";
 /* ── Public diagnostic forms (Apple-standard, Fraunces serif) ── */
 import DiagnosticForm from "./pages/DiagnosticForm";
 
+/* ── Per-site diagnostics (separate from 14-q Hamzury Clarity Session) ── */
+import BizdocDiagnostic from "./pages/BizdocDiagnostic";
+import ScalarAudit from "./pages/ScalarAudit";
+import MedialyBrandDiagnostic from "./pages/MedialyBrandDiagnostic";
+
 /* ── Post-payment requirement intake forms ── */
 import RequirementForm from "./components/RequirementForm";
 
@@ -132,6 +137,11 @@ function Router() {
       <Route path="/diagnose-software"><DiagnosticForm formId="software" /></Route>
       <Route path="/diagnose-media"><DiagnosticForm formId="media" /></Route>
       <Route path="/diagnose-skills"><DiagnosticForm formId="skills" /></Route>
+
+      {/* ═══ Per-site diagnostics (Bizdoc / Scalar / Medialy) ═══ */}
+      <Route path="/diagnose-bizdoc"  component={BizdocDiagnostic} />
+      <Route path="/scalar-audit"     component={ScalarAudit} />
+      <Route path="/diagnose-medialy" component={MedialyBrandDiagnostic} />
 
       {/* ═══ Post-payment requirement intake (?ref=HMZ-YY/M-XXXX) ═══ */}
       <Route path="/requirements/cac"><RequirementForm serviceId="cac" /></Route>

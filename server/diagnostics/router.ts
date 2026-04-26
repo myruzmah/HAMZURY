@@ -74,6 +74,108 @@ const submitInputSchema = z.object({
   }),
 });
 
+// ─── Per-site diagnostic input schema (Bizdoc / Scalar / Medialy) ────────────
+// These three forms are SEPARATE from the 14-q Hamzury Clarity Session.
+// Each posts a verbatim Q&A array (so we never have to map indexes here)
+// alongside the standard contact block. Everything serialised to lead.context.
+
+const qaPairSchema = z.object({
+  /** Section eyebrow for the question (e.g. "Registration", "Tax"). */
+  section: z.string().max(120),
+  /** The question text exactly as shown to the user. */
+  question: z.string().max(500),
+  /** The user's answer — string, array of strings, or number. */
+  answer: z.union([
+    z.string(),
+    z.number(),
+    z.array(z.string()),
+    z.null(),
+  ]),
+});
+
+const perSiteContactSchema = z.object({
+  name: z.string().min(1, "Name is required").max(255),
+  email: z.string().email("Please enter a valid email address").max(320),
+  phone: z.string().min(7).max(50),
+  businessName: z.string().max(255).optional(),
+});
+
+const perSiteSubmitInputSchema = z.object({
+  qa: z.array(qaPairSchema).min(1).max(40),
+  contact: perSiteContactSchema,
+  ndprConsent: z.literal(true, {
+    message: "You must agree to be contacted (NDPR)",
+  }),
+});
+
+type PerSiteSubmitInput = z.infer<typeof perSiteSubmitInputSchema>;
+
+/**
+ * Shared submit pipeline for the 3 per-site diagnostic forms.
+ * Validates email + phone, generates ref, writes one row to `leads`, fires
+ * the standard new-lead alert email, and returns the ref to the client.
+ */
+async function submitPerSiteDiagnostic(opts: {
+  input: PerSiteSubmitInput;
+  source: string;
+  serviceLabel: string;
+}): Promise<{ success: true; ref: string }> {
+  const { input, source, serviceLabel } = opts;
+
+  if (!EMAIL_RE.test(input.contact.email)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Please enter a valid email address.",
+    });
+  }
+  if (!isValidPhone(input.contact.phone)) {
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Please enter a valid phone number (at least 10 digits).",
+    });
+  }
+
+  const phone = input.contact.phone.trim();
+  const name = input.contact.name.trim();
+  const email = input.contact.email.trim().toLowerCase();
+  const businessName = input.contact.businessName?.trim() || undefined;
+
+  const context = JSON.stringify({
+    source,
+    serviceLabel,
+    qa: input.qa,
+    submittedAt: new Date().toISOString(),
+  });
+
+  const ref = generateRefNumber(phone);
+  const lead = await createLead({
+    ref,
+    name,
+    businessName,
+    phone,
+    email,
+    service: serviceLabel,
+    context,
+    source,
+    status: "new",
+  });
+
+  try {
+    await sendNewLeadAlert({
+      ref: lead.ref,
+      clientName: name,
+      service: serviceLabel,
+      phone,
+      email,
+      source,
+    });
+  } catch (err) {
+    console.error("[diagnostics] Failed to send lead alert email:", err);
+  }
+
+  return { success: true as const, ref: lead.ref };
+}
+
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const diagnosticsRouter = router({
@@ -214,5 +316,48 @@ export const diagnosticsRouter = router({
         ref: lead.ref,
         routedLeads: routedRefs.length,
       };
+    }),
+
+  /**
+   * BIZDOC site diagnostic — 8 short questions about CAC / TIN / tax / annual
+   * returns / business stage. Separate flow from the 14-q Clarity Session.
+   * Lands as a single lead with `source = "diagnostic_bizdoc"`.
+   */
+  submitBizdoc: rateLimitedProcedure
+    .input(perSiteSubmitInputSchema)
+    .mutation(async ({ input }) => {
+      return submitPerSiteDiagnostic({
+        input,
+        source: "diagnostic_bizdoc",
+        serviceLabel: "Diagnostic — Bizdoc (Compliance)",
+      });
+    }),
+
+  /**
+   * SCALAR site audit — software / systems / automation / AI readiness.
+   * Lands as a single lead with `source = "diagnostic_scalar"`.
+   */
+  submitScalarAudit: rateLimitedProcedure
+    .input(perSiteSubmitInputSchema)
+    .mutation(async ({ input }) => {
+      return submitPerSiteDiagnostic({
+        input,
+        source: "diagnostic_scalar",
+        serviceLabel: "Diagnostic — Scalar (Software Audit)",
+      });
+    }),
+
+  /**
+   * MEDIALY site brand diagnostic — brand identity, content, social cadence.
+   * Lands as a single lead with `source = "diagnostic_medialy"`.
+   */
+  submitMedialyBrand: rateLimitedProcedure
+    .input(perSiteSubmitInputSchema)
+    .mutation(async ({ input }) => {
+      return submitPerSiteDiagnostic({
+        input,
+        source: "diagnostic_medialy",
+        serviceLabel: "Diagnostic — Medialy (Brand)",
+      });
     }),
 });
