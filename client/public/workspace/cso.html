@@ -629,6 +629,110 @@
     outline: none;
     border-color: var(--ink);
   }
+
+  /* ── Inbox (CSO live-leads view) ─────────────────────────────────── */
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent-warm);
+    color: #fff;
+    border-radius: 999px;
+    padding: 2px 8px;
+    font-size: 10.5px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .inbox-section { padding: 28px 32px 60px; max-width: 1100px; margin: 0 auto; }
+  .inbox-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    flex-wrap: wrap;
+    padding-bottom: 22px;
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 22px;
+  }
+  .inbox-meta { display: flex; align-items: center; gap: 12px; }
+  .inbox-status { font-size: 12px; color: var(--ink-muted); }
+  .inbox-refresh-btn {
+    padding: 8px 16px;
+    background: var(--paper);
+    color: var(--ink);
+    border: 0.5px solid var(--line);
+    border-radius: 999px;
+    font: 500 13px var(--sans);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .inbox-refresh-btn:hover { background: var(--sidebar); border-color: var(--ink-muted); }
+  .inbox-list { display: flex; flex-direction: column; gap: 14px; }
+  .inbox-card {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+    transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .inbox-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-color: var(--ink-faint); }
+  .inbox-card-body { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
+  .inbox-card-name {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .inbox-card-biz { color: var(--ink-muted); font-size: 14.5px; font-style: italic; font-weight: 400; }
+  .inbox-card-meta {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+  .inbox-card-contact {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin-top: 2px;
+  }
+  .inbox-card-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .inbox-card-status {
+    background: rgba(180, 140, 76, 0.10);
+    color: var(--accent-warm);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .inbox-card-time { font-size: 11.5px; color: var(--ink-muted); }
+  .inbox-empty {
+    text-align: center;
+    padding: 80px 20px;
+    border: 0.5px dashed var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+  }
+  .inbox-empty-title {
+    font-family: var(--serif);
+    font-size: 18px;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+  .inbox-empty-sub { font-size: 13.5px; color: var(--ink-muted); max-width: 360px; margin: 0 auto; }
 </style>
 </head>
 <body>
@@ -681,10 +785,10 @@
       <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
       Dashboard
     </button>
-    <button class="nav-item" data-tab="leads">
+    <button class="nav-item" data-tab="inbox">
       <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
-      Live Leads
-      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+      Inbox
+      <span class="nav-badge" id="inbox-badge" hidden>0</span>
     </button>
 
     <div class="sidebar-section">Tools</div>
@@ -786,26 +890,22 @@
     <iframe class="embed-frame" id="tab-dashboard" src="hamzury-dashboard.html" style="display:none;"></iframe>
 
     <!-- LIVE LEADS -->
-    <div class="tab-content" id="tab-leads" style="display:none;">
-      <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+    <div class="tab-content" id="tab-inbox" style="display:none;">
+      <section class="inbox-section">
+        <div class="inbox-head">
           <div>
-            <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
-              Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
-            </h1>
-            <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
-              Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
-            </p>
+            <h1 class="hero-title">Welcome to <em>Inbox</em>.</h1>
+            <p class="hero-sub">Live chat leads from across the four public sites. Refreshes every 60 seconds.</p>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
-            <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+          <div class="inbox-meta">
+            <span id="inbox-status" class="inbox-status">Loading…</span>
+            <button id="inbox-refresh" class="inbox-refresh-btn">Refresh</button>
           </div>
         </div>
-        <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-        <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
-          <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
-          <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+        <div id="inbox-list" class="inbox-list"></div>
+        <div id="inbox-empty" class="inbox-empty" hidden>
+          <p class="inbox-empty-title">No leads yet.</p>
+          <p class="inbox-empty-sub">When visitors complete the chat flow on the public sites, leads land here within a minute.</p>
         </div>
       </section>
     </div>
@@ -883,7 +983,7 @@ if (isSignedIn()) {
 const TAB_META = {
   home:         { eyebrow: 'CSO Portal', title: 'Home' },
   dashboard:    { eyebrow: 'Operations', title: 'Dashboard' },
-  leads:        { eyebrow: 'Operations', title: 'Live Leads' },
+  inbox:        { eyebrow: 'Operations', title: 'Inbox' },
   forms:        { eyebrow: 'Tools', title: 'Diagnostic Forms' },
   requirements: { eyebrow: 'Tools', title: 'Requirement Forms' },
   command:      { eyebrow: 'Tools', title: 'Command Center' },
@@ -1315,90 +1415,70 @@ document.getElementById('script-search').addEventListener('input', (e) => {
 
 renderScripts();
 
-// ─── Live Leads from Apps Script ────────────────────────────────────────
-console.log('[hamzury-workspaces] live leads wired v1');
-const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
-const WORKSPACE_FILTER = 'all';
+// ─── Inbox: Live chat leads from Apps Script ──────────────────────────
+const INBOX_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
 
-async function loadLiveLeads() {
-  const status = document.getElementById('leads-status');
-  const list = document.getElementById('leads-list');
-  const empty = document.getElementById('leads-empty');
-  const badge = document.getElementById('leads-badge');
+async function loadInbox() {
+  const status = document.getElementById('inbox-status');
+  const list = document.getElementById('inbox-list');
+  const empty = document.getElementById('inbox-empty');
+  const badge = document.getElementById('inbox-badge');
   if (!list) return;
 
   try {
-    if (status) status.textContent = 'Loading…';
-    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const res = await fetch(INBOX_WEBHOOK, { method: 'GET' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     const all = [...(data.diagnostics || []), ...(data.requirements || [])];
-
-    let rows = all;
-    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
-      rows = all.filter(r => {
-        const form = String(r.Form || '').toLowerCase();
-        const title = String(r['Form Title'] || '').toLowerCase();
-        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
-      });
-    }
-
-    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+    all.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
 
     list.innerHTML = '';
-    if (rows.length === 0) {
+    if (all.length === 0) {
       empty.hidden = false;
-      if (badge) badge.style.display = 'none';
+      if (badge) badge.hidden = true;
     } else {
       empty.hidden = true;
-      if (badge) {
-        badge.textContent = rows.length;
-        badge.style.display = 'inline-block';
-      }
-      for (const r of rows) {
-        const card = document.createElement('div');
-        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+      if (badge) { badge.textContent = all.length; badge.hidden = false; }
+      for (const r of all) {
+        const card = document.createElement('article');
+        card.className = 'inbox-card';
         const dt = new Date(r['Received At']);
         const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-        card.innerHTML = `
-          <div style="flex:1;min-width:200px;">
-            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
-              ${escapeLeadHtml(r['Client Name'] || '—')}
-              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
-            </div>
-            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
-              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
-            </div>
-            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
-              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
-              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
-            </div>
-          </div>
-          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
-              ${escapeLeadHtml(r.Status || 'New')}
-            </span>
-            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
-          </div>
-        `;
+        const name = inboxEsc(r['Client Name'] || '—');
+        const biz = r.Business ? `<span class="inbox-card-biz"> · ${inboxEsc(r.Business)}</span>` : '';
+        const meta = `${inboxEsc(r.Reference || '')} · ${inboxEsc(r['Form Title'] || r.Form || 'submission')}`;
+        const email = r.Email ? `<span>${inboxEsc(r.Email)}</span>` : '';
+        const phone = r.Phone ? `<span>${inboxEsc(String(r.Phone))}</span>` : '';
+        card.innerHTML =
+          '<div class="inbox-card-body">' +
+            '<div class="inbox-card-name">' + name + biz + '</div>' +
+            '<div class="inbox-card-meta">' + meta + '</div>' +
+            (email || phone ? '<div class="inbox-card-contact">' + email + phone + '</div>' : '') +
+          '</div>' +
+          '<div class="inbox-card-side">' +
+            '<span class="inbox-card-status">' + inboxEsc(r.Status || 'New') + '</span>' +
+            '<span class="inbox-card-time">' + dtStr + '</span>' +
+          '</div>';
         list.appendChild(card);
       }
     }
 
-    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+    if (status) {
+      const t = new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'});
+      status.textContent = all.length + ' lead' + (all.length===1?'':'s') + ' · updated ' + t;
+    }
   } catch (e) {
-    console.warn('[live-leads] fetch failed', e);
-    if (status) status.textContent = 'Connection error';
+    if (status) status.textContent = 'Could not refresh — retrying';
   }
 }
 
-function escapeLeadHtml(s) {
+function inboxEsc(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
-
-loadLiveLeads();
-setInterval(loadLiveLeads, 30000);
+document.getElementById('inbox-refresh')?.addEventListener('click', loadInbox);
+loadInbox();
+setInterval(loadInbox, 60000);
 </script>
 
 </body>

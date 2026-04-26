@@ -275,11 +275,6 @@
 
     <div class="sidebar-section">Workspace</div>
     <button class="nav-item active" data-tab="home"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>Home</button>
-    <button class="nav-item" data-tab="leads">
-      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
-      Live Leads
-      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
-    </button>
     <button class="nav-item" data-tab="mytasks"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>My tasks<span class="nav-count alert" id="count-tasks">0</span></button>
     <button class="nav-item" data-tab="incoming"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>Incoming briefs<span class="nav-count warn" id="count-incoming">0</span></button>
 
@@ -548,7 +543,6 @@ function render() {
   if (currentProjectId) { renderProject(); return; }
   switch (currentTab) {
     case 'home': renderHome(); break;
-    case 'leads': renderLeads(); break;
     case 'mytasks': renderMyTasks(); break;
     case 'incoming': renderIncoming(); break;
     case 'projects': renderProjects(); break;
@@ -924,118 +918,6 @@ window.exitProject = () => { currentProjectId = null; openTab('home'); };
 
 function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]); }
 function relativeTime(ts) { if (!ts) return '—'; const d = Date.now()-ts; if (d<3600000) return Math.round(d/60000)+'m ago'; if (d<86400000) return Math.round(d/3600000)+'h ago'; const days=Math.round(d/86400000); if(days===1)return'yesterday'; if(days<7)return days+'d ago'; return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
-
-// ─── Live Leads from Apps Script ────────────────────────────────────────
-console.log('[hamzury-workspaces] live leads wired v1');
-const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
-const WORKSPACE_FILTER = 'scalar';
-
-function renderLeads() {
-  setHeader('Operations', 'Live Leads');
-  content.innerHTML = `
-    <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-        <div>
-          <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
-            Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
-          </h1>
-          <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
-            Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
-          </p>
-        </div>
-        <div style="display:flex;gap:8px;align-items:center;">
-          <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
-          <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
-        </div>
-      </div>
-      <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
-      <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
-        <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
-        <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
-      </div>
-    </section>
-  `;
-  document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
-  loadLiveLeads();
-}
-
-async function loadLiveLeads() {
-  const status = document.getElementById('leads-status');
-  const list = document.getElementById('leads-list');
-  const empty = document.getElementById('leads-empty');
-  const badge = document.getElementById('leads-badge');
-
-  try {
-    if (status) status.textContent = 'Loading…';
-    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
-    const data = await res.json();
-    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
-
-    let rows = all;
-    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
-      rows = all.filter(r => {
-        const form = String(r.Form || '').toLowerCase();
-        const title = String(r['Form Title'] || '').toLowerCase();
-        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
-      });
-    }
-
-    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
-
-    if (badge) {
-      if (rows.length === 0) badge.style.display = 'none';
-      else { badge.textContent = rows.length; badge.style.display = 'inline-block'; }
-    }
-
-    if (!list) return;
-    list.innerHTML = '';
-    if (rows.length === 0) {
-      if (empty) empty.hidden = false;
-    } else {
-      if (empty) empty.hidden = true;
-      for (const r of rows) {
-        const card = document.createElement('div');
-        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
-        const dt = new Date(r['Received At']);
-        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-        card.innerHTML = `
-          <div style="flex:1;min-width:200px;">
-            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
-              ${escapeLeadHtml(r['Client Name'] || '—')}
-              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
-            </div>
-            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
-              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
-            </div>
-            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
-              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
-              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
-            </div>
-          </div>
-          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
-              ${escapeLeadHtml(r.Status || 'New')}
-            </span>
-            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
-          </div>
-        `;
-        list.appendChild(card);
-      }
-    }
-
-    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
-  } catch (e) {
-    console.warn('[live-leads] fetch failed', e);
-    if (status) status.textContent = 'Connection error';
-  }
-}
-
-function escapeLeadHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
-loadLiveLeads();
-setInterval(loadLiveLeads, 30000);
 
 updateCounts(); render();
 </script>
