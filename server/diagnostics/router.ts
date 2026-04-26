@@ -3,6 +3,12 @@
  * Media, Skills). All submissions land in the `leads` table with a
  * generated HMZ-YY/M-XXXX reference number, ready for the CSO to review.
  *
+ * Clarity Session is special: after the primary lead is created, the answers
+ * are run through `analyzeClarityAnswers` and one extra lead is inserted per
+ * matched Hamzury division (Bizdoc / Scalar / Medialy / HUB). The CSO then
+ * receives ONE consolidated email per the SINGLE POINT OF CONTACT rule —
+ * companies do NOT each contact the visitor separately.
+ *
  * The procedure is `rateLimitedProcedure` (NOT logged in — these forms are
  * public). 5 submissions per IP / 10 minutes is enforced by the middleware.
  */
@@ -11,6 +17,15 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { rateLimitedProcedure, router } from "../_core/trpc";
 import { createLead, generateRefNumber } from "../db";
+import {
+  analyzeClarityAnswers,
+  COMPANY_LABELS,
+  type MatchedCompany,
+} from "./cross-company-router";
+import {
+  sendClarityMultiMatchEmail,
+  sendNewLeadAlert,
+} from "../email";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -66,6 +81,11 @@ export const diagnosticsRouter = router({
    * Public diagnostic form submission. Creates a lead, returns the ref.
    * Inserts the full questionnaire payload into `lead.context` as JSON
    * so the CSO can read every answer back later.
+   *
+   * For Clarity Session submissions, also creates one cross-routed lead
+   * per matched division (Bizdoc / Scalar / Medialy / HUB) and sends ONE
+   * consolidated email to the CSO. If no matches, falls back to the
+   * standard single-lead alert.
    */
   submit: rateLimitedProcedure
     .input(submitInputSchema)
@@ -96,18 +116,103 @@ export const diagnosticsRouter = router({
       });
 
       const phone = input.contact.phone.trim();
+      const name = input.contact.name.trim();
+      const email = input.contact.email.trim().toLowerCase();
+      const businessName = input.contact.businessName?.trim() || undefined;
+
       const ref = generateRefNumber(phone);
       const lead = await createLead({
         ref,
-        name: input.contact.name.trim(),
-        businessName: input.contact.businessName?.trim() || undefined,
+        name,
+        businessName,
         phone,
-        email: input.contact.email.trim().toLowerCase(),
+        email,
         service,
         context,
         source: `diagnostic_${formId}`,
       });
 
-      return { success: true as const, ref: lead.ref };
+      // ─── Cross-company routing — Clarity Session only ──────────────────────
+      let matches: MatchedCompany[] = [];
+      const routedRefs: Array<{
+        company: string;
+        primaryService: string;
+        reason: string;
+        ref: string;
+      }> = [];
+
+      if (formId === "clarity") {
+        // Coerce answers shape: client form sends Record<string, string|number|string[]>.
+        matches = analyzeClarityAnswers(
+          input.answers as Record<string, string | number | string[]>,
+        );
+
+        for (const match of matches) {
+          try {
+            const routedRef = generateRefNumber(phone);
+            const routedLead = await createLead({
+              ref: routedRef,
+              name,
+              businessName,
+              phone,
+              email,
+              service: match.primaryService,
+              // Schema has no separate `notes` column — encode the routing
+              // reason + back-reference into `context` so the CSO sees it.
+              context: `${match.reason}. Cross-routed from clarity ref ${lead.ref}`,
+              source: "diagnostic_clarity_routed",
+              status: "new",
+            });
+            routedRefs.push({
+              company: COMPANY_LABELS[match.company],
+              primaryService: match.primaryService,
+              reason: match.reason,
+              ref: routedLead.ref,
+            });
+          } catch (err) {
+            // One failed routed lead must not break the whole submit —
+            // the primary lead is already saved.
+            console.error(
+              `[diagnostics] Failed to create routed lead for ${match.company}:`,
+              err,
+            );
+          }
+        }
+      }
+
+      // ─── Email: ONE consolidated for multi-match Clarity, else standard ───
+      try {
+        if (formId === "clarity" && routedRefs.length > 0) {
+          await sendClarityMultiMatchEmail({
+            primaryRef: lead.ref,
+            visitorName: name,
+            businessName,
+            phone,
+            email,
+            matches: routedRefs,
+          });
+        } else {
+          // Fallback: standard single-lead email (existing behavior),
+          // used for non-clarity forms AND for clarity submissions with
+          // zero matches.
+          await sendNewLeadAlert({
+            ref: lead.ref,
+            clientName: name,
+            service,
+            phone,
+            email,
+            source: `diagnostic_${formId}`,
+          });
+        }
+      } catch (err) {
+        // Email failure must not fail the form submission.
+        console.error("[diagnostics] Failed to send lead alert email:", err);
+      }
+
+      return {
+        success: true as const,
+        ref: lead.ref,
+        routedLeads: routedRefs.length,
+      };
     }),
 });

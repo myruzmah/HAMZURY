@@ -122,3 +122,101 @@ export async function sendNewLeadAlert(data: {
 
   console.log(`[email] New lead alert sent to ${to} for ref ${data.ref}`);
 }
+
+/**
+ * Sent when a Clarity Session matches multiple Hamzury divisions.
+ * One consolidated email — NOT one per company. Per the
+ * "SINGLE POINT OF CONTACT RULE" (MASTER-CHAT-FLOW.md §4), only the CSO
+ * contacts the visitor; companies do NOT each reach out separately.
+ */
+export async function sendClarityMultiMatchEmail(data: {
+  primaryRef: string;
+  visitorName: string;
+  businessName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  matches: Array<{
+    company: string;       // human label, e.g. "Bizdoc"
+    primaryService: string;
+    reason: string;
+    ref: string;
+  }>;
+}) {
+  const transport = getTransport();
+  if (!transport) {
+    console.warn("[email] SMTP not configured — clarity multi-match alert suppressed.");
+    return;
+  }
+  const to = ALERT_TO();
+  if (!to) return;
+
+  const matchRows = data.matches
+    .map(
+      (m, i) => `
+        <tr style="${i % 2 === 0 ? "background:#F5F5F7" : ""}">
+          <td style="padding:8px 12px;font-weight:bold;color:#1B4D3E">${m.company}</td>
+          <td style="padding:8px 12px">${m.primaryService}</td>
+          <td style="padding:8px 12px;color:#86868B;font-size:12px">${m.reason}</td>
+          <td style="padding:8px 12px;font-family:monospace;font-size:12px">${m.ref}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const subject = `New Clarity Session — ${data.visitorName} matches ${data.matches.length} division(s)`;
+
+  await transport.sendMail({
+    from: FROM(),
+    to,
+    subject: `[HAMZURY] ${subject}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto">
+        <h2 style="color:#1B4D3E;border-bottom:2px solid #C9A97E;padding-bottom:8px">
+          Clarity Session — Multi-Division Match
+        </h2>
+
+        <table style="width:100%;font-size:13px;border-collapse:collapse;margin:16px 0">
+          <tr style="background:#F5F5F7"><td style="padding:8px 12px;font-weight:bold;width:120px">Visitor</td><td style="padding:8px 12px">${data.visitorName}</td></tr>
+          ${data.businessName ? `<tr><td style="padding:8px 12px;font-weight:bold">Business</td><td style="padding:8px 12px">${data.businessName}</td></tr>` : ""}
+          ${data.phone ? `<tr style="background:#F5F5F7"><td style="padding:8px 12px;font-weight:bold">Phone</td><td style="padding:8px 12px">${data.phone}</td></tr>` : ""}
+          ${data.email ? `<tr><td style="padding:8px 12px;font-weight:bold">Email</td><td style="padding:8px 12px">${data.email}</td></tr>` : ""}
+          <tr style="background:#F5F5F7"><td style="padding:8px 12px;font-weight:bold">Primary Ref</td><td style="padding:8px 12px;font-family:monospace">${data.primaryRef}</td></tr>
+        </table>
+
+        <h3 style="color:#1B4D3E;margin-top:24px;margin-bottom:8px">
+          Matched Divisions (${data.matches.length})
+        </h3>
+        <table style="width:100%;font-size:13px;border-collapse:collapse;margin:8px 0">
+          <thead>
+            <tr style="background:#1B4D3E;color:#fff">
+              <th align="left" style="padding:8px 12px">Company</th>
+              <th align="left" style="padding:8px 12px">Service</th>
+              <th align="left" style="padding:8px 12px">Reason</th>
+              <th align="left" style="padding:8px 12px">Lead Ref</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${matchRows}
+          </tbody>
+        </table>
+
+        <div style="background:#FFF8E7;border-left:4px solid #C9A97E;padding:12px 16px;margin:24px 0;font-size:13px;color:#1D1D1F">
+          <strong style="color:#1B4D3E">SINGLE POINT OF CONTACT RULE</strong><br/>
+          Only CSO reaches out. Bizdoc, Scalar, Medialy and HUB must NOT
+          contact this visitor separately. CSO runs ONE consolidated
+          conversation covering every matched division above.
+        </div>
+
+        <p style="font-size:13px;color:#86868B">
+          View all leads in the
+          <a href="https://hamzury.com/cso" style="color:#1B4D3E">CSO Portal</a>.
+        </p>
+        <hr style="border:none;border-top:1px solid #E5E5EA;margin:20px 0">
+        <p style="font-size:11px;color:#86868B">HAMZURY Business Services · Automated alert · Clarity Session multi-match</p>
+      </div>
+    `,
+  });
+
+  console.log(
+    `[email] Clarity multi-match alert sent to ${to} — primary ${data.primaryRef}, ${data.matches.length} division(s)`,
+  );
+}
