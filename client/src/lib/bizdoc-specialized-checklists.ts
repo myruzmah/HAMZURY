@@ -27,6 +27,12 @@ export type SpecializedBusiness = {
   label: string;       // visible menu label (matches MASTER-CHAT-FLOW.md verbatim)
   checklist: ChecklistItem[]; // 8-15 items
   notes?: string;      // optional follow-up bot message (used for catch-all #25)
+  /* Phase 3 (v16) — legal minimum share capital for a Ltd/PLC in this
+   * regulated category. Used by the pre-payment questionnaire to grey out
+   * options below the floor. Defaults to ₦1,000,000 (the standard Nigerian
+   * Ltd minimum) when omitted. Source: MASTER-CHAT-FLOW.md "SHARE CAPITAL
+   * LOOKUP TABLE". */
+  minShareCapital?: number;
 };
 
 export const BIZDOC_SPECIALIZED: SpecializedBusiness[] = [
@@ -83,6 +89,7 @@ export const BIZDOC_SPECIALIZED: SpecializedBusiness[] = [
   {
     id: "mining_solid_minerals",
     label: "Mining & Solid Minerals",
+    minShareCapital: 10_000_000, // Phase 3 — Mining Cadastre Office floor
     checklist: [
       { title: "CAC Limited Liability Company", why: "Mining titles are issued only to companies; sole traders and BNs cannot hold a mineral title." },
       { title: "TIN — Tax Identification Number", why: "Required for tax filings and for issuance of mineral titles by the Mining Cadastre Office." },
@@ -106,6 +113,7 @@ export const BIZDOC_SPECIALIZED: SpecializedBusiness[] = [
   {
     id: "oil_and_gas",
     label: "Oil & Gas",
+    minShareCapital: 20_000_000, // Phase 3 — Oil & Gas (Marketing) NMDPRA floor
     checklist: [
       { title: "CAC Limited Liability Company", why: "Oil & gas licences are issued only to incorporated companies, never to BNs or individuals." },
       { title: "TIN — Tax Identification Number", why: "Required by NUPRC, NMDPRA, and FIRS for any registration or licence application." },
@@ -271,6 +279,7 @@ export const BIZDOC_SPECIALIZED: SpecializedBusiness[] = [
   {
     id: "financial_services_fintech",
     label: "Financial Services & Fintech",
+    minShareCapital: 100_000_000, // Phase 3 — Fintech (PSP licence) CBN floor; microfinance is even higher (₦200M)
     checklist: [
       { title: "CAC Limited Liability Company", why: "CBN, SEC, and NAICOM only license incorporated companies for any financial-services activity." },
       { title: "TIN — Tax Identification Number", why: "Required for company income tax, VAT, and as a precondition for any CBN licence." },
@@ -364,6 +373,7 @@ export const BIZDOC_SPECIALIZED: SpecializedBusiness[] = [
   {
     id: "pharmaceutical",
     label: "Pharmaceutical",
+    minShareCapital: 20_000_000, // Phase 3 — Pharmaceutical Manufacturing PCN floor
     checklist: [
       { title: "CAC Limited Liability Company", why: "Pharmaceutical licences are issued only to incorporated companies." },
       { title: "TIN — Tax Identification Number", why: "Required for FIRS and as a precondition for NAFDAC and PCN registration." },
@@ -528,6 +538,7 @@ export const BIZDOC_SPECIALIZED: SpecializedBusiness[] = [
   {
     id: "tech_startup",
     label: "Tech Startup Incorporation",
+    minShareCapital: 1_000_000, // Phase 3 — explicit per spec; same as default Nigerian Ltd
     checklist: [
       { title: "CAC Limited Liability Company", why: "Investors only fund Ltds; share structure, equity dilution, and SAFEs all require Ltd structure." },
       { title: "TIN — Tax Identification Number", why: "Required by FIRS, by every investor's diligence pack, and to open corporate accounts." },

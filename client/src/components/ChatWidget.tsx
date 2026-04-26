@@ -9,6 +9,17 @@ import {
   type SpecializedBusiness,
   type ChecklistItem,
 } from "@/lib/bizdoc-specialized-checklists";
+import {
+  TOOLTIP_FOREIGNER,
+  TOOLTIP_ENTITY,
+  TOOLTIP_SHARE_CAPITAL,
+  SHARE_CAPITAL_OPTIONS,
+  effectiveShareCapitalFloor,
+  calculateBizdocPrice,
+  formatNaira,
+  type EntityType,
+  type PriceQuote,
+} from "@/lib/bizdoc-prepayment";
 
 /* ══════════════════════════════════════════════════════════════════════════
    HAMZURY Chat — v12: TRUE WhatsApp-style chat interface
@@ -250,7 +261,11 @@ type MenuNode =
   | { kind: "placeholder"; label: string }
   /* Phase 2: a leaf for one of the 25 Bizdoc Specialized Business Setup
    *  types. Renders the document checklist for that business inline. */
-  | { kind: "specialized"; label: string; specializedId: string };
+  | { kind: "specialized"; label: string; specializedId: string }
+  /* Phase 3: standalone "CAC Business Registration" leaf in Bizdoc
+   *  Group 1. Skips the document checklist and goes straight to the
+   *  pre-payment questionnaire (foreigner → entity → share capital). */
+  | { kind: "bizdoc_cac"; label: string };
 
 /* ── BIZDOC tree ────────────────────────────────────────────────────────── */
 const BIZDOC_TREE: MenuNode[] = [
@@ -258,7 +273,10 @@ const BIZDOC_TREE: MenuNode[] = [
     kind: "group",
     label: "1. Registrations & Licences",
     children: [
-      { kind: "service", label: "CAC Business Registration", serviceId: "cac" },
+      // Phase 3 (v16): the CAC leaf now routes straight to the pre-payment
+      // questionnaire (foreigner → entity → share capital) instead of the
+      // generic service-detail flow.
+      { kind: "bizdoc_cac", label: "CAC Business Registration" },
       { kind: "service", label: "TIN — Tax Identification Number", serviceId: "tin" },
       { kind: "service", label: "Business Licences", serviceId: "licences" },
       // TODO Phase 2: build requirement form for SCUML Certificate
@@ -648,6 +666,22 @@ type CapturedLead = {
   at: Date;
 };
 
+/* Phase 3 (v16) — Bizdoc pre-payment questionnaire state.
+ *
+ *  Set to a non-null value when the visitor enters the questionnaire flow,
+ *  and back to `null` on completion or escape. Tracks which question is
+ *  open, the answers gathered so far, and (when a tooltip is showing) the
+ *  question to resume. */
+type PrepaymentState = null | {
+  businessId?: string;        // undefined for the standalone CAC leaf
+  step: "q1" | "q2" | "q3" | "summary";
+  hasForeigner?: boolean;
+  entity?: EntityType;
+  shareCapital?: number;
+  missingChecklistCount: number;
+  pausedForTooltip?: "q1" | "q2" | "q3";  // which question to resume after tooltip
+};
+
 /* ══════════════════════════════════════════════════════════════════════════
    WHATSAPP-STYLE CHAT PANEL
    ══════════════════════════════════════════════════════════════════════════ */
@@ -674,6 +708,15 @@ function WhatsAppChatPanel({
   const messageIdRef = useRef(1);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const initRef = useRef(false);
+
+  /* ── Phase 3 (v16): Bizdoc pre-payment questionnaire state ──────────────
+   *  Persists the visitor's answers across multiple bot turns inside one
+   *  flow. The state is managed via a ref because every bot quick-reply
+   *  fires a closure that needs the latest snapshot synchronously — useState
+   *  would be one render behind for chained replies. We DO mirror it into
+   *  state so React re-renders if the UI ever needs to read it directly,
+   *  but every handler reads/writes the ref. */
+  const prepaymentRef = useRef<PrepaymentState>(null);
 
   /* ── Menu navigation stack (Phase 1 grouped menus) ──────────────────────
    *  Each entry is the GROUP NODE the visitor drilled into, in order. The
@@ -829,6 +872,9 @@ function WhatsAppChatPanel({
       case "specialized":
         onPickSpecializedLeaf(node);
         return;
+      case "bizdoc_cac":
+        onPickBizdocCacLeaf();
+        return;
       case "diagnostic":
         onPickDiagnosticLeaf(node);
         return;
@@ -925,9 +971,9 @@ function WhatsAppChatPanel({
     });
   };
 
-  /** Visitor tapped "Continue →" inside the checklist bubble. We list the
-   *  missing items as a follow-up bot message + an interim hand-off (the
-   *  Phase 3 pre-payment questionnaire will replace this). */
+  /** Visitor tapped "Continue →" inside the checklist bubble. Acknowledges
+   *  the tick state, lists the missing items, then opens the Phase 3
+   *  pre-payment questionnaire (Q1 → Q2 → Q3 → quote summary). */
   const onSpecializedContinue = (
     biz: SpecializedBusiness,
     missingIdx: number[]
@@ -941,47 +987,364 @@ function WhatsAppChatPanel({
     if (missingIdx.length === 0) {
       addBotMessage(
         `Great — you already have the full ${biz.label} compliance pack. ` +
-          `We'll calculate the price after the next 3 questions (Phase 3 ` +
-          `coming soon). For now, Maryam will follow up shortly with a quote.`,
-        [
-          { label: "Request a call back", onClick: () => onPickCallback() },
-          { label: "← Back to specialized businesses", onClick: () => onMenuBack() },
-          { label: "Back to main menu", onClick: () => showMainMenu() },
-        ]
+          `Three quick questions before we finalise the price.`
       );
-      // Capture the interim lead so CSO sees the visitor's path even though
-      // Phase 3 isn't live yet.
-      captureLead("free_text", `Specialized:${biz.id} | missing:none`);
-      return;
+    } else {
+      const missingList = missingIdx
+        .map((i) => `• ${biz.checklist[i].title}`)
+        .join("\n");
+      addBotMessage(
+        `Got it. Based on what you ticked, here's what's still missing for a ` +
+          `${biz.label} setup:\n\n${missingList}`
+      );
     }
-
-    const missingList = missingIdx
-      .map((i) => `• ${biz.checklist[i].title}`)
-      .join("\n");
-    const text =
-      `Got it. Based on what you ticked, here's what's still missing for a ` +
-      `${biz.label} setup:\n\n${missingList}\n\n` +
-      `We'll calculate the price after the next 3 questions (Phase 3 coming ` +
-      `soon). For now, Maryam will follow up shortly with a quote.`;
-
-    addBotMessage(text, [
-      { label: "Request a call back", onClick: () => onPickCallback() },
-      { label: "← Back to specialized businesses", onClick: () => onMenuBack() },
-      { label: "Back to main menu", onClick: () => showMainMenu() },
-    ]);
-
-    captureLead(
-      "free_text",
-      `Specialized:${biz.id} | missing:${missingIdx
-        .map((i) => biz.checklist[i].title)
-        .join(", ")}`
-    );
 
     // Catch-all #25: extra free-text hint nudging the visitor to type their
     // exact business so the team can send a tailored checklist.
     if (biz.notes) {
-      addBotMessage(biz.notes, undefined, 1500);
+      addBotMessage(biz.notes, undefined, 1400);
     }
+
+    captureLead(
+      "free_text",
+      `Specialized:${biz.id} | missing:${
+        missingIdx.length === 0
+          ? "none"
+          : missingIdx.map((i) => biz.checklist[i].title).join(", ")
+      }`
+    );
+
+    // Open the pre-payment questionnaire — fires Q1 first.
+    startPrepayment({
+      businessId: biz.id,
+      missingChecklistCount: missingIdx.length,
+    });
+  };
+
+  /* ════════════════════════════════════════════════════════════════════════
+     Phase 3 (v16): PRE-PAYMENT QUESTIONNAIRE
+     ----------------------------------------------------------------------
+     Q1 — foreigner directors (always fires; both Bizdoc paths involve new
+          CAC registration). Tooltip 1 explains the difference.
+     Q2 — entity type. Tooltip 2 explains BN vs Ltd.
+     Q3 — share capital (Ltd / PLC only). Tooltip 3 explains share capital.
+          Greys out options below the legal floor for the chosen business
+          and force-locks ₦100M when foreigner = Yes.
+     Quote — calculateBizdocPrice() produces a placeholder breakdown.
+     ──────────────────────────────────────────────────────────────────── */
+
+  const startPrepayment = (input: {
+    businessId?: string;
+    missingChecklistCount: number;
+  }) => {
+    prepaymentRef.current = {
+      businessId: input.businessId,
+      step: "q1",
+      missingChecklistCount: input.missingChecklistCount,
+    };
+    addBotMessage(
+      "Before we finalise the price, three quick questions — these affect " +
+        "what you legally need and what it costs."
+    );
+    askQ1();
+  };
+
+  /** Standalone "CAC Business Registration" leaf (Group 1) — skips the
+   *  document checklist and goes straight to Q1. */
+  const onPickBizdocCacLeaf = () => {
+    startPrepayment({ businessId: undefined, missingChecklistCount: 0 });
+  };
+
+  // ── Q1 (foreigner) ──────────────────────────────────────────────────
+  const askQ1 = () => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    prepaymentRef.current = { ...state, step: "q1", pausedForTooltip: undefined };
+    addBotMessage(
+      "Are any of the directors or shareholders foreign nationals (non-Nigerian citizens)?",
+      [
+        { label: "Yes — at least one foreigner on board", onClick: () => answerQ1(true) },
+        { label: "No — all Nigerian citizens",            onClick: () => answerQ1(false) },
+        { label: "❓ What's the difference / why does this matter?",
+          onClick: () => showTooltip("q1") },
+      ],
+      900
+    );
+  };
+
+  const answerQ1 = (hasForeigner: boolean) => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    addUserMessage(hasForeigner ? "Yes — at least one foreigner on board" : "No — all Nigerian citizens");
+    prepaymentRef.current = { ...state, hasForeigner, step: "q2" };
+    askQ2();
+  };
+
+  // ── Q2 (entity) ─────────────────────────────────────────────────────
+  const askQ2 = () => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    prepaymentRef.current = { ...state, step: "q2", pausedForTooltip: undefined };
+    addBotMessage(
+      "What entity type do you want to register?",
+      [
+        { label: "Limited Liability Company (Ltd) — most common",   onClick: () => answerQ2("ltd") },
+        { label: "Business Name (BN) — sole trader / simple partnership", onClick: () => answerQ2("bn") },
+        { label: "Public Limited Company (PLC) — for raising public capital", onClick: () => answerQ2("plc") },
+        { label: "Incorporated Trustee — NGO, religious org, foundation", onClick: () => answerQ2("trustee") },
+        { label: "❓ Help me decide — what's the difference?", onClick: () => showTooltip("q2") },
+      ],
+      900
+    );
+  };
+
+  const answerQ2 = (entity: EntityType) => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    const labels: Record<EntityType, string> = {
+      ltd: "Limited Liability Company (Ltd)",
+      bn: "Business Name (BN)",
+      plc: "Public Limited Company (PLC)",
+      trustee: "Incorporated Trustee",
+    };
+    addUserMessage(labels[entity]);
+    const next: NonNullable<PrepaymentState> = { ...state, entity };
+
+    // Q3 only fires for Ltd / PLC. BN + Trustee skip straight to summary
+    // with a default share capital of 0 (no stamp duty applies).
+    if (entity === "ltd" || entity === "plc") {
+      next.step = "q3";
+      prepaymentRef.current = next;
+      askQ3();
+    } else {
+      next.step = "summary";
+      next.shareCapital = 0;
+      prepaymentRef.current = next;
+      showQuote();
+    }
+  };
+
+  // ── Q3 (share capital) ──────────────────────────────────────────────
+  const askQ3 = () => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    prepaymentRef.current = { ...state, step: "q3", pausedForTooltip: undefined };
+
+    const biz = state.businessId
+      ? BIZDOC_SPECIALIZED.find((b) => b.id === state.businessId)
+      : undefined;
+    const businessMin = biz?.minShareCapital;
+    const floor = effectiveShareCapitalFloor({
+      businessMin,
+      hasForeigner: state.hasForeigner === true,
+    });
+
+    // Compose quick-replies — disabled options are still rendered as
+    // labels-only buttons that explain why they're locked.
+    const replies: QuickReply[] = SHARE_CAPITAL_OPTIONS.map((opt) => {
+      const disabled = opt.value < floor;
+      if (disabled) {
+        return {
+          label: `${opt.label} — locked (legal min ${formatNaira(floor)})`,
+          onClick: () => {
+            // Soft-tap explanation; does not advance the flow.
+            addUserMessage(`Tapped locked option (${formatNaira(opt.value)})`);
+            addBotMessage(
+              `That option is below the legal minimum for your setup. ` +
+                `The lowest you can pick is ${formatNaira(floor)}. ` +
+                `Pick one of the available options to continue.`,
+              undefined,
+              500
+            );
+          },
+        };
+      }
+      return {
+        label: opt.label,
+        onClick: () => answerQ3(opt.value),
+      };
+    });
+
+    // "Higher" catch-all — always available.
+    replies.push({
+      label: "Higher — I have a specialized industry requirement",
+      onClick: () => {
+        addUserMessage("Higher — I have a specialized industry requirement");
+        // For Phase 3 we treat "Higher" as exactly the floor + 100M as a
+        // safe placeholder so the price quote can still render. CSO will
+        // refine on follow-up. Capture so the team sees it.
+        captureLead("free_text", `Prepayment | shareCapital:HIGHER (placeholder)`);
+        answerQ3(Math.max(floor, 100_000_000));
+      },
+    });
+
+    // Tooltip
+    replies.push({
+      label: "❓ What is share capital and how do I choose?",
+      onClick: () => showTooltip("q3"),
+    });
+
+    // Floor explanation: when the business or foreigner rule pushes the
+    // floor above ₦1M, send a short bot message before the question.
+    if (floor > 1_000_000) {
+      const reason =
+        state.hasForeigner === true && (!businessMin || businessMin < 100_000_000)
+          ? `because at least one director is foreign, CAC mandates at least ${formatNaira(floor)} share capital.`
+          : biz
+            ? `for ${biz.label}, the legal minimum share capital is ${formatNaira(floor)}.`
+            : `the legal minimum share capital is ${formatNaira(floor)}.`;
+      addBotMessage(`Heads up — ${reason} Lower options are locked.`, undefined, 700);
+    }
+
+    addBotMessage(
+      "What share capital do you want to register with?",
+      replies,
+      1000
+    );
+  };
+
+  const answerQ3 = (shareCapital: number) => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    addUserMessage(formatNaira(shareCapital));
+    prepaymentRef.current = { ...state, shareCapital, step: "summary" };
+    showQuote();
+  };
+
+  // ── Tooltip flow ────────────────────────────────────────────────────
+  const showTooltip = (which: "q1" | "q2" | "q3") => {
+    const state = prepaymentRef.current;
+    if (!state) return;
+    addUserMessage(
+      which === "q1"
+        ? "❓ What's the difference / why does this matter?"
+        : which === "q2"
+          ? "❓ Help me decide — what's the difference?"
+          : "❓ What is share capital and how do I choose?"
+    );
+    prepaymentRef.current = { ...state, pausedForTooltip: which };
+    const text =
+      which === "q1" ? TOOLTIP_FOREIGNER
+        : which === "q2" ? TOOLTIP_ENTITY
+          : TOOLTIP_SHARE_CAPITAL;
+    addBotMessage(text, [
+      { label: "Got it — back to questions", onClick: () => resumeFromTooltip() },
+    ], 800);
+  };
+
+  const resumeFromTooltip = () => {
+    const state = prepaymentRef.current;
+    if (!state || !state.pausedForTooltip) return;
+    addUserMessage("Got it — back to questions");
+    const which = state.pausedForTooltip;
+    if (which === "q1") askQ1();
+    else if (which === "q2") askQ2();
+    else askQ3();
+  };
+
+  // ── Quote summary ──────────────────────────────────────────────────
+  const showQuote = () => {
+    const state = prepaymentRef.current;
+    if (!state || state.entity === undefined) return;
+    const biz = state.businessId
+      ? BIZDOC_SPECIALIZED.find((b) => b.id === state.businessId)
+      : undefined;
+    const quote: PriceQuote = calculateBizdocPrice({
+      businessId: state.businessId,
+      entity: state.entity,
+      hasForeigner: state.hasForeigner === true,
+      shareCapital: state.shareCapital ?? 0,
+      missingChecklistCount: state.missingChecklistCount,
+    });
+
+    // Build the bullet summary per spec format.
+    const bullets: string[] = [];
+    if (biz) bullets.push(`• ${biz.label} specialised setup`);
+    bullets.push(
+      `• ${
+        state.entity === "ltd" ? "Limited Liability Company (Ltd)"
+          : state.entity === "bn" ? "Business Name (BN)"
+            : state.entity === "plc" ? "Public Limited Company (PLC)"
+              : "Incorporated Trustee"
+      }`
+    );
+    if (state.hasForeigner) {
+      bullets.push("• Foreign director on board → CERPAC + business permit added");
+    }
+    if (state.shareCapital && state.shareCapital > 0) {
+      bullets.push(`• Share capital ${formatNaira(state.shareCapital)}`);
+      bullets.push("• CAC stamp duty calculated at 0.75% of share capital");
+    }
+
+    const summary =
+      `Based on your answers:\n\n${bullets.join("\n")}\n\n` +
+      `Total: ${formatNaira(quote.total)}\n` +
+      `Estimated timeline: ${quote.timelineWeeks}\n` +
+      (state.missingChecklistCount > 0
+        ? `Includes everything from your checklist.\n\n`
+        : `\n`) +
+      `Breakdown:\n${quote.breakdown.map((b) => `  – ${b}`).join("\n")}`;
+
+    const deposit = Math.round(quote.total / 2);
+    addBotMessage(summary, [
+      { label: "Proceed — full payment",                 onClick: () => onPaymentChoice("full", quote.total) },
+      { label: `Pay 50% deposit (${formatNaira(deposit)}) to start`, onClick: () => onPaymentChoice("deposit", deposit) },
+      { label: "I have more questions",                  onClick: () => onPaymentChoice("more_questions", 0) },
+    ], 1100);
+
+    captureLead(
+      "free_text",
+      `Prepayment quote | biz:${state.businessId ?? "cac_only"} | entity:${state.entity}` +
+        ` | foreigner:${state.hasForeigner ? "yes" : "no"} | shareCapital:${state.shareCapital ?? 0}` +
+        ` | total:${quote.total}`
+    );
+  };
+
+  /** Phase 3 stub — Phase 5 will wire the real bank-transfer + paid-status
+   *  flow. For now, route all three CTAs to a placeholder hand-off. */
+  const onPaymentChoice = (
+    choice: "full" | "deposit" | "more_questions",
+    amount: number
+  ) => {
+    if (choice === "more_questions") {
+      addUserMessage("I have more questions");
+      addBotMessage(
+        "No problem — Maryam will reach out with answers and walk you through " +
+          "the next steps. What's the best number to reach you on?",
+        [
+          {
+            label: `Or call us now: +${CSO_PHONE}`,
+            onClick: () => {
+              if (typeof window !== "undefined") window.location.href = `tel:+${CSO_PHONE}`;
+            },
+          },
+        ]
+      );
+      setAwaitingCallback(true);
+      prepaymentRef.current = null;
+      return;
+    }
+
+    addUserMessage(
+      choice === "full"
+        ? "Proceed — full payment"
+        : `Pay 50% deposit (${formatNaira(amount)}) to start`
+    );
+    addBotMessage(
+      `Got it — ${choice === "full" ? `full payment of ${formatNaira(amount)}` : `50% deposit of ${formatNaira(amount)}`} ` +
+        `noted. Phase 5 will wire up bank details + paid-status flow here. ` +
+        `For now, Maryam will follow up shortly to confirm transfer details.`,
+      [
+        { label: "Request a call back", onClick: () => onPickCallback() },
+        { label: "Back to main menu", onClick: () => showMainMenu() },
+      ],
+      900
+    );
+    captureLead(
+      "free_text",
+      `Prepayment ${choice} | amount:${amount}`
+    );
+    prepaymentRef.current = null;
   };
 
   /** Diagnostic leaf tapped — open route in a new tab. */
