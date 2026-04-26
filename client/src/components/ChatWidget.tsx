@@ -20,6 +20,7 @@ import {
   type EntityType,
   type PriceQuote,
 } from "@/lib/bizdoc-prepayment";
+import { postToAppsScript } from "@/lib/apps-script";
 
 /* ══════════════════════════════════════════════════════════════════════════
    HAMZURY Chat — v12: TRUE WhatsApp-style chat interface
@@ -682,6 +683,73 @@ type PrepaymentState = null | {
   pausedForTooltip?: "q1" | "q2" | "q3";  // which question to resume after tooltip
 };
 
+/* Phase 5 (v17) — Closing flow state.
+ *
+ *  After a service is committed to (Bizdoc post-quote OR a non-Bizdoc
+ *  service-detail tap), we run a single shared closing sequence:
+ *    bank details → "I've paid" → affiliate question → requirement form.
+ *  See client/src/lib/apps-script.ts and the spec sections "SHARED ELEMENTS
+ *  — Closing sequence" and "SINGLE POINT OF CONTACT RULE" for details. */
+type ClosingState = null | {
+  serviceId: string;          // which service was committed to
+  serviceName: string;
+  pricing: { total: number; depositPercent?: number };
+  step:
+    | "bank"
+    | "paid_choice"
+    | "affiliate"
+    | "affiliate_code_text"   // free-text for "affiliate code" / "content"
+    | "complete";
+  paymentChoice?: "full" | "deposit";
+  affiliateAnswer?: string;
+  affiliateCode?: string;
+  ref?: string;               // generated when "I've paid" is tapped
+};
+
+/* ── Bank account details shown in the closing flow ─────────────────────
+ *  TODO: Founder will swap these placeholder values for the real Hamzury
+ *  Limited account before launch. Centralised here so a single edit
+ *  flips them across every closing-flow message. */
+const BANK_DETAILS = {
+  bankName: "GTBank",                // TODO: replace with real bank
+  accountName: "Hamzury Limited",    // TODO: confirm exact registered name
+  accountNumber: "0123456789",       // TODO: replace with real account number
+};
+
+/** Ref generator mirrors `generateRef(phone?)` in `server/db.ts`:
+ *    HMZ-YY/M-XXXX  (last 4 phone digits, or random when phone missing).
+ *  Used client-side when the visitor taps "I've paid" so we can show the
+ *  reference immediately without waiting for a server round-trip. */
+function generateClientRef(phone?: string | null): string {
+  const now = new Date();
+  const yy = String(now.getFullYear()).slice(-2);
+  const m = String(now.getMonth() + 1);
+  const digits = phone ? phone.replace(/\D/g, "") : "";
+  const last4 =
+    digits.length >= 4
+      ? digits.slice(-4)
+      : String(Math.floor(1000 + Math.random() * 9000));
+  return `HMZ-${yy}/${m}-${last4}`;
+}
+
+/** Map a service id (real or `phase2_*` placeholder) to the requirement
+ *  form route we open in a new tab after the affiliate step. Real ids
+ *  live under /requirements/<id>; `phase2_*` placeholders haven't been
+ *  built yet so we route to a generic placeholder URL.
+ *
+ *  TODO: Build /requirements/general (or replace per-service phase2_*
+ *  routes) before launch — until then visitors land on a placeholder. */
+function requirementFormUrl(serviceId: string, ref: string): string {
+  const realIds = new Set([
+    "cac", "tin", "licences", "plan", "trademark", "compliance",
+    "website", "crm", "ai_integration", "automation", "ecommerce", "software_mgmt",
+    "brand", "social", "podcast", "content_strategy", "video", "media_mgmt",
+    "tech_training", "ai_business", "entrepreneurship", "team_training", "certification", "skills_mgmt",
+  ]);
+  const idForUrl = realIds.has(serviceId) ? serviceId : "general";
+  return `/requirements/${idForUrl}?ref=${encodeURIComponent(ref)}`;
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    WHATSAPP-STYLE CHAT PANEL
    ══════════════════════════════════════════════════════════════════════════ */
@@ -717,6 +785,24 @@ function WhatsAppChatPanel({
    *  state so React re-renders if the UI ever needs to read it directly,
    *  but every handler reads/writes the ref. */
   const prepaymentRef = useRef<PrepaymentState>(null);
+
+  /* ── Phase 5 (v17): Closing flow state ─────────────────────────────────
+   *  Same ref pattern as prepaymentRef — survives across chained bot
+   *  replies so each handler reads the latest snapshot synchronously. */
+  const closingRef = useRef<ClosingState>(null);
+
+  /* ── Last interest tracker ─────────────────────────────────────────────
+   *  We log the last service / topic the visitor expressed interest in
+   *  so a callback request can be tagged with what they were looking
+   *  at. Updated whenever a service leaf or specialised business is
+   *  picked. */
+  const lastInterestRef = useRef<string>("");
+
+  /* ── Phone tracker ─────────────────────────────────────────────────────
+   *  The visitor's phone is captured either by the call-back flow or
+   *  any free-text bubble that looks like a phone. Stored so the
+   *  closing flow can stamp the ref + Apps Script payload with it. */
+  const phoneRef = useRef<string>("");
 
   /* ── Menu navigation stack (Phase 1 grouped menus) ──────────────────────
    *  Each entry is the GROUP NODE the visitor drilled into, in order. The
@@ -773,7 +859,11 @@ function WhatsAppChatPanel({
     []
   );
 
-  /** Capture a lead — v1 stores in component state + console.log.
+  /** Capture a lead — v1 stores in component state + console.log, plus
+   *  dual-writes to the Apps Script webhook (Phase 5). The console.log
+   *  is preserved so a tRPC mirror can be wired up in a later phase
+   *  without losing the dev-friendly log line.
+   *
    *  TODO: wire to `trpc.leads.create` once that endpoint lands. */
   const captureLead = useCallback(
     (kind: CapturedLead["kind"], payload: string) => {
@@ -781,6 +871,16 @@ function WhatsAppChatPanel({
       setLeads((prev) => [...prev, lead]);
       // eslint-disable-next-line no-console
       console.log("[ChatWidget] lead captured (v1 — replace with tRPC):", lead);
+      // Dual-write to Apps Script (fire-and-forget, errors swallowed).
+      postToAppsScript({
+        formType: "leadCapture",
+        site: companyKey,
+        data: {
+          source: kind === "callback" ? "chat_callback" : "chat_freetext",
+          details: payload,
+          phone: phoneRef.current || undefined,
+        },
+      });
     },
     [companyKey]
   );
@@ -917,7 +1017,13 @@ function WhatsAppChatPanel({
   ): Service | undefined =>
     SERVICE_CATALOG.find((s) => s.id === leaf.serviceId);
 
-  /** Service leaf tapped — show description + diagnose / callback / back. */
+  /** Service leaf tapped — show description, free diagnosis, callback,
+   *  and (Phase 5) a "Pay & start" CTA that opens the closing flow with
+   *  a placeholder price reveal. The placeholder language is intentional:
+   *  Scalar / Medialy / HUB don't have firm pricing yet, so the bot
+   *  shows a "₦XXX,XXX (we'll confirm exact pricing on a quick call)"
+   *  message and routes to the same shared closing sequence Bizdoc uses
+   *  after its quote summary. */
   const onPickServiceLeaf = (
     leaf: Extract<MenuNode, { kind: "service" }>
   ) => {
@@ -926,7 +1032,12 @@ function WhatsAppChatPanel({
       leaf.subtitle ?? meta?.blurb ??
       "Our team will walk you through scope, timeline and price.";
     const flagshipPrefix = leaf.flagship ? "★ Flagship — " : "";
+    lastInterestRef.current = leaf.label;
     addBotMessage(`${flagshipPrefix}${leaf.label} — ${subtitle}`, [
+      {
+        label: "Pay & start",
+        onClick: () => onCommitNonBizdocService(leaf),
+      },
       {
         label: "Take the free diagnosis",
         onClick: () => onLaunchDiagnosis(meta),
@@ -934,6 +1045,28 @@ function WhatsAppChatPanel({
       { label: "Request a call back", onClick: () => onPickCallback() },
       { label: "← Back", onClick: () => renderCurrentLevel() },
     ]);
+  };
+
+  /** Phase 5: visitor committed to a non-Bizdoc service from the
+   *  service-detail bubble. We surface a placeholder price reveal
+   *  ("₦XXX,XXX (we'll confirm…)") and start the shared closing flow.
+   *  Real pricing comes later via the Pay-as-you-go price book. */
+  const onCommitNonBizdocService = (
+    leaf: Extract<MenuNode, { kind: "service" }>
+  ) => {
+    addUserMessage("Pay & start");
+    addBotMessage(
+      `Great — ${leaf.label}.\n\n` +
+        `₦XXX,XXX (we'll confirm exact pricing on a quick call once we ` +
+        `understand your specific brief).`,
+      undefined,
+      700,
+    );
+    startClosingFlow({
+      serviceId: leaf.serviceId,
+      serviceName: leaf.label,
+      pricing: { total: 0 },
+    });
   };
 
   /** Specialized-business leaf tapped (Phase 2 — Bizdoc Group 4).
@@ -965,6 +1098,7 @@ function WhatsAppChatPanel({
       `registrations. Tick what you already have so we know exactly what ` +
       `to help you with.`;
 
+    lastInterestRef.current = `Specialized: ${biz.label}`;
     addBotChecklistMessage(intro, {
       items: biz.checklist,
       onContinue: (missingIdx) => onSpecializedContinue(biz, missingIdx),
@@ -1005,14 +1139,28 @@ function WhatsAppChatPanel({
       addBotMessage(biz.notes, undefined, 1400);
     }
 
+    const missingDetail =
+      missingIdx.length === 0
+        ? "none"
+        : missingIdx.map((i) => biz.checklist[i].title).join(", ");
+
     captureLead(
       "free_text",
-      `Specialized:${biz.id} | missing:${
-        missingIdx.length === 0
-          ? "none"
-          : missingIdx.map((i) => biz.checklist[i].title).join(", ")
-      }`
+      `Specialized:${biz.id} | missing:${missingDetail}`
     );
+
+    // Phase 5: also dual-write a `specialized_business` source so the
+    // Apps Script tab can distinguish a checklist hand-off from a
+    // free-text bubble. (captureLead already wrote "chat_freetext".)
+    postToAppsScript({
+      formType: "leadCapture",
+      site: "bizdoc",
+      data: {
+        source: "specialized_business",
+        details: `${biz.id} | missing: ${missingDetail}`,
+        phone: phoneRef.current || undefined,
+      },
+    });
 
     // Open the pre-payment questionnaire — fires Q1 first.
     startPrepayment({
@@ -1052,6 +1200,7 @@ function WhatsAppChatPanel({
   /** Standalone "CAC Business Registration" leaf (Group 1) — skips the
    *  document checklist and goes straight to Q1. */
   const onPickBizdocCacLeaf = () => {
+    lastInterestRef.current = "CAC Business Registration";
     startPrepayment({ businessId: undefined, missingChecklistCount: 0 });
   };
 
@@ -1300,8 +1449,10 @@ function WhatsAppChatPanel({
     );
   };
 
-  /** Phase 3 stub — Phase 5 will wire the real bank-transfer + paid-status
-   *  flow. For now, route all three CTAs to a placeholder hand-off. */
+  /** Phase 5 (v17): wired from the Bizdoc quote summary CTAs. "More
+   *  questions" routes to the callback flow; "full" / "deposit" both
+   *  open the shared closing flow (bank details → paid → affiliate
+   *  → requirement form link). */
   const onPaymentChoice = (
     choice: "full" | "deposit" | "more_questions",
     amount: number
@@ -1330,21 +1481,185 @@ function WhatsAppChatPanel({
         ? "Proceed — full payment"
         : `Pay 50% deposit (${formatNaira(amount)}) to start`
     );
-    addBotMessage(
-      `Got it — ${choice === "full" ? `full payment of ${formatNaira(amount)}` : `50% deposit of ${formatNaira(amount)}`} ` +
-        `noted. Phase 5 will wire up bank details + paid-status flow here. ` +
-        `For now, Maryam will follow up shortly to confirm transfer details.`,
-      [
-        { label: "Request a call back", onClick: () => onPickCallback() },
-        { label: "Back to main menu", onClick: () => showMainMenu() },
-      ],
-      900
-    );
+
     captureLead(
       "free_text",
       `Prepayment ${choice} | amount:${amount}`
     );
+
+    // Resolve the service id + display name from the prepayment state.
+    const ps = prepaymentRef.current;
+    const biz = ps?.businessId
+      ? BIZDOC_SPECIALIZED.find((b) => b.id === ps.businessId)
+      : undefined;
+    const serviceId = ps?.businessId ?? "cac";
+    const serviceName = biz ? `${biz.label} setup` : "CAC Business Registration";
+
+    // Compute the "total" we'll quote in the closing-flow bank message:
+    // - "full": amount IS the full total
+    // - "deposit": amount is half of the total
+    const total = choice === "deposit" ? amount * 2 : amount;
+    const depositPercent = choice === "deposit" ? 50 : undefined;
+
     prepaymentRef.current = null;
+    startClosingFlow({
+      serviceId,
+      serviceName,
+      pricing: { total, depositPercent },
+    });
+  };
+
+  /* ════════════════════════════════════════════════════════════════════════
+     Phase 5 (v17): CLOSING FLOW
+     ----------------------------------------------------------------------
+     bank details → "I've paid" → affiliate question → requirement form.
+     Spec: MASTER-CHAT-FLOW.md "SHARED ELEMENTS — Closing sequence" and
+     "SINGLE POINT OF CONTACT RULE".
+     ──────────────────────────────────────────────────────────────────── */
+  const startClosingFlow = (input: {
+    serviceId: string;
+    serviceName: string;
+    pricing: { total: number; depositPercent?: number };
+  }) => {
+    closingRef.current = {
+      serviceId: input.serviceId,
+      serviceName: input.serviceName,
+      pricing: input.pricing,
+      step: "bank",
+    };
+    showBankDetails();
+  };
+
+  const showBankDetails = () => {
+    const state = closingRef.current;
+    if (!state) return;
+    addBotMessage(
+      `Pay into:\n\n` +
+        `Bank: ${BANK_DETAILS.bankName}\n` +
+        `Account Name: ${BANK_DETAILS.accountName}\n` +
+        `Account Number: ${BANK_DETAILS.accountNumber}\n\n` +
+        `Once you've sent the transfer, tap below.`,
+      [
+        { label: "✓ I've paid in full",       onClick: () => onIvePaid("full") },
+        { label: "✓ I've paid 50% deposit",   onClick: () => onIvePaid("deposit") },
+        { label: "Question first",            onClick: () => onClosingQuestion() },
+      ],
+      900,
+    );
+    closingRef.current = { ...state, step: "paid_choice" };
+  };
+
+  const onClosingQuestion = () => {
+    addUserMessage("Question first");
+    addBotMessage(
+      "No problem — Maryam will pick this up. What's the best number to reach you on?",
+      [
+        {
+          label: `Or call us now: +${CSO_PHONE}`,
+          onClick: () => {
+            if (typeof window !== "undefined") window.location.href = `tel:+${CSO_PHONE}`;
+          },
+        },
+      ],
+    );
+    setAwaitingCallback(true);
+    closingRef.current = null;
+  };
+
+  const onIvePaid = (choice: "full" | "deposit") => {
+    const state = closingRef.current;
+    if (!state) return;
+    addUserMessage(choice === "full" ? "✓ I've paid in full" : "✓ I've paid 50% deposit");
+    const ref = generateClientRef(phoneRef.current || undefined);
+    closingRef.current = {
+      ...state,
+      step: "affiliate",
+      paymentChoice: choice,
+      ref,
+    };
+    addBotMessage(
+      "Thanks! Quick question — how did you hear about us?",
+      [
+        { label: "A friend",                onClick: () => onAffiliatePick("A friend") },
+        { label: "Instagram",               onClick: () => onAffiliatePick("Instagram") },
+        { label: "Google search",           onClick: () => onAffiliatePick("Google search") },
+        { label: "I have an affiliate code", onClick: () => onAffiliatePick("affiliate code") },
+        { label: "A piece of content",      onClick: () => onAffiliatePick("content") },
+        { label: "Other",                   onClick: () => onAffiliatePick("Other") },
+      ],
+      800,
+    );
+  };
+
+  const onAffiliatePick = (answer: string) => {
+    const state = closingRef.current;
+    if (!state) return;
+    addUserMessage(
+      answer === "affiliate code"
+        ? "I have an affiliate code"
+        : answer === "content"
+          ? "A piece of content"
+          : answer,
+    );
+    closingRef.current = { ...state, affiliateAnswer: answer };
+
+    // Free-text follow-up for "affiliate code" or "content".
+    if (answer === "affiliate code" || answer === "content") {
+      closingRef.current = { ...closingRef.current!, step: "affiliate_code_text" };
+      const prompt =
+        answer === "affiliate code"
+          ? "Got it — please type the affiliate code below."
+          : "Got it — please type which piece of content (link, title, or short description) below.";
+      addBotMessage(prompt, undefined, 700);
+      setAwaitingAffiliateText(true);
+      return;
+    }
+
+    finishClosing();
+  };
+
+  const finishClosing = () => {
+    const state = closingRef.current;
+    if (!state) return;
+    const ref = state.ref ?? generateClientRef(phoneRef.current || undefined);
+    const formUrl = requirementFormUrl(state.serviceId, ref);
+
+    addBotMessage(
+      `Welcome to ${company.name} 🎉\n` +
+        `Reference: ${ref}\n\n` +
+        `Please fill out this short form so we can begin work.`,
+      [
+        {
+          label: "Open requirement form →",
+          onClick: () => {
+            if (typeof window !== "undefined") {
+              window.open(formUrl, "_blank", "noopener,noreferrer");
+            }
+          },
+        },
+        { label: "Back to main menu", onClick: () => showMainMenu() },
+      ],
+      900,
+    );
+
+    // Phase 5: dual-write the "chat_paid" lead to Apps Script. The
+    // existing captureLead() console-logs an internal record; this fires
+    // the additional Apps Script payload so the workspace sees it.
+    postToAppsScript({
+      formType: "leadCapture",
+      site: companyKey,
+      data: {
+        source: "chat_paid",
+        details:
+          `${state.serviceName} | ${state.paymentChoice ?? "?"} | ` +
+          `affiliate: ${state.affiliateAnswer ?? "?"}` +
+          (state.affiliateCode ? ` (${state.affiliateCode})` : ""),
+        phone: phoneRef.current || undefined,
+        ref,
+      },
+    });
+
+    closingRef.current = { ...state, step: "complete" };
   };
 
   /** Diagnostic leaf tapped — open route in a new tab. */
@@ -1424,6 +1739,8 @@ function WhatsAppChatPanel({
 
   /* ── Call-back flow — collects a phone number ──────────────────────── */
   const [awaitingCallback, setAwaitingCallback] = useState(false);
+  /* Phase 5: free-text follow-up for "affiliate code" / "content" picks. */
+  const [awaitingAffiliateText, setAwaitingAffiliateText] = useState(false);
 
   const onPickCallback = () => {
     addUserMessage("Request a call back");
@@ -1445,7 +1762,20 @@ function WhatsAppChatPanel({
 
   const finishCallback = (phone: string) => {
     setAwaitingCallback(false);
+    phoneRef.current = phone;
     captureLead("callback", phone);
+    // Phase 5: dual-write a "chat_callback" Apps Script lead with the
+    // last interest the visitor expressed (so the CSO sees what they
+    // were looking at when they asked for the call).
+    postToAppsScript({
+      formType: "leadCapture",
+      site: companyKey,
+      data: {
+        source: "chat_callback",
+        details: lastInterestRef.current || "(no specific interest yet)",
+        phone,
+      },
+    });
     addBotMessage(
       "Got it. Maryam will call you within 1 hour during business hours (Mon-Fri 9am-5pm WAT). Anything else?",
       [
@@ -1499,11 +1829,26 @@ function WhatsAppChatPanel({
     setInputValue("");
     addUserMessage(text);
 
+    // Phase 5: closing-flow follow-up for "affiliate code" / "content".
+    if (awaitingAffiliateText && closingRef.current?.step === "affiliate_code_text") {
+      setAwaitingAffiliateText(false);
+      closingRef.current = { ...closingRef.current, affiliateCode: text };
+      finishClosing();
+      return;
+    }
+
     // Phone-number capture: if we're waiting for a callback number AND the
     // text looks like a phone, treat it as the answer.
     if (awaitingCallback && /\d/.test(text) && text.replace(/\D/g, "").length >= 7) {
       finishCallback(text);
       return;
+    }
+
+    // Opportunistic phone capture from any free-text bubble — if the
+    // visitor types something that strongly looks like a phone, store
+    // it so the closing flow / Apps Script call can stamp leads with it.
+    if (/\d/.test(text) && text.replace(/\D/g, "").length >= 10 && !phoneRef.current) {
+      phoneRef.current = text;
     }
 
     captureLead("free_text", text);
@@ -1648,7 +1993,13 @@ function WhatsAppChatPanel({
               onSendFreeText();
             }
           }}
-          placeholder={awaitingCallback ? "Type your phone number…" : "Type your message…"}
+          placeholder={
+            awaitingAffiliateText
+              ? "Type the affiliate code or content…"
+              : awaitingCallback
+                ? "Type your phone number…"
+                : "Type your message…"
+          }
           aria-label="Type your message"
           style={{
             flex: 1,
