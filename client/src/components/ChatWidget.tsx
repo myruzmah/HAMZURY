@@ -711,9 +711,9 @@ type ClosingState = null | {
  *  Limited account before launch. Centralised here so a single edit
  *  flips them across every closing-flow message. */
 const BANK_DETAILS = {
-  bankName: "GTBank",                // TODO: replace with real bank
-  accountName: "Hamzury Limited",    // TODO: confirm exact registered name
-  accountNumber: "0123456789",       // TODO: replace with real account number
+  bankName: "MoniePoint Bank",
+  accountName: "Hamzury",
+  accountNumber: "8034620520",
 };
 
 /** Ref generator mirrors `generateRef(phone?)` in `server/db.ts`:
