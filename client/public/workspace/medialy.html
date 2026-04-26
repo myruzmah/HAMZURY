@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medialy — Production Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #0F0F12;
+    --panel: #18181C;
+    --panel-2: #1F1F24;
+    --line: #2A2A30;
+    --line-soft: #232328;
+    --ink: #F5F5F2;
+    --ink-soft: #C7C7CC;
+    --ink-muted: #86868B;
+    --ink-faint: #5C5C62;
+    --accent: #E2C091;
+    --accent-deep: #B8731F;
+    --success: #4FCB7E;
+    --warn: #FFC542;
+    --danger: #FF6B5C;
+    --info: #5BB8FF;
+    --focus: rgba(226,192,145,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.005em;
+    overflow: hidden;
+  }
+
+  /* ============ LOGIN ============ */
+  .login-screen {
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(226,192,145,0.08), transparent 50%),
+      radial-gradient(circle at 75% 80%, rgba(91,184,255,0.05), transparent 50%),
+      var(--bg);
+  }
+  .login-card { width: 100%; max-width: 380px; padding: 40px; }
+  .login-brand {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 32px;
+    font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em;
+  }
+  .login-brand .dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); color: var(--bg);
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 15px; font-weight: 500;
+  }
+  .login-eyebrow {
+    font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 14px;
+  }
+  .login-title {
+    font-family: var(--serif); font-size: 36px; font-weight: 400;
+    letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 12px;
+  }
+  .login-title em { font-style: italic; color: var(--accent); }
+  .login-sub {
+    font-size: 14.5px; color: var(--ink-muted);
+    margin-bottom: 32px; line-height: 1.5;
+  }
+  .login-field { margin-bottom: 14px; }
+  .login-field label {
+    display: block; font-size: 12.5px; font-weight: 500;
+    color: var(--ink-soft); margin-bottom: 6px;
+  }
+  .login-input {
+    width: 100%; padding: 12px 14px;
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 10px; font: 400 15px var(--sans);
+    color: var(--ink); letter-spacing: -0.005em;
+  }
+  .login-input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--focus);
+  }
+  .login-btn {
+    width: 100%; padding: 13px 14px; border: none; border-radius: 10px;
+    background: var(--accent); color: var(--bg);
+    font: 500 15px var(--sans); cursor: pointer; margin-top: 10px;
+    transition: filter 0.12s; letter-spacing: -0.003em;
+  }
+  .login-btn:hover { filter: brightness(1.05); }
+  .login-btn:active { transform: scale(0.98); }
+  .login-error {
+    display: none; margin-top: 14px; padding: 10px 14px;
+    background: rgba(255,107,92,0.1); color: var(--danger);
+    border-radius: 8px; font-size: 13px;
+  }
+  .login-error.show { display: block; }
+  .login-hint {
+    margin-top: 24px; padding-top: 24px; border-top: 0.5px solid var(--line);
+    font-size: 12.5px; color: var(--ink-muted); line-height: 1.5;
+  }
+
+  /* ============ PORTAL SHELL ============ */
+  .portal {
+    display: none;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+  }
+  .portal.active { display: grid; }
+  @media (max-width: 900px) {
+    .portal.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .mobile-nav-btn { display: flex !important; }
+  }
+
+  .sidebar {
+    background: var(--panel);
+    border-right: 0.5px solid var(--line);
+    padding: 20px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+    overflow-y: auto;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 10px 18px;
+    font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.02em;
+  }
+  .brand-dot {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: var(--bg);
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 12px;
+  }
+  .sidebar-section {
+    padding: 18px 10px 6px;
+    font-size: 11.5px; font-weight: 500; color: var(--ink-muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 7px;
+    cursor: pointer; font-size: 14px; color: var(--ink-soft);
+    transition: background 0.12s; letter-spacing: -0.003em; font-weight: 400;
+    border: none; background: none; width: 100%; text-align: left; font-family: inherit;
+  }
+  .nav-item:hover { background: var(--panel-2); color: var(--ink); }
+  .nav-item.active {
+    background: var(--panel-2); color: var(--accent);
+    font-weight: 500;
+  }
+  .nav-icon {
+    width: 18px; height: 18px;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .nav-icon svg {
+    width: 16px; height: 16px;
+    stroke: currentColor; stroke-width: 1.5; fill: none;
+  }
+  .nav-count {
+    margin-left: auto; font-size: 11.5px;
+    background: var(--panel-2); padding: 1px 7px;
+    border-radius: 10px; color: var(--ink-muted);
+    min-width: 20px; text-align: center; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-item.active .nav-count { background: var(--accent); color: var(--bg); }
+  .nav-count.alert { background: var(--danger); color: #fff; }
+
+  .sidebar-footer {
+    margin-top: auto; padding: 12px 10px 4px;
+    border-top: 0.5px solid var(--line);
+  }
+  .user-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; color: var(--ink-soft); padding: 6px 0;
+  }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: var(--bg);
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 500;
+  }
+  .logout-btn {
+    width: 100%; margin-top: 6px; padding: 6px 10px;
+    background: none; border: none;
+    font: 400 12.5px var(--sans); color: var(--ink-muted);
+    text-align: left; cursor: pointer; border-radius: 6px;
+    font-family: inherit;
+  }
+  .logout-btn:hover { background: var(--panel-2); color: var(--ink); }
+
+  /* ============ MAIN ============ */
+  .main-area {
+    overflow: hidden; height: 100vh;
+    display: flex; flex-direction: column;
+  }
+  .main-header {
+    padding: 14px 28px; border-bottom: 0.5px solid var(--line);
+    background: rgba(15,15,18,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+  }
+  .mobile-nav-btn {
+    display: none;
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 0.5px solid var(--line); background: var(--panel);
+    cursor: pointer; place-items: center;
+  }
+  .mobile-nav-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+
+  .crumb-stack { flex: 1; min-width: 0; }
+  .crumb-eyebrow {
+    font-size: 11px; font-weight: 500; color: var(--ink-muted);
+    letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1px;
+  }
+  .crumb-title {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    letter-spacing: -0.02em; line-height: 1.1;
+  }
+
+  .pill-btn {
+    padding: 6px 14px; border: 0.5px solid var(--line);
+    border-radius: 999px; background: var(--panel);
+    cursor: pointer; font: 500 12.5px var(--sans); color: var(--ink-soft);
+    letter-spacing: -0.003em; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: inherit;
+  }
+  .pill-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .pill-btn.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .pill-btn.primary:hover { filter: brightness(1.05); color: var(--bg); }
+  .pill-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+  .content {
+    flex: 1; overflow-y: auto;
+    padding: 28px 32px 60px;
+  }
+  @media (max-width: 600px) { .content { padding: 22px 20px 40px; } }
+
+  /* ============ HOME ============ */
+  .home-hero {
+    padding: 16px 0 32px;
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .hero-title {
+    font-family: var(--serif); font-size: 42px; font-weight: 400;
+    letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 12px;
+  }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  @media (max-width: 600px) { .hero-title { font-size: 32px; } }
+  .hero-sub { font-size: 16px; color: var(--ink-soft); line-height: 1.55; max-width: 580px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-bottom: 36px;
+  }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .stat-label { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .stat-value {
+    font-size: 30px; font-weight: 500;
+    letter-spacing: -0.025em; font-variant-numeric: tabular-nums;
+    line-height: 1.05; color: var(--accent);
+  }
+  .stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+  .section-title {
+    font-size: 13px; font-weight: 500; color: var(--ink-muted);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px;
+  }
+
+  /* ============ TABLE ============ */
+  .table-wrap {
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td {
+    text-align: left; padding: 12px 18px; font-size: 13.5px;
+    letter-spacing: -0.003em;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  th {
+    background: var(--panel-2); font-size: 12px; font-weight: 500;
+    color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; transition: background 0.1s; }
+  tr.clickable:hover td { background: var(--panel-2); }
+  .cell-name { font-weight: 500; color: var(--ink); }
+  .cell-sub { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .cell-time { font-size: 12.5px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cell-right { text-align: right; }
+
+  .tag {
+    display: inline-block; padding: 2px 9px;
+    border-radius: 5px; font-size: 12px; font-weight: 500;
+    letter-spacing: -0.003em;
+  }
+  .tag-blue { background: rgba(91,184,255,0.15); color: var(--info); }
+  .tag-amber { background: rgba(255,197,66,0.15); color: var(--warn); }
+  .tag-green { background: rgba(79,203,126,0.15); color: var(--success); }
+  .tag-coral { background: rgba(255,107,92,0.15); color: var(--danger); }
+  .tag-grey { background: var(--panel-2); color: var(--ink-soft); }
+  .tag-accent { background: rgba(226,192,145,0.15); color: var(--accent); }
+
+  .avatar {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-weight: 500; font-size: 12.5px; flex-shrink: 0;
+    letter-spacing: -0.003em;
+  }
+  .avatar-row { display: flex; align-items: center; gap: 10px; }
+
+  .empty-state {
+    padding: 60px 20px; text-align: center; color: var(--ink-muted); font-size: 14px;
+  }
+  .empty-state .big {
+    font-family: var(--serif); font-size: 22px;
+    color: var(--ink-soft); margin-bottom: 6px;
+  }
+
+  /* ============ CLIENT WORKSPACE ============ */
+  .client-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 20px; padding-bottom: 24px; margin-bottom: 24px;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .client-title-row { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .client-name {
+    font-family: var(--serif); font-size: 30px; font-weight: 500;
+    letter-spacing: -0.025em; line-height: 1.1;
+  }
+  .client-meta {
+    display: flex; flex-wrap: wrap; gap: 10px 18px;
+    font-size: 13px; color: var(--ink-muted);
+  }
+  .client-meta strong { color: var(--ink-soft); font-weight: 400; }
+
+  .tab-bar {
+    display: flex; gap: 4px; overflow-x: auto;
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 24px; padding-bottom: 0;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 9px 14px; background: none; border: none;
+    color: var(--ink-muted); font: 500 13.5px var(--sans);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; white-space: nowrap;
+    letter-spacing: -0.003em; font-family: inherit;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+  }
+
+  .field-grid {
+    display: grid; grid-template-columns: 200px 1fr;
+    gap: 14px 22px; margin-bottom: 28px;
+  }
+  @media (max-width: 700px) {
+    .field-grid { grid-template-columns: 1fr; gap: 6px 0; }
+  }
+  .field-grid dt { color: var(--ink-muted); font-size: 13.5px; padding-top: 8px; }
+  .field-grid dd { color: var(--ink); }
+
+  .field-input, .field-textarea {
+    width: 100%; padding: 8px 12px;
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 8px; font: 400 14px var(--sans);
+    color: var(--ink); letter-spacing: -0.003em;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus, .field-textarea:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--focus);
+  }
+  .field-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+  .panel-card {
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 22px;
+    margin-bottom: 18px;
+  }
+  .panel-title {
+    font-family: var(--serif); font-size: 18px; font-weight: 500;
+    letter-spacing: -0.015em; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-eyebrow {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  /* ============ CONTENT TABLE ============ */
+  .content-table-wrap {
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .content-table-head {
+    padding: 14px 18px; border-bottom: 0.5px solid var(--line);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel-2);
+  }
+  .content-table-head h3 {
+    font: 500 14px var(--sans); letter-spacing: -0.003em; color: var(--ink);
+  }
+  .content-table-head .meta { font-size: 12px; color: var(--ink-muted); }
+  .content-grid {
+    overflow-x: auto;
+  }
+  .content-grid table {
+    min-width: 1100px;
+  }
+  .content-grid th {
+    background: var(--panel); font-size: 11px;
+    color: var(--ink-muted); padding: 10px 14px;
+  }
+  .content-grid td {
+    padding: 10px 14px; font-size: 12.5px;
+    color: var(--ink-soft); vertical-align: top;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .content-grid td.editable { cursor: text; }
+  .content-grid td input.cell-input {
+    width: 100%; background: none; border: none;
+    color: var(--ink); font: 400 12.5px var(--sans);
+    padding: 0; outline: none;
+  }
+  .content-grid td input.cell-input:focus { color: var(--accent); }
+  .content-grid .check {
+    width: 18px; height: 18px; border: 1px solid var(--line);
+    border-radius: 4px; cursor: pointer;
+    display: inline-grid; place-items: center;
+    transition: all 0.12s; background: var(--panel-2);
+  }
+  .content-grid .check.checked {
+    background: var(--success); border-color: var(--success);
+  }
+  .content-grid .check.checked::after {
+    content: ''; width: 4px; height: 8px;
+    border: solid var(--bg); border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .content-grid tr:hover td { background: var(--panel-2); }
+
+  .add-row-btn {
+    width: 100%; padding: 10px; background: var(--panel-2);
+    border: 0.5px dashed var(--line); color: var(--ink-muted);
+    font: 500 12.5px var(--sans); border-radius: 8px;
+    cursor: pointer; transition: all 0.12s;
+    font-family: inherit;
+  }
+  .add-row-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .research-section {
+    background: var(--panel); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 18px 22px;
+    margin-top: 8px;
+  }
+  .research-section .panel-eyebrow { color: var(--info); }
+
+  /* status bar at bottom of client view */
+  .submit-bar {
+    position: sticky; bottom: 0;
+    margin: 24px -32px -60px;
+    padding: 14px 32px;
+    background: var(--panel-2);
+    border-top: 0.5px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 16px;
+  }
+  .submit-bar .summary { font-size: 13px; color: var(--ink-soft); }
+  .submit-bar .summary strong { color: var(--accent); font-weight: 500; }
+
+  .btn {
+    padding: 10px 18px; border-radius: 999px;
+    border: 0.5px solid var(--line); background: var(--panel);
+    cursor: pointer; font: 500 13.5px var(--sans);
+    color: var(--ink-soft); letter-spacing: -0.003em;
+    transition: all 0.12s; font-family: inherit;
+  }
+  .btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .btn-primary {
+    background: var(--accent); color: var(--bg); border-color: var(--accent);
+  }
+  .btn-primary:hover { filter: brightness(1.05); color: var(--bg); }
+
+  .platform-icon {
+    width: 18px; height: 18px; display: inline-grid; place-items: center;
+    margin-right: 6px; vertical-align: -3px;
+  }
+
+  /* received-from-cso card */
+  .received-card {
+    background: linear-gradient(135deg, rgba(226,192,145,0.08), rgba(91,184,255,0.04));
+    border: 0.5px solid var(--accent); border-radius: 12px;
+    padding: 18px 22px; margin-bottom: 24px;
+  }
+  .received-card .ribbon {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .received-card h3 {
+    font-family: var(--serif); font-size: 18px; font-weight: 500;
+    letter-spacing: -0.015em; margin-bottom: 4px;
+  }
+  .received-card p { font-size: 13.5px; color: var(--ink-soft); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="dot">M</div>
+      <span>Medialy</span>
+    </div>
+    <div class="login-eyebrow">Production Portal</div>
+    <h1 class="login-title">Sign in to <em>create</em>.</h1>
+    <p class="login-sub">Medialy production workspace — receive client briefs from CSO, plan content across platforms, ship monthly batches.</p>
+
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label for="login-user">Username</label>
+        <input type="text" class="login-input" id="login-user" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Password</label>
+        <input type="password" class="login-input" id="login-pass" autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn">Sign in</button>
+      <div class="login-error" id="login-error">Wrong username or password.</div>
+    </form>
+
+    <div class="login-hint">
+      Medialy production team only. CSO assigns work — Medialy delivers it back.
+    </div>
+  </div>
+</div>
+
+<!-- ============ PORTAL ============ -->
+<div class="portal" id="portal">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-dot">M</div>
+      <span>Medialy</span>
+    </div>
+
+    <div class="sidebar-section">Workspace</div>
+    <button class="nav-item active" data-tab="home">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>
+      Home
+    </button>
+    <button class="nav-item" data-tab="leads">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
+      Live Leads
+      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+    </button>
+    <button class="nav-item" data-tab="incoming">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>
+      Incoming briefs
+      <span class="nav-count alert" id="count-incoming">0</span>
+    </button>
+    <button class="nav-item" data-tab="active">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M17 11a3 3 0 1 0 0-6M22 21c0-3-2-6-5-6"/></svg></span>
+      Active clients
+      <span class="nav-count" id="count-active">0</span>
+    </button>
+    <button class="nav-item" data-tab="calendar">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+      Content calendar
+    </button>
+    <button class="nav-item" data-tab="ship">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+      Ready to ship
+      <span class="nav-count" id="count-ship">0</span>
+    </button>
+
+    <div class="sidebar-section">Library</div>
+    <button class="nav-item" data-tab="templates">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+      Templates
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">M</div>
+        <div>
+          <div style="color:var(--ink);font-weight:500;">Medialy Studio</div>
+          <div style="font-size:11.5px;color:var(--ink-muted);">Production team</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="main-header">
+      <button class="mobile-nav-btn" id="mobile-nav-btn" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="crumb-stack">
+        <div class="crumb-eyebrow" id="crumb-eyebrow">Medialy Production</div>
+        <div class="crumb-title" id="crumb-title">Home</div>
+      </div>
+      <div id="header-actions"></div>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// ============= AUTH =============
+const AUTH_KEY = 'medialy_signed_in';
+const VALID_USER = 'MEDIALY';
+const VALID_PASS = 'MEDIALY';
+
+function isSignedIn() {
+  try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch(e) { return false; }
+}
+function signIn() {
+  try { sessionStorage.setItem(AUTH_KEY, '1'); } catch(e) {}
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('portal').classList.add('active');
+}
+function signOut() {
+  try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {}
+  document.getElementById('portal').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'grid';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+}
+
+document.getElementById('login-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (u === VALID_USER && p === VALID_PASS) signIn();
+  else document.getElementById('login-error').classList.add('show');
+});
+document.getElementById('logout-btn').addEventListener('click', signOut);
+
+if (isSignedIn()) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('portal').classList.add('active');
+}
+
+// ============= SAMPLE DATA =============
+// In production, this comes from the Apps Script backend (CSO assigns clients,
+// they appear here automatically with their requirement-form answers pre-filled).
+
+const BRIEFS = [
+  {
+    id: 'BRF-001',
+    status: 'incoming', // incoming | active | shipped
+    receivedAt: Date.now() - 4 * 60 * 60 * 1000,
+    csoRef: 'HAM-LMN-203',
+    clientName: 'Lumen Logistics',
+    clientNiche: 'B2B logistics — Lagos-based',
+    serviceFromCSO: 'Instagram & TikTok Management',
+    duration: '3 months',
+    startDate: '2026-05-01',
+    autoFilled: {
+      whatClientAsked: 'Build awareness with logistics decision-makers in Lagos. Shift from cold outreach to inbound enquiries.',
+      problems: 'Posting inconsistently. No clear strategy. Founder doing it himself between meetings.',
+      expectations: '50+ qualified leads per quarter from social. Recognised as the thinking logistics company.',
+      offer: 'Premium B2B logistics — same-day Lagos, scheduled trucking, customs clearance.',
+      audience: 'Operations directors at Nigerian retailers, importers, manufacturers — ₦500M+ revenue companies.',
+      goalPrimary: 'Leads',
+      contact: 'Adebayo Ogundimu',
+      phone: '+234 803 412 5567'
+    }
+  },
+  {
+    id: 'BRF-002',
+    status: 'incoming',
+    receivedAt: Date.now() - 22 * 60 * 60 * 1000,
+    csoRef: 'HAM-BLE-211',
+    clientName: 'Belle Boutique',
+    clientNiche: 'Bridal & occasion wear',
+    serviceFromCSO: 'Media Management',
+    duration: '6 months',
+    startDate: '2026-05-01',
+    autoFilled: {
+      whatClientAsked: 'Show our craftsmanship. Help Lagos brides find us before they decide on a designer.',
+      problems: 'Too few people see our work. Beautiful pieces, no posts.',
+      expectations: 'Bridal consultations booked through Instagram. Wedding-season visibility.',
+      offer: 'Hand-made bridal and occasion wear, limited editions, Lagos studio.',
+      audience: 'Women 28-45 in Lagos preparing for weddings or major events.',
+      goalPrimary: 'Sales',
+      contact: 'Aisha Bello',
+      phone: '+234 817 445 3321'
+    }
+  },
+  {
+    id: 'CLI-101',
+    status: 'active',
+    acceptedAt: Date.now() - 9 * 24 * 60 * 60 * 1000,
+    csoRef: 'HAM-VLT-108',
+    clientName: 'Vault Advisory',
+    clientNiche: 'Tax & compliance advisory',
+    serviceFromCSO: 'Instagram & TikTok Management',
+    duration: '3 months',
+    currentMonth: 1,
+    startDate: '2026-04-15',
+    overview: {
+      whatClientAsked: 'Educate Nigerian SMEs on compliance — turn confusion into trust in our firm.',
+      problems: 'No social presence. Founder hates being on camera.',
+      expectations: 'Build authority. 15 leads/month from social by month 3.',
+      goalPrimary: 'Leads',
+      audience: 'SME founders in Lagos, ₦5M-₦500M revenue, who get FIRS letters and panic.',
+      offer: 'Tax advisory, compliance management, audit prep.',
+      platforms: 'Instagram, TikTok, LinkedIn',
+      frequency: 'IG: 4/week + daily stories. TikTok: 3/week. LinkedIn: 2/week.',
+      scope: 'Strategy, content production, scheduling, monthly report. No ad spend.',
+      keyObservations: 'Founder is a great writer, hesitant on camera. Lean on text-led carousels and B-roll voiceovers.',
+      marketInsight: 'Most Nigerian tax advisors post bland LinkedIn updates. Vacuum for plain-spoken, slightly cheeky compliance content.',
+      opportunity: 'Tax season Q2 — fear-based engagement is high.',
+      whyThisPlan: 'Carousels for authority + TikTok for reach. LinkedIn for B2B trust signals.',
+      expectedResult: 'Month 1 — 5k followers across platforms. Month 3 — 15+ leads/month, 40k followers.',
+      bestTimes: { ig: '8pm Tue/Thu', tt: '11am + 7pm daily', li: '7am Tue/Wed', wa: '7pm Mon-Fri' },
+      brand: { colors: '#0A2540, #FFFFFF, #E2C091', fonts: 'Söhne / Tiempos', style: 'Calm, authoritative, slightly editorial', templateLink: '' }
+    },
+    content: {
+      ig: [
+        { date: '2026-04-22', type: 'Reel', format: 'Talking head', topic: 'The 3 letters every business owner ignores from FIRS', hook: 'You ignored the third one. Here\'s what happens next.', cta: 'DM "TAX" to book a call', design: 1, recording: 1, editing: 1, scheduled: '2026-04-22 20:00', published: '2026-04-22 20:03', delivered: 1, score: 8, metrics: '3,420 views · 412 saves' },
+        { date: '2026-04-25', type: 'Carousel', format: 'Educational', topic: 'TIN vs RC vs TCC — what each one actually means', hook: 'You probably have one and don\'t know what it does', cta: 'Save for later', design: 1, recording: 0, editing: 1, scheduled: '2026-04-25 20:00', published: '2026-04-25 20:00', delivered: 1, score: 7, metrics: '1,820 views · 340 saves' },
+        { date: '2026-04-28', type: 'Reel', format: 'B-roll voiceover', topic: 'Why your accountant is not enough', hook: 'Accountants count. We protect.', cta: 'Comment "AUDIT" for the checklist', design: 1, recording: 1, editing: 0, scheduled: '2026-04-28 20:00', published: '', delivered: 0, score: '', metrics: '' }
+      ],
+      tt: [
+        { date: '2026-04-23', type: 'Trend', format: 'Trend-jack', topic: 'Compliance Tok using "Of Course" trend', hook: 'POV: you opened a FIRS letter at 8am', cta: 'Follow for more', recorded: 1, edited: 1, scheduled: '2026-04-23 19:00', published: '2026-04-23 19:00', delivered: 1, score: 9, metrics: '18.4k views' }
+      ],
+      li: [
+        { date: '2026-04-24', format: 'Text post', topic: 'The 5 worst compliance mistakes I see weekly', hook: 'I\'ve been a tax advisor for 14 years.', cta: 'Comment your worst mistake', scheduled: '2026-04-24 07:00', published: '2026-04-24 07:00', delivered: 1, metrics: '4,200 impressions' }
+      ],
+      wa: [], yt: [], fb: []
+    }
+  },
+  {
+    id: 'CLI-102',
+    status: 'active',
+    acceptedAt: Date.now() - 24 * 24 * 60 * 60 * 1000,
+    csoRef: 'HAM-SAF-094',
+    clientName: 'Saffron Skin',
+    clientNiche: 'Skincare brand',
+    serviceFromCSO: 'Instagram & TikTok Management',
+    duration: '3 months',
+    currentMonth: 2,
+    startDate: '2026-03-15',
+    overview: {
+      whatClientAsked: 'Stop being a forgotten skincare brand. Get tagged.',
+      problems: 'Pretty product, invisible online. No content rhythm.',
+      expectations: 'Be the brand Lagos women recommend in WhatsApp groups.',
+      goalPrimary: 'Awareness + Sales',
+      audience: 'Women 22-38 in Lagos with sensitive/oily skin who got burned by harsh products.',
+      offer: 'Gentle, locally-formulated skincare for Nigerian skin & climate.',
+      platforms: 'Instagram, TikTok',
+      frequency: 'IG: 5/week + daily stories. TikTok: 4/week.',
+      scope: 'Strategy, full production, scheduling, monthly report.',
+      bestTimes: { ig: '7pm Mon-Fri', tt: '9pm daily' },
+      brand: { colors: '#F4E2D8, #B8731F, #2C1810', fonts: 'Tiempos / Söhne', style: 'Warm, earthy, intimate', templateLink: '' }
+    },
+    content: { ig: [], tt: [], li: [], wa: [], yt: [], fb: [] }
+  },
+  {
+    id: 'CLI-103',
+    status: 'shipped',
+    shippedAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    csoRef: 'HAM-NTH-077',
+    clientName: 'Northstar Africa',
+    clientNiche: 'Pan-African investment platform',
+    serviceFromCSO: 'Media Management',
+    duration: '6 months',
+    currentMonth: 3,
+    monthShipped: 3,
+    pieces: 28,
+    overview: {},
+    content: { ig: [], tt: [], li: [], wa: [], yt: [], fb: [] }
+  }
+];
+
+// ============= STATE =============
+let currentTab = 'home';
+let currentClientId = null;
+let currentSubtab = 'overview'; // for client detail
+
+const content = document.getElementById('content');
+const crumbEyebrow = document.getElementById('crumb-eyebrow');
+const crumbTitle = document.getElementById('crumb-title');
+const headerActions = document.getElementById('header-actions');
+
+// ============= COUNTS =============
+function updateCounts() {
+  const inc = BRIEFS.filter(b => b.status === 'incoming').length;
+  const act = BRIEFS.filter(b => b.status === 'active').length;
+  // "ready to ship" = active clients with at least one piece marked delivered but not yet shipped this month
+  const ship = BRIEFS.filter(b => b.status === 'active').filter(b => {
+    const all = [].concat(...Object.values(b.content || {}));
+    return all.some(p => p.delivered === 1);
+  }).length;
+  document.getElementById('count-incoming').textContent = inc;
+  document.getElementById('count-active').textContent = act;
+  document.getElementById('count-ship').textContent = ship;
+  document.getElementById('count-incoming').style.display = inc ? '' : 'none';
+}
+
+// ============= TAB ROUTING =============
+function openTab(tab) {
+  currentTab = tab;
+  currentClientId = null;
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.tab === tab);
+  });
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  headerActions.innerHTML = '';
+  render();
+}
+
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.addEventListener('click', () => openTab(n.dataset.tab));
+});
+document.getElementById('mobile-nav-btn').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+});
+
+// ============= RENDER =============
+function render() {
+  if (currentClientId) {
+    renderClientWorkspace();
+    return;
+  }
+  switch (currentTab) {
+    case 'home': renderHome(); break;
+    case 'leads': renderLeads(); break;
+    case 'incoming': renderIncoming(); break;
+    case 'active': renderActive(); break;
+    case 'calendar': renderCalendar(); break;
+    case 'ship': renderShip(); break;
+    case 'templates': renderTemplates(); break;
+  }
+}
+
+function setHeader(eyebrow, title) {
+  crumbEyebrow.textContent = eyebrow;
+  crumbTitle.textContent = title;
+}
+
+// ============= HOME =============
+function renderHome() {
+  setHeader('Medialy Production', 'Home');
+
+  const incoming = BRIEFS.filter(b => b.status === 'incoming');
+  const active = BRIEFS.filter(b => b.status === 'active');
+  const shipped = BRIEFS.filter(b => b.status === 'shipped');
+
+  // Total content pieces across all active clients
+  let totalPieces = 0, deliveredPieces = 0;
+  active.forEach(c => {
+    Object.values(c.content || {}).forEach(arr => {
+      arr.forEach(p => {
+        totalPieces++;
+        if (p.delivered === 1) deliveredPieces++;
+      });
+    });
+  });
+
+  content.innerHTML = `
+    <div class="home-hero">
+      <h1 class="hero-title">Welcome to <em>Medialy</em>.</h1>
+      <p class="hero-sub">Receive briefs from CSO, plan content across every platform, ship the month back when it's ready. The client never knows we exist — we just deliver.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Incoming briefs</div>
+        <div class="stat-value">${incoming.length}</div>
+        <div class="stat-meta">${incoming.length ? 'Awaiting your acceptance' : 'All caught up'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active clients</div>
+        <div class="stat-value">${active.length}</div>
+        <div class="stat-meta">In production</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Pieces this month</div>
+        <div class="stat-value">${deliveredPieces}/${totalPieces}</div>
+        <div class="stat-meta">Delivered / total planned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Shipped to CSO</div>
+        <div class="stat-value">${shipped.length}</div>
+        <div class="stat-meta">Lifetime</div>
+      </div>
+    </div>
+
+    ${incoming.length ? `
+      <div class="section-title">New briefs from CSO</div>
+      <div class="table-wrap" style="margin-bottom:32px;">
+        <table>
+          <thead><tr><th>Client</th><th>Service</th><th>Duration</th><th>Received</th><th></th></tr></thead>
+          <tbody>
+            ${incoming.map(b => `
+              <tr class="clickable" data-id="${b.id}">
+                <td>
+                  <div class="cell-name">${escapeHtml(b.clientName)}</div>
+                  <div class="cell-sub">${escapeHtml(b.clientNiche)} · CSO ref ${b.csoRef}</div>
+                </td>
+                <td><span class="tag tag-accent">${escapeHtml(b.serviceFromCSO)}</span></td>
+                <td>${escapeHtml(b.duration)}</td>
+                <td class="cell-time">${relativeTime(b.receivedAt)}</td>
+                <td class="cell-right"><span class="tag tag-amber">Review →</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : ''}
+
+    <div class="section-title">Active production</div>
+    <div class="table-wrap">
+      ${active.length ? `
+        <table>
+          <thead><tr><th>Client</th><th>Service</th><th>Month</th><th>Progress</th><th></th></tr></thead>
+          <tbody>
+            ${active.map(c => {
+              const all = [].concat(...Object.values(c.content || {}));
+              const done = all.filter(p => p.delivered === 1).length;
+              return `
+                <tr class="clickable" data-id="${c.id}">
+                  <td>
+                    <div class="cell-name">${escapeHtml(c.clientName)}</div>
+                    <div class="cell-sub">${escapeHtml(c.clientNiche)}</div>
+                  </td>
+                  <td><span class="tag tag-accent">${escapeHtml(c.serviceFromCSO)}</span></td>
+                  <td>Month ${c.currentMonth} of ${parseInt(c.duration) || '?'}</td>
+                  <td>${done} / ${all.length} pieces</td>
+                  <td class="cell-right"><span class="tag tag-green">Open →</span></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : '<div class="empty-state"><div class="big">Nothing in production</div><div>Accept an incoming brief to start.</div></div>'}
+    </div>
+  `;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openClient(tr.dataset.id));
+  });
+}
+
+// ============= INCOMING =============
+function renderIncoming() {
+  setHeader('Medialy Production', 'Incoming briefs');
+  const list = BRIEFS.filter(b => b.status === 'incoming');
+
+  if (!list.length) {
+    content.innerHTML = `<div class="empty-state"><div class="big">No briefs waiting</div><div>CSO hasn't sent anything new. When they assign a client, it lands here.</div></div>`;
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="section-title">${list.length} ${list.length === 1 ? 'brief' : 'briefs'} from CSO · waiting for acceptance</div>
+    <div style="display:grid;gap:14px;">
+      ${list.map(b => `
+        <div class="panel-card" style="cursor:pointer;" data-id="${b.id}">
+          <div class="panel-eyebrow">CSO ref · ${b.csoRef} · received ${relativeTime(b.receivedAt)}</div>
+          <div class="panel-title">${escapeHtml(b.clientName)} <span style="font-family:var(--sans);font-size:13px;color:var(--ink-muted);font-weight:400;">${escapeHtml(b.clientNiche)}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:14px;">
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Service</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(b.serviceFromCSO)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Duration</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(b.duration)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Start date</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(b.startDate)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Primary goal</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(b.autoFilled.goalPrimary)}</div></div>
+          </div>
+          <div style="font-size:13px;color:var(--ink-soft);line-height:1.55;background:var(--panel-2);padding:12px 14px;border-radius:8px;margin-bottom:12px;">
+            <strong style="color:var(--accent);">What client asked CSO:</strong> ${escapeHtml(b.autoFilled.whatClientAsked)}
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" onclick="event.stopPropagation();acceptBrief('${b.id}')">Accept brief →</button>
+            <button class="btn" onclick="openClient('${b.id}')">View details</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  content.querySelectorAll('[data-id]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      openClient(el.dataset.id);
+    });
+  });
+}
+
+window.acceptBrief = (id) => {
+  const b = BRIEFS.find(x => x.id === id);
+  if (!b) return;
+  b.status = 'active';
+  b.acceptedAt = Date.now();
+  b.currentMonth = 1;
+  // Convert auto-filled into overview structure
+  b.overview = {
+    whatClientAsked: b.autoFilled.whatClientAsked,
+    problems: b.autoFilled.problems,
+    expectations: b.autoFilled.expectations,
+    goalPrimary: b.autoFilled.goalPrimary,
+    audience: b.autoFilled.audience,
+    offer: b.autoFilled.offer,
+    platforms: '', frequency: '', scope: '',
+    keyObservations: '', marketInsight: '', opportunity: '', whyThisPlan: '', expectedResult: '',
+    bestTimes: { ig: '', tt: '', li: '', wa: '' },
+    brand: { colors: '', fonts: '', style: '', templateLink: '' }
+  };
+  b.content = { ig: [], tt: [], li: [], wa: [], yt: [], fb: [] };
+  updateCounts();
+  openClient(id);
+};
+
+// ============= ACTIVE =============
+function renderActive() {
+  setHeader('Medialy Production', 'Active clients');
+  const list = BRIEFS.filter(b => b.status === 'active');
+  if (!list.length) {
+    content.innerHTML = `<div class="empty-state"><div class="big">No active clients</div><div>Accept an incoming brief to start producing.</div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="section-title">${list.length} ${list.length === 1 ? 'client' : 'clients'} in production</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Service</th><th>Month</th><th>Pieces this month</th><th>Started</th></tr></thead>
+        <tbody>
+          ${list.map(c => {
+            const all = [].concat(...Object.values(c.content || {}));
+            const done = all.filter(p => p.delivered === 1).length;
+            return `
+              <tr class="clickable" data-id="${c.id}">
+                <td><div class="cell-name">${escapeHtml(c.clientName)}</div><div class="cell-sub">${escapeHtml(c.clientNiche)}</div></td>
+                <td><span class="tag tag-accent">${escapeHtml(c.serviceFromCSO)}</span></td>
+                <td>${c.currentMonth} of ${parseInt(c.duration) || '?'}</td>
+                <td>${done} / ${all.length}</td>
+                <td class="cell-time">${relativeTime(c.acceptedAt)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+  content.querySelectorAll('tr.clickable').forEach(tr => tr.addEventListener('click', () => openClient(tr.dataset.id)));
+}
+
+// ============= READY TO SHIP =============
+function renderShip() {
+  setHeader('Medialy Production', 'Ready to ship');
+  const list = BRIEFS.filter(b => b.status === 'active').filter(b => {
+    const all = [].concat(...Object.values(b.content || {}));
+    return all.some(p => p.delivered === 1);
+  });
+  if (!list.length) {
+    content.innerHTML = `<div class="empty-state"><div class="big">Nothing ready yet</div><div>Mark pieces as delivered inside each client to queue them for this month's batch.</div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:24px;line-height:1.55;">When you ship a client's monthly batch, all delivered pieces are sent to CSO at once. The client never sees them directly — CSO publishes or hands them over.</p>
+    <div style="display:grid;gap:14px;">
+      ${list.map(c => {
+        const all = [].concat(...Object.values(c.content || {}));
+        const ready = all.filter(p => p.delivered === 1);
+        return `
+          <div class="panel-card">
+            <div class="panel-eyebrow">CSO ref · ${c.csoRef}</div>
+            <div class="panel-title">
+              <span>${escapeHtml(c.clientName)} <span style="font-size:13px;color:var(--ink-muted);font-weight:400;font-family:var(--sans);">· Month ${c.currentMonth}</span></span>
+              <span style="font-size:13px;color:var(--accent);font-weight:500;font-family:var(--sans);">${ready.length} pieces ready</span>
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft);margin-bottom:14px;">
+              ${ready.length} of ${all.length} planned pieces are marked delivered. Ship the batch to CSO when you're ready.
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="shipBatch('${c.id}')">Ship batch to CSO →</button>
+              <button class="btn" onclick="openClient('${c.id}')">Review pieces</button>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+window.shipBatch = (id) => {
+  const c = BRIEFS.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Ship Month ${c.currentMonth} batch for ${c.clientName} to CSO? This sends all delivered pieces at once. The client never sees Medialy — CSO handles delivery.`)) return;
+  c.status = 'shipped';
+  c.shippedAt = Date.now();
+  c.monthShipped = c.currentMonth;
+  const all = [].concat(...Object.values(c.content || {}));
+  c.pieces = all.filter(p => p.delivered === 1).length;
+  alert(`Shipped! ${c.pieces} pieces sent to CSO for ${c.clientName}.`);
+  updateCounts();
+  openTab('home');
+};
+
+// ============= CALENDAR =============
+function renderCalendar() {
+  setHeader('Medialy Production', 'Content calendar');
+  const all = [];
+  BRIEFS.filter(b => b.status === 'active').forEach(c => {
+    Object.entries(c.content || {}).forEach(([platform, arr]) => {
+      arr.forEach(p => {
+        if (p.scheduled || p.date) all.push({ ...p, platform, client: c.clientName });
+      });
+    });
+  });
+  all.sort((a, b) => (a.scheduled || a.date || '').localeCompare(b.scheduled || b.date || ''));
+
+  if (!all.length) {
+    content.innerHTML = `<div class="empty-state"><div class="big">Calendar empty</div><div>Schedule content inside any active client to populate this view.</div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <div class="section-title">${all.length} ${all.length === 1 ? 'piece' : 'pieces'} scheduled across all clients</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>When</th><th>Client</th><th>Platform</th><th>Type</th><th>Topic</th><th>Status</th></tr></thead>
+        <tbody>
+          ${all.map(p => `
+            <tr>
+              <td class="cell-time">${escapeHtml(p.scheduled || p.date || '—')}</td>
+              <td>${escapeHtml(p.client)}</td>
+              <td><span class="tag tag-grey">${escapeHtml(p.platform.toUpperCase())}</span></td>
+              <td>${escapeHtml(p.type || p.format || '—')}</td>
+              <td><div class="cell-name">${escapeHtml(p.topic || '—')}</div></td>
+              <td>${p.delivered === 1 ? '<span class="tag tag-green">Delivered</span>' : '<span class="tag tag-amber">In progress</span>'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ============= TEMPLATES =============
+function renderTemplates() {
+  setHeader('Medialy Production', 'Templates');
+  const TEMPLATES = [
+    { name: 'Hook bank — IG Reels', count: 24, desc: 'Tested opening lines for talking-head reels.' },
+    { name: 'Carousel script frame', count: 6, desc: '10-slide structure: hook · setup · 3 points · turn · proof · CTA.' },
+    { name: 'TikTok trend brief', count: 12, desc: 'How to brief a trend-jack to the production team in under 5 minutes.' },
+    { name: 'LinkedIn post structures', count: 8, desc: 'Story-led, contrarian, list, case-study formats.' },
+    { name: 'WhatsApp status sequence', count: 4, desc: '5-day status sequence for B2B advisory clients.' },
+    { name: 'Monthly report template', count: 1, desc: 'PDF report sent to CSO at end-of-month batch ship.' }
+  ];
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:24px;line-height:1.55;">Reusable building blocks across all clients. Don't reinvent the wheel each month.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;">
+      ${TEMPLATES.map(t => `
+        <div class="panel-card" style="margin-bottom:0;">
+          <div class="panel-eyebrow">${t.count} ${t.count === 1 ? 'template' : 'items'}</div>
+          <div class="panel-title" style="margin-bottom:8px;">${escapeHtml(t.name)}</div>
+          <div style="font-size:13.5px;color:var(--ink-soft);line-height:1.5;">${escapeHtml(t.desc)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============= CLIENT WORKSPACE =============
+function openClient(id) {
+  currentClientId = id;
+  currentSubtab = 'overview';
+  render();
+}
+function exitClient() {
+  currentClientId = null;
+  render();
+}
+
+function renderClientWorkspace() {
+  const c = BRIEFS.find(b => b.id === currentClientId);
+  if (!c) { exitClient(); return; }
+
+  setHeader('Active client', c.clientName);
+  headerActions.innerHTML = `<button class="pill-btn" onclick="exitClient()">← All clients</button>`;
+
+  const tabs = [
+    { id: 'overview', label: 'Overview' },
+    { id: 'ig', label: 'Instagram' },
+    { id: 'wa', label: 'WhatsApp' },
+    { id: 'li', label: 'LinkedIn' },
+    { id: 'tt', label: 'TikTok' },
+    { id: 'yt', label: 'YouTube' },
+    { id: 'fb', label: 'Facebook' }
+  ];
+
+  const isIncoming = c.status === 'incoming';
+
+  let body;
+  if (currentSubtab === 'overview') body = renderOverviewTab(c, isIncoming);
+  else body = renderPlatformTab(c, currentSubtab);
+
+  content.innerHTML = `
+    ${isIncoming ? `
+      <div class="received-card">
+        <div class="ribbon">📬 Received from CSO · ${relativeTime(c.receivedAt)}</div>
+        <h3>${escapeHtml(c.clientName)} · ${escapeHtml(c.serviceFromCSO)}</h3>
+        <p>This brief is waiting for you. Review the auto-filled details below — they came directly from the requirement form the client filled out with CSO. Add the strategy, branding, and platform setup, then accept the brief to start production.</p>
+        <div style="margin-top:14px;display:flex;gap:8px;">
+          <button class="btn btn-primary" onclick="acceptBrief('${c.id}')">Accept brief →</button>
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="client-header">
+      <div>
+        <div class="client-title-row">
+          <div class="client-name">${escapeHtml(c.clientName)}</div>
+          <span class="tag tag-accent">${escapeHtml(c.serviceFromCSO)}</span>
+          ${c.currentMonth ? `<span class="tag tag-grey">Month ${c.currentMonth} of ${parseInt(c.duration) || '?'}</span>` : ''}
+        </div>
+        <div class="client-meta">
+          <span><strong>Niche:</strong> ${escapeHtml(c.clientNiche)}</span>
+          <span><strong>CSO ref:</strong> ${c.csoRef}</span>
+          ${c.startDate ? `<span><strong>Started:</strong> ${escapeHtml(c.startDate)}</span>` : ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      ${tabs.map(t => `<button class="tab-btn ${t.id === currentSubtab ? 'active' : ''}" data-subtab="${t.id}">${t.label}</button>`).join('')}
+    </div>
+
+    ${body}
+
+    ${!isIncoming ? `
+      <div class="submit-bar">
+        <div class="summary">
+          ${(() => {
+            const all = [].concat(...Object.values(c.content || {}));
+            const done = all.filter(p => p.delivered === 1).length;
+            return `<strong>${done}</strong> of <strong>${all.length}</strong> pieces ready · Month ${c.currentMonth}`;
+          })()}
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn">Save draft</button>
+          <button class="btn btn-primary" onclick="shipBatch('${c.id}')">Ship batch to CSO →</button>
+        </div>
+      </div>
+    ` : ''}
+  `;
+
+  content.querySelectorAll('[data-subtab]').forEach(el => {
+    el.addEventListener('click', () => {
+      currentSubtab = el.dataset.subtab;
+      renderClientWorkspace();
+    });
+  });
+
+  // Wire up cell editing
+  content.querySelectorAll('.cell-input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.dataset.idx, 10);
+      const field = e.target.dataset.field;
+      const platform = e.target.dataset.platform;
+      if (c.content && c.content[platform] && c.content[platform][idx]) {
+        c.content[platform][idx][field] = e.target.value;
+      }
+    });
+  });
+  content.querySelectorAll('.check').forEach(box => {
+    box.addEventListener('click', (e) => {
+      const idx = parseInt(box.dataset.idx, 10);
+      const field = box.dataset.field;
+      const platform = box.dataset.platform;
+      if (c.content && c.content[platform] && c.content[platform][idx]) {
+        c.content[platform][idx][field] = c.content[platform][idx][field] === 1 ? 0 : 1;
+        renderClientWorkspace();
+        updateCounts();
+      }
+    });
+  });
+}
+
+function renderOverviewTab(c, isIncoming) {
+  const o = c.overview || {};
+  const data = isIncoming ? c.autoFilled : o;
+
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">From CSO — auto-filled</div>
+      <div class="panel-title">Client request</div>
+      <dl class="field-grid">
+        <dt>What client asked for</dt><dd><textarea class="field-textarea" data-overview="whatClientAsked">${escapeHtml(data.whatClientAsked || '')}</textarea></dd>
+        <dt>Problems</dt><dd><textarea class="field-textarea" data-overview="problems">${escapeHtml(data.problems || '')}</textarea></dd>
+        <dt>Expectations</dt><dd><textarea class="field-textarea" data-overview="expectations">${escapeHtml(data.expectations || '')}</textarea></dd>
+      </dl>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-eyebrow">Strategy — Medialy fills this</div>
+      <div class="panel-title">Objective</div>
+      <dl class="field-grid">
+        <dt>Primary goal</dt><dd><input class="field-input" value="${escapeHtml(data.goalPrimary || '')}" data-overview="goalPrimary"></dd>
+        <dt>Target audience</dt><dd><textarea class="field-textarea" data-overview="audience">${escapeHtml(data.audience || '')}</textarea></dd>
+        <dt>Offer</dt><dd><textarea class="field-textarea" data-overview="offer">${escapeHtml(data.offer || '')}</textarea></dd>
+      </dl>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-eyebrow">Agreed plan</div>
+      <div class="panel-title">Production scope</div>
+      <dl class="field-grid">
+        <dt>Platforms</dt><dd><input class="field-input" value="${escapeHtml(o.platforms || '')}" data-overview="platforms"></dd>
+        <dt>Posting frequency</dt><dd><textarea class="field-textarea" data-overview="frequency">${escapeHtml(o.frequency || '')}</textarea></dd>
+        <dt>Scope of work</dt><dd><textarea class="field-textarea" data-overview="scope">${escapeHtml(o.scope || '')}</textarea></dd>
+      </dl>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-eyebrow">Why this strategy</div>
+      <div class="panel-title">Strategic report</div>
+      <dl class="field-grid">
+        <dt>Key observations</dt><dd><textarea class="field-textarea" data-overview="keyObservations">${escapeHtml(o.keyObservations || '')}</textarea></dd>
+        <dt>Market insight</dt><dd><textarea class="field-textarea" data-overview="marketInsight">${escapeHtml(o.marketInsight || '')}</textarea></dd>
+        <dt>Opportunity</dt><dd><textarea class="field-textarea" data-overview="opportunity">${escapeHtml(o.opportunity || '')}</textarea></dd>
+        <dt>Why this plan</dt><dd><textarea class="field-textarea" data-overview="whyThisPlan">${escapeHtml(o.whyThisPlan || '')}</textarea></dd>
+        <dt>Expected result</dt><dd><textarea class="field-textarea" data-overview="expectedResult">${escapeHtml(o.expectedResult || '')}</textarea></dd>
+      </dl>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-eyebrow">Best posting times — update over time</div>
+      <div class="panel-title">Posting windows</div>
+      <dl class="field-grid">
+        <dt>Instagram</dt><dd><input class="field-input" value="${escapeHtml((o.bestTimes||{}).ig || '')}"></dd>
+        <dt>TikTok</dt><dd><input class="field-input" value="${escapeHtml((o.bestTimes||{}).tt || '')}"></dd>
+        <dt>LinkedIn</dt><dd><input class="field-input" value="${escapeHtml((o.bestTimes||{}).li || '')}"></dd>
+        <dt>WhatsApp</dt><dd><input class="field-input" value="${escapeHtml((o.bestTimes||{}).wa || '')}"></dd>
+      </dl>
+    </div>
+
+    <div class="panel-card">
+      <div class="panel-eyebrow">Branding</div>
+      <div class="panel-title">Visual identity</div>
+      <dl class="field-grid">
+        <dt>Colors (HEX)</dt><dd><input class="field-input" value="${escapeHtml((o.brand||{}).colors || '')}"></dd>
+        <dt>Fonts</dt><dd><input class="field-input" value="${escapeHtml((o.brand||{}).fonts || '')}"></dd>
+        <dt>Style</dt><dd><input class="field-input" value="${escapeHtml((o.brand||{}).style || '')}"></dd>
+        <dt>Template link</dt><dd><input class="field-input" placeholder="Canva or Figma link" value="${escapeHtml((o.brand||{}).templateLink || '')}"></dd>
+      </dl>
+    </div>
+  `;
+}
+
+const PLATFORM_CONFIG = {
+  ig: {
+    name: 'Instagram',
+    columns: ['date', 'type', 'format', 'topic', 'hook', 'cta', 'design', 'recording', 'editing', 'scheduled', 'published', 'delivered', 'score', 'metrics'],
+    headers: ['Date', 'Type', 'Format', 'Topic', 'Hook', 'CTA', 'Design', 'Rec', 'Edit', 'Scheduled', 'Published', '✓', 'Score', 'Metrics'],
+    checkboxes: ['design', 'recording', 'editing', 'delivered']
+  },
+  tt: {
+    name: 'TikTok',
+    columns: ['date', 'type', 'format', 'topic', 'hook', 'cta', 'recorded', 'edited', 'scheduled', 'published', 'delivered', 'score', 'metrics'],
+    headers: ['Date', 'Type', 'Format', 'Topic', 'Hook', 'CTA', 'Rec', 'Edit', 'Scheduled', 'Published', '✓', 'Score', 'Metrics'],
+    checkboxes: ['recorded', 'edited', 'delivered']
+  },
+  wa: {
+    name: 'WhatsApp',
+    columns: ['date', 'type', 'goal', 'content', 'cta', 'responses', 'leads', 'status', 'scheduled', 'published', 'delivered', 'notes'],
+    headers: ['Date', 'Type', 'Goal', 'Content', 'CTA', 'Responses', 'Leads', 'Status', 'Scheduled', 'Published', '✓', 'Notes'],
+    checkboxes: ['delivered']
+  },
+  li: {
+    name: 'LinkedIn',
+    columns: ['date', 'type', 'format', 'topic', 'hook', 'content', 'cta', 'scheduled', 'published', 'delivered', 'metrics', 'notes'],
+    headers: ['Date', 'Type', 'Format', 'Topic', 'Hook', 'Content', 'CTA', 'Scheduled', 'Published', '✓', 'Metrics', 'Notes'],
+    checkboxes: ['delivered']
+  },
+  yt: {
+    name: 'YouTube',
+    columns: ['date', 'title', 'format', 'goal', 'hook', 'cta', 'recorded', 'edited', 'scheduled', 'published', 'delivered', 'views', 'watchTime', 'ctr', 'notes'],
+    headers: ['Date', 'Title', 'Format', 'Goal', 'Hook', 'CTA', 'Rec', 'Edit', 'Upload', 'Published', '✓', 'Views', 'Watch', 'CTR', 'Notes'],
+    checkboxes: ['recorded', 'edited', 'delivered']
+  },
+  fb: {
+    name: 'Facebook',
+    columns: ['date', 'type', 'format', 'topic', 'caption', 'cta', 'scheduled', 'published', 'delivered', 'metrics', 'notes'],
+    headers: ['Date', 'Type', 'Format', 'Topic', 'Caption', 'CTA', 'Scheduled', 'Published', '✓', 'Metrics', 'Notes'],
+    checkboxes: ['delivered']
+  }
+};
+
+function renderPlatformTab(c, platform) {
+  const cfg = PLATFORM_CONFIG[platform];
+  if (!cfg) return '';
+  if (!c.content) c.content = {};
+  if (!c.content[platform]) c.content[platform] = [];
+  const rows = c.content[platform];
+  const done = rows.filter(r => r.delivered === 1).length;
+
+  return `
+    <div class="content-table-wrap">
+      <div class="content-table-head">
+        <h3>${cfg.name} content</h3>
+        <span class="meta">${done} of ${rows.length} delivered</span>
+      </div>
+      <div class="content-grid">
+        <table>
+          <thead>
+            <tr>${cfg.headers.map(h => `<th>${h}</th>`).join('')}</tr>
+          </thead>
+          <tbody>
+            ${rows.length ? rows.map((row, i) => `
+              <tr>
+                ${cfg.columns.map(col => {
+                  if (cfg.checkboxes.includes(col)) {
+                    return `<td><span class="check ${row[col] === 1 ? 'checked' : ''}" data-idx="${i}" data-field="${col}" data-platform="${platform}"></span></td>`;
+                  }
+                  return `<td><input class="cell-input" data-idx="${i}" data-field="${col}" data-platform="${platform}" value="${escapeHtml(row[col] != null ? row[col] : '')}" placeholder="—"></td>`;
+                }).join('')}
+              </tr>
+            `).join('') : `<tr><td colspan="${cfg.headers.length}" style="text-align:center;color:var(--ink-muted);padding:30px;">No ${cfg.name} content yet — add a row below.</td></tr>`}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px;">
+      <button class="add-row-btn" onclick="addContentRow('${c.id}', '${platform}')">+ Add row manually</button>
+      <button class="add-row-btn" style="color:var(--accent);border-color:var(--accent);" onclick="document.getElementById('csv-input-${platform}').click()">📤 Import CSV / Excel</button>
+      <button class="add-row-btn" onclick="downloadTemplate('${platform}')">📋 Download blank template</button>
+    </div>
+    <input type="file" id="csv-input-${platform}" style="display:none;" accept=".csv,.xlsx,.xls" onchange="handleImport(event, '${c.id}', '${platform}')">
+    <div id="import-status-${platform}" style="margin-top:8px;font-size:12px;color:var(--ink-muted);"></div>
+
+    ${platform === 'ig' || platform === 'tt' || platform === 'li' ? `
+      <div class="research-section">
+        <div class="panel-eyebrow">Competitor research</div>
+        <div class="panel-title" style="margin-bottom:14px;">What's working in this niche</div>
+        <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.55;">Track competitor formats, hooks, and adaptations here. (Research panel — wire to backend when ready.)</p>
+      </div>
+    ` : ''}
+  `;
+}
+
+window.downloadTemplate = (platform) => {
+  const cfg = PLATFORM_CONFIG[platform];
+  if (!cfg) return;
+  // Build CSV header row from column keys + a single sample/empty row
+  const headers = cfg.columns.join(',');
+  const sample = cfg.columns.map(col => {
+    if (cfg.checkboxes.includes(col)) return '0';
+    if (col === 'date') return new Date().toISOString().slice(0, 10);
+    if (col === 'topic') return 'Example: 3 things every founder ignores';
+    if (col === 'hook') return 'Example: You ignored the third one';
+    return '';
+  }).join(',');
+  const csv = headers + '\n' + sample + '\n';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `medialy-${platform}-template.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+// Simple CSV parser — handles quoted fields, commas inside quotes, escaped quotes
+function parseCSV(text) {
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (inQuotes) {
+      if (ch === '"' && next === '"') { field += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { field += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { row.push(field); field = ''; }
+      else if (ch === '\n' || ch === '\r') {
+        if (ch === '\r' && next === '\n') i++;
+        row.push(field);
+        if (row.some(c => c.trim() !== '')) rows.push(row);
+        row = []; field = '';
+      } else { field += ch; }
+    }
+  }
+  if (field || row.length) {
+    row.push(field);
+    if (row.some(c => c.trim() !== '')) rows.push(row);
+  }
+  return rows;
+}
+
+window.handleImport = (event, clientId, platform) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('import-status-' + platform);
+  const cfg = PLATFORM_CONFIG[platform];
+  const c = BRIEFS.find(b => b.id === clientId);
+  if (!c || !cfg) return;
+
+  if (status) status.innerHTML = '<span style="color:var(--accent);">⏳ Reading ' + file.name + '...</span>';
+
+  // Excel handling: tell user to save as CSV (no SheetJS in this build)
+  if (file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls')) {
+    if (status) status.innerHTML = '<span style="color:#FFC542;">⚠ Excel files: please save your file as CSV first (File → Save As → CSV) then re-upload. Or use the CSV template above.</span>';
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const text = e.target.result;
+      const rows = parseCSV(text);
+      if (rows.length < 2) {
+        if (status) status.innerHTML = '<span style="color:#FF6B5C;">✗ No data rows found in file.</span>';
+        return;
+      }
+
+      // First row = headers, normalize them to lowercase
+      const headers = rows[0].map(h => h.trim().toLowerCase());
+      const dataRows = rows.slice(1);
+
+      // Map each row to the platform's column structure
+      let imported = 0;
+      let skipped = 0;
+      dataRows.forEach(rowArr => {
+        const newRow = {};
+        cfg.columns.forEach(col => {
+          newRow[col] = cfg.checkboxes.includes(col) ? 0 : '';
+        });
+        // Match headers to columns (case-insensitive, trims spaces)
+        headers.forEach((header, idx) => {
+          const value = (rowArr[idx] || '').trim();
+          // Find matching column
+          const matchedCol = cfg.columns.find(col => col.toLowerCase() === header);
+          if (matchedCol) {
+            if (cfg.checkboxes.includes(matchedCol)) {
+              newRow[matchedCol] = (value === '1' || value.toLowerCase() === 'true' || value.toLowerCase() === 'yes' || value === '✓') ? 1 : 0;
+            } else {
+              newRow[matchedCol] = value;
+            }
+          }
+        });
+
+        // Only import rows that have at least topic/title/content
+        const hasContent = newRow.topic || newRow.title || newRow.content || newRow.date;
+        if (hasContent) {
+          if (!c.content) c.content = {};
+          if (!c.content[platform]) c.content[platform] = [];
+          c.content[platform].push(newRow);
+          imported++;
+        } else {
+          skipped++;
+        }
+      });
+
+      if (status) {
+        status.innerHTML = '<span style="color:#4FCB7E;">✓ Imported ' + imported + ' rows' +
+          (skipped ? ' (' + skipped + ' empty rows skipped)' : '') + '. Refreshing view...</span>';
+      }
+
+      setTimeout(() => {
+        renderClientWorkspace();
+        updateCounts();
+      }, 800);
+    } catch (err) {
+      if (status) status.innerHTML = '<span style="color:#FF6B5C;">✗ Could not read file: ' + err.message + '</span>';
+    }
+  };
+  reader.onerror = () => {
+    if (status) status.innerHTML = '<span style="color:#FF6B5C;">✗ File read error. Try saving as CSV again.</span>';
+  };
+  reader.readAsText(file);
+
+  // Reset the input so the same file can be re-uploaded later
+  event.target.value = '';
+};
+
+window.addContentRow = (clientId, platform) => {
+  const c = BRIEFS.find(b => b.id === clientId);
+  if (!c) return;
+  if (!c.content) c.content = {};
+  if (!c.content[platform]) c.content[platform] = [];
+  const newRow = {};
+  PLATFORM_CONFIG[platform].columns.forEach(col => {
+    newRow[col] = PLATFORM_CONFIG[platform].checkboxes.includes(col) ? 0 : '';
+  });
+  newRow.date = new Date().toISOString().slice(0, 10);
+  c.content[platform].push(newRow);
+  renderClientWorkspace();
+  updateCounts();
+};
+
+window.exitClient = exitClient;
+window.openClient = openClient;
+window.acceptBrief = acceptBrief;
+window.shipBatch = shipBatch;
+
+// ============= UTILS =============
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
+}
+function relativeTime(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  const MIN = 60000, HR = 3600000, DAY = 86400000;
+  if (diff < MIN) return 'just now';
+  if (diff < HR) return Math.round(diff/MIN) + 'm ago';
+  if (diff < DAY) return Math.round(diff/HR) + 'h ago';
+  const days = Math.round(diff/DAY);
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + 'd ago';
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+// ─── Live Leads from Apps Script ────────────────────────────────────────
+console.log('[hamzury-workspaces] live leads wired v1');
+const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const WORKSPACE_FILTER = 'medialy';
+
+function renderLeads() {
+  setHeader('Operations', 'Live Leads');
+  content.innerHTML = `
+    <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
+            Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
+          </h1>
+          <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
+            Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
+          <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+        </div>
+      </div>
+      <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
+        <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
+        <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+      </div>
+    </section>
+  `;
+  document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
+  loadLiveLeads();
+}
+
+async function loadLiveLeads() {
+  const status = document.getElementById('leads-status');
+  const list = document.getElementById('leads-list');
+  const empty = document.getElementById('leads-empty');
+  const badge = document.getElementById('leads-badge');
+
+  try {
+    if (status) status.textContent = 'Loading…';
+    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const data = await res.json();
+    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
+
+    let rows = all;
+    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
+      rows = all.filter(r => {
+        const form = String(r.Form || '').toLowerCase();
+        const title = String(r['Form Title'] || '').toLowerCase();
+        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
+      });
+    }
+
+    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+
+    if (badge) {
+      if (rows.length === 0) badge.style.display = 'none';
+      else { badge.textContent = rows.length; badge.style.display = 'inline-block'; }
+    }
+
+    if (!list) return;
+    list.innerHTML = '';
+    if (rows.length === 0) {
+      if (empty) empty.hidden = false;
+    } else {
+      if (empty) empty.hidden = true;
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+        const dt = new Date(r['Received At']);
+        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        card.innerHTML = `
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
+              ${escapeLeadHtml(r['Client Name'] || '—')}
+              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
+              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
+              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
+              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+              ${escapeLeadHtml(r.Status || 'New')}
+            </span>
+            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch (e) {
+    console.warn('[live-leads] fetch failed', e);
+    if (status) status.textContent = 'Connection error';
+  }
+}
+
+function escapeLeadHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadLiveLeads();
+setInterval(loadLiveLeads, 30000);
+
+// ============= INIT =============
+updateCounts();
+render();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamzury — Workspaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --bg: #FFFBEB;
+    --paper: #FFFFFF;
+    --ink: #1A1A1A;
+    --ink-soft: #2C2C2C;
+    --ink-muted: #6B7280;
+    --line: #E7E5E4;
+    --gold: #B48C4C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { font-family: var(--sans); background: var(--bg); color: var(--ink); -webkit-font-smoothing: antialiased; letter-spacing: -0.005em; min-height: 100vh; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 60px 32px 80px; }
+  .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 56px; }
+  .brand-dot { width: 38px; height: 38px; border-radius: 50%; background: var(--ink); color: var(--bg); display: grid; place-items: center; font-family: var(--serif); font-size: 18px; font-weight: 500; }
+  .brand-name { font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; }
+  .brand-sub { font-size: 11px; font-weight: 500; color: var(--gold); letter-spacing: 0.18em; text-transform: uppercase; margin-top: 2px; }
+  .hero h1 { font-family: var(--serif); font-size: 56px; font-weight: 400; letter-spacing: -0.03em; line-height: 1.05; margin-bottom: 18px; }
+  .hero h1 em { font-style: italic; color: var(--gold); }
+  .hero p { font-size: 17px; line-height: 1.6; color: var(--ink-soft); max-width: 640px; margin-bottom: 56px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 48px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .hero h1 { font-size: 38px; } .wrap { padding: 40px 24px; } }
+  .card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 16px; padding: 28px 28px 24px; text-decoration: none; color: inherit; transition: all 0.18s; display: block; position: relative; overflow: hidden; }
+  .card:hover { transform: translateY(-2px); border-color: var(--ink-soft); box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
+  .card-eyebrow { font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 14px; }
+  .card-title { font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
+  .card-desc { font-size: 13.5px; color: var(--ink-muted); line-height: 1.55; margin-bottom: 20px; min-height: 42px; }
+  .card-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 0.5px solid var(--line); }
+  .card-creds { font-size: 11px; color: var(--ink-muted); font-family: var(--serif); font-style: italic; }
+  .card-arrow { font-size: 18px; color: var(--ink-muted); transition: transform 0.2s; }
+  .card:hover .card-arrow { transform: translateX(4px); color: var(--ink); }
+  .card .accent-bar { position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+
+  .card-cso .accent-bar { background: #B48C4C; }
+  .card-cso .card-eyebrow { color: #B48C4C; }
+
+  .card-bizdoc .accent-bar { background: #1B4D3E; }
+  .card-bizdoc .card-eyebrow { color: #1B4D3E; }
+
+  .card-scalar .accent-bar { background: #1F6B5C; }
+  .card-scalar .card-eyebrow { color: #1F6B5C; }
+
+  .card-medialy .accent-bar { background: #1D4ED8; }
+  .card-medialy .card-eyebrow { color: #1D4ED8; }
+
+  .card-studio .accent-bar { background: #5B3FA8; }
+  .card-studio .card-eyebrow { color: #5B3FA8; }
+
+  .card-bizdev .accent-bar { background: #B8552E; }
+  .card-bizdev .card-eyebrow { color: #B8552E; }
+
+  .pending { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+  .pending .card-arrow { opacity: 0.3; }
+  .pending-label { font-size: 10.5px; color: var(--ink-muted); font-style: italic; }
+
+  .legend { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 20px 24px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
+  .legend strong { color: var(--ink); font-weight: 500; }
+  .footer { text-align: center; margin-top: 56px; font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--ink-muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-dot">H</div>
+    <div>
+      <div class="brand-name">Hamzury</div>
+      <div class="brand-sub">Internal workspaces</div>
+    </div>
+  </div>
+
+  <div class="hero">
+    <h1>One company.<br>Six <em>workspaces</em>.</h1>
+    <p>Each workspace serves one role inside Hamzury. CSO faces clients. The other teams build behind the curtain. Pick a workspace below to log in — demo data is seeded so you can click around.</p>
+  </div>
+
+  <div class="grid">
+    <a href="cso.html" class="card card-cso">
+      <div class="accent-bar"></div>
+      <div class="card-eyebrow">Front office</div>
+      <div class="card-title">CSO Portal</div>
+      <div class="card-desc">The only team that talks to clients. Receives leads, qualifies, sells, assigns work to back-office workspaces, delivers.</div>
+      <div class="card-foot">
+        <span class="card-creds">CSO / CSO</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="bizdoc.html" class="card card-bizdoc">
+      <div class="accent-bar"></div>
+      <div class="card-eyebrow">Tax & compliance</div>
+      <div class="card-title">Bizdoc Portal</div>
+      <div class="card-desc">Compliance & growth back office. 21-service catalog. Receives briefs from CSO, ships monthly compliance reports back.</div>
+      <div class="card-foot">
+        <span class="card-creds">BIZDOC / BIZDOC</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="scalar.html" class="card card-scalar">
+      <div class="accent-bar"></div>
+      <div class="card-eyebrow">Web & automation</div>
+      <div class="card-title">Scalar Portal</div>
+      <div class="card-desc">Software studio. Builds and maintains websites, automation, custom systems. Project pipeline + software management retainer.</div>
+      <div class="card-foot">
+        <span class="card-creds">SCALAR / SCALAR</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="medialy.html" class="card card-medialy">
+      <div class="accent-bar"></div>
+      <div class="card-eyebrow">Social media</div>
+      <div class="card-title">Medialy Portal</div>
+      <div class="card-desc">Social media management. Plans monthly content for clients, briefs Studio for design + video, schedules and publishes.</div>
+      <div class="card-foot">
+        <span class="card-creds">MEDIALY / MEDIALY</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="studio.html" class="card card-studio">
+      <div class="accent-bar"></div>
+      <div class="card-eyebrow">Design + video</div>
+      <div class="card-title">Studio</div>
+      <div class="card-desc">In-house creative studio. Designers and video editors share the workspace. Receives briefs from Medialy and CSO.</div>
+      <div class="card-foot">
+        <span class="card-creds">STUDIO / STUDIO</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <a href="bizdev.html" class="card card-bizdev">
+      <div class="accent-bar"></div>
+      <div class="card-eyebrow">Growth</div>
+      <div class="card-title">Business Dev</div>
+      <div class="card-desc">Marketing, grants & partnerships, affiliates. Three lanes, one workspace. Filter by your lane to focus.</div>
+      <div class="card-foot">
+        <span class="card-creds">BIZDEV / BIZDEV</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+  </div>
+
+  <div class="legend">
+    <strong>How it flows.</strong> A visitor chats with the bot on a Hamzury site → CSO sees the lead → CSO sells and assigns to the right back office (Bizdoc, Scalar, Medialy). Medialy plans content and briefs Studio for visuals. Studio also takes standalone work directly from CSO. Business Dev runs the growth engine across all of it — campaigns, grants, affiliates.
+  </div>
+
+  <div class="footer">Built to last.</div>
+</div>
+</body>
+</html>

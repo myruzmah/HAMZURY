@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scalar — Software That Scales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #F4F8F6;
+    --paper: #FFFFFF;
+    --ink: #0E1F18;
+    --ink-soft: #2C4138;
+    --ink-muted: #6B8077;
+    --ink-faint: #A8B8B0;
+    --line: #DDE6E1;
+    --line-soft: #ECF1EE;
+    --sidebar: #EAF1ED;
+    --accent: #1F6B5C;
+    --accent-soft: #2E8A78;
+    --accent-pale: #DFEDE8;
+    --success: #1A6B3C;
+    --warn: #B8731F;
+    --danger: #A3301F;
+    --info: #1A56C7;
+    --focus: rgba(31,107,92,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; font-family: var(--sans); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; letter-spacing: -0.005em; overflow: hidden;
+  }
+
+  /* LOGIN */
+  .login-screen { height: 100vh; display: grid; place-items: center;
+    background: radial-gradient(circle at 25% 20%, rgba(31,107,92,0.08), transparent 50%), radial-gradient(circle at 75% 80%, rgba(184,115,31,0.04), transparent 50%), var(--bg); }
+  .login-card { width: 100%; max-width: 380px; padding: 40px; }
+  .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; }
+  .login-brand .dot { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-size: 15px; font-weight: 500; }
+  .login-eyebrow { font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .login-title { font-family: var(--serif); font-size: 36px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 12px; }
+  .login-title em { font-style: italic; color: var(--accent); }
+  .login-sub { font-size: 14.5px; color: var(--ink-muted); margin-bottom: 32px; line-height: 1.5; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--ink-soft); margin-bottom: 6px; }
+  .login-input { width: 100%; padding: 12px 14px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; font: 400 15px var(--sans); color: var(--ink); letter-spacing: -0.005em; }
+  .login-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--focus); }
+  .login-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font: 500 15px var(--sans); cursor: pointer; margin-top: 10px; transition: filter 0.12s; }
+  .login-btn:hover { filter: brightness(1.1); }
+  .login-error { display: none; margin-top: 14px; padding: 10px 14px; background: rgba(163,48,31,0.08); color: var(--danger); border-radius: 8px; font-size: 13px; }
+  .login-error.show { display: block; }
+  .login-hint { margin-top: 24px; padding-top: 24px; border-top: 0.5px solid var(--line); font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* PORTAL */
+  .portal { display: none; grid-template-columns: 240px 1fr; height: 100vh; }
+  .portal.active { display: grid; }
+  @media (max-width: 900px) {
+    .portal.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .mobile-nav-btn { display: flex !important; }
+  }
+  .sidebar { background: var(--sidebar); border-right: 0.5px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-size: 12px; }
+  .sidebar-section { padding: 18px 10px 6px; font-size: 11.5px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; color: var(--ink-soft); transition: background 0.12s; letter-spacing: -0.003em; font-weight: 400; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+  .nav-item:hover { background: var(--paper); color: var(--ink); }
+  .nav-item.active { background: var(--paper); color: var(--accent); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; }
+  .nav-icon svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .nav-count { margin-left: auto; font-size: 11.5px; background: var(--line); padding: 1px 7px; border-radius: 10px; color: var(--ink-muted); min-width: 20px; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .nav-item.active .nav-count { background: var(--accent); color: #fff; }
+  .nav-count.alert { background: var(--danger); color: #fff; }
+  .nav-count.warn { background: var(--warn); color: #fff; }
+  .sidebar-footer { margin-top: auto; padding: 12px 10px 4px; border-top: 0.5px solid var(--line); }
+  .user-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); padding: 6px 0; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 500; }
+  .logout-btn { width: 100%; margin-top: 6px; padding: 6px 10px; background: none; border: none; font: 400 12.5px var(--sans); color: var(--ink-muted); text-align: left; cursor: pointer; border-radius: 6px; font-family: inherit; }
+  .logout-btn:hover { background: var(--paper); color: var(--ink); }
+
+  .main-area { overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+  .main-header { padding: 14px 28px; border-bottom: 0.5px solid var(--line); background: rgba(244,248,246,0.85); backdrop-filter: saturate(180%) blur(20px); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .mobile-nav-btn { display: none; width: 36px; height: 36px; border-radius: 8px; border: 0.5px solid var(--line); background: var(--paper); cursor: pointer; place-items: center; }
+  .mobile-nav-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .crumb-stack { flex: 1; min-width: 0; }
+  .crumb-eyebrow { font-size: 11px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1px; }
+  .crumb-title { font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+
+  .pill-btn { padding: 6px 14px; border: 0.5px solid var(--line); border-radius: 999px; background: var(--paper); cursor: pointer; font: 500 12.5px var(--sans); color: var(--ink-soft); letter-spacing: -0.003em; display: inline-flex; align-items: center; gap: 5px; font-family: inherit; }
+  .pill-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .pill-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill-btn.primary:hover { filter: brightness(1.1); color: #fff; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
+  @media (max-width: 600px) { .content { padding: 22px 20px 40px; } }
+
+  /* HOME */
+  .home-hero { padding: 8px 0 28px; border-bottom: 0.5px solid var(--line); margin-bottom: 28px; }
+  .hero-title { font-family: var(--serif); font-size: 38px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 10px; }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub { font-size: 15.5px; color: var(--ink-soft); line-height: 1.55; max-width: 580px; }
+  @media (max-width: 600px) { .hero-title { font-size: 30px; } }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .stat-label { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 500; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.05; color: var(--accent); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.success { color: var(--success); }
+  .stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+  .section-title { font-size: 13px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+  .table-wrap { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 18px; font-size: 13.5px; letter-spacing: -0.003em; border-bottom: 0.5px solid var(--line-soft); }
+  th { background: var(--line-soft); font-size: 11.5px; font-weight: 500; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; transition: background 0.1s; }
+  tr.clickable:hover td { background: var(--accent-pale); }
+  .cell-name { font-weight: 500; color: var(--ink); }
+  .cell-sub { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .cell-time { font-size: 12.5px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cell-right { text-align: right; }
+  .cell-mono { font-family: var(--mono); font-size: 12px; }
+
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 5px; font-size: 12px; font-weight: 500; letter-spacing: -0.003em; }
+  .tag-blue { background: rgba(26,86,199,0.1); color: var(--info); }
+  .tag-amber { background: rgba(184,115,31,0.12); color: var(--warn); }
+  .tag-green { background: rgba(26,107,60,0.1); color: var(--success); }
+  .tag-coral { background: rgba(163,48,31,0.1); color: var(--danger); }
+  .tag-grey { background: var(--line); color: var(--ink-soft); }
+  .tag-accent { background: var(--accent-pale); color: var(--accent); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-muted); font-size: 14px; }
+  .empty-state .big { font-family: var(--serif); font-size: 22px; color: var(--ink-soft); margin-bottom: 6px; }
+
+  .task-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: all 0.12s; }
+  .task-card:hover { border-color: var(--accent); transform: translateX(2px); }
+  .task-priority { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .task-priority.red { background: var(--danger); }
+  .task-priority.amber { background: var(--warn); }
+  .task-priority.green { background: var(--success); }
+  .task-meta { flex: 1; }
+  .task-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .task-sub { font-size: 12.5px; color: var(--ink-muted); }
+  .task-due { font-size: 12px; color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .task-due.overdue { color: var(--danger); font-weight: 500; }
+
+  /* PROJECT KANBAN */
+  .kanban { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  @media (max-width: 1100px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .kanban { grid-template-columns: 1fr; } }
+  .kanban-col { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 12px; min-height: 200px; }
+  .kanban-head { font-size: 11.5px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+  .kanban-head .count { background: var(--accent-pale); color: var(--accent); padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+  .project-card { background: var(--bg); border: 0.5px solid var(--line); border-radius: 8px; padding: 11px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.12s; }
+  .project-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+  .project-card .pname { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+  .project-card .pclient { font-size: 11.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .project-card .pmeta { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-muted); }
+  .project-card .pdue.urgent { color: var(--danger); font-weight: 500; }
+
+  /* CLIENT WORKSPACE */
+  .client-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 0.5px solid var(--line); flex-wrap: wrap; }
+  .client-name { font-family: var(--serif); font-size: 28px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 6px; }
+  .client-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: var(--ink-muted); }
+  .client-meta strong { color: var(--ink-soft); font-weight: 400; }
+
+  .tab-bar { display: flex; gap: 4px; overflow-x: auto; border-bottom: 0.5px solid var(--line); margin-bottom: 22px; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 9px 14px; background: none; border: none; color: var(--ink-muted); font: 500 13.5px var(--sans); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; letter-spacing: -0.003em; font-family: inherit; }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .work-checklist-grid { display: grid; grid-template-columns: 1fr 320px; gap: 22px; }
+  @media (max-width: 900px) { .work-checklist-grid { grid-template-columns: 1fr; } }
+
+  .panel-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 16px; }
+  .panel-title { font-family: var(--serif); font-size: 18px; font-weight: 500; letter-spacing: -0.015em; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .panel-eyebrow { font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+
+  .field-grid { display: grid; grid-template-columns: 180px 1fr; gap: 12px 22px; margin-bottom: 22px; }
+  @media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; gap: 6px 0; } }
+  .field-grid dt { color: var(--ink-muted); font-size: 13.5px; padding-top: 8px; }
+  .field-grid dd { color: var(--ink); }
+
+  .checklist-panel { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 20px; position: sticky; top: 0; max-height: 80vh; overflow-y: auto; }
+  .checklist-title { font-family: var(--serif); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .checklist-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; }
+  .checklist-progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-bottom: 16px; }
+  .checklist-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; cursor: pointer; transition: opacity 0.12s; }
+  .checklist-item:hover { opacity: 0.85; }
+  .checklist-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--ink-faint); flex-shrink: 0; display: grid; place-items: center; transition: all 0.15s; margin-top: 1px; }
+  .checklist-item.done .checklist-check { background: var(--success); border-color: var(--success); }
+  .checklist-item.done .checklist-check::after { content: ''; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
+  .checklist-text { font-size: 13px; line-height: 1.45; color: var(--ink); transition: all 0.12s; }
+  .checklist-item.done .checklist-text { color: var(--ink-faint); text-decoration: line-through; }
+  .checklist-guide-link { font-size: 11.5px; color: var(--accent); margin-top: 4px; text-decoration: none; display: inline-block; }
+  .checklist-guide-link:hover { text-decoration: underline; }
+
+  /* SOFTWARE MANAGEMENT MONITORING */
+  .system-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; display: grid; grid-template-columns: 1fr auto auto; gap: 14px; align-items: center; }
+  .system-status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+  .system-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .system-status.up { color: var(--success); }
+  .system-status.up .dot { background: var(--success); }
+  .system-status.warn { color: var(--warn); }
+  .system-status.warn .dot { background: var(--warn); }
+  .system-status.down { color: var(--danger); }
+  .system-status.down .dot { background: var(--danger); }
+
+  /* PLAYBOOK */
+  .playbook-search { width: 100%; padding: 12px 16px 12px 42px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 999px; font: 400 14.5px var(--sans); margin-bottom: 22px; background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%236B8077' stroke-width='1.8'/%3E%3Cpath d='M21 21L16.5 16.5' stroke='%236B8077' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 16px center; }
+  .playbook-search:focus { outline: none; border-color: var(--accent); }
+  .guide-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .guide-card.open { border-color: var(--accent); }
+  .guide-head { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 14px; background: none; border: none; width: 100%; text-align: left; font-family: inherit; }
+  .guide-head:hover { background: var(--accent-pale); }
+  .guide-meta { flex: 1; min-width: 0; }
+  .guide-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; margin-bottom: 5px; text-transform: uppercase; }
+  .guide-name { font-family: var(--serif); font-size: 17px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.2; }
+  .guide-tldr { font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; line-height: 1.45; }
+  .guide-chev { width: 26px; height: 26px; border-radius: 50%; background: var(--line-soft); display: grid; place-items: center; transition: transform 0.2s; flex-shrink: 0; }
+  .guide-card.open .guide-chev { transform: rotate(180deg); }
+  .guide-chev svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 1.8; }
+  .guide-body { display: none; padding: 0 20px 20px; border-top: 0.5px solid var(--line-soft); }
+  .guide-card.open .guide-body { display: block; }
+  .guide-section { margin-top: 14px; }
+  .guide-section-label { font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .guide-text { font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .guide-list { margin: 4px 0 0 18px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .guide-list li { margin-bottom: 4px; }
+
+  .btn { padding: 9px 18px; border-radius: 999px; border: 0.5px solid var(--line); background: var(--paper); cursor: pointer; font: 500 13.5px var(--sans); color: var(--ink-soft); transition: all 0.12s; font-family: inherit; }
+  .btn:hover { color: var(--ink); border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(1.1); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand"><div class="dot">S</div><span>Scalar</span></div>
+    <div class="login-eyebrow">Software Studio</div>
+    <h1 class="login-title">Sign in to <em>build</em>.</h1>
+    <p class="login-sub">Scalar engineering workspace — receive briefs from CSO, build & maintain software, ship clean code back.</p>
+    <form id="login-form" autocomplete="off">
+      <div class="login-field"><label for="login-user">Username</label><input type="text" class="login-input" id="login-user" autocomplete="username"></div>
+      <div class="login-field"><label for="login-pass">Password</label><input type="password" class="login-input" id="login-pass" autocomplete="current-password"></div>
+      <button type="submit" class="login-btn">Sign in</button>
+      <div class="login-error" id="login-error">Wrong username or password.</div>
+    </form>
+    <div class="login-hint">Scalar engineering team only. CSO assigns clients — we build, deploy, maintain.</div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal" id="portal">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><div class="brand-dot">S</div><span>Scalar</span></div>
+
+    <div class="sidebar-section">Workspace</div>
+    <button class="nav-item active" data-tab="home"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>Home</button>
+    <button class="nav-item" data-tab="leads">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
+      Live Leads
+      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+    </button>
+    <button class="nav-item" data-tab="mytasks"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>My tasks<span class="nav-count alert" id="count-tasks">0</span></button>
+    <button class="nav-item" data-tab="incoming"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>Incoming briefs<span class="nav-count warn" id="count-incoming">0</span></button>
+
+    <div class="sidebar-section">Development</div>
+    <button class="nav-item" data-tab="projects"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></span>Project pipeline<span class="nav-count" id="count-projects">0</span></button>
+    <button class="nav-item" data-tab="ship"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>Ready to ship<span class="nav-count" id="count-ship">0</span></button>
+
+    <div class="sidebar-section">Software Management</div>
+    <button class="nav-item" data-tab="systems"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg></span>Active systems<span class="nav-count" id="count-systems">0</span></button>
+    <button class="nav-item" data-tab="incidents"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg></span>Incidents<span class="nav-count warn" id="count-incidents">0</span></button>
+    <button class="nav-item" data-tab="maintenance"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>Maintenance log</button>
+
+    <div class="sidebar-section">Knowledge</div>
+    <button class="nav-item" data-tab="playbook"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>Playbook</button>
+
+    <div class="sidebar-footer">
+      <div class="user-row"><div class="user-avatar">S</div><div><div style="color:var(--ink);font-weight:500;">Scalar Studio</div><div style="font-size:11.5px;color:var(--ink-muted);">Engineering team</div></div></div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="main-header">
+      <button class="mobile-nav-btn" id="mobile-nav-btn" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="crumb-stack"><div class="crumb-eyebrow" id="crumb-eyebrow">Scalar Studio</div><div class="crumb-title" id="crumb-title">Home</div></div>
+      <div id="header-actions"></div>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// AUTH
+const AUTH_KEY = 'scalar_signed_in';
+const VALID_USER = 'SCALAR';
+const VALID_PASS = 'SCALAR';
+function isSignedIn() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch(e) { return false; } }
+function signIn() { try { sessionStorage.setItem(AUTH_KEY, '1'); } catch(e) {} document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+function signOut() { try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {} document.getElementById('portal').classList.remove('active'); document.getElementById('login-screen').style.display = 'grid'; document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').classList.remove('show'); }
+document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); const u=document.getElementById('login-user').value.trim(); const p=document.getElementById('login-pass').value.trim(); if(u===VALID_USER&&p===VALID_PASS) signIn(); else document.getElementById('login-error').classList.add('show'); });
+document.getElementById('logout-btn').addEventListener('click', signOut);
+if (isSignedIn()) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+
+// SAMPLE DATA
+const now = Date.now();
+const DAY = 86400000, HR = 3600000;
+
+// Project stages: kickoff, spec, build, qa, handover
+const PROJECTS = [
+  { id: 'PRJ-001', status: 'incoming', stage: null, receivedAt: now - 5*HR, csoRef: 'HAM-FRS-205', clientName: 'Fresh Laundry', clientNiche: 'Laundry chain — Lagos', service: 'Website Design', budget: '₦250,000', deadline: '2026-06-15',
+    autoFilled: { whatClientNeeds: 'New ecommerce site to take orders, track laundry status, schedule pickups.', tech: 'Likely WordPress + Woo or custom with Stripe payment', timeline: '6 weeks' } },
+  { id: 'PRJ-002', status: 'incoming', stage: null, receivedAt: now - 28*HR, csoRef: 'HAM-CRF-210', clientName: 'Crafted Kitchen', clientNiche: 'Catering', service: 'Workflow Automation', budget: '₦220,000', deadline: '2026-05-30',
+    autoFilled: { whatClientNeeds: 'Auto-generate invoices when orders are accepted. WhatsApp notifications to kitchen team.', tech: 'Make.com or Zapier + Google Sheets + WhatsApp API', timeline: '3 weeks' } },
+  { id: 'PRJ-003', status: 'active', stage: 'build', startedAt: now - 14*DAY, csoRef: 'HAM-VLT-108', clientName: 'Vault Advisory', service: 'CRM Setup', budget: '₦180,000', deadline: '2026-05-20',
+    progress: { kickoff: 1, spec: 1, build: 0.6, qa: 0, handover: 0 },
+    notes: 'Building on HubSpot. Custom fields for tax compliance pipeline. Halfway through.' },
+  { id: 'PRJ-004', status: 'active', stage: 'qa', startedAt: now - 35*DAY, csoRef: 'HAM-BLE-211', clientName: 'Belle Boutique', service: 'E-commerce', budget: '₦400,000', deadline: '2026-05-05',
+    progress: { kickoff: 1, spec: 1, build: 1, qa: 0.7, handover: 0 },
+    notes: 'Shopify store + custom WhatsApp ordering. QA in progress, found 3 minor bugs.' },
+  { id: 'PRJ-005', status: 'active', stage: 'handover', startedAt: now - 45*DAY, csoRef: 'HAM-NTH-077', clientName: 'Northstar Africa', service: 'AI Integration', budget: '₦300,000', deadline: '2026-04-29',
+    progress: { kickoff: 1, spec: 1, build: 1, qa: 1, handover: 0.5 },
+    notes: 'AI chatbot for investor inquiries. In handover phase, training their team.' },
+  { id: 'PRJ-006', status: 'shipped', shippedAt: now - 6*DAY, csoRef: 'HAM-SAF-094', clientName: 'Saffron Skin', service: 'Website Design', budget: '₦250,000' }
+];
+
+// Software Management — clients on monthly retainer
+const SYSTEMS = [
+  { id: 'SYS-001', clientName: 'Vault Advisory', system: 'Tax compliance CRM', plan: 'Software Mgmt ₦100k/mo', startDate: '2026-02-01', uptime: 99.8, lastIncident: null, lastMaintenance: '2026-04-15', healthStatus: 'up' },
+  { id: 'SYS-002', clientName: 'Belle Boutique', system: 'Shopify + WhatsApp ordering', plan: 'Software Mgmt ₦100k/mo', startDate: '2026-03-15', uptime: 98.2, lastIncident: '2026-04-22', healthStatus: 'warn' },
+  { id: 'SYS-003', clientName: 'Spark Academy', system: 'Custom LMS platform', plan: 'Software Mgmt ₦100k/mo', startDate: '2026-01-10', uptime: 100, lastIncident: null, lastMaintenance: '2026-04-20', healthStatus: 'up' }
+];
+
+const INCIDENTS = [
+  { id: 'INC-001', clientName: 'Belle Boutique', system: 'Shopify + WhatsApp ordering', issue: 'Webhook timeout — 3 orders not pushing to WhatsApp', severity: 'High', status: 'Investigating', openedAt: now - 4*HR }
+];
+
+// CHECKLISTS
+const CHECKLISTS = {
+  project_kickoff: { name: 'Project Kickoff Checklist', items: [
+    { text: 'Read brief from CSO carefully', guide: 'how-to-read-brief' },
+    { text: 'Schedule kickoff call with CSO (and client if needed)', guide: null },
+    { text: 'Confirm scope with CSO', guide: null },
+    { text: 'Confirm budget and timeline', guide: null },
+    { text: 'Set up project repo / workspace', guide: null },
+    { text: 'Draft technical spec', guide: 'how-to-write-spec' },
+    { text: 'Send spec to CSO for approval', guide: null },
+    { text: 'Mark project as Spec → Build when approved', guide: null }
+  ]},
+  project_handover: { name: 'Project Handover Checklist', items: [
+    { text: 'Final QA pass — all bugs resolved', guide: null },
+    { text: 'Performance test (load times, mobile responsiveness)', guide: null },
+    { text: 'Security check (auth, data exposure, dependencies)', guide: null },
+    { text: 'Write user documentation', guide: 'how-to-write-docs' },
+    { text: 'Create credentials package (logins, admin access)', guide: null },
+    { text: 'Record walkthrough video for client', guide: null },
+    { text: 'Schedule handover session', guide: null },
+    { text: 'Transfer ownership / domain / access', guide: null },
+    { text: 'Mark "Ready to ship" → CSO delivers to client', guide: null },
+    { text: 'Schedule 30-day post-launch check-in', guide: null }
+  ]},
+  monthly_maintenance: { name: 'Monthly Maintenance Checklist', items: [
+    { text: 'Run security scan', guide: null },
+    { text: 'Update all dependencies', guide: 'how-to-update-deps' },
+    { text: 'Check backup integrity', guide: null },
+    { text: 'Review logs for anomalies', guide: null },
+    { text: 'Test critical user flows', guide: null },
+    { text: 'Performance audit', guide: null },
+    { text: 'Generate monthly health report', guide: null },
+    { text: 'Send report to CSO for client', guide: null }
+  ]},
+  incident_response: { name: 'Incident Response Checklist', items: [
+    { text: 'Acknowledge incident within SLA (30 mins critical, 2hrs high)', guide: 'how-to-incident' },
+    { text: 'Reproduce the issue', guide: null },
+    { text: 'Identify root cause', guide: null },
+    { text: 'Apply fix or rollback', guide: null },
+    { text: 'Verify fix in production', guide: null },
+    { text: 'Notify CSO with summary', guide: null },
+    { text: 'Write postmortem if severity High+', guide: 'how-to-postmortem' },
+    { text: 'Update monitoring to catch this earlier next time', guide: null }
+  ]}
+};
+
+// PLAYBOOK GUIDES
+const GUIDES = [
+  { id: 'how-to-read-brief', tag: 'process', tagColor: 'tag-blue', name: 'How to read a brief from CSO',
+    tldr: 'Read twice. Find the unstated assumption. Question scope before starting.',
+    sections: {
+      'Why this matters': 'CSO writes briefs based on what the client said. The client doesn\'t always know what they actually need. Your job is to surface gaps before you start coding.',
+      'Step by step': [
+        'Read the whole brief end to end without judging',
+        'Read it again, this time underlining every requirement',
+        'Look for unstated assumptions (mobile? login required? payment?)',
+        'Compare timeline vs scope — is this realistic?',
+        'List 3-5 clarifying questions for CSO',
+        'Have the kickoff call BEFORE writing any code'
+      ],
+      'Red flags': ['Vague success criteria', 'Timeline that does not include QA', 'No mention of who hosts/maintains', 'No mention of who the end user is']
+    } },
+  { id: 'how-to-write-spec', tag: 'process', tagColor: 'tag-blue', name: 'How to write a technical spec',
+    tldr: 'One pager. User flows + tech stack + timeline + what is OUT of scope.',
+    sections: {
+      'Structure': [
+        'Goal (1 sentence)',
+        'Users (who uses this and what they need to do)',
+        'Core flows (step by step user journeys)',
+        'Tech stack (concrete choices, not options)',
+        'Out of scope (what we are NOT building — protect against scope creep)',
+        'Timeline (with milestones)',
+        'Risks'
+      ],
+      'Length': 'One page. Two max. If it is longer, break it into multiple specs (e.g. one for backend, one for frontend).',
+      'Pro tip': 'Out-of-scope section is the most important. It is the contract that protects you when client says "can you also..."'
+    } },
+  { id: 'how-to-write-docs', tag: 'delivery', tagColor: 'tag-green', name: 'How to write user documentation',
+    tldr: 'Write for someone who has never used the system. Show, don\'t just tell.',
+    sections: {
+      'TL;DR': 'Documentation is not for you. It is for the client and their team. Make it short, visual, and findable.',
+      'Structure': ['Quickstart (5 mins to first useful action)', 'Core tasks (most common things they will do)', 'Reference (every screen explained)', 'Troubleshooting (when X breaks, do Y)'],
+      'Tone': 'Plain English. Pretend you\'re explaining to a smart friend who has never used the tool. No jargon.',
+      'Format': 'Screenshots > video > text. People skim. Make it scannable.'
+    } },
+  { id: 'how-to-update-deps', tag: 'maintenance', tagColor: 'tag-amber', name: 'How to update dependencies safely',
+    tldr: 'Audit → patch level first → test → minor → test → major separately. Never bundle major updates.',
+    sections: {
+      'Order of operations': [
+        'Run `npm audit` (or pip equivalent) — see what is critical',
+        'Update PATCH versions first (1.2.3 → 1.2.4) — least risky',
+        'Run full test suite',
+        'If green, update MINOR versions (1.2.3 → 1.3.0)',
+        'Test again',
+        'For MAJOR versions (1.2.3 → 2.0.0): one at a time, separate PRs',
+        'Read CHANGELOG for every major upgrade — breaking changes lurk'
+      ],
+      'Never': ['Update everything at once', 'Skip testing because "it should work"', 'Update on Friday afternoon']
+    } },
+  { id: 'how-to-incident', tag: 'incident', tagColor: 'tag-coral', name: 'How to respond to an incident',
+    tldr: 'Acknowledge → reproduce → fix → verify → communicate → postmortem.',
+    sections: {
+      'TL;DR': 'Stay calm. Communicate often. Fix fast but verify before declaring done.',
+      'SLA': ['Critical (system down): acknowledge in 30 mins', 'High (feature broken): acknowledge in 2 hours', 'Medium (annoying but workable): acknowledge in 24 hours'],
+      'Step by step': [
+        'Acknowledge in incident channel — even if you do not have a fix yet',
+        'Get to a quiet space and reproduce the issue',
+        'Look at logs first, code second',
+        'If unsure, rollback before debugging — restore service first',
+        'Apply real fix in next deploy',
+        'Verify fix in production with the actual user flow that broke',
+        'Tell CSO with a one-paragraph summary they can pass to client',
+        'If severity High or above, write a postmortem within 48 hours'
+      ]
+    } },
+  { id: 'how-to-postmortem', tag: 'incident', tagColor: 'tag-coral', name: 'How to write a postmortem',
+    tldr: 'Blameless. What happened, why, what we are changing.',
+    sections: {
+      'Structure': ['Summary (2-3 sentences)', 'Timeline (when did what happen)', 'Root cause (the actual reason, not the symptom)', 'What we are changing (concrete actions, owners, dates)'],
+      'Tone': 'Blameless. We do not name people. We do not blame the on-call engineer. We focus on the SYSTEM that allowed the incident to happen.',
+      'Why bother': 'Postmortems are the only way teams get genuinely better. Skipping them = repeating the same outage 6 months later.'
+    } },
+  { id: 'how-to-deploy', tag: 'process', tagColor: 'tag-blue', name: 'How to deploy safely',
+    tldr: 'Staging first. Small commits. Deploy in low-traffic windows. Monitor 30 mins after.',
+    sections: {
+      'Rules': ['Always deploy to staging first', 'Never deploy on Friday after 3pm', 'Never deploy a big change without a rollback plan', 'Keep commits small — easier to bisect when things break'],
+      'Process': ['Merge PR to main', 'CI runs all tests', 'Deploy to staging', 'Smoke test critical flows', 'Deploy to production', 'Monitor for 30 mins (logs, error rates, user reports)']
+    } },
+  { id: 'how-to-credentials', tag: 'security', tagColor: 'tag-coral', name: 'How to manage client credentials',
+    tldr: 'Use a password manager. Never share via WhatsApp. Rotate when team members leave.',
+    sections: {
+      'Rules': ['Store in 1Password / Bitwarden / similar', 'Never paste passwords into Slack, WhatsApp, email', 'Never commit secrets to git', 'Use environment variables in code', 'Rotate immediately if a team member leaves'],
+      'Sharing with client': 'When client needs their own credentials at handover: send via password manager share link, NEVER plain text.'
+    } }
+];
+
+// STATE
+let currentTab = 'home';
+let currentProjectId = null;
+let currentSubtab = 'overview';
+const content = document.getElementById('content');
+const crumbEyebrow = document.getElementById('crumb-eyebrow');
+const crumbTitle = document.getElementById('crumb-title');
+const headerActions = document.getElementById('header-actions');
+
+function getMyTasks() {
+  const tasks = [];
+  PROJECTS.filter(p => p.status === 'incoming').forEach(p => {
+    tasks.push({ priority: 'amber', title: `Review brief: ${p.clientName}`, sub: `${p.service} · ${p.budget} · received ${relativeTime(p.receivedAt)}`, due: 'Today', action: () => { currentProjectId = p.id; openTab('project'); } });
+  });
+  PROJECTS.filter(p => p.status === 'active').forEach(p => {
+    const days = Math.ceil((new Date(p.deadline).getTime() - now) / DAY);
+    if (days < 0) tasks.push({ priority: 'red', title: `OVERDUE: ${p.clientName}`, sub: `${p.service} · was due ${p.deadline}`, due: 'Overdue', action: () => { currentProjectId = p.id; openTab('project'); } });
+    else if (days <= 7) tasks.push({ priority: 'amber', title: `${p.clientName} due in ${days}d`, sub: `${p.service} · stage: ${p.stage}`, due: `${days}d left`, action: () => { currentProjectId = p.id; openTab('project'); } });
+  });
+  INCIDENTS.filter(i => i.status !== 'Resolved').forEach(i => {
+    tasks.push({ priority: i.severity === 'High' ? 'red' : 'amber', title: `Incident: ${i.clientName}`, sub: i.issue, due: i.severity, action: () => openTab('incidents') });
+  });
+  const order = { red: 0, amber: 1, green: 2 };
+  tasks.sort((a, b) => order[a.priority] - order[b.priority]);
+  return tasks;
+}
+
+function updateCounts() {
+  const tasks = getMyTasks();
+  document.getElementById('count-tasks').textContent = tasks.length;
+  document.getElementById('count-tasks').style.display = tasks.length ? '' : 'none';
+  document.getElementById('count-incoming').textContent = PROJECTS.filter(p => p.status === 'incoming').length;
+  document.getElementById('count-incoming').style.display = PROJECTS.filter(p => p.status === 'incoming').length ? '' : 'none';
+  document.getElementById('count-projects').textContent = PROJECTS.filter(p => p.status === 'active').length;
+  document.getElementById('count-systems').textContent = SYSTEMS.length;
+  document.getElementById('count-incidents').textContent = INCIDENTS.filter(i => i.status !== 'Resolved').length;
+  document.getElementById('count-incidents').style.display = INCIDENTS.filter(i => i.status !== 'Resolved').length ? '' : 'none';
+  document.getElementById('count-ship').textContent = 0;
+  document.getElementById('count-ship').style.display = 'none';
+}
+
+function openTab(tab) {
+  currentTab = tab;
+  if (tab !== 'project') currentProjectId = null;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  headerActions.innerHTML = '';
+  render();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => openTab(n.dataset.tab)));
+document.getElementById('mobile-nav-btn').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('mobile-open'));
+
+function render() {
+  if (currentProjectId) { renderProject(); return; }
+  switch (currentTab) {
+    case 'home': renderHome(); break;
+    case 'leads': renderLeads(); break;
+    case 'mytasks': renderMyTasks(); break;
+    case 'incoming': renderIncoming(); break;
+    case 'projects': renderProjects(); break;
+    case 'systems': renderSystems(); break;
+    case 'incidents': renderIncidents(); break;
+    case 'maintenance': renderMaintenance(); break;
+    case 'ship': renderShip(); break;
+    case 'playbook': renderPlaybook(); break;
+  }
+}
+function setHeader(eyebrow, title) { crumbEyebrow.textContent = eyebrow; crumbTitle.textContent = title; }
+
+function renderHome() {
+  setHeader('Scalar Studio', 'Home');
+  const tasks = getMyTasks();
+  const incoming = PROJECTS.filter(p => p.status === 'incoming');
+  const active = PROJECTS.filter(p => p.status === 'active');
+  const systemsUp = SYSTEMS.filter(s => s.healthStatus === 'up').length;
+
+  content.innerHTML = `
+    <div class="home-hero">
+      <h1 class="hero-title">Welcome to <em>Scalar</em>.</h1>
+      <p class="hero-sub">Receive briefs from CSO, build software that scales, maintain it post-launch. The client never sees us — CSO is the face. We are the engineering studio behind the curtain.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">My tasks</div><div class="stat-value ${tasks.length>5?'danger':'warn'}">${tasks.length}</div><div class="stat-meta">${tasks.filter(t=>t.priority==='red').length} urgent · ${tasks.filter(t=>t.priority==='amber').length} this week</div></div>
+      <div class="stat-card"><div class="stat-label">Active projects</div><div class="stat-value">${active.length}</div><div class="stat-meta">In production</div></div>
+      <div class="stat-card"><div class="stat-label">Systems up</div><div class="stat-value ${systemsUp===SYSTEMS.length?'success':'warn'}">${systemsUp}/${SYSTEMS.length}</div><div class="stat-meta">${systemsUp===SYSTEMS.length?'All healthy':'Check incidents'}</div></div>
+      <div class="stat-card"><div class="stat-label">Open incidents</div><div class="stat-value ${INCIDENTS.filter(i=>i.status!=='Resolved').length?'danger':'success'}">${INCIDENTS.filter(i=>i.status!=='Resolved').length}</div><div class="stat-meta">${INCIDENTS.filter(i=>i.status!=='Resolved').length?'Action required':'All clear'}</div></div>
+    </div>
+    ${incoming.length ? `
+      <div class="section-title">New from CSO <button class="pill-btn" onclick="openTab('incoming')">View all →</button></div>
+      <div style="margin-bottom:32px;">
+        ${incoming.map(p => `
+          <div class="task-card" onclick="openProjectFromCard('${p.id}')">
+            <div class="task-priority amber"></div>
+            <div class="task-meta"><div class="task-title">${escapeHtml(p.clientName)} — ${escapeHtml(p.service)}</div><div class="task-sub">CSO ref ${p.csoRef} · ${p.budget} · deadline ${p.deadline}</div></div>
+            <div class="task-due">${relativeTime(p.receivedAt)}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="section-title">Today's priorities <button class="pill-btn" onclick="openTab('mytasks')">All →</button></div>
+    ${tasks.slice(0, 5).map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta"><div class="task-title">${escapeHtml(t.title)}</div><div class="task-sub">${escapeHtml(t.sub)}</div></div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${t.due}</div>
+      </div>
+    `).join('') || '<div class="empty-state"><div class="big">All caught up</div><div>Nothing pressing right now.</div></div>'}
+  `;
+}
+
+window.openProjectFromCard = (id) => { currentProjectId = id; openTab('project'); };
+
+function renderMyTasks() {
+  setHeader('My workspace', 'My tasks');
+  const tasks = getMyTasks();
+  if (!tasks.length) { content.innerHTML = `<div class="empty-state"><div class="big">All caught up 🫡</div><div>No urgent tasks. Good time to read the Playbook or do code review.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Auto-generated from incoming briefs, project deadlines, and active incidents. Sorted by urgency.</p>
+    <div class="section-title">${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}</div>
+    ${tasks.map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta"><div class="task-title">${escapeHtml(t.title)}</div><div class="task-sub">${escapeHtml(t.sub)}</div></div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${t.due}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderIncoming() {
+  setHeader('Pipeline', 'Incoming briefs from CSO');
+  const list = PROJECTS.filter(p => p.status === 'incoming');
+  if (!list.length) { content.innerHTML = `<div class="empty-state"><div class="big">No briefs waiting</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">New software work assigned by CSO. Review, accept, kickoff.</p>
+    <div style="display:grid;gap:14px;">
+      ${list.map(p => `
+        <div class="panel-card" style="margin-bottom:0;cursor:pointer;" onclick="openProjectFromCard('${p.id}')">
+          <div class="panel-eyebrow">CSO ref · ${p.csoRef} · received ${relativeTime(p.receivedAt)}</div>
+          <div class="panel-title">${escapeHtml(p.clientName)} <span style="font-family:var(--sans);font-size:13px;color:var(--ink-muted);font-weight:400;">${escapeHtml(p.clientNiche)}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:14px;">
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Service</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(p.service)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Budget</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(p.budget)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Deadline</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(p.deadline)}</div></div>
+          </div>
+          <div style="font-size:13px;color:var(--ink-soft);background:var(--accent-pale);padding:11px 14px;border-radius:8px;line-height:1.55;">
+            <strong style="color:var(--accent);">What client needs:</strong> ${escapeHtml(p.autoFilled.whatClientNeeds)}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderProjects() {
+  setHeader('Development', 'Project pipeline');
+  const stages = ['kickoff', 'spec', 'build', 'qa', 'handover'];
+  const stageNames = { kickoff: 'Kickoff', spec: 'Spec', build: 'Build', qa: 'QA', handover: 'Handover' };
+  const list = PROJECTS.filter(p => p.status === 'active');
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every active project as it moves through the pipeline. Click to open a project.</p>
+    <div class="kanban">
+      ${stages.map(stage => {
+        const inStage = list.filter(p => p.stage === stage);
+        return `
+          <div class="kanban-col">
+            <div class="kanban-head">${stageNames[stage]} <span class="count">${inStage.length}</span></div>
+            ${inStage.map(p => {
+              const days = Math.ceil((new Date(p.deadline).getTime() - now) / DAY);
+              return `
+                <div class="project-card" onclick="openProjectFromCard('${p.id}')">
+                  <div class="pname">${escapeHtml(p.clientName)}</div>
+                  <div class="pclient">${escapeHtml(p.service)}</div>
+                  <div class="pmeta">
+                    <span>${p.budget}</span>
+                    <span class="pdue ${days <= 7 ? 'urgent' : ''}">${days < 0 ? 'Overdue' : days+'d left'}</span>
+                  </div>
+                </div>
+              `;
+            }).join('') || '<div style="font-size:11.5px;color:var(--ink-faint);text-align:center;padding:14px 4px;">empty</div>'}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderSystems() {
+  setHeader('Software Management', 'Active systems');
+  if (!SYSTEMS.length) { content.innerHTML = `<div class="empty-state"><div class="big">No systems under management</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Clients on Software Management retainer (₦100k/mo). We monitor uptime, patch security, run monthly maintenance, respond to incidents.</p>
+    ${SYSTEMS.map(s => `
+      <div class="system-card">
+        <div>
+          <div style="font-size:14px;font-weight:500;color:var(--ink);">${escapeHtml(s.clientName)}</div>
+          <div style="font-size:12.5px;color:var(--ink-muted);margin-top:2px;">${escapeHtml(s.system)} · ${escapeHtml(s.plan)}</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:var(--ink-muted);">
+          <div>Uptime: <strong style="color:${s.uptime>=99?'var(--success)':s.uptime>=95?'var(--warn)':'var(--danger)'};">${s.uptime}%</strong></div>
+          <div style="margin-top:2px;">Last maintenance: ${s.lastMaintenance || '—'}</div>
+        </div>
+        <div class="system-status ${s.healthStatus}"><span class="dot"></span>${s.healthStatus === 'up' ? 'Healthy' : s.healthStatus === 'warn' ? 'Watch' : 'Down'}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderIncidents() {
+  setHeader('Software Management', 'Incidents');
+  if (!INCIDENTS.length) { content.innerHTML = `<div class="empty-state"><div class="big">No incidents 🛡</div><div>All systems are healthy.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Active incidents. Read the Playbook entry "How to respond to an incident" for the full process.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>System</th><th>Issue</th><th>Severity</th><th>Status</th><th>Opened</th></tr></thead>
+        <tbody>
+          ${INCIDENTS.map(i => `
+            <tr>
+              <td class="cell-name">${escapeHtml(i.clientName)}</td>
+              <td>${escapeHtml(i.system)}</td>
+              <td>${escapeHtml(i.issue)}</td>
+              <td><span class="tag ${i.severity === 'High' || i.severity === 'Critical' ? 'tag-coral' : i.severity === 'Medium' ? 'tag-amber' : 'tag-grey'}">${i.severity}</span></td>
+              <td><span class="tag ${i.status === 'Resolved' ? 'tag-green' : 'tag-amber'}">${i.status}</span></td>
+              <td class="cell-time">${relativeTime(i.openedAt)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderMaintenance() {
+  setHeader('Software Management', 'Maintenance log');
+  content.innerHTML = `<p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every maintenance action across all managed systems. Backend wires this up to a Sheets log.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Date</th><th>Client</th><th>Action</th><th>By</th></tr></thead>
+      <tbody>
+        <tr><td class="cell-time">2026-04-20</td><td class="cell-name">Spark Academy</td><td>Updated Node 18 → 20, regression tested critical flows</td><td>Scalar Studio</td></tr>
+        <tr><td class="cell-time">2026-04-15</td><td class="cell-name">Vault Advisory</td><td>Security patch applied to HubSpot integration</td><td>Scalar Studio</td></tr>
+        <tr><td class="cell-time">2026-04-10</td><td class="cell-name">Belle Boutique</td><td>Database backup verified, retention extended to 90 days</td><td>Scalar Studio</td></tr>
+      </tbody>
+    </table></div>`;
+}
+
+function renderShip() {
+  setHeader('Pipeline', 'Ready to ship to CSO');
+  content.innerHTML = `<div class="empty-state"><div class="big">Nothing queued</div><div>When a project completes handover, mark it from the project view to send to CSO.</div></div>`;
+}
+
+function renderPlaybook() {
+  setHeader('Knowledge', 'Playbook');
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every guide your engineering team needs. Scan the TL;DR or read deep. New hires productive on day 1.</p>
+    <input type="search" class="playbook-search" id="pb-search" placeholder="Search guides...">
+    <div id="pb-list">${renderGuides('')}</div>
+  `;
+  document.getElementById('pb-search').addEventListener('input', e => { document.getElementById('pb-list').innerHTML = renderGuides(e.target.value); });
+}
+function renderGuides(filter) {
+  const q = filter.toLowerCase().trim();
+  const list = q ? GUIDES.filter(g => (g.name + ' ' + g.tldr + ' ' + g.tag).toLowerCase().includes(q)) : GUIDES;
+  if (!list.length) return '<div class="empty-state">No guides match "' + escapeHtml(q) + '"</div>';
+  return list.map(g => `
+    <div class="guide-card" data-id="${g.id}">
+      <button class="guide-head" onclick="toggleGuide('${g.id}')">
+        <div class="guide-meta">
+          <span class="guide-tag ${g.tagColor}">${g.tag}</span>
+          <div class="guide-name">${escapeHtml(g.name)}</div>
+          <div class="guide-tldr">${escapeHtml(g.tldr)}</div>
+        </div>
+        <div class="guide-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </button>
+      <div class="guide-body">
+        ${Object.entries(g.sections).map(([label, content]) => `
+          <div class="guide-section">
+            <div class="guide-section-label">${label}</div>
+            ${Array.isArray(content) ? `<ul class="guide-list">${content.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : `<div class="guide-text">${escapeHtml(content)}</div>`}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+window.toggleGuide = (id) => { document.querySelectorAll('.guide-card').forEach(c => { if (c.dataset.id === id) c.classList.toggle('open'); else c.classList.remove('open'); }); };
+
+function renderProject() {
+  const p = PROJECTS.find(x => x.id === currentProjectId);
+  if (!p) { currentProjectId = null; openTab('home'); return; }
+  setHeader('Project', p.clientName);
+  headerActions.innerHTML = `<button class="pill-btn" onclick="exitProject()">← Back</button>`;
+
+  const isIncoming = p.status === 'incoming';
+  const tabs = isIncoming
+    ? [{ id: 'overview', label: 'Brief from CSO' }]
+    : [{ id: 'overview', label: 'Overview' }, { id: 'spec', label: 'Spec' }, { id: 'progress', label: 'Progress' }, { id: 'docs', label: 'Documents' }];
+
+  // Choose checklist based on stage
+  let checklist = null;
+  if (!isIncoming) {
+    if (p.stage === 'kickoff' || p.stage === 'spec') checklist = CHECKLISTS.project_kickoff;
+    else if (p.stage === 'handover') checklist = CHECKLISTS.project_handover;
+  }
+
+  let body = '';
+  if (currentSubtab === 'overview' || isIncoming) body = renderProjectOverview(p, isIncoming);
+  else if (currentSubtab === 'spec') body = `<div class="panel-card"><div class="panel-eyebrow">Technical spec</div><div class="panel-title">Project spec — ${escapeHtml(p.clientName)}</div><p style="font-size:14px;color:var(--ink-soft);line-height:1.6;">Spec document goes here. Goal, users, core flows, tech stack, what's out of scope, timeline, risks.</p></div>`;
+  else if (currentSubtab === 'progress') body = renderProjectProgress(p);
+  else if (currentSubtab === 'docs') body = `<div class="panel-card"><div class="panel-eyebrow">Documents</div><div class="panel-title">Project docs</div><ul style="font-size:13.5px;color:var(--ink-soft);line-height:1.8;margin-top:8px;"><li>📄 Brief from CSO</li><li>📄 Technical spec</li><li>📄 User flows</li><li>📁 Repository link</li><li>📁 Staging environment</li><li>📁 Production environment</li></ul></div>`;
+
+  content.innerHTML = `
+    <div class="client-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+          <span class="client-name">${escapeHtml(p.clientName)}</span>
+          <span class="tag tag-accent">${escapeHtml(p.service)}</span>
+          ${isIncoming ? '<span class="tag tag-amber">Incoming</span>' : `<span class="tag tag-green">Active · ${p.stage}</span>`}
+        </div>
+        <div class="client-meta">
+          <span><strong>CSO ref:</strong> ${p.csoRef}</span>
+          <span><strong>Budget:</strong> ${p.budget}</span>
+          ${p.deadline ? `<span><strong>Deadline:</strong> ${p.deadline}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isIncoming ? `<button class="btn btn-primary" onclick="acceptProject('${p.id}')">Accept project →</button>` : '<button class="btn btn-primary">Send to CSO ↗</button>'}
+      </div>
+    </div>
+    <div class="tab-bar">${tabs.map(t => `<button class="tab-btn ${t.id === currentSubtab ? 'active' : ''}" data-subtab="${t.id}">${t.label}</button>`).join('')}</div>
+    <div class="work-checklist-grid">
+      <div class="work-area">${body}</div>
+      ${checklist ? `<div>${renderChecklistPanel(p, checklist)}</div>` : ''}
+    </div>
+  `;
+  content.querySelectorAll('[data-subtab]').forEach(el => el.addEventListener('click', () => { currentSubtab = el.dataset.subtab; renderProject(); }));
+  content.querySelectorAll('.checklist-item').forEach(el => el.addEventListener('click', () => {
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!p._cl) p._cl = {};
+    if (!p._cl[checklist.name]) p._cl[checklist.name] = {};
+    p._cl[checklist.name][idx] = !p._cl[checklist.name][idx];
+    renderProject();
+  }));
+}
+
+function renderChecklistPanel(p, checklist) {
+  const done = (p._cl && p._cl[checklist.name]) || {};
+  const completedCount = checklist.items.filter((_, i) => done[i]).length;
+  const pct = Math.round((completedCount / checklist.items.length) * 100);
+  return `
+    <div class="checklist-panel">
+      <div class="checklist-title">${escapeHtml(checklist.name)}</div>
+      <div class="checklist-meta">${completedCount} of ${checklist.items.length} steps · ${pct}% complete</div>
+      <div class="checklist-progress"><div class="checklist-progress-fill" style="width:${pct}%;"></div></div>
+      ${checklist.items.map((item, i) => `
+        <div class="checklist-item ${done[i] ? 'done' : ''}" data-idx="${i}">
+          <div class="checklist-check"></div>
+          <div>
+            <div class="checklist-text">${escapeHtml(item.text)}</div>
+            ${item.guide ? `<a class="checklist-guide-link" href="javascript:void(0)" onclick="event.stopPropagation();openTab('playbook');">📖 Read guide</a>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderProjectOverview(p, isIncoming) {
+  if (isIncoming) {
+    return `
+      <div class="panel-card">
+        <div class="panel-eyebrow">From CSO</div>
+        <div class="panel-title">Brief details</div>
+        <dl class="field-grid">
+          <dt>What client needs</dt><dd>${escapeHtml(p.autoFilled.whatClientNeeds)}</dd>
+          <dt>Suggested tech</dt><dd>${escapeHtml(p.autoFilled.tech || '—')}</dd>
+          <dt>Timeline estimate</dt><dd>${escapeHtml(p.autoFilled.timeline || '—')}</dd>
+          <dt>Budget</dt><dd>${escapeHtml(p.budget)}</dd>
+          <dt>Deadline</dt><dd>${escapeHtml(p.deadline)}</dd>
+        </dl>
+        <button class="btn btn-primary" style="margin-top:6px;" onclick="acceptProject('${p.id}')">Accept project →</button>
+      </div>
+    `;
+  }
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Status</div>
+      <div class="panel-title">Currently in <em style="color:var(--accent);">${p.stage}</em></div>
+      <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;">${escapeHtml(p.notes || '—')}</p>
+    </div>
+  `;
+}
+
+function renderProjectProgress(p) {
+  if (!p.progress) return '<div class="empty-state"><div class="big">No progress logged yet</div></div>';
+  const stages = ['kickoff', 'spec', 'build', 'qa', 'handover'];
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Stages</div>
+      <div class="panel-title">Project progress</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:12px;">
+        ${stages.map(s => {
+          const v = p.progress[s] || 0;
+          const pct = Math.round(v * 100);
+          const isCurrent = p.stage === s;
+          return `
+            <div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;">
+                <span style="font-weight:${isCurrent?'500':'400'};color:${isCurrent?'var(--accent)':'var(--ink)'};">${s.charAt(0).toUpperCase() + s.slice(1)}${isCurrent?' (current)':''}</span>
+                <span style="color:var(--ink-muted);font-variant-numeric:tabular-nums;">${pct}%</span>
+              </div>
+              <div style="height:6px;background:var(--line);border-radius:3px;overflow:hidden;"><div style="height:100%;background:${v===1?'var(--success)':'var(--accent)'};width:${pct}%;transition:width 0.3s;"></div></div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+window.acceptProject = (id) => {
+  const p = PROJECTS.find(x => x.id === id);
+  if (!p) return;
+  p.status = 'active'; p.startedAt = Date.now(); p.stage = 'kickoff';
+  p.progress = { kickoff: 0, spec: 0, build: 0, qa: 0, handover: 0 };
+  alert('Accepted! ' + p.clientName + ' is now in active development.');
+  updateCounts(); currentSubtab = 'overview'; render();
+};
+window.exitProject = () => { currentProjectId = null; openTab('home'); };
+
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]); }
+function relativeTime(ts) { if (!ts) return '—'; const d = Date.now()-ts; if (d<3600000) return Math.round(d/60000)+'m ago'; if (d<86400000) return Math.round(d/3600000)+'h ago'; const days=Math.round(d/86400000); if(days===1)return'yesterday'; if(days<7)return days+'d ago'; return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+
+// ─── Live Leads from Apps Script ────────────────────────────────────────
+console.log('[hamzury-workspaces] live leads wired v1');
+const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const WORKSPACE_FILTER = 'scalar';
+
+function renderLeads() {
+  setHeader('Operations', 'Live Leads');
+  content.innerHTML = `
+    <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
+            Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
+          </h1>
+          <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
+            Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
+          <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+        </div>
+      </div>
+      <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
+        <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
+        <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+      </div>
+    </section>
+  `;
+  document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
+  loadLiveLeads();
+}
+
+async function loadLiveLeads() {
+  const status = document.getElementById('leads-status');
+  const list = document.getElementById('leads-list');
+  const empty = document.getElementById('leads-empty');
+  const badge = document.getElementById('leads-badge');
+
+  try {
+    if (status) status.textContent = 'Loading…';
+    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const data = await res.json();
+    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
+
+    let rows = all;
+    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
+      rows = all.filter(r => {
+        const form = String(r.Form || '').toLowerCase();
+        const title = String(r['Form Title'] || '').toLowerCase();
+        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
+      });
+    }
+
+    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+
+    if (badge) {
+      if (rows.length === 0) badge.style.display = 'none';
+      else { badge.textContent = rows.length; badge.style.display = 'inline-block'; }
+    }
+
+    if (!list) return;
+    list.innerHTML = '';
+    if (rows.length === 0) {
+      if (empty) empty.hidden = false;
+    } else {
+      if (empty) empty.hidden = true;
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+        const dt = new Date(r['Received At']);
+        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        card.innerHTML = `
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
+              ${escapeLeadHtml(r['Client Name'] || '—')}
+              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
+              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
+              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
+              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+              ${escapeLeadHtml(r.Status || 'New')}
+            </span>
+            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch (e) {
+    console.warn('[live-leads] fetch failed', e);
+    if (status) status.textContent = 'Connection error';
+  }
+}
+
+function escapeLeadHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadLiveLeads();
+setInterval(loadLiveLeads, 30000);
+
+updateCounts(); render();
+</script>
+
+</body>
+</html>

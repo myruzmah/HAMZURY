@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Dev — Hamzury Growth Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #FAF6F2;
+    --paper: #FFFFFF;
+    --ink: #2A1810;
+    --ink-soft: #4A2D1F;
+    --ink-muted: #856857;
+    --ink-faint: #C2B0A2;
+    --line: #EDE0D4;
+    --line-soft: #F6EFE6;
+    --sidebar: #F2E9DE;
+    --accent: #B8552E;
+    --accent-soft: #D4724A;
+    --accent-pale: #F8E9DF;
+    --success: #1A6B3C;
+    --warn: #B8731F;
+    --danger: #A3301F;
+    --info: #1A56C7;
+    --focus: rgba(184,85,46,0.14);
+
+    --marketing: #B8552E;
+    --grants: #1F6B5C;
+    --affiliate: #5B3FA8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; font-family: var(--sans); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; letter-spacing: -0.005em; overflow: hidden;
+  }
+
+  /* LOGIN */
+  .login-screen { height: 100vh; display: grid; place-items: center;
+    background: radial-gradient(circle at 25% 20%, rgba(184,85,46,0.08), transparent 50%), radial-gradient(circle at 75% 80%, rgba(184,140,76,0.04), transparent 50%), var(--bg); }
+  .login-card { width: 100%; max-width: 380px; padding: 40px; }
+  .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; }
+  .login-brand .dot { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-size: 15px; font-weight: 500; }
+  .login-eyebrow { font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .login-title { font-family: var(--serif); font-size: 36px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 12px; }
+  .login-title em { font-style: italic; color: var(--accent); }
+  .login-sub { font-size: 14.5px; color: var(--ink-muted); margin-bottom: 32px; line-height: 1.5; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--ink-soft); margin-bottom: 6px; }
+  .login-input { width: 100%; padding: 12px 14px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; font: 400 15px var(--sans); color: var(--ink); letter-spacing: -0.005em; }
+  .login-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--focus); }
+  .login-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font: 500 15px var(--sans); cursor: pointer; margin-top: 10px; transition: filter 0.12s; }
+  .login-btn:hover { filter: brightness(1.1); }
+  .login-error { display: none; margin-top: 14px; padding: 10px 14px; background: rgba(163,48,31,0.08); color: var(--danger); border-radius: 8px; font-size: 13px; }
+  .login-error.show { display: block; }
+  .login-hint { margin-top: 24px; padding-top: 24px; border-top: 0.5px solid var(--line); font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* PORTAL */
+  .portal { display: none; grid-template-columns: 240px 1fr; height: 100vh; }
+  .portal.active { display: grid; }
+  @media (max-width: 900px) {
+    .portal.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .mobile-nav-btn { display: flex !important; }
+  }
+  .sidebar { background: var(--sidebar); border-right: 0.5px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-size: 12px; }
+  .sidebar-section { padding: 18px 10px 6px; font-size: 11.5px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; color: var(--ink-soft); transition: background 0.12s; letter-spacing: -0.003em; font-weight: 400; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+  .nav-item:hover { background: var(--paper); color: var(--ink); }
+  .nav-item.active { background: var(--paper); color: var(--accent); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; }
+  .nav-icon svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .nav-count { margin-left: auto; font-size: 11.5px; background: var(--line); padding: 1px 7px; border-radius: 10px; color: var(--ink-muted); min-width: 20px; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .nav-item.active .nav-count { background: var(--accent); color: #fff; }
+  .nav-count.alert { background: var(--danger); color: #fff; }
+  .nav-count.warn { background: var(--warn); color: #fff; }
+  .sidebar-footer { margin-top: auto; padding: 12px 10px 4px; border-top: 0.5px solid var(--line); }
+  .user-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); padding: 6px 0; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 500; }
+  .logout-btn { width: 100%; margin-top: 6px; padding: 6px 10px; background: none; border: none; font: 400 12.5px var(--sans); color: var(--ink-muted); text-align: left; cursor: pointer; border-radius: 6px; font-family: inherit; }
+  .logout-btn:hover { background: var(--paper); color: var(--ink); }
+
+  .main-area { overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+  .main-header { padding: 14px 28px; border-bottom: 0.5px solid var(--line); background: rgba(250,246,242,0.85); backdrop-filter: saturate(180%) blur(20px); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .mobile-nav-btn { display: none; width: 36px; height: 36px; border-radius: 8px; border: 0.5px solid var(--line); background: var(--paper); cursor: pointer; place-items: center; }
+  .mobile-nav-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .crumb-stack { flex: 1; min-width: 0; }
+  .crumb-eyebrow { font-size: 11px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1px; }
+  .crumb-title { font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+
+  .pill-btn { padding: 6px 14px; border: 0.5px solid var(--line); border-radius: 999px; background: var(--paper); cursor: pointer; font: 500 12.5px var(--sans); color: var(--ink-soft); letter-spacing: -0.003em; display: inline-flex; align-items: center; gap: 5px; font-family: inherit; }
+  .pill-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .pill-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill-btn.primary:hover { filter: brightness(1.1); color: #fff; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
+  @media (max-width: 600px) { .content { padding: 22px 20px 40px; } }
+
+  /* HOME */
+  .home-hero { padding: 8px 0 28px; border-bottom: 0.5px solid var(--line); margin-bottom: 28px; }
+  .hero-title { font-family: var(--serif); font-size: 38px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 10px; }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub { font-size: 15.5px; color: var(--ink-soft); line-height: 1.55; max-width: 580px; }
+  @media (max-width: 600px) { .hero-title { font-size: 30px; } }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .stat-label { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 500; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.05; color: var(--accent); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.success { color: var(--success); }
+  .stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+  .section-title { font-size: 13px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+  .table-wrap { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 18px; font-size: 13.5px; letter-spacing: -0.003em; border-bottom: 0.5px solid var(--line-soft); }
+  th { background: var(--line-soft); font-size: 11.5px; font-weight: 500; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; transition: background 0.1s; }
+  tr.clickable:hover td { background: var(--accent-pale); }
+  .cell-name { font-weight: 500; color: var(--ink); }
+  .cell-sub { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .cell-time { font-size: 12.5px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cell-right { text-align: right; }
+  .cell-mono { font-family: var(--mono); font-size: 12px; }
+
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 5px; font-size: 12px; font-weight: 500; letter-spacing: -0.003em; }
+  .tag-blue { background: rgba(26,86,199,0.1); color: var(--info); }
+  .tag-amber { background: rgba(184,115,31,0.12); color: var(--warn); }
+  .tag-green { background: rgba(26,107,60,0.1); color: var(--success); }
+  .tag-coral { background: rgba(163,48,31,0.1); color: var(--danger); }
+  .tag-grey { background: var(--line); color: var(--ink-soft); }
+  .tag-accent { background: var(--accent-pale); color: var(--accent); }
+  .tag-marketing { background: rgba(184,85,46,0.12); color: var(--marketing); }
+  .tag-grants { background: rgba(31,107,92,0.10); color: var(--grants); }
+  .tag-affiliate { background: rgba(91,63,168,0.10); color: var(--affiliate); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-muted); font-size: 14px; }
+  .empty-state .big { font-family: var(--serif); font-size: 22px; color: var(--ink-soft); margin-bottom: 6px; }
+
+  .task-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: all 0.12s; }
+  .task-card:hover { border-color: var(--accent); transform: translateX(2px); }
+  .task-priority { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .task-priority.red { background: var(--danger); }
+  .task-priority.amber { background: var(--warn); }
+  .task-priority.green { background: var(--success); }
+  .task-meta { flex: 1; min-width: 0; }
+  .task-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .task-sub { font-size: 12.5px; color: var(--ink-muted); }
+  .task-due { font-size: 12px; color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .task-due.overdue { color: var(--danger); font-weight: 500; }
+
+  /* CARDS */
+  .panel-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 16px; }
+  .panel-title { font-family: var(--serif); font-size: 18px; font-weight: 500; letter-spacing: -0.015em; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .panel-eyebrow { font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+
+  .field-grid { display: grid; grid-template-columns: 180px 1fr; gap: 12px 22px; margin-bottom: 8px; }
+  @media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; gap: 6px 0; } }
+  .field-grid dt { color: var(--ink-muted); font-size: 13.5px; padding-top: 8px; }
+  .field-grid dd { color: var(--ink); font-size: 14px; line-height: 1.5; }
+
+  /* DETAIL VIEW */
+  .client-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 0.5px solid var(--line); flex-wrap: wrap; }
+  .client-name { font-family: var(--serif); font-size: 28px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 6px; }
+  .client-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: var(--ink-muted); }
+  .client-meta strong { color: var(--ink-soft); font-weight: 400; }
+
+  .tab-bar { display: flex; gap: 4px; overflow-x: auto; border-bottom: 0.5px solid var(--line); margin-bottom: 22px; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 9px 14px; background: none; border: none; color: var(--ink-muted); font: 500 13.5px var(--sans); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; letter-spacing: -0.003em; font-family: inherit; }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .work-checklist-grid { display: grid; grid-template-columns: 1fr 320px; gap: 22px; }
+  @media (max-width: 900px) { .work-checklist-grid { grid-template-columns: 1fr; } }
+
+  .checklist-panel { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 20px; position: sticky; top: 0; max-height: 80vh; overflow-y: auto; }
+  .checklist-title { font-family: var(--serif); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .checklist-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; }
+  .checklist-progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-bottom: 16px; }
+  .checklist-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; cursor: pointer; transition: opacity 0.12s; }
+  .checklist-item:hover { opacity: 0.85; }
+  .checklist-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--ink-faint); flex-shrink: 0; display: grid; place-items: center; transition: all 0.15s; margin-top: 1px; }
+  .checklist-item.done .checklist-check { background: var(--success); border-color: var(--success); }
+  .checklist-item.done .checklist-check::after { content: ''; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
+  .checklist-text { font-size: 13px; line-height: 1.45; color: var(--ink); transition: all 0.12s; }
+  .checklist-item.done .checklist-text { color: var(--ink-faint); text-decoration: line-through; }
+  .checklist-guide-link { font-size: 11.5px; color: var(--accent); margin-top: 4px; text-decoration: none; display: inline-block; }
+  .checklist-guide-link:hover { text-decoration: underline; }
+
+  /* PIPELINE */
+  .kanban { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  @media (max-width: 1100px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .kanban { grid-template-columns: 1fr; } }
+  .kanban-col { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 12px; min-height: 200px; }
+  .kanban-head { font-size: 11.5px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+  .kanban-head .count { background: var(--accent-pale); color: var(--accent); padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+  .item-card { background: var(--bg); border: 0.5px solid var(--line); border-radius: 8px; padding: 11px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.12s; }
+  .item-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+  .item-card .iname { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; line-height: 1.3; }
+  .item-card .iclient { font-size: 11.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .item-card .imeta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--ink-muted); }
+
+  /* AFFILIATE TABLE */
+  .aff-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; display: grid; grid-template-columns: 1fr auto auto auto; gap: 18px; align-items: center; }
+  @media (max-width: 700px) { .aff-card { grid-template-columns: 1fr; gap: 8px; } }
+  .aff-name { font-size: 14.5px; font-weight: 500; color: var(--ink); }
+  .aff-niche { font-size: 12.5px; color: var(--ink-muted); margin-top: 2px; }
+  .aff-stat { text-align: right; font-size: 11.5px; color: var(--ink-muted); }
+  .aff-stat-val { font-size: 16px; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  @media (max-width: 700px) { .aff-stat { text-align: left; } }
+
+  /* PLAYBOOK */
+  .playbook-search { width: 100%; padding: 12px 16px 12px 42px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 999px; font: 400 14.5px var(--sans); margin-bottom: 22px; background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%23856857' stroke-width='1.8'/%3E%3Cpath d='M21 21L16.5 16.5' stroke='%23856857' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 16px center; }
+  .playbook-search:focus { outline: none; border-color: var(--accent); }
+  .guide-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .guide-card.open { border-color: var(--accent); }
+  .guide-head { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 14px; background: none; border: none; width: 100%; text-align: left; font-family: inherit; }
+  .guide-head:hover { background: var(--accent-pale); }
+  .guide-meta { flex: 1; min-width: 0; }
+  .guide-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; margin-bottom: 5px; text-transform: uppercase; }
+  .guide-name { font-family: var(--serif); font-size: 17px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.2; }
+  .guide-tldr { font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; line-height: 1.45; }
+  .guide-chev { width: 26px; height: 26px; border-radius: 50%; background: var(--line-soft); display: grid; place-items: center; transition: transform 0.2s; flex-shrink: 0; }
+  .guide-card.open .guide-chev { transform: rotate(180deg); }
+  .guide-chev svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 1.8; }
+  .guide-body { display: none; padding: 0 20px 20px; border-top: 0.5px solid var(--line-soft); }
+  .guide-card.open .guide-body { display: block; }
+  .guide-section { margin-top: 14px; }
+  .guide-section-label { font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .guide-text { font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .guide-list { margin: 4px 0 0 18px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .guide-list li { margin-bottom: 4px; }
+
+  .btn { padding: 9px 18px; border-radius: 999px; border: 0.5px solid var(--line); background: var(--paper); cursor: pointer; font: 500 13.5px var(--sans); color: var(--ink-soft); transition: all 0.12s; font-family: inherit; }
+  .btn:hover { color: var(--ink); border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(1.1); color: #fff; }
+
+  .role-toggle { display: inline-flex; gap: 4px; background: var(--line-soft); padding: 4px; border-radius: 999px; flex-wrap: wrap; }
+  .role-toggle button { padding: 6px 14px; border: none; background: none; font: 500 12.5px var(--sans); color: var(--ink-muted); cursor: pointer; border-radius: 999px; font-family: inherit; }
+  .role-toggle button.active { background: var(--paper); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand"><div class="dot">B</div><span>Business Dev</span></div>
+    <div class="login-eyebrow">Hamzury Growth</div>
+    <h1 class="login-title">Sign in to <em>grow</em>.</h1>
+    <p class="login-sub">Marketing campaigns, grants & partnerships, affiliate operations. The team that makes Hamzury bigger every quarter.</p>
+    <form id="login-form" autocomplete="off">
+      <div class="login-field"><label for="login-user">Username</label><input type="text" class="login-input" id="login-user" autocomplete="username"></div>
+      <div class="login-field"><label for="login-pass">Password</label><input type="password" class="login-input" id="login-pass" autocomplete="current-password"></div>
+      <button type="submit" class="login-btn">Sign in</button>
+      <div class="login-error" id="login-error">Wrong username or password.</div>
+    </form>
+    <div class="login-hint">Three roles share this workspace. Pick your lane on the home screen.</div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal" id="portal">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><div class="brand-dot">B</div><span>Business Dev</span></div>
+
+    <div class="sidebar-section">Workspace</div>
+    <button class="nav-item active" data-tab="home"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>Home</button>
+    <button class="nav-item" data-tab="liveleads">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
+      Live Leads
+      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+    </button>
+    <button class="nav-item" data-tab="mytasks"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>My tasks<span class="nav-count alert" id="count-tasks">0</span></button>
+
+    <div class="sidebar-section">Marketing</div>
+    <button class="nav-item" data-tab="campaigns"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 11l18-5v12L3 14v-3zM11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg></span>Campaigns<span class="nav-count" id="count-campaigns">0</span></button>
+    <button class="nav-item" data-tab="leads"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>Lead pipeline<span class="nav-count" id="count-leads">0</span></button>
+
+    <div class="sidebar-section">Grants & partnerships</div>
+    <button class="nav-item" data-tab="grants"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>Grants pipeline<span class="nav-count" id="count-grants">0</span></button>
+    <button class="nav-item" data-tab="partners"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></span>Partners<span class="nav-count" id="count-partners">0</span></button>
+
+    <div class="sidebar-section">Affiliates</div>
+    <button class="nav-item" data-tab="affiliates"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6"/></svg></span>Affiliate roster<span class="nav-count" id="count-affiliates">0</span></button>
+    <button class="nav-item" data-tab="payouts"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Payouts<span class="nav-count warn" id="count-payouts">0</span></button>
+
+    <div class="sidebar-section">Knowledge</div>
+    <button class="nav-item" data-tab="playbook"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>Playbook</button>
+
+    <div class="sidebar-footer">
+      <div class="user-row"><div class="user-avatar">B</div><div><div style="color:var(--ink);font-weight:500;">Business Dev</div><div style="font-size:11.5px;color:var(--ink-muted);">Growth team</div></div></div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="main-header">
+      <button class="mobile-nav-btn" id="mobile-nav-btn" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="crumb-stack"><div class="crumb-eyebrow" id="crumb-eyebrow">Business Dev</div><div class="crumb-title" id="crumb-title">Home</div></div>
+      <div id="header-actions"></div>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// AUTH
+const AUTH_KEY = 'bizdev_signed_in';
+const VALID_USER = 'BIZDEV';
+const VALID_PASS = 'BIZDEV';
+function isSignedIn() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch(e) { return false; } }
+function signIn() { try { sessionStorage.setItem(AUTH_KEY, '1'); } catch(e) {} document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+function signOut() { try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {} document.getElementById('portal').classList.remove('active'); document.getElementById('login-screen').style.display = 'grid'; document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').classList.remove('show'); }
+document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); const u=document.getElementById('login-user').value.trim().toUpperCase(); const p=document.getElementById('login-pass').value.trim().toUpperCase(); if(u===VALID_USER&&p===VALID_PASS) signIn(); else document.getElementById('login-error').classList.add('show'); });
+document.getElementById('logout-btn').addEventListener('click', signOut);
+if (isSignedIn()) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+
+// SAMPLE DATA
+const now = Date.now();
+const DAY = 86400000, HR = 3600000;
+
+// MARKETING — Campaigns + Lead pipeline
+const CAMPAIGNS = [
+  { id: 'CMP-001', role: 'marketing', status: 'live', name: 'Q2 — "FIRS Compliance Made Simple"', channel: 'WhatsApp + LinkedIn', startDate: '2026-04-01', endDate: '2026-06-30',
+    target: 'Lagos SMEs missing tax filings', spend: 350000, budgetTotal: 800000, leads: 47, qualified: 22, closed: 6, revenue: 1800000,
+    notes: 'Strongest performer. Bizdoc lead-gen. CSO closing 25% of qualifieds.' },
+  { id: 'CMP-002', role: 'marketing', status: 'live', name: 'Scalar referral push — Q2', channel: 'Email + warm intros', startDate: '2026-04-10', endDate: '2026-05-31',
+    target: 'Past Bizdoc clients needing automation', spend: 80000, budgetTotal: 200000, leads: 12, qualified: 8, closed: 2, revenue: 700000,
+    notes: 'Tight target list. High intent. Two closed in week 2.' },
+  { id: 'CMP-003', role: 'marketing', status: 'planning', name: 'HUB launch — student waitlist', channel: 'Instagram + campus visits', startDate: '2026-05-15', endDate: '2026-07-15',
+    target: 'University grads + freelancers', spend: 0, budgetTotal: 600000, leads: 0, qualified: 0, closed: 0, revenue: 0,
+    notes: 'Pending HUB curriculum lock. Brief Medialy by May 5.' },
+  { id: 'CMP-004', role: 'marketing', status: 'closed', name: 'Q1 — "First Filing Free"', channel: 'WhatsApp', startDate: '2026-01-15', endDate: '2026-03-31',
+    target: 'New SME registrations', spend: 250000, budgetTotal: 400000, leads: 89, qualified: 34, closed: 11, revenue: 2100000,
+    notes: 'Closed strong. Learning: free filing offer brought low-quality leads. Q2 targets paid clients only.' }
+];
+
+const LEADS = [
+  { id: 'LD-001', stage: 'new', name: 'Lagos Cement Co.', source: 'CMP-001', size: 'Mid-market', service: 'Bizdoc + Scalar', est: 1200000, age: 3*HR, owner: 'Marketing' },
+  { id: 'LD-002', stage: 'contacted', name: 'Bridge Auto Parts', source: 'CMP-001', size: 'SME', service: 'Bizdoc', est: 300000, age: 2*DAY, owner: 'CSO' },
+  { id: 'LD-003', stage: 'qualified', name: 'Aroma Foods', source: 'CMP-002', size: 'SME', service: 'Scalar', est: 700000, age: 5*DAY, owner: 'CSO' },
+  { id: 'LD-004', stage: 'proposal', name: 'Northstar Africa', source: 'CMP-002', size: 'Mid-market', service: 'Scalar + Medialy', est: 1500000, age: 8*DAY, owner: 'CSO' },
+  { id: 'LD-005', stage: 'closed', name: 'Crafted Kitchen', source: 'CMP-001', size: 'SME', service: 'Bizdoc + Scalar', est: 480000, age: 14*DAY, owner: 'CSO' }
+];
+
+// GRANTS & PARTNERSHIPS
+const GRANTS = [
+  { id: 'GRT-001', role: 'grants', status: 'researching', name: 'Tony Elumelu Foundation Entrepreneur Programme 2026', funder: 'TEF', amount: 5000000,
+    deadline: '2026-05-30', fit: 'High', stage: 'Researching eligibility', notes: 'Cohort applications open. Need 2-page exec summary by May 15. Owner: Hamzury directly.' },
+  { id: 'GRT-002', role: 'grants', status: 'drafting', name: 'GIZ Digital Skills Fund', funder: 'GIZ Nigeria', amount: 12000000,
+    deadline: '2026-06-15', fit: 'Very high', stage: 'Drafting proposal', notes: 'Aligned with HUB launch. Need partnership letter from a registered training provider — Bizdoc covers that registration.' },
+  { id: 'GRT-003', role: 'grants', status: 'submitted', name: 'Bank of Industry SME Tech Grant', funder: 'BOI', amount: 3000000,
+    deadline: '2026-04-15', submittedAt: '2026-04-12', fit: 'Medium', stage: 'Awaiting decision', notes: 'Submitted. Decision expected June. If awarded — earmark for Scalar internal tooling.' },
+  { id: 'GRT-004', role: 'grants', status: 'rejected', name: 'AWS Activate Founders', funder: 'AWS', amount: 2500000,
+    deadline: '2026-02-28', fit: 'Low', stage: 'Rejected', notes: 'Rejected — feedback: Hamzury too service-heavy for tech-credit grant. Re-apply when HUB has 100+ enrolled students.' }
+];
+
+const PARTNERS = [
+  { id: 'PRT-001', role: 'grants', name: 'Lagos Business School', type: 'Training partner', status: 'Active',
+    sinceDate: '2026-02-12', value: 'Co-host for HUB executive cohorts. 30% revenue share.', contact: 'Dr. Ade Olufemi · ade@lbs.edu.ng' },
+  { id: 'PRT-002', role: 'grants', name: 'WeWork Yaba', type: 'Venue partner', status: 'Active',
+    sinceDate: '2026-01-08', value: 'Discounted event rates for HUB workshops + Hamzury monthly meetups.', contact: 'Operations · yaba@wework.ng' },
+  { id: 'PRT-003', role: 'grants', name: 'Stripe Africa', type: 'Tech partner', status: 'In discussion',
+    sinceDate: null, value: 'Potential — Bizdoc resells Stripe to SME clients with onboarding fee.', contact: 'Femi Onafuye · femi@stripe.com' },
+  { id: 'PRT-004', role: 'grants', name: 'Heir Holdings — Ventures arm', type: 'Capital partner', status: 'Cold lead',
+    sinceDate: null, value: 'Potential — investment for HUB scaling beyond Lagos.', contact: 'No warm intro yet. Need one.' }
+];
+
+// AFFILIATES
+const AFFILIATES = [
+  { id: 'AFF-001', role: 'affiliate', status: 'active', name: 'Daniel Okonkwo', niche: 'Accountant — Lagos SMEs', joined: '2026-01-15',
+    referrals: 14, qualified: 9, closed: 5, totalCommission: 187500, pendingCommission: 25000, lastActive: now - 2*DAY,
+    code: 'DANIELO' },
+  { id: 'AFF-002', role: 'affiliate', status: 'active', name: 'Funmi Adesina', niche: 'Business coach — fashion brands', joined: '2026-02-01',
+    referrals: 22, qualified: 16, closed: 9, totalCommission: 405000, pendingCommission: 60000, lastActive: now - 1*HR,
+    code: 'FUNMIA' },
+  { id: 'AFF-003', role: 'affiliate', status: 'active', name: 'Tobi Bankole', niche: 'Tech startup community lead', joined: '2026-03-10',
+    referrals: 8, qualified: 6, closed: 2, totalCommission: 80000, pendingCommission: 0, lastActive: now - 5*DAY,
+    code: 'TOBIB' },
+  { id: 'AFF-004', role: 'affiliate', status: 'pending', name: 'Ngozi Eze', niche: 'HR consultant', joined: '2026-04-20',
+    referrals: 0, qualified: 0, closed: 0, totalCommission: 0, pendingCommission: 0, lastActive: now - 6*DAY,
+    code: 'NGOZIE' },
+  { id: 'AFF-005', role: 'affiliate', status: 'paused', name: 'Yusuf Garba', niche: 'Real estate broker', joined: '2025-11-05',
+    referrals: 3, qualified: 1, closed: 0, totalCommission: 0, pendingCommission: 0, lastActive: now - 60*DAY,
+    code: 'YUSUFG' }
+];
+
+const PAYOUTS = [
+  { id: 'PAY-001', role: 'affiliate', affiliateId: 'AFF-001', name: 'Daniel Okonkwo', amount: 25000, period: 'Apr 2026', status: 'Pending', dueDate: '2026-05-05' },
+  { id: 'PAY-002', role: 'affiliate', affiliateId: 'AFF-002', name: 'Funmi Adesina', amount: 60000, period: 'Apr 2026', status: 'Pending', dueDate: '2026-05-05' },
+  { id: 'PAY-003', role: 'affiliate', affiliateId: 'AFF-001', name: 'Daniel Okonkwo', amount: 162500, period: 'Mar 2026', status: 'Paid', paidDate: '2026-04-05' },
+  { id: 'PAY-004', role: 'affiliate', affiliateId: 'AFF-002', name: 'Funmi Adesina', amount: 345000, period: 'Mar 2026', status: 'Paid', paidDate: '2026-04-05' },
+  { id: 'PAY-005', role: 'affiliate', affiliateId: 'AFF-003', name: 'Tobi Bankole', amount: 80000, period: 'Mar 2026', status: 'Paid', paidDate: '2026-04-05' }
+];
+
+// CHECKLISTS
+const CHECKLISTS = {
+  campaign_launch: { name: 'Campaign Launch Checklist', items: [
+    { text: 'Lock target audience (1 sentence — who exactly)', guide: 'how-to-define-audience' },
+    { text: 'Confirm campaign goal (leads? signups? sales?)', guide: null },
+    { text: 'Set budget ceiling and weekly cadence', guide: null },
+    { text: 'Brief Medialy on creative needs', guide: null },
+    { text: 'Brief Studio on any standalone visuals', guide: null },
+    { text: 'Set up tracking (UTM tags, lead source field)', guide: 'utm-tagging-rules' },
+    { text: 'Create lead routing rule (where do new leads go?)', guide: null },
+    { text: 'Soft launch — first 48 hours = test cohort only', guide: null },
+    { text: 'Monitor cost-per-lead daily for first week', guide: null },
+    { text: 'Mark live → CSO handles inbound', guide: null }
+  ]},
+  campaign_close: { name: 'Campaign Close Checklist', items: [
+    { text: 'Pull final numbers — leads, qualified, closed, revenue', guide: null },
+    { text: 'Calculate cost-per-acquisition', guide: null },
+    { text: 'Get CSO feedback on lead quality', guide: null },
+    { text: 'Write 1-page retro — what worked, what didn\'t', guide: 'campaign-retro-template' },
+    { text: 'Archive creative assets to library', guide: null },
+    { text: 'Update audience playbook with learnings', guide: null }
+  ]},
+  grant_application: { name: 'Grant Application Checklist', items: [
+    { text: 'Confirm Hamzury meets eligibility (read fine print twice)', guide: 'how-to-read-grant-rfp' },
+    { text: 'Map deadline + earlier internal deadlines (founder review etc.)', guide: null },
+    { text: 'Draft 1-page exec summary first — get founder approval', guide: null },
+    { text: 'Build full proposal — match RFP structure exactly', guide: 'how-to-write-grant-proposal' },
+    { text: 'Gather supporting docs (CAC, TIN, tax filings, financials)', guide: null },
+    { text: 'Get partnership letters if required', guide: null },
+    { text: 'Review pass — typo, math, file format', guide: null },
+    { text: 'Submit 48 hours before deadline (system always crashes day-of)', guide: null },
+    { text: 'Confirm submission email received', guide: null }
+  ]},
+  partnership_kickoff: { name: 'Partnership Kickoff', items: [
+    { text: 'Frame the win — what do we want from this partner?', guide: null },
+    { text: 'Frame their win — why would they say yes?', guide: 'partnership-mutual-benefit' },
+    { text: 'Get warm intro if possible — cold pitch is last resort', guide: null },
+    { text: 'Send 1-paragraph opener (not a deck)', guide: null },
+    { text: 'If interested → 30-min discovery call', guide: null },
+    { text: 'If aligned → MOU draft', guide: null },
+    { text: 'Legal review before signing', guide: null }
+  ]},
+  affiliate_onboard: { name: 'Affiliate Onboarding Checklist', items: [
+    { text: 'Application reviewed — fit + reach + audience match', guide: 'affiliate-fit-criteria' },
+    { text: 'Sign affiliate agreement', guide: null },
+    { text: 'Issue unique referral code', guide: null },
+    { text: 'Provision portal access (username = first name + last initial)', guide: null },
+    { text: 'Send welcome pack (one-pager on services + commission terms)', guide: null },
+    { text: 'Schedule 30-min training call', guide: null },
+    { text: 'Add to affiliate roster + activate tracking', guide: null }
+  ]},
+  monthly_payout: { name: 'Monthly Payout Cycle', items: [
+    { text: 'Pull all closed referrals from CSO for the month', guide: null },
+    { text: 'Match referrals to affiliate codes', guide: null },
+    { text: 'Calculate commission per affiliate (10% of contract value)', guide: 'commission-calculation' },
+    { text: 'Cross-check disputed entries with CSO', guide: null },
+    { text: 'Generate payout summary per affiliate', guide: null },
+    { text: 'Process payments by 5th of month', guide: null },
+    { text: 'Send payment confirmation + statement to each affiliate', guide: null },
+    { text: 'Mark cycle complete in payout log', guide: null }
+  ]}
+};
+
+// PLAYBOOK GUIDES
+const GUIDES = [
+  { id: 'how-to-define-audience', tag: 'marketing', tagColor: 'tag-marketing', name: 'How to define a campaign audience',
+    tldr: 'One sentence. One person you can picture. If you can\'t name them, you don\'t know them.',
+    sections: {
+      'Why it matters': 'Vague audience = vague creative = vague results. The clearer the picture, the easier every downstream decision.',
+      'The test': 'Can you finish this sentence in 1 line? "This campaign is for a {role} at a {company size} who is {currently feeling/doing} but wants to {desired state}."',
+      'Examples': ['"For an SME owner who has missed 1+ FIRS filings and is afraid to open a letter from the tax office."', '"For a fashion brand owner who is great at design but lost on Instagram analytics."'],
+      'Bad examples': ['"SMEs in Lagos" (too broad)', '"Anyone who needs help with tax" (says nothing)', '"Smart business owners" (everyone thinks they\'re smart)']
+    } },
+  { id: 'utm-tagging-rules', tag: 'marketing', tagColor: 'tag-marketing', name: 'UTM tagging rules',
+    tldr: 'Lowercase. Underscores. Same scheme every time. Test the link before launch.',
+    sections: {
+      'Format': '?utm_source={channel}&utm_medium={type}&utm_campaign={camp_id}_{audience}',
+      'Example': '?utm_source=whatsapp&utm_medium=broadcast&utm_campaign=cmp001_lagos_smes',
+      'Rules': ['Always lowercase', 'Underscores not dashes', 'Use the campaign ID first so it sorts together', 'Test every link in incognito before sending'],
+      'Never': ['Use spaces', 'Reuse a UTM across campaigns', 'Forget to tag — untagged traffic = orphan data']
+    } },
+  { id: 'campaign-retro-template', tag: 'marketing', tagColor: 'tag-marketing', name: 'Campaign retro — 1-page template',
+    tldr: 'Numbers, what worked, what didn\'t, what we change next time. Done in under an hour.',
+    sections: {
+      'Structure': ['Numbers (spend, leads, qualified, closed, revenue, ROI)', 'What worked — 3 bullets max', 'What didn\'t — 3 bullets max, no blame', 'What we change next time — concrete actions, owners'],
+      'Length': '1 page. If it\'s longer you\'re overthinking.',
+      'Audience': 'Founder + CSO + Marketing. Decision-makers, not committees.'
+    } },
+  { id: 'how-to-read-grant-rfp', tag: 'grants', tagColor: 'tag-grants', name: 'How to read a grant RFP',
+    tldr: 'Read it three times. Highlight every "must". Build a checklist before you write a word.',
+    sections: {
+      'Process': ['Read 1: get the shape', 'Read 2: highlight every "must" or "required"', 'Read 3: build a yes/no eligibility checklist', 'If any "must" is a "no" — stop. Don\'t apply.'],
+      'Why three reads': 'Grants get rejected for missing eligibility, not for weak ideas. Reading once misses things.',
+      'Red flags': ['"Preferred" applicants are usually pre-selected', 'Eligibility list longer than the proposal request', 'Grant amount tiny relative to admin burden']
+    } },
+  { id: 'how-to-write-grant-proposal', tag: 'grants', tagColor: 'tag-grants', name: 'How to write a grant proposal',
+    tldr: 'Match RFP structure exactly. Concrete numbers. Outcomes, not activities.',
+    sections: {
+      'Golden rule': 'If RFP says "Section 3 — Implementation Plan", your proposal section 3 is named "Implementation Plan". Don\'t reorganize.',
+      'Outcomes vs activities': 'Bad: "We will run 4 workshops." Good: "100 trainees will demonstrate income lift of 40% within 6 months of the program."',
+      'Numbers': ['Always specific (47, not "approximately 50")', 'Always sourced (cite the data point)', 'Always achievable (don\'t promise 1000 if you\'ve done 100)'],
+      'Length': 'Whatever the RFP says. Not one word over.'
+    } },
+  { id: 'partnership-mutual-benefit', tag: 'grants', tagColor: 'tag-grants', name: 'Partnership mutual benefit framing',
+    tldr: 'A good partnership solves both sides\' problem. If you can\'t name their problem, don\'t pitch yet.',
+    sections: {
+      'The frame': 'Partner has a problem we solve. We have a problem they solve. The exchange should feel obviously fair to both.',
+      'Examples': ['LBS gets executive students for HUB cohorts. We get LBS\'s brand validation and venue.', 'WeWork gets bookings during slow weekdays. We get a venue without long-term commitment.'],
+      'Test before pitching': 'Write down their gain in one sentence. If it\'s wishy-washy, don\'t send the pitch — find a sharper angle first.'
+    } },
+  { id: 'affiliate-fit-criteria', tag: 'affiliate', tagColor: 'tag-affiliate', name: 'Affiliate fit criteria',
+    tldr: 'Audience overlap + trust + recent activity. Reject if any of three is weak.',
+    sections: {
+      'Overlap': 'Their audience must include Hamzury\'s ICP. A real estate broker with 10k followers ≠ fit if their audience is house-hunters not SME owners.',
+      'Trust': 'Do their followers comment, ask, save? Or just like and scroll? Engagement > follower count.',
+      'Recent activity': 'Active in last 60 days. Dormant accounts will not refer.',
+      'Reject reasons': ['Inflated follower count (engagement < 1%)', 'Audience country mismatch', 'Has competing affiliations with similar services']
+    } },
+  { id: 'commission-calculation', tag: 'affiliate', tagColor: 'tag-affiliate', name: 'Commission calculation',
+    tldr: '10% of first contract value. One-time. Paid by 5th of next month after CSO confirms payment received.',
+    sections: {
+      'Rate': '10% of first contract value. Subsequent contracts from same client = no commission (it\'s an introduction fee, not a recurring stream).',
+      'Trigger': 'Commission earned when CSO confirms client paid invoice. Not when contract signed.',
+      'Payout date': '5th of the month following payment. Bank transfer.',
+      'Disputes': 'If affiliate claims a referral CSO doesn\'t see → check referral code at form submission. Code wins.',
+      'Caps': 'No cap. Top performers can earn unlimited.'
+    } }
+];
+
+// STATE
+let currentTab = 'home';
+let currentItemId = null;
+let currentSubtab = 'overview';
+let activeRole = 'all'; // 'all' | 'marketing' | 'grants' | 'affiliate'
+const content = document.getElementById('content');
+const crumbEyebrow = document.getElementById('crumb-eyebrow');
+const crumbTitle = document.getElementById('crumb-title');
+const headerActions = document.getElementById('header-actions');
+
+function getMyTasks() {
+  const tasks = [];
+  // Marketing tasks
+  if (activeRole === 'all' || activeRole === 'marketing') {
+    CAMPAIGNS.filter(c => c.status === 'planning').forEach(c => {
+      tasks.push({ priority: 'amber', title: `Launch prep: ${c.name}`, sub: `🎯 Marketing · starts ${c.startDate}`, due: c.startDate, action: () => { currentItemId = c.id; openTab('campaign'); } });
+    });
+    LEADS.filter(l => l.stage === 'new' && l.owner === 'Marketing').forEach(l => {
+      tasks.push({ priority: 'red', title: `New lead: ${l.name}`, sub: `🎯 Marketing · est ₦${formatNum(l.est)} · route to CSO`, due: 'Today', action: () => openTab('leads') });
+    });
+  }
+  // Grants tasks
+  if (activeRole === 'all' || activeRole === 'grants') {
+    GRANTS.filter(g => g.status === 'researching' || g.status === 'drafting').forEach(g => {
+      const days = Math.ceil((new Date(g.deadline).getTime() - now) / DAY);
+      const priority = days < 7 ? 'red' : days < 21 ? 'amber' : 'green';
+      tasks.push({ priority, title: `${g.status === 'researching' ? 'Research' : 'Draft'}: ${g.name}`, sub: `🌳 Grants · ₦${formatNum(g.amount)} · deadline ${g.deadline}`, due: days < 0 ? 'Overdue' : days + 'd left', action: () => { currentItemId = g.id; openTab('grant'); } });
+    });
+    PARTNERS.filter(p => p.status === 'In discussion' || p.status === 'Cold lead').forEach(p => {
+      tasks.push({ priority: 'amber', title: `Follow up: ${p.name}`, sub: `🌳 Partnership · ${p.type} · ${p.status}`, due: 'This week', action: () => openTab('partners') });
+    });
+  }
+  // Affiliate tasks
+  if (activeRole === 'all' || activeRole === 'affiliate') {
+    AFFILIATES.filter(a => a.status === 'pending').forEach(a => {
+      tasks.push({ priority: 'amber', title: `Onboard: ${a.name}`, sub: `🤝 Affiliate · ${a.niche} · joined ${a.joined}`, due: 'This week', action: () => openTab('affiliates') });
+    });
+    PAYOUTS.filter(p => p.status === 'Pending').forEach(p => {
+      const days = Math.ceil((new Date(p.dueDate).getTime() - now) / DAY);
+      const priority = days < 3 ? 'red' : days < 7 ? 'amber' : 'green';
+      tasks.push({ priority, title: `Payout: ${p.name}`, sub: `🤝 Affiliate · ₦${formatNum(p.amount)} · due ${p.dueDate}`, due: days < 0 ? 'Overdue' : days + 'd left', action: () => openTab('payouts') });
+    });
+  }
+  const order = { red: 0, amber: 1, green: 2 };
+  tasks.sort((a, b) => order[a.priority] - order[b.priority]);
+  return tasks;
+}
+
+function updateCounts() {
+  const tasks = getMyTasks();
+  document.getElementById('count-tasks').textContent = tasks.length;
+  document.getElementById('count-tasks').style.display = tasks.length ? '' : 'none';
+  document.getElementById('count-campaigns').textContent = CAMPAIGNS.filter(c => c.status === 'live' || c.status === 'planning').length;
+  document.getElementById('count-leads').textContent = LEADS.filter(l => l.stage !== 'closed').length;
+  document.getElementById('count-grants').textContent = GRANTS.filter(g => g.status !== 'rejected').length;
+  document.getElementById('count-partners').textContent = PARTNERS.length;
+  document.getElementById('count-affiliates').textContent = AFFILIATES.filter(a => a.status === 'active').length;
+  const pendingPay = PAYOUTS.filter(p => p.status === 'Pending').length;
+  document.getElementById('count-payouts').textContent = pendingPay;
+  document.getElementById('count-payouts').style.display = pendingPay ? '' : 'none';
+}
+
+function openTab(tab) {
+  currentTab = tab;
+  if (tab !== 'campaign' && tab !== 'grant') currentItemId = null;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  headerActions.innerHTML = '';
+  render();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => openTab(n.dataset.tab)));
+document.getElementById('mobile-nav-btn').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('mobile-open'));
+
+function render() {
+  if (currentItemId && (currentTab === 'campaign' || currentTab === 'grant')) {
+    if (currentTab === 'campaign') renderCampaignDetail();
+    else renderGrantDetail();
+    return;
+  }
+  switch (currentTab) {
+    case 'home': renderHome(); break;
+    case 'liveleads': renderLiveLeads(); break;
+    case 'mytasks': renderMyTasks(); break;
+    case 'campaigns': renderCampaigns(); break;
+    case 'leads': renderLeads(); break;
+    case 'grants': renderGrants(); break;
+    case 'partners': renderPartners(); break;
+    case 'affiliates': renderAffiliates(); break;
+    case 'payouts': renderPayouts(); break;
+    case 'playbook': renderPlaybook(); break;
+  }
+}
+function setHeader(eyebrow, title) { crumbEyebrow.textContent = eyebrow; crumbTitle.textContent = title; }
+
+function renderHome() {
+  setHeader('Business Dev', 'Home');
+  const tasks = getMyTasks();
+  const liveCampaigns = CAMPAIGNS.filter(c => c.status === 'live');
+  const totalRevenue = CAMPAIGNS.reduce((s, c) => s + (c.revenue || 0), 0);
+  const grantsActive = GRANTS.filter(g => g.status === 'researching' || g.status === 'drafting' || g.status === 'submitted');
+  const grantsValue = grantsActive.reduce((s, g) => s + g.amount, 0);
+  const affiliatesActive = AFFILIATES.filter(a => a.status === 'active').length;
+  const totalCommission = AFFILIATES.reduce((s, a) => s + a.totalCommission, 0);
+
+  content.innerHTML = `
+    <div class="home-hero">
+      <h1 class="hero-title">Welcome to <em>Business Dev</em>.</h1>
+      <p class="hero-sub">Three lanes, one growth engine. Marketing brings demand. Grants & Partnerships bring leverage. Affiliates bring reach. Pick your lane.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--ink-muted);">Filter by lane:</div>
+      <div class="role-toggle">
+        <button class="${activeRole==='all'?'active':''}" data-role="all">All</button>
+        <button class="${activeRole==='marketing'?'active':''}" data-role="marketing">🎯 Marketing</button>
+        <button class="${activeRole==='grants'?'active':''}" data-role="grants">🌳 Grants & Partners</button>
+        <button class="${activeRole==='affiliate'?'active':''}" data-role="affiliate">🤝 Affiliates</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">My tasks</div><div class="stat-value ${tasks.length>5?'danger':'warn'}">${tasks.length}</div><div class="stat-meta">${tasks.filter(t=>t.priority==='red').length} urgent · ${tasks.filter(t=>t.priority==='amber').length} this week</div></div>
+      <div class="stat-card"><div class="stat-label">Campaign revenue (Q2)</div><div class="stat-value success">₦${formatNum(totalRevenue)}</div><div class="stat-meta">${liveCampaigns.length} live · ${LEADS.filter(l=>l.stage!=='closed').length} open leads</div></div>
+      <div class="stat-card"><div class="stat-label">Grants in flight</div><div class="stat-value">₦${formatNum(grantsValue)}</div><div class="stat-meta">${grantsActive.length} active applications</div></div>
+      <div class="stat-card"><div class="stat-label">Affiliate commission paid</div><div class="stat-value">₦${formatNum(totalCommission)}</div><div class="stat-meta">${affiliatesActive} active affiliates</div></div>
+    </div>
+    <div class="section-title">Today's priorities <button class="pill-btn" onclick="openTab('mytasks')">All →</button></div>
+    ${tasks.slice(0, 6).map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta"><div class="task-title">${escapeHtml(t.title)}</div><div class="task-sub">${escapeHtml(t.sub)}</div></div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${escapeHtml(t.due)}</div>
+      </div>
+    `).join('') || '<div class="empty-state"><div class="big">All caught up</div><div>Nothing pressing right now. Plan ahead or read the Playbook.</div></div>'}
+  `;
+  document.querySelectorAll('[data-role]').forEach(b => b.addEventListener('click', () => { activeRole = b.dataset.role; render(); }));
+}
+
+function renderMyTasks() {
+  setHeader('My workspace', 'My tasks');
+  const tasks = getMyTasks();
+  if (!tasks.length) { content.innerHTML = `<div class="empty-state"><div class="big">All caught up 🫡</div><div>Nothing pressing across all three lanes.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Auto-generated from active campaigns, grants, partnerships, affiliates, and payout cycles. Sorted by urgency.</p>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+      <div class="role-toggle">
+        <button class="${activeRole==='all'?'active':''}" data-role="all">All</button>
+        <button class="${activeRole==='marketing'?'active':''}" data-role="marketing">🎯 Marketing</button>
+        <button class="${activeRole==='grants'?'active':''}" data-role="grants">🌳 Grants & Partners</button>
+        <button class="${activeRole==='affiliate'?'active':''}" data-role="affiliate">🤝 Affiliates</button>
+      </div>
+    </div>
+    <div class="section-title">${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}</div>
+    ${tasks.map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta"><div class="task-title">${escapeHtml(t.title)}</div><div class="task-sub">${escapeHtml(t.sub)}</div></div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${escapeHtml(t.due)}</div>
+      </div>
+    `).join('')}
+  `;
+  document.querySelectorAll('[data-role]').forEach(b => b.addEventListener('click', () => { activeRole = b.dataset.role; render(); }));
+}
+
+function renderCampaigns() {
+  setHeader('Marketing', 'Campaigns');
+  if (!CAMPAIGNS.length) { content.innerHTML = `<div class="empty-state"><div class="big">No campaigns yet</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Live + planned + closed campaigns. Click to open the campaign workspace with checklist + retro.</p>
+    <div style="display:grid;gap:12px;">
+      ${CAMPAIGNS.map(c => {
+        const conv = c.leads ? Math.round(c.qualified / c.leads * 100) : 0;
+        const close = c.qualified ? Math.round(c.closed / c.qualified * 100) : 0;
+        return `
+          <div class="panel-card" style="margin-bottom:0;cursor:pointer;" onclick="openCampaign('${c.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px;">
+              <div>
+                <div class="panel-eyebrow">🎯 Marketing · ${c.channel} · ${c.startDate} → ${c.endDate}</div>
+                <div class="panel-title" style="margin-bottom:4px;">${escapeHtml(c.name)}</div>
+              </div>
+              <span class="tag ${c.status === 'live' ? 'tag-green' : c.status === 'planning' ? 'tag-amber' : 'tag-grey'}">${c.status}</span>
+            </div>
+            <div style="font-size:13px;color:var(--ink-muted);margin-bottom:12px;line-height:1.5;">${escapeHtml(c.target)}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:14px;border-top:0.5px solid var(--line-soft);padding-top:14px;">
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Spend</div><div style="font-size:14px;font-weight:500;">₦${formatNum(c.spend)} <span style="color:var(--ink-muted);font-weight:400;font-size:12px;">/ ₦${formatNum(c.budgetTotal)}</span></div></div>
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Leads</div><div style="font-size:14px;font-weight:500;">${c.leads}</div></div>
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Qualified</div><div style="font-size:14px;font-weight:500;">${c.qualified} <span style="color:var(--ink-muted);font-weight:400;font-size:12px;">${conv}%</span></div></div>
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Closed</div><div style="font-size:14px;font-weight:500;">${c.closed} <span style="color:var(--ink-muted);font-weight:400;font-size:12px;">${close}%</span></div></div>
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Revenue</div><div style="font-size:14px;font-weight:500;color:var(--success);">₦${formatNum(c.revenue)}</div></div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+window.openCampaign = (id) => { currentItemId = id; openTab('campaign'); };
+
+function renderCampaignDetail() {
+  const c = CAMPAIGNS.find(x => x.id === currentItemId);
+  if (!c) { currentItemId = null; openTab('campaigns'); return; }
+  setHeader('Campaign', c.name);
+  headerActions.innerHTML = `<button class="pill-btn" onclick="exitItem()">← Back</button>`;
+  const checklist = c.status === 'closed' ? CHECKLISTS.campaign_close : CHECKLISTS.campaign_launch;
+  content.innerHTML = `
+    <div class="client-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <span class="tag tag-marketing">🎯 Marketing</span>
+          <span class="tag tag-grey">${escapeHtml(c.channel)}</span>
+          <span class="tag ${c.status === 'live' ? 'tag-green' : c.status === 'planning' ? 'tag-amber' : 'tag-grey'}">${c.status}</span>
+        </div>
+        <div class="client-name">${escapeHtml(c.name)}</div>
+        <div class="client-meta">
+          <span><strong>Window:</strong> ${c.startDate} → ${c.endDate}</span>
+          <span><strong>Target:</strong> ${escapeHtml(c.target)}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${c.status === 'planning' ? `<button class="btn btn-primary" onclick="launchCampaign('${c.id}')">Launch campaign →</button>` : c.status === 'live' ? `<button class="btn btn-primary" onclick="closeCampaign('${c.id}')">Close & write retro</button>` : '<button class="btn">Archived</button>'}
+      </div>
+    </div>
+    <div class="work-checklist-grid">
+      <div>
+        <div class="panel-card">
+          <div class="panel-eyebrow">Performance</div>
+          <div class="panel-title">Numbers</div>
+          <dl class="field-grid">
+            <dt>Spend</dt><dd>₦${formatNum(c.spend)} of ₦${formatNum(c.budgetTotal)} (${Math.round(c.spend/c.budgetTotal*100)}%)</dd>
+            <dt>Leads</dt><dd>${c.leads}</dd>
+            <dt>Qualified</dt><dd>${c.qualified} (${c.leads ? Math.round(c.qualified/c.leads*100) : 0}% of leads)</dd>
+            <dt>Closed</dt><dd>${c.closed} (${c.qualified ? Math.round(c.closed/c.qualified*100) : 0}% of qualified)</dd>
+            <dt>Revenue</dt><dd style="color:var(--success);font-weight:500;">₦${formatNum(c.revenue)}</dd>
+            <dt>ROI</dt><dd>${c.spend ? Math.round((c.revenue - c.spend) / c.spend * 100) + '%' : '—'}</dd>
+          </dl>
+        </div>
+        <div class="panel-card">
+          <div class="panel-eyebrow">Notes</div>
+          <div class="panel-title">Status</div>
+          <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;">${escapeHtml(c.notes)}</p>
+        </div>
+      </div>
+      <div>${renderChecklistPanel(c, checklist)}</div>
+    </div>
+  `;
+  content.querySelectorAll('.checklist-item').forEach(el => el.addEventListener('click', () => {
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!c._cl) c._cl = {};
+    if (!c._cl[checklist.name]) c._cl[checklist.name] = {};
+    c._cl[checklist.name][idx] = !c._cl[checklist.name][idx];
+    renderCampaignDetail();
+  }));
+}
+
+function renderLeads() {
+  setHeader('Marketing', 'Lead pipeline');
+  const stages = ['new', 'contacted', 'qualified', 'proposal', 'closed'];
+  const stageNames = { new: 'New', contacted: 'Contacted', qualified: 'Qualified', proposal: 'Proposal', closed: 'Closed' };
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Leads from live campaigns. Marketing routes "new" leads to CSO. CSO owns from "contacted" onward.</p>
+    <div class="kanban">
+      ${stages.map(stage => {
+        const inStage = LEADS.filter(l => l.stage === stage);
+        return `
+          <div class="kanban-col">
+            <div class="kanban-head">${stageNames[stage]} <span class="count">${inStage.length}</span></div>
+            ${inStage.map(l => `
+              <div class="item-card">
+                <div class="iname">${escapeHtml(l.name)}</div>
+                <div class="iclient">${escapeHtml(l.service)}</div>
+                <div class="imeta">
+                  <span style="color:var(--success);font-weight:500;">₦${formatNum(l.est)}</span>
+                  <span>${escapeHtml(l.owner)}</span>
+                </div>
+              </div>
+            `).join('') || '<div style="font-size:11.5px;color:var(--ink-faint);text-align:center;padding:14px 4px;">empty</div>'}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderGrants() {
+  setHeader('Grants & partnerships', 'Grants pipeline');
+  if (!GRANTS.length) { content.innerHTML = `<div class="empty-state"><div class="big">No grants tracked yet</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every grant Hamzury is researching, drafting, or has submitted. Click to open with full checklist.</p>
+    <div style="display:grid;gap:12px;">
+      ${GRANTS.map(g => {
+        const days = Math.ceil((new Date(g.deadline).getTime() - now) / DAY);
+        const overdue = g.status !== 'submitted' && g.status !== 'rejected' && days < 0;
+        return `
+          <div class="panel-card" style="margin-bottom:0;cursor:pointer;" onclick="openGrant('${g.id}')">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+              <div>
+                <div class="panel-eyebrow">🌳 Grants · ${escapeHtml(g.funder)} · deadline ${escapeHtml(g.deadline)}</div>
+                <div class="panel-title" style="margin-bottom:2px;">${escapeHtml(g.name)}</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;">
+                <span class="tag ${g.status === 'submitted' ? 'tag-green' : g.status === 'rejected' ? 'tag-coral' : g.status === 'drafting' ? 'tag-amber' : 'tag-grey'}">${g.status}</span>
+                ${overdue ? '<span class="tag tag-coral">overdue</span>' : g.status === 'submitted' || g.status === 'rejected' ? '' : `<span style="font-size:11.5px;color:var(--ink-muted);">${days}d left</span>`}
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;font-size:12.5px;border-top:0.5px solid var(--line-soft);padding-top:12px;">
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Amount</div><div style="font-size:14px;font-weight:500;color:var(--success);">₦${formatNum(g.amount)}</div></div>
+              <div><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Fit</div><div style="font-size:13.5px;">${escapeHtml(g.fit)}</div></div>
+              <div style="grid-column:span 2;"><div style="font-size:10.5px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Stage</div><div style="font-size:13px;color:var(--ink-soft);">${escapeHtml(g.stage)}</div></div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+window.openGrant = (id) => { currentItemId = id; openTab('grant'); };
+
+function renderGrantDetail() {
+  const g = GRANTS.find(x => x.id === currentItemId);
+  if (!g) { currentItemId = null; openTab('grants'); return; }
+  setHeader('Grant', g.name);
+  headerActions.innerHTML = `<button class="pill-btn" onclick="exitItem()">← Back</button>`;
+  const checklist = CHECKLISTS.grant_application;
+  content.innerHTML = `
+    <div class="client-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <span class="tag tag-grants">🌳 Grants</span>
+          <span class="tag tag-grey">${escapeHtml(g.funder)}</span>
+          <span class="tag ${g.status === 'submitted' ? 'tag-green' : g.status === 'rejected' ? 'tag-coral' : g.status === 'drafting' ? 'tag-amber' : 'tag-grey'}">${g.status}</span>
+        </div>
+        <div class="client-name">${escapeHtml(g.name)}</div>
+        <div class="client-meta">
+          <span><strong>Amount:</strong> ₦${formatNum(g.amount)}</span>
+          <span><strong>Deadline:</strong> ${escapeHtml(g.deadline)}</span>
+          <span><strong>Fit:</strong> ${escapeHtml(g.fit)}</span>
+        </div>
+      </div>
+    </div>
+    <div class="work-checklist-grid">
+      <div>
+        <div class="panel-card">
+          <div class="panel-eyebrow">Status</div>
+          <div class="panel-title">${escapeHtml(g.stage)}</div>
+          <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;">${escapeHtml(g.notes)}</p>
+        </div>
+      </div>
+      <div>${renderChecklistPanel(g, checklist)}</div>
+    </div>
+  `;
+  content.querySelectorAll('.checklist-item').forEach(el => el.addEventListener('click', () => {
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!g._cl) g._cl = {};
+    if (!g._cl[checklist.name]) g._cl[checklist.name] = {};
+    g._cl[checklist.name][idx] = !g._cl[checklist.name][idx];
+    renderGrantDetail();
+  }));
+}
+
+function renderPartners() {
+  setHeader('Grants & partnerships', 'Partners');
+  if (!PARTNERS.length) { content.innerHTML = `<div class="empty-state"><div class="big">No partners yet</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Active partnerships + ones in discussion. Read "Partnership mutual benefit framing" before any new outreach.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Partner</th><th>Type</th><th>Status</th><th>Value</th><th>Contact</th></tr></thead>
+        <tbody>
+          ${PARTNERS.map(p => `
+            <tr>
+              <td class="cell-name">${escapeHtml(p.name)}</td>
+              <td>${escapeHtml(p.type)}</td>
+              <td><span class="tag ${p.status === 'Active' ? 'tag-green' : p.status === 'In discussion' ? 'tag-amber' : 'tag-grey'}">${escapeHtml(p.status)}</span></td>
+              <td style="font-size:13px;color:var(--ink-soft);">${escapeHtml(p.value)}</td>
+              <td class="cell-time">${escapeHtml(p.contact)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderAffiliates() {
+  setHeader('Affiliates', 'Affiliate roster');
+  if (!AFFILIATES.length) { content.innerHTML = `<div class="empty-state"><div class="big">No affiliates yet</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every affiliate, by performance. New applications appear at top with "pending" tag. Check fit criteria in Playbook before approving.</p>
+    <div>
+      ${AFFILIATES.sort((a,b) => (a.status==='pending'?-1:b.status==='pending'?1:b.totalCommission - a.totalCommission)).map(a => `
+        <div class="aff-card">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+              <span class="aff-name">${escapeHtml(a.name)}</span>
+              <span class="tag ${a.status === 'active' ? 'tag-green' : a.status === 'pending' ? 'tag-amber' : 'tag-grey'}">${a.status}</span>
+              <span style="font-family:var(--mono);font-size:11px;color:var(--ink-muted);background:var(--line-soft);padding:2px 7px;border-radius:5px;">${escapeHtml(a.code)}</span>
+            </div>
+            <div class="aff-niche">${escapeHtml(a.niche)} · joined ${a.joined}</div>
+          </div>
+          <div class="aff-stat">
+            <div class="aff-stat-val">${a.referrals}</div>
+            <div>referrals</div>
+          </div>
+          <div class="aff-stat">
+            <div class="aff-stat-val">${a.closed}</div>
+            <div>closed</div>
+          </div>
+          <div class="aff-stat">
+            <div class="aff-stat-val" style="color:var(--success);">₦${formatNum(a.totalCommission)}</div>
+            <div>total earned</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderPayouts() {
+  setHeader('Affiliates', 'Payouts');
+  if (!PAYOUTS.length) { content.innerHTML = `<div class="empty-state"><div class="big">No payouts queued</div></div>`; return; }
+  const pending = PAYOUTS.filter(p => p.status === 'Pending');
+  const paid = PAYOUTS.filter(p => p.status === 'Paid');
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Monthly payout cycle. Process by 5th of each month. Cross-check with CSO before paying out.</p>
+    ${pending.length ? `
+      <div class="section-title">Pending — ${pending.length}</div>
+      <div class="table-wrap" style="margin-bottom:24px;">
+        <table>
+          <thead><tr><th>Affiliate</th><th>Period</th><th>Due date</th><th class="cell-right">Amount</th><th></th></tr></thead>
+          <tbody>
+            ${pending.map(p => `
+              <tr>
+                <td class="cell-name">${escapeHtml(p.name)}</td>
+                <td>${escapeHtml(p.period)}</td>
+                <td class="cell-time">${escapeHtml(p.dueDate)}</td>
+                <td class="cell-right" style="font-weight:500;color:var(--success);">₦${formatNum(p.amount)}</td>
+                <td class="cell-right"><button class="btn pill-btn" onclick="markPaid('${p.id}')">Mark paid</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : ''}
+    ${paid.length ? `
+      <div class="section-title">Paid history — ${paid.length}</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Affiliate</th><th>Period</th><th>Paid date</th><th class="cell-right">Amount</th></tr></thead>
+          <tbody>
+            ${paid.map(p => `
+              <tr>
+                <td class="cell-name">${escapeHtml(p.name)}</td>
+                <td>${escapeHtml(p.period)}</td>
+                <td class="cell-time">${escapeHtml(p.paidDate)}</td>
+                <td class="cell-right" style="color:var(--ink-muted);">₦${formatNum(p.amount)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    ` : ''}
+  `;
+}
+
+window.markPaid = (id) => {
+  const p = PAYOUTS.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm('Mark ' + p.name + '\'s ' + p.period + ' payout (₦' + formatNum(p.amount) + ') as paid? This is irreversible in the demo — make sure the bank transfer is done.')) return;
+  p.status = 'Paid';
+  p.paidDate = new Date().toISOString().split('T')[0];
+  alert('Marked paid. Statement will be emailed to ' + p.name + '.');
+  updateCounts(); render();
+};
+
+window.launchCampaign = (id) => {
+  const c = CAMPAIGNS.find(x => x.id === id);
+  if (!c) return;
+  c.status = 'live';
+  alert('Launched! ' + c.name + ' is now live.');
+  updateCounts(); renderCampaignDetail();
+};
+
+window.closeCampaign = (id) => {
+  const c = CAMPAIGNS.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm('Close this campaign and move to retro phase?')) return;
+  c.status = 'closed';
+  alert('Closed. Time to write the retro.');
+  updateCounts(); renderCampaignDetail();
+};
+
+window.exitItem = () => { currentItemId = null; openTab(currentTab === 'campaign' ? 'campaigns' : 'grants'); };
+
+function renderChecklistPanel(item, checklist) {
+  const done = (item._cl && item._cl[checklist.name]) || {};
+  const completedCount = checklist.items.filter((_, i) => done[i]).length;
+  const pct = Math.round((completedCount / checklist.items.length) * 100);
+  return `
+    <div class="checklist-panel">
+      <div class="checklist-title">${escapeHtml(checklist.name)}</div>
+      <div class="checklist-meta">${completedCount} of ${checklist.items.length} steps · ${pct}% complete</div>
+      <div class="checklist-progress"><div class="checklist-progress-fill" style="width:${pct}%;"></div></div>
+      ${checklist.items.map((i, idx) => `
+        <div class="checklist-item ${done[idx] ? 'done' : ''}" data-idx="${idx}">
+          <div class="checklist-check"></div>
+          <div>
+            <div class="checklist-text">${escapeHtml(i.text)}</div>
+            ${i.guide ? `<a class="checklist-guide-link" href="javascript:void(0)" onclick="event.stopPropagation();openTab('playbook');">📖 Read guide</a>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderPlaybook() {
+  setHeader('Knowledge', 'Playbook');
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">House rules across all three lanes. Marketing tactics, grant writing, partnership framing, affiliate ops. Read once, reference forever.</p>
+    <input type="search" class="playbook-search" id="pb-search" placeholder="Search guides...">
+    <div id="pb-list">${renderGuides('')}</div>
+  `;
+  document.getElementById('pb-search').addEventListener('input', e => { document.getElementById('pb-list').innerHTML = renderGuides(e.target.value); });
+}
+function renderGuides(filter) {
+  const q = filter.toLowerCase().trim();
+  const list = q ? GUIDES.filter(g => (g.name + ' ' + g.tldr + ' ' + g.tag).toLowerCase().includes(q)) : GUIDES;
+  if (!list.length) return '<div class="empty-state">No guides match "' + escapeHtml(q) + '"</div>';
+  return list.map(g => `
+    <div class="guide-card" data-id="${g.id}">
+      <button class="guide-head" onclick="toggleGuide('${g.id}')">
+        <div class="guide-meta">
+          <span class="guide-tag ${g.tagColor}">${g.tag}</span>
+          <div class="guide-name">${escapeHtml(g.name)}</div>
+          <div class="guide-tldr">${escapeHtml(g.tldr)}</div>
+        </div>
+        <div class="guide-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </button>
+      <div class="guide-body">
+        ${Object.entries(g.sections).map(([label, content]) => `
+          <div class="guide-section">
+            <div class="guide-section-label">${label}</div>
+            ${Array.isArray(content) ? `<ul class="guide-list">${content.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : `<div class="guide-text">${escapeHtml(content)}</div>`}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+window.toggleGuide = (id) => { document.querySelectorAll('.guide-card').forEach(c => { if (c.dataset.id === id) c.classList.toggle('open'); else c.classList.remove('open'); }); };
+
+function formatNum(n) { if (n == null) return '0'; return Number(n).toLocaleString('en-NG'); }
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]); }
+function relativeTime(ts) { if (!ts) return '—'; const d = Date.now()-ts; if (d<3600000) return Math.round(d/60000)+'m ago'; if (d<86400000) return Math.round(d/3600000)+'h ago'; const days=Math.round(d/86400000); if(days===1)return'yesterday'; if(days<7)return days+'d ago'; return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+
+// ─── Live Leads from Apps Script ────────────────────────────────────────
+console.log('[hamzury-workspaces] live leads wired v1');
+const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const WORKSPACE_FILTER = 'all';
+
+function renderLiveLeads() {
+  setHeader('Operations', 'Live Leads');
+  content.innerHTML = `
+    <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
+            Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
+          </h1>
+          <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
+            Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
+          <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+        </div>
+      </div>
+      <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
+        <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
+        <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+      </div>
+    </section>
+  `;
+  document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
+  loadLiveLeads();
+}
+
+async function loadLiveLeads() {
+  const status = document.getElementById('leads-status');
+  const list = document.getElementById('leads-list');
+  const empty = document.getElementById('leads-empty');
+  const badge = document.getElementById('leads-badge');
+
+  try {
+    if (status) status.textContent = 'Loading…';
+    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const data = await res.json();
+    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
+
+    let rows = all;
+    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
+      rows = all.filter(r => {
+        const form = String(r.Form || '').toLowerCase();
+        const title = String(r['Form Title'] || '').toLowerCase();
+        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
+      });
+    }
+
+    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+
+    if (badge) {
+      if (rows.length === 0) badge.style.display = 'none';
+      else { badge.textContent = rows.length; badge.style.display = 'inline-block'; }
+    }
+
+    if (!list) return;
+    list.innerHTML = '';
+    if (rows.length === 0) {
+      if (empty) empty.hidden = false;
+    } else {
+      if (empty) empty.hidden = true;
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+        const dt = new Date(r['Received At']);
+        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        card.innerHTML = `
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
+              ${escapeLeadHtml(r['Client Name'] || '—')}
+              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
+              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
+              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
+              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+              ${escapeLeadHtml(r.Status || 'New')}
+            </span>
+            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch (e) {
+    console.warn('[live-leads] fetch failed', e);
+    if (status) status.textContent = 'Connection error';
+  }
+}
+
+function escapeLeadHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadLiveLeads();
+setInterval(loadLiveLeads, 30000);
+
+updateCounts(); render();
+</script>
+
+</body>
+</html>

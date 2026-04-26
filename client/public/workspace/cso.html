@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamzury CSO Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #FAFAF7;
+    --paper: #FFFFFF;
+    --ink: #0A0A0A;
+    --ink-soft: #3C3C3E;
+    --ink-muted: #86868B;
+    --ink-faint: #C7C7CC;
+    --line: #E8E8E4;
+    --line-soft: #F2F2F0;
+    --sidebar: #F5F5F2;
+    --accent-warm: #B8731F;
+    --focus: rgba(10,10,10,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.005em;
+    overflow: hidden;
+  }
+
+  /* ============ LOGIN ============ */
+  .login-screen {
+    height: 100vh;
+    display: grid;
+    place-items: center;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(184,115,31,0.08), transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(10,10,10,0.04), transparent 50%),
+      var(--bg);
+  }
+
+  .login-card {
+    width: 100%;
+    max-width: 380px;
+    padding: 40px;
+  }
+
+  .login-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .login-brand .dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-size: 15px;
+  }
+
+  .login-eyebrow {
+    font-size: 11.5px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent-warm);
+    margin-bottom: 14px;
+  }
+
+  .login-title {
+    font-family: var(--serif);
+    font-size: 36px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .login-title em { font-style: italic; color: var(--accent-warm); }
+
+  .login-sub {
+    font-size: 14.5px;
+    color: var(--ink-muted);
+    margin-bottom: 32px;
+    line-height: 1.5;
+  }
+
+  .login-field { margin-bottom: 14px; }
+  .login-field label {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+  .login-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 10px;
+    font: 400 15px var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.005em;
+  }
+  .login-input:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 4px var(--focus);
+  }
+
+  .login-btn {
+    width: 100%;
+    padding: 13px 14px;
+    border: none;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    font: 500 15px var(--sans);
+    cursor: pointer;
+    margin-top: 10px;
+    transition: background 0.12s;
+    letter-spacing: -0.003em;
+  }
+  .login-btn:hover { background: #2a2a2a; }
+  .login-btn:active { transform: scale(0.98); }
+
+  .login-error {
+    display: none;
+    margin-top: 14px;
+    padding: 10px 14px;
+    background: #FCE8E4;
+    color: #A3301F;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .login-error.show { display: block; }
+
+  .login-hint {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 0.5px solid var(--line);
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+  }
+  .login-hint code {
+    font-family: var(--mono);
+    background: var(--line-soft);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--ink);
+  }
+
+  /* ============ PORTAL SHELL ============ */
+  .portal {
+    display: none;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+  }
+  .portal.active { display: grid; }
+  @media (max-width: 900px) {
+    .portal.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .mobile-nav-btn { display: flex !important; }
+  }
+
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 0.5px solid var(--line);
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 18px;
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .brand-dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-size: 12px;
+  }
+  .sidebar-section {
+    padding: 18px 10px 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--ink-soft);
+    transition: background 0.12s;
+    letter-spacing: -0.003em;
+    font-weight: 400;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+  .nav-item:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
+  .nav-item.active {
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .nav-icon {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .nav-icon svg {
+    width: 16px; height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    fill: none;
+  }
+
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 12px 10px 4px;
+    border-top: 0.5px solid var(--line);
+  }
+  .user-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding: 6px 0;
+  }
+  .user-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .logout-btn {
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: none;
+    border: none;
+    font: 400 12.5px var(--sans);
+    color: var(--ink-muted);
+    text-align: left;
+    cursor: pointer;
+    border-radius: 6px;
+  }
+  .logout-btn:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
+
+  /* ============ MAIN CONTENT ============ */
+  .main-area {
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .main-header {
+    padding: 14px 24px;
+    border-bottom: 0.5px solid var(--line);
+    background: rgba(250,250,247,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .mobile-nav-btn {
+    display: none;
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    border: 0.5px solid var(--line);
+    background: var(--paper);
+    cursor: pointer;
+    place-items: center;
+  }
+  .mobile-nav-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+
+  .crumb-stack { flex: 1; min-width: 0; }
+  .crumb-eyebrow {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 1px;
+  }
+  .crumb-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .pill-btn {
+    padding: 6px 12px;
+    border: 0.5px solid var(--line);
+    border-radius: 999px;
+    background: var(--paper);
+    cursor: pointer;
+    font: 500 12.5px var(--sans);
+    color: var(--ink-soft);
+    letter-spacing: -0.003em;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pill-btn:hover { color: var(--ink); border-color: var(--ink-faint); }
+  .pill-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+
+  /* ============ EMBED FRAME ============ */
+  .embed-frame {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: var(--bg);
+  }
+
+  /* ============ TAB CONTENT ============ */
+  .tab-content {
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* HOME tab */
+  .home-grid {
+    padding: 32px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) { .home-grid { padding: 24px 20px; } }
+
+  .home-hero {
+    padding: 32px 0 28px;
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .hero-title {
+    font-family: var(--serif);
+    font-size: 44px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-bottom: 12px;
+  }
+  .hero-title em { font-style: italic; color: var(--accent-warm); }
+  @media (max-width: 600px) { .hero-title { font-size: 32px; } }
+  .hero-sub {
+    font-size: 16px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+    max-width: 560px;
+  }
+
+  .quick-cards {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 700px) { .quick-cards { grid-template-columns: 1fr; } }
+
+  .quick-card {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+    border: 0.5px solid var(--line);
+    font-family: inherit;
+  }
+  .quick-card:hover {
+    border-color: var(--ink);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+  }
+  .quick-card-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: var(--line-soft);
+    display: grid; place-items: center;
+    margin-bottom: 14px;
+  }
+  .quick-card-icon svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .quick-card-title {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    margin-bottom: 4px;
+  }
+  .quick-card-desc {
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    line-height: 1.45;
+  }
+
+  .home-section-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  /* CALL SCRIPTS tab */
+  .scripts-page {
+    padding: 32px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) { .scripts-page { padding: 24px 20px; } }
+
+  .scripts-header { margin-bottom: 32px; padding-bottom: 24px; border-bottom: 0.5px solid var(--line); }
+  .scripts-title {
+    font-family: var(--serif);
+    font-size: 38px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-bottom: 10px;
+  }
+  .scripts-title em { font-style: italic; color: var(--accent-warm); }
+
+  .scripts-sub { font-size: 15px; color: var(--ink-muted); line-height: 1.55; max-width: 600px; }
+
+  .script-card {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 14px;
+    margin-bottom: 14px;
+    overflow: hidden;
+    transition: border-color 0.15s;
+  }
+  .script-card.open { border-color: var(--ink); }
+
+  .script-head {
+    padding: 18px 22px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+  .script-head:hover { background: var(--line-soft); }
+
+  .script-meta { flex: 1; min-width: 0; }
+  .script-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .tag-cold { background: #E8F0FE; color: #1A56C7; }
+  .tag-followup { background: #FDF1DD; color: #7A4A12; }
+  .tag-payment { background: #E3F5E8; color: #1A6B3C; }
+  .tag-delivery { background: #F3E4CE; color: #7A4A12; }
+  .tag-upsell { background: #FCE8E4; color: #A3301F; }
+  .tag-recovery { background: #F0F0EC; color: #54544E; }
+
+  .script-name {
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
+  }
+  .script-purpose {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 3px;
+    line-height: 1.45;
+  }
+
+  .script-chev {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--line-soft);
+    display: grid; place-items: center;
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .script-card.open .script-chev { transform: rotate(180deg); }
+  .script-chev svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 1.8; }
+
+  .script-body {
+    display: none;
+    padding: 0 22px 22px;
+    border-top: 0.5px solid var(--line-soft);
+  }
+  .script-card.open .script-body { display: block; }
+
+  .script-section {
+    margin-top: 18px;
+  }
+  .script-section-label {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--accent-warm);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .script-text {
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: var(--ink);
+    letter-spacing: -0.003em;
+  }
+  .script-text p { margin-bottom: 10px; }
+  .script-text em { font-style: italic; color: var(--ink-muted); }
+
+  .script-quote {
+    background: var(--line-soft);
+    border-left: 2px solid var(--ink);
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 6px 0;
+    font-size: 14.5px;
+    line-height: 1.65;
+    letter-spacing: -0.003em;
+  }
+
+  .script-list { margin: 4px 0 0 18px; font-size: 14px; line-height: 1.6; color: var(--ink-soft); }
+  .script-list li { margin-bottom: 4px; }
+
+  .script-actions { margin-top: 18px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .copy-btn {
+    padding: 7px 14px;
+    border: 0.5px solid var(--line);
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 999px;
+    font: 500 12.5px var(--sans);
+    cursor: pointer;
+    transition: all 0.12s;
+    letter-spacing: -0.003em;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .copy-btn:hover { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .copy-btn.copied { background: #1A6B3C; color: #fff; border-color: #1A6B3C; }
+
+  .script-search {
+    width: 100%;
+    margin-bottom: 20px;
+    padding: 11px 16px 11px 40px;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 999px;
+    font: 400 14.5px var(--sans);
+    letter-spacing: -0.005em;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%2386868B' stroke-width='1.8'/%3E%3Cpath d='M21 21L16.5 16.5' stroke='%2386868B' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: 14px center;
+  }
+  .script-search:focus {
+    outline: none;
+    border-color: var(--ink);
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN SCREEN ============ -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="dot">H</div>
+      <span>Hamzury</span>
+    </div>
+    <div class="login-eyebrow">CSO Portal</div>
+    <h1 class="login-title">Sign in to <em>continue</em>.</h1>
+    <p class="login-sub">Hamzury team workspace — diagnostics, requirements, command center, and call scripts.</p>
+
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label for="login-user">Username</label>
+        <input type="text" class="login-input" id="login-user" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Password</label>
+        <input type="password" class="login-input" id="login-pass" autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn">Sign in</button>
+      <div class="login-error" id="login-error">Wrong username or password.</div>
+    </form>
+
+    <div class="login-hint">
+      Lost access? Speak to Hamzury management — credentials are shared across the team.
+    </div>
+  </div>
+</div>
+
+<!-- ============ PORTAL SHELL ============ -->
+<div class="portal" id="portal">
+
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-dot">H</div>
+      <span>Hamzury</span>
+    </div>
+
+    <div class="sidebar-section">Workspace</div>
+    <button class="nav-item active" data-tab="home">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>
+      Home
+    </button>
+    <button class="nav-item" data-tab="dashboard">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+      Dashboard
+    </button>
+    <button class="nav-item" data-tab="leads">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
+      Live Leads
+      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+    </button>
+
+    <div class="sidebar-section">Tools</div>
+    <button class="nav-item" data-tab="forms">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-4M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg></span>
+      Diagnostic Forms
+    </button>
+    <button class="nav-item" data-tab="requirements">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 3h6l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4zM9 3v5h6"/></svg></span>
+      Requirement Forms
+    </button>
+    <button class="nav-item" data-tab="command">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+      Command Center
+    </button>
+    <button class="nav-item" data-tab="scripts">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+      Call Scripts
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">H</div>
+        <div>
+          <div style="color:var(--ink);font-weight:500;">Hamzury Team</div>
+          <div style="font-size:11.5px;color:var(--ink-muted);">Signed in</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="main-header">
+      <button class="mobile-nav-btn" id="mobile-nav-btn" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="crumb-stack">
+        <div class="crumb-eyebrow" id="crumb-eyebrow">CSO Portal</div>
+        <div class="crumb-title" id="crumb-title">Home</div>
+      </div>
+      <div class="header-actions" id="header-actions"></div>
+    </header>
+
+    <!-- HOME -->
+    <div class="tab-content" id="tab-home">
+      <div class="home-grid">
+        <div class="home-hero">
+          <h1 class="hero-title">Welcome back to <em>Hamzury</em>.</h1>
+          <p class="hero-sub">Everything you need to handle clients today, in one place. Diagnostic forms, requirement collection, the command center, your call scripts. Pick where you're going.</p>
+        </div>
+
+        <div class="home-section-title">Quick access</div>
+        <div class="quick-cards">
+          <button class="quick-card" data-tab="dashboard">
+            <div class="quick-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            </div>
+            <div class="quick-card-title">Dashboard</div>
+            <div class="quick-card-desc">See submissions, track progress, log updates and deliveries, mark upsells, follow up unclosed leads.</div>
+          </button>
+
+          <button class="quick-card" data-tab="forms">
+            <div class="quick-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-4M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>
+            </div>
+            <div class="quick-card-title">Diagnostic Forms</div>
+            <div class="quick-card-desc">Preview the Clarity Session and 4 department diagnostic forms. Copy links to send to clients.</div>
+          </button>
+
+          <button class="quick-card" data-tab="requirements">
+            <div class="quick-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 3h6l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4zM9 3v5h6"/></svg>
+            </div>
+            <div class="quick-card-title">Requirement Forms</div>
+            <div class="quick-card-desc">All 24 service-specific requirement forms with file uploads — for clients who've already paid.</div>
+          </button>
+
+          <button class="quick-card" data-tab="command">
+            <div class="quick-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            </div>
+            <div class="quick-card-title">Command Center</div>
+            <div class="quick-card-desc">The chat simulator showing the full client journey. Use for training and previewing flows.</div>
+          </button>
+
+          <button class="quick-card" data-tab="scripts">
+            <div class="quick-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg>
+            </div>
+            <div class="quick-card-title">Call Scripts</div>
+            <div class="quick-card-desc">Ready-to-use scripts for cold calls, follow-ups, payment reminders, deliveries, upsells, recovery.</div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DASHBOARD (iframe to existing file) -->
+    <iframe class="embed-frame" id="tab-dashboard" src="hamzury-dashboard.html" style="display:none;"></iframe>
+
+    <!-- LIVE LEADS -->
+    <div class="tab-content" id="tab-leads" style="display:none;">
+      <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
+              Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
+            </h1>
+            <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
+              Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
+            </p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
+            <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+          </div>
+        </div>
+        <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+        <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
+          <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
+          <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+        </div>
+      </section>
+    </div>
+
+    <!-- FORMS -->
+    <iframe class="embed-frame" id="tab-forms" src="hamzury-forms.html" style="display:none;"></iframe>
+
+    <!-- REQUIREMENTS -->
+    <iframe class="embed-frame" id="tab-requirements" src="hamzury-requirements.html" style="display:none;"></iframe>
+
+    <!-- COMMAND CENTER -->
+    <iframe class="embed-frame" id="tab-command" src="hamzury-command-center.html" style="display:none;"></iframe>
+
+    <!-- CALL SCRIPTS -->
+    <div class="tab-content" id="tab-scripts" style="display:none;">
+      <div class="scripts-page">
+        <div class="scripts-header">
+          <h1 class="scripts-title">Call <em>scripts</em>.</h1>
+          <p class="scripts-sub">Tested scripts for the conversations your team has every day. Copy what you need — adapt the details to the client. The wording is the easy part. Showing up calmly and listening is the work.</p>
+        </div>
+
+        <input type="search" class="script-search" id="script-search" placeholder="Search scripts...">
+
+        <div id="scripts-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============= AUTH =============
+const AUTH_KEY = 'hamzury_signed_in';
+const VALID_USER = 'HAMZURY';
+const VALID_PASS = 'HAMZURY';
+
+function isSignedIn() {
+  try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch(e) { return false; }
+}
+
+function signIn() {
+  try { sessionStorage.setItem(AUTH_KEY, '1'); } catch(e) {}
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('portal').classList.add('active');
+}
+
+function signOut() {
+  try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {}
+  document.getElementById('portal').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'grid';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+}
+
+document.getElementById('login-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value.trim();
+  if (u === VALID_USER && p === VALID_PASS) {
+    signIn();
+  } else {
+    document.getElementById('login-error').classList.add('show');
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', signOut);
+
+// Init session
+if (isSignedIn()) {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('portal').classList.add('active');
+}
+
+// ============= TAB SWITCHING =============
+const TAB_META = {
+  home:         { eyebrow: 'CSO Portal', title: 'Home' },
+  dashboard:    { eyebrow: 'Operations', title: 'Dashboard' },
+  leads:        { eyebrow: 'Operations', title: 'Live Leads' },
+  forms:        { eyebrow: 'Tools', title: 'Diagnostic Forms' },
+  requirements: { eyebrow: 'Tools', title: 'Requirement Forms' },
+  command:      { eyebrow: 'Tools', title: 'Command Center' },
+  scripts:      { eyebrow: 'Tools', title: 'Call Scripts' }
+};
+
+function openTab(name) {
+  document.querySelectorAll('[id^="tab-"]').forEach(el => {
+    el.style.display = 'none';
+  });
+  const target = document.getElementById('tab-' + name);
+  if (target) {
+    target.style.display = target.tagName === 'IFRAME' ? 'block' : '';
+    if (target.tagName === 'IFRAME') target.style.display = 'block';
+  }
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.tab === name);
+  });
+  const meta = TAB_META[name];
+  if (meta) {
+    document.getElementById('crumb-eyebrow').textContent = meta.eyebrow;
+    document.getElementById('crumb-title').textContent = meta.title;
+  }
+  // Mobile: close sidebar
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  // Hide header actions when on iframes (they have their own UI)
+  document.getElementById('header-actions').innerHTML = '';
+}
+
+document.querySelectorAll('[data-tab]').forEach(el => {
+  el.addEventListener('click', () => openTab(el.dataset.tab));
+});
+
+document.getElementById('mobile-nav-btn').addEventListener('click', () => {
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+});
+
+// ============= CALL SCRIPTS =============
+const SCRIPTS = [
+  {
+    type: 'cold',
+    name: 'First Outreach — Diagnostic Follow-up',
+    purpose: 'Calling someone who completed a diagnostic form but hasn\'t booked yet.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Good morning, am I speaking with [Name]? My name is [Your Name] from Hamzury — I saw you completed our [department] diagnostic yesterday, and I wanted to reach out personally. Do you have two minutes?'
+      },
+      'If they say yes': {
+        type: 'quote',
+        text: 'Thank you. I want to start by saying — completing that form takes more reflection than most founders are willing to do, so well done. I\'ve gone through your responses, and a few things stood out. Would it be okay if I shared what I noticed?'
+      },
+      'After they agree': {
+        type: 'list',
+        items: [
+          'Mention 2–3 SPECIFIC things from their answers (use the actual words they used)',
+          'Connect each one to a specific consequence they\'ll feel if it stays unaddressed',
+          'Offer one concrete next step — usually a 20-min call OR signing up for the relevant service'
+        ]
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'Based on what you shared, I think the right next step is [specific service]. We can have something in motion for you by end of next week. Would you like me to send you the details on WhatsApp now so you can review?'
+      },
+      'If hesitant': {
+        type: 'quote',
+        text: 'Completely fair. Take the time you need — but let me ask: what would need to be true for you to feel ready to move forward? I\'d rather know now than chase you later.'
+      }
+    }
+  },
+  {
+    type: 'followup',
+    name: 'Follow-up — Quoted but not Paid',
+    purpose: 'Calling a lead who got a quote but hasn\'t paid in 3+ days.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Hi [Name], it\'s [Your Name] from Hamzury. I sent you the quote for [service] earlier this week — just wanted to check in and see if you had any questions before moving forward.'
+      },
+      'If they\'re still considering': {
+        type: 'quote',
+        text: 'Of course, take your time. Can I ask — what\'s the one thing you\'re still working through in your mind? Sometimes people need a different angle, sometimes they just need someone to listen.'
+      },
+      'If price is the concern': {
+        type: 'list',
+        items: [
+          'Don\'t discount immediately — first understand what they\'re comparing it to',
+          'Re-anchor on outcomes: what does this fix for them, in their words',
+          'If discount is needed: offer payment plan, not lower price (preserves your margin and their commitment)',
+          'Example: "We can do 50% now, 50% in 30 days — does that work better?"'
+        ]
+      },
+      'If timing is the concern': {
+        type: 'quote',
+        text: 'I understand. Would it help to lock in the current rate now and we start in [later date]? That way you don\'t lose the slot, and we begin when you\'re ready.'
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'Tell you what — I\'ll send you the payment details one more time, and I\'ll personally reach out Friday afternoon to confirm. Sound good?'
+      }
+    }
+  },
+  {
+    type: 'payment',
+    name: 'Payment Reminder — Overdue',
+    purpose: 'Following up on an unpaid invoice or overdue retainer.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Hi [Name], it\'s [Your Name] from Hamzury. I\'m calling about the [service] invoice from [date]. Has there been any issue on your end with the payment?'
+      },
+      'Listen first': {
+        type: 'text',
+        text: '<em>Don\'t fill the silence. Let them explain. Most overdue payments are not about money — they\'re about a small dispute, a forgotten step, or a cash-flow gap they\'re embarrassed about.</em>'
+      },
+      'If genuine cash-flow issue': {
+        type: 'quote',
+        text: 'I appreciate you being honest. Let\'s find a solution that works. Can we split this into two payments — half today, half on [date]? We can send you a fresh payment link now.'
+      },
+      'If they had questions / disputes': {
+        type: 'quote',
+        text: 'Thank you for telling me. Let me get that resolved today. I\'ll send a corrected invoice within the hour, and once you confirm receipt we can process the payment.'
+      },
+      'If they\'re ghosting / dodging': {
+        type: 'quote',
+        text: 'I just want to be transparent — your account is currently [X] days past due. We continue working with you because we believe in your business, but I need to know we have a clear plan for settlement before end of this week. Can we agree on that?'
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'I\'ll send the payment link in the next few minutes. Please confirm when it goes through, even just a thumbs-up on WhatsApp. Thank you for working with us on this.'
+      }
+    }
+  },
+  {
+    type: 'delivery',
+    name: 'Delivery Confirmation Call',
+    purpose: 'When delivering completed work — make it feel like a moment, not just a handover.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Good afternoon [Name]! I\'m calling because we\'ve just completed the [service]. I wanted to walk you through it personally before sending the files. Do you have ten minutes?'
+      },
+      'During the walkthrough': {
+        type: 'list',
+        items: [
+          'Lead with the WHY behind your key decisions, not just what you did',
+          'Reference back to specific things they said in their requirements form',
+          'Pause for questions twice — don\'t rush to fill silences',
+          'Acknowledge anything you\'d revisit if you had more time / budget — builds trust'
+        ]
+      },
+      'Asking for feedback': {
+        type: 'quote',
+        text: 'Before I send the final files, what\'s your honest first impression? I\'d rather we adjust now than have you live with something that\'s not quite right.'
+      },
+      'If they\'re happy': {
+        type: 'quote',
+        text: 'I\'m so glad. The files are coming over to your WhatsApp now. One quick favour — if you can, send me a short voice note in the next few days about what worked. We use those when bringing on new clients, with your permission of course.'
+      },
+      'Setting up upsell context': {
+        type: 'quote',
+        text: 'One more thing — based on what we delivered, I think your next priority should be [next service]. There\'s no rush at all, but I wanted to plant the thought. We can talk about it whenever you\'re ready, or never — your call.'
+      }
+    }
+  },
+  {
+    type: 'upsell',
+    name: 'Upsell Conversation',
+    purpose: 'Calling an existing client about an additional service they could benefit from.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Hi [Name], it\'s [Your Name] from Hamzury. Quick check-in — how\'s [previously delivered service] been performing for you?'
+      },
+      'After they answer': {
+        type: 'text',
+        text: 'Listen for: what\'s working, what\'s confusing, what\'s missing. <em>The upsell pitch lives inside their answer.</em>'
+      },
+      'Bridging': {
+        type: 'quote',
+        text: 'That\'s exactly why I called. Based on what you just said, the next thing that would move the needle for you is [service]. Here\'s why specifically — [tie to their words]. Would you be open to me sending you a one-page proposal?'
+      },
+      'If they\'re unsure': {
+        type: 'quote',
+        text: 'No pressure at all. Let me ask differently — if money and time were not constraints, what would you fix in your business right now? I want to make sure I\'m solving the right problem before I propose anything.'
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'I\'ll send the proposal by end of day. Read it whenever — there\'s no expiry. And if it\'s not the right time, just tell me — we can revisit in 60 days.'
+      }
+    }
+  },
+  {
+    type: 'recovery',
+    name: 'Recovery — Unclosed Lead Reactivation',
+    purpose: 'Reaching back out to a lead that went cold 30+ days ago.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Hi [Name], it\'s [Your Name] from Hamzury. We spoke about [service] back in [month]. I\'m not calling to chase a sale — I\'m calling because I genuinely wondered how things are going on that side of your business.'
+      },
+      'The honest reset': {
+        type: 'quote',
+        text: 'When we last spoke, you mentioned [specific concern]. Has that resolved itself, gotten worse, or stayed the same? I\'m asking because if it\'s the same problem, we should probably talk again — and if it resolved, I genuinely want to hear how.'
+      },
+      'If still unresolved': {
+        type: 'list',
+        items: [
+          'Don\'t re-pitch the original quote — propose something smaller as an entry point',
+          'Acknowledge that the timing wasn\'t right then — that\'s why you\'re reaching out now',
+          'Offer a fixed-scope, fixed-price 2-week pilot if it fits the service'
+        ]
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'Whatever you decide is fine. But I\'d rather we have one honest conversation than I keep circling for months. Is there anything I could share — a case study, a specific approach — that would help you make a decision either way?'
+      }
+    }
+  },
+  {
+    type: 'cold',
+    name: 'Cold Outreach — Affiliate Referral',
+    purpose: 'Reaching a referral introduced by an affiliate or existing client.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Good morning, am I speaking with [Name]? My name is [Your Name] from Hamzury. [Affiliate Name] mentioned you might benefit from a conversation about [area]. Did they mention us to you?'
+      },
+      'If they remember the referral': {
+        type: 'quote',
+        text: 'Wonderful. [Affiliate] thought we\'d be a fit because [specific reason]. Before I tell you anything about us — would you mind sharing what made you open to a conversation? That helps me know if we can actually help, or if I should refer you elsewhere.'
+      },
+      'If they don\'t remember': {
+        type: 'quote',
+        text: 'No worries at all — [Affiliate] is well-meaning but they have a lot going on. Briefly: Hamzury helps Nigerian businesses with [one of: compliance, software, media, training]. [Affiliate] thought you might be working on [area]. Is that an accurate read?'
+      },
+      'Listening phase': {
+        type: 'list',
+        items: [
+          'Spend 70% of the call listening, not talking',
+          'Take notes — quote them back later in your written follow-up',
+          'Don\'t propose anything on the first call — propose a second call OR a diagnostic form'
+        ]
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'I want to be respectful of your time. The most useful next step would be for you to spend ten minutes with our diagnostic form — it\'ll surface things even this conversation won\'t. I\'ll send the link now. After you complete it, I\'ll come back with something specific to your situation.'
+      }
+    }
+  },
+  {
+    type: 'followup',
+    name: 'Progress Update Call — Active Project',
+    purpose: 'Mid-project check-in with a paying client to update them on progress and prevent surprises.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Hi [Name], it\'s [Your Name] — I\'m calling with the [week X / phase X] update on your [service]. Is now a good time for ten minutes?'
+      },
+      'Structure of the update': {
+        type: 'list',
+        items: [
+          'What we completed this week (specific deliverables)',
+          'What we\'re working on next week (with rough timing)',
+          'Anything we need from them (decisions, info, files) — be exact',
+          'Anything that\'s slowed us down — flag it BEFORE it becomes a delay'
+        ]
+      },
+      'The honest middle': {
+        type: 'quote',
+        text: 'One thing I want to flag — [potential issue]. It\'s not a problem yet, but I want to mention it now so you\'re not surprised later. We have two ways we could handle it: [option A] or [option B]. What\'s your preference?'
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'I\'ll send a written summary of what we discussed within an hour, so you have it on record. Thank you for the time — I\'ll talk to you next [day].'
+      }
+    }
+  },
+  {
+    type: 'recovery',
+    name: 'Difficult Conversation — Project Going Off-track',
+    purpose: 'When delivery is delayed, scope has crept, or quality concerns have come up.',
+    sections: {
+      'Opening — own it first': {
+        type: 'quote',
+        text: 'Hi [Name]. I\'m calling because I owe you an honest conversation about where we are on [project]. I\'d rather have this discussion now than at the deadline. Do you have fifteen minutes?'
+      },
+      'The acknowledgment': {
+        type: 'quote',
+        text: 'Here\'s what happened: [specific reason — internal capacity, scope changes, technical blockers]. I\'m not making excuses. I\'m telling you because I respect you enough to be straight with you.'
+      },
+      'The plan': {
+        type: 'list',
+        items: [
+          'Tell them what you\'re doing about it (not what you\'re thinking about doing)',
+          'Give a NEW realistic deadline — overshoot rather than underdeliver',
+          'Offer something concrete to make it right: discount, free add-on, priority on next project',
+          'Ask: "Is there anything else I should know about your situation that affects how we move forward?"'
+        ]
+      },
+      'Closing': {
+        type: 'quote',
+        text: 'I appreciate you not making me grovel. I\'ll send a written version of everything we discussed today, and I\'ll personally check in with you on [date]. Thank you for the patience — I won\'t take it for granted.'
+      }
+    }
+  },
+  {
+    type: 'delivery',
+    name: 'Post-Delivery Check-in (7 days later)',
+    purpose: 'Calling a recently-delivered client to check satisfaction and gently set up upsell.',
+    sections: {
+      'Opening': {
+        type: 'quote',
+        text: 'Hi [Name], [Your Name] from Hamzury — it\'s been a week since we delivered your [service]. I wanted to check in: how is it landing in real-world use?'
+      },
+      'Listening for honest feedback': {
+        type: 'list',
+        items: [
+          'If they say "great" — push gently: "What\'s one thing you\'d change if you could?"',
+          'If they\'re vague — ask: "Walk me through the last time you used it"',
+          'If there\'s a problem — offer to fix immediately, no defensiveness'
+        ]
+      },
+      'Asking for the testimonial / referral': {
+        type: 'quote',
+        text: 'I\'m really glad to hear that. One favour, if you have a moment — could you send me a short voice note or message about your experience? We share these with prospective clients (with your name only if you allow). And if you know anyone else who could use what we delivered for you, I\'d be grateful for an introduction.'
+      },
+      'Setting up upsell — softly': {
+        type: 'quote',
+        text: 'Last thing — based on what we just delivered, the natural next step in 30–60 days would usually be [next service]. No pressure, no pitch. I\'m just planting the seed so when you\'re ready, you know where we are.'
+      }
+    }
+  }
+];
+
+function renderScripts(filter = '') {
+  const list = document.getElementById('scripts-list');
+  const q = filter.toLowerCase().trim();
+  const filtered = q
+    ? SCRIPTS.filter(s => (s.name + ' ' + s.purpose + ' ' + s.type).toLowerCase().includes(q))
+    : SCRIPTS;
+
+  if (!filtered.length) {
+    list.innerHTML = '<div style="text-align:center;color:var(--ink-muted);padding:60px 0;font-size:14px;">No scripts match "' + q + '"</div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((s, idx) => `
+    <div class="script-card" data-idx="${SCRIPTS.indexOf(s)}">
+      <button class="script-head" onclick="toggleScript(${SCRIPTS.indexOf(s)})">
+        <div class="script-meta">
+          <span class="script-tag tag-${s.type}">${s.type}</span>
+          <div class="script-name">${s.name}</div>
+          <div class="script-purpose">${s.purpose}</div>
+        </div>
+        <div class="script-chev">
+          <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </button>
+      <div class="script-body">
+        ${Object.entries(s.sections).map(([label, content]) => renderSection(label, content)).join('')}
+        <div class="script-actions">
+          <button class="copy-btn" onclick="copyScript(${SCRIPTS.indexOf(s)})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy full script
+          </button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSection(label, content) {
+  let body = '';
+  if (content.type === 'quote') {
+    body = `<div class="script-quote">${escapeHtml(content.text)}</div>`;
+  } else if (content.type === 'list') {
+    body = `<ul class="script-list">${content.items.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>`;
+  } else if (content.type === 'text') {
+    body = `<div class="script-text"><p>${content.text}</p></div>`;
+  }
+  return `<div class="script-section">
+    <div class="script-section-label">${label}</div>
+    ${body}
+  </div>`;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
+}
+
+window.toggleScript = (idx) => {
+  const card = document.querySelector(`.script-card[data-idx="${idx}"]`);
+  if (!card) return;
+  // Close others
+  document.querySelectorAll('.script-card.open').forEach(c => {
+    if (c !== card) c.classList.remove('open');
+  });
+  card.classList.toggle('open');
+};
+
+window.copyScript = (idx) => {
+  const s = SCRIPTS[idx];
+  let text = `${s.name}\n${s.purpose}\n\n`;
+  Object.entries(s.sections).forEach(([label, content]) => {
+    text += `\n— ${label.toUpperCase()} —\n`;
+    if (content.type === 'quote') text += content.text + '\n';
+    else if (content.type === 'list') text += content.items.map(i => '• ' + i).join('\n') + '\n';
+    else if (content.type === 'text') text += content.text.replace(/<[^>]+>/g, '') + '\n';
+  });
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target.closest('.copy-btn');
+    if (btn) {
+      btn.classList.add('copied');
+      const original = btn.innerHTML;
+      btn.innerHTML = '✓ Copied to clipboard';
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = original;
+      }, 2000);
+    }
+  });
+};
+
+document.getElementById('script-search').addEventListener('input', (e) => {
+  renderScripts(e.target.value);
+});
+
+renderScripts();
+
+// ─── Live Leads from Apps Script ────────────────────────────────────────
+console.log('[hamzury-workspaces] live leads wired v1');
+const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const WORKSPACE_FILTER = 'all';
+
+async function loadLiveLeads() {
+  const status = document.getElementById('leads-status');
+  const list = document.getElementById('leads-list');
+  const empty = document.getElementById('leads-empty');
+  const badge = document.getElementById('leads-badge');
+  if (!list) return;
+
+  try {
+    if (status) status.textContent = 'Loading…';
+    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const data = await res.json();
+    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
+
+    let rows = all;
+    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
+      rows = all.filter(r => {
+        const form = String(r.Form || '').toLowerCase();
+        const title = String(r['Form Title'] || '').toLowerCase();
+        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
+      });
+    }
+
+    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+
+    list.innerHTML = '';
+    if (rows.length === 0) {
+      empty.hidden = false;
+      if (badge) badge.style.display = 'none';
+    } else {
+      empty.hidden = true;
+      if (badge) {
+        badge.textContent = rows.length;
+        badge.style.display = 'inline-block';
+      }
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+        const dt = new Date(r['Received At']);
+        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        card.innerHTML = `
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
+              ${escapeLeadHtml(r['Client Name'] || '—')}
+              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
+              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
+              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
+              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+              ${escapeLeadHtml(r.Status || 'New')}
+            </span>
+            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch (e) {
+    console.warn('[live-leads] fetch failed', e);
+    if (status) status.textContent = 'Connection error';
+  }
+}
+
+function escapeLeadHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
+
+loadLiveLeads();
+setInterval(loadLiveLeads, 30000);
+</script>
+
+</body>
+</html>

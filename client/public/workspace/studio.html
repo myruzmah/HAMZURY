@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio — Where Hamzury's Work Comes to Life</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #FAF8FE;
+    --paper: #FFFFFF;
+    --ink: #1A1130;
+    --ink-soft: #3A2D5C;
+    --ink-muted: #786C99;
+    --ink-faint: #B5ADC8;
+    --line: #E4DEEF;
+    --line-soft: #F0EBF8;
+    --sidebar: #F1ECFA;
+    --accent: #5B3FA8;
+    --accent-soft: #7A5AC8;
+    --accent-pale: #EDE7F8;
+    --success: #1A6B3C;
+    --warn: #B8731F;
+    --danger: #A3301F;
+    --info: #1A56C7;
+    --focus: rgba(91,63,168,0.14);
+    --medialy: #1D4ED8;
+    --cso: #B48C4C;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; font-family: var(--sans); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; letter-spacing: -0.005em; overflow: hidden;
+  }
+
+  /* LOGIN */
+  .login-screen { height: 100vh; display: grid; place-items: center;
+    background: radial-gradient(circle at 25% 20%, rgba(91,63,168,0.08), transparent 50%), radial-gradient(circle at 75% 80%, rgba(184,140,76,0.04), transparent 50%), var(--bg); }
+  .login-card { width: 100%; max-width: 380px; padding: 40px; }
+  .login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; }
+  .login-brand .dot { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-size: 15px; font-weight: 500; }
+  .login-eyebrow { font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .login-title { font-family: var(--serif); font-size: 36px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 12px; }
+  .login-title em { font-style: italic; color: var(--accent); }
+  .login-sub { font-size: 14.5px; color: var(--ink-muted); margin-bottom: 32px; line-height: 1.5; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--ink-soft); margin-bottom: 6px; }
+  .login-input { width: 100%; padding: 12px 14px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; font: 400 15px var(--sans); color: var(--ink); letter-spacing: -0.005em; }
+  .login-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--focus); }
+  .login-btn { width: 100%; padding: 13px; border: none; border-radius: 10px; background: var(--accent); color: #fff; font: 500 15px var(--sans); cursor: pointer; margin-top: 10px; transition: filter 0.12s; }
+  .login-btn:hover { filter: brightness(1.1); }
+  .login-error { display: none; margin-top: 14px; padding: 10px 14px; background: rgba(163,48,31,0.08); color: var(--danger); border-radius: 8px; font-size: 13px; }
+  .login-error.show { display: block; }
+  .login-hint { margin-top: 24px; padding-top: 24px; border-top: 0.5px solid var(--line); font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* PORTAL */
+  .portal { display: none; grid-template-columns: 240px 1fr; height: 100vh; }
+  .portal.active { display: grid; }
+  @media (max-width: 900px) {
+    .portal.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .mobile-nav-btn { display: flex !important; }
+  }
+  .sidebar { background: var(--sidebar); border-right: 0.5px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+  .sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.02em; }
+  .brand-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-family: var(--serif); font-size: 12px; }
+  .sidebar-section { padding: 18px 10px 6px; font-size: 11.5px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 7px; cursor: pointer; font-size: 14px; color: var(--ink-soft); transition: background 0.12s; letter-spacing: -0.003em; font-weight: 400; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+  .nav-item:hover { background: var(--paper); color: var(--ink); }
+  .nav-item.active { background: var(--paper); color: var(--accent); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+  .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; }
+  .nav-icon svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .nav-count { margin-left: auto; font-size: 11.5px; background: var(--line); padding: 1px 7px; border-radius: 10px; color: var(--ink-muted); min-width: 20px; text-align: center; font-weight: 500; font-variant-numeric: tabular-nums; }
+  .nav-item.active .nav-count { background: var(--accent); color: #fff; }
+  .nav-count.alert { background: var(--danger); color: #fff; }
+  .nav-count.warn { background: var(--warn); color: #fff; }
+  .sidebar-footer { margin-top: auto; padding: 12px 10px 4px; border-top: 0.5px solid var(--line); }
+  .user-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); padding: 6px 0; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 11px; font-weight: 500; }
+  .logout-btn { width: 100%; margin-top: 6px; padding: 6px 10px; background: none; border: none; font: 400 12.5px var(--sans); color: var(--ink-muted); text-align: left; cursor: pointer; border-radius: 6px; font-family: inherit; }
+  .logout-btn:hover { background: var(--paper); color: var(--ink); }
+
+  .main-area { overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+  .main-header { padding: 14px 28px; border-bottom: 0.5px solid var(--line); background: rgba(250,248,254,0.85); backdrop-filter: saturate(180%) blur(20px); display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+  .mobile-nav-btn { display: none; width: 36px; height: 36px; border-radius: 8px; border: 0.5px solid var(--line); background: var(--paper); cursor: pointer; place-items: center; }
+  .mobile-nav-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .crumb-stack { flex: 1; min-width: 0; }
+  .crumb-eyebrow { font-size: 11px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1px; }
+  .crumb-title { font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+
+  .pill-btn { padding: 6px 14px; border: 0.5px solid var(--line); border-radius: 999px; background: var(--paper); cursor: pointer; font: 500 12.5px var(--sans); color: var(--ink-soft); letter-spacing: -0.003em; display: inline-flex; align-items: center; gap: 5px; font-family: inherit; }
+  .pill-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .pill-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill-btn.primary:hover { filter: brightness(1.1); color: #fff; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
+  @media (max-width: 600px) { .content { padding: 22px 20px 40px; } }
+
+  /* HOME */
+  .home-hero { padding: 8px 0 28px; border-bottom: 0.5px solid var(--line); margin-bottom: 28px; }
+  .hero-title { font-family: var(--serif); font-size: 38px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 10px; }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub { font-size: 15.5px; color: var(--ink-soft); line-height: 1.55; max-width: 580px; }
+  @media (max-width: 600px) { .hero-title { font-size: 30px; } }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 18px 20px; }
+  .stat-label { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 500; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.05; color: var(--accent); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.success { color: var(--success); }
+  .stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+  .section-title { font-size: 13px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+
+  .table-wrap { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 18px; font-size: 13.5px; letter-spacing: -0.003em; border-bottom: 0.5px solid var(--line-soft); }
+  th { background: var(--line-soft); font-size: 11.5px; font-weight: 500; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; transition: background 0.1s; }
+  tr.clickable:hover td { background: var(--accent-pale); }
+  .cell-name { font-weight: 500; color: var(--ink); }
+  .cell-sub { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .cell-time { font-size: 12.5px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cell-right { text-align: right; }
+  .cell-mono { font-family: var(--mono); font-size: 12px; }
+
+  .tag { display: inline-block; padding: 2px 9px; border-radius: 5px; font-size: 12px; font-weight: 500; letter-spacing: -0.003em; }
+  .tag-blue { background: rgba(26,86,199,0.1); color: var(--info); }
+  .tag-amber { background: rgba(184,115,31,0.12); color: var(--warn); }
+  .tag-green { background: rgba(26,107,60,0.1); color: var(--success); }
+  .tag-coral { background: rgba(163,48,31,0.1); color: var(--danger); }
+  .tag-grey { background: var(--line); color: var(--ink-soft); }
+  .tag-accent { background: var(--accent-pale); color: var(--accent); }
+  .tag-medialy { background: rgba(29,78,216,0.10); color: var(--medialy); }
+  .tag-cso { background: rgba(184,140,76,0.14); color: var(--cso); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-muted); font-size: 14px; }
+  .empty-state .big { font-family: var(--serif); font-size: 22px; color: var(--ink-soft); margin-bottom: 6px; }
+
+  .task-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 18px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: all 0.12s; }
+  .task-card:hover { border-color: var(--accent); transform: translateX(2px); }
+  .task-priority { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .task-priority.red { background: var(--danger); }
+  .task-priority.amber { background: var(--warn); }
+  .task-priority.green { background: var(--success); }
+  .task-meta { flex: 1; min-width: 0; }
+  .task-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .task-sub { font-size: 12.5px; color: var(--ink-muted); }
+  .task-due { font-size: 12px; color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .task-due.overdue { color: var(--danger); font-weight: 500; }
+
+  /* QUEUE KANBAN */
+  .kanban { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  @media (max-width: 1100px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .kanban { grid-template-columns: 1fr; } }
+  .kanban-col { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; padding: 14px 12px; min-height: 200px; }
+  .kanban-head { font-size: 11.5px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; padding: 0 4px; }
+  .kanban-head .count { background: var(--accent-pale); color: var(--accent); padding: 1px 7px; border-radius: 10px; font-size: 11px; }
+  .brief-card { background: var(--bg); border: 0.5px solid var(--line); border-radius: 8px; padding: 11px 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.12s; }
+  .brief-card:hover { border-color: var(--accent); transform: translateY(-1px); box-shadow: 0 2px 6px rgba(0,0,0,0.04); }
+  .brief-card .bname { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 3px; line-height: 1.3; }
+  .brief-card .bclient { font-size: 11.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .brief-card .bmeta { display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--ink-muted); }
+  .brief-card .bmeta .urgent { color: var(--danger); font-weight: 500; }
+
+  /* BRIEF DETAIL */
+  .client-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding-bottom: 22px; margin-bottom: 22px; border-bottom: 0.5px solid var(--line); flex-wrap: wrap; }
+  .client-name { font-family: var(--serif); font-size: 28px; font-weight: 500; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 6px; }
+  .client-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: var(--ink-muted); }
+  .client-meta strong { color: var(--ink-soft); font-weight: 400; }
+
+  .tab-bar { display: flex; gap: 4px; overflow-x: auto; border-bottom: 0.5px solid var(--line); margin-bottom: 22px; }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn { padding: 9px 14px; background: none; border: none; color: var(--ink-muted); font: 500 13.5px var(--sans); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; letter-spacing: -0.003em; font-family: inherit; }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .work-checklist-grid { display: grid; grid-template-columns: 1fr 320px; gap: 22px; }
+  @media (max-width: 900px) { .work-checklist-grid { grid-template-columns: 1fr; } }
+
+  .panel-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 22px; margin-bottom: 16px; }
+  .panel-title { font-family: var(--serif); font-size: 18px; font-weight: 500; letter-spacing: -0.015em; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+  .panel-eyebrow { font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px; }
+
+  .field-grid { display: grid; grid-template-columns: 180px 1fr; gap: 12px 22px; margin-bottom: 8px; }
+  @media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; gap: 6px 0; } }
+  .field-grid dt { color: var(--ink-muted); font-size: 13.5px; padding-top: 8px; }
+  .field-grid dd { color: var(--ink); font-size: 14px; line-height: 1.5; }
+
+  .checklist-panel { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 20px; position: sticky; top: 0; max-height: 80vh; overflow-y: auto; }
+  .checklist-title { font-family: var(--serif); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .checklist-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; }
+  .checklist-progress { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-bottom: 16px; }
+  .checklist-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .checklist-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; cursor: pointer; transition: opacity 0.12s; }
+  .checklist-item:hover { opacity: 0.85; }
+  .checklist-check { width: 18px; height: 18px; border-radius: 5px; border: 1.5px solid var(--ink-faint); flex-shrink: 0; display: grid; place-items: center; transition: all 0.15s; margin-top: 1px; }
+  .checklist-item.done .checklist-check { background: var(--success); border-color: var(--success); }
+  .checklist-item.done .checklist-check::after { content: ''; width: 4px; height: 8px; border: solid #fff; border-width: 0 2px 2px 0; transform: rotate(45deg); margin-bottom: 2px; }
+  .checklist-text { font-size: 13px; line-height: 1.45; color: var(--ink); transition: all 0.12s; }
+  .checklist-item.done .checklist-text { color: var(--ink-faint); text-decoration: line-through; }
+  .checklist-guide-link { font-size: 11.5px; color: var(--accent); margin-top: 4px; text-decoration: none; display: inline-block; }
+  .checklist-guide-link:hover { text-decoration: underline; }
+
+  /* ASSETS */
+  .asset-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .asset-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px; overflow: hidden; transition: all 0.12s; cursor: pointer; }
+  .asset-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .asset-thumb { aspect-ratio: 1.4; background: linear-gradient(135deg, var(--accent-pale), var(--line-soft)); display: grid; place-items: center; color: var(--accent); font-family: var(--serif); font-size: 22px; font-weight: 500; }
+  .asset-meta { padding: 12px 14px; }
+  .asset-name { font-size: 13.5px; font-weight: 500; color: var(--ink); margin-bottom: 3px; }
+  .asset-sub { font-size: 11.5px; color: var(--ink-muted); }
+
+  /* PLAYBOOK */
+  .playbook-search { width: 100%; padding: 12px 16px 12px 42px; background: var(--paper); border: 0.5px solid var(--line); border-radius: 999px; font: 400 14.5px var(--sans); margin-bottom: 22px; background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%23786C99' stroke-width='1.8'/%3E%3Cpath d='M21 21L16.5 16.5' stroke='%23786C99' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 16px center; }
+  .playbook-search:focus { outline: none; border-color: var(--accent); }
+  .guide-card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
+  .guide-card.open { border-color: var(--accent); }
+  .guide-head { padding: 16px 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 14px; background: none; border: none; width: 100%; text-align: left; font-family: inherit; }
+  .guide-head:hover { background: var(--accent-pale); }
+  .guide-meta { flex: 1; min-width: 0; }
+  .guide-tag { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 11px; font-weight: 500; letter-spacing: 0.02em; margin-bottom: 5px; text-transform: uppercase; }
+  .guide-name { font-family: var(--serif); font-size: 17px; font-weight: 500; letter-spacing: -0.015em; line-height: 1.2; }
+  .guide-tldr { font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; line-height: 1.45; }
+  .guide-chev { width: 26px; height: 26px; border-radius: 50%; background: var(--line-soft); display: grid; place-items: center; transition: transform 0.2s; flex-shrink: 0; }
+  .guide-card.open .guide-chev { transform: rotate(180deg); }
+  .guide-chev svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 1.8; }
+  .guide-body { display: none; padding: 0 20px 20px; border-top: 0.5px solid var(--line-soft); }
+  .guide-card.open .guide-body { display: block; }
+  .guide-section { margin-top: 14px; }
+  .guide-section-label { font-size: 11px; font-weight: 500; color: var(--accent); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+  .guide-text { font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .guide-list { margin: 4px 0 0 18px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .guide-list li { margin-bottom: 4px; }
+
+  .btn { padding: 9px 18px; border-radius: 999px; border: 0.5px solid var(--line); background: var(--paper); cursor: pointer; font: 500 13.5px var(--sans); color: var(--ink-soft); transition: all 0.12s; font-family: inherit; }
+  .btn:hover { color: var(--ink); border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(1.1); color: #fff; }
+
+  .source-strip { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; padding: 3px 10px; border-radius: 999px; font-weight: 500; }
+  .source-strip.medialy { background: rgba(29,78,216,0.10); color: var(--medialy); }
+  .source-strip.cso { background: rgba(184,140,76,0.14); color: var(--cso); }
+  .source-strip .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .role-toggle { display: inline-flex; gap: 4px; background: var(--line-soft); padding: 4px; border-radius: 999px; }
+  .role-toggle button { padding: 6px 14px; border: none; background: none; font: 500 12.5px var(--sans); color: var(--ink-muted); cursor: pointer; border-radius: 999px; font-family: inherit; }
+  .role-toggle button.active { background: var(--paper); color: var(--accent); box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand"><div class="dot">St</div><span>Studio</span></div>
+    <div class="login-eyebrow">Design + Video</div>
+    <h1 class="login-title">Sign in to <em>create</em>.</h1>
+    <p class="login-sub">Hamzury's in-house creative studio. Receive briefs from Medialy and CSO, design and edit, ship clean files back.</p>
+    <form id="login-form" autocomplete="off">
+      <div class="login-field"><label for="login-user">Username</label><input type="text" class="login-input" id="login-user" autocomplete="username"></div>
+      <div class="login-field"><label for="login-pass">Password</label><input type="password" class="login-input" id="login-pass" autocomplete="current-password"></div>
+      <button type="submit" class="login-btn">Sign in</button>
+      <div class="login-error" id="login-error">Wrong username or password.</div>
+    </form>
+    <div class="login-hint">Designers + video editors share this workspace. Pick your lane on the home screen.</div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal" id="portal">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><div class="brand-dot">St</div><span>Studio</span></div>
+
+    <div class="sidebar-section">Workspace</div>
+    <button class="nav-item active" data-tab="home"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>Home</button>
+    <button class="nav-item" data-tab="leads">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
+      Live Leads
+      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+    </button>
+    <button class="nav-item" data-tab="mytasks"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>My tasks<span class="nav-count alert" id="count-tasks">0</span></button>
+    <button class="nav-item" data-tab="incoming"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>Incoming briefs<span class="nav-count warn" id="count-incoming">0</span></button>
+
+    <div class="sidebar-section">Production</div>
+    <button class="nav-item" data-tab="design-queue"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 19l7-7 3 3-7 7-3-3zM18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5zM2 2l7.586 7.586M11 11a2 2 0 1 1 2.828 2.828A2 2 0 0 1 11 11z"/></svg></span>Design queue<span class="nav-count" id="count-design">0</span></button>
+    <button class="nav-item" data-tab="video-queue"><span class="nav-icon"><svg viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>Video queue<span class="nav-count" id="count-video">0</span></button>
+    <button class="nav-item" data-tab="ship"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>Ready to ship<span class="nav-count" id="count-ship">0</span></button>
+
+    <div class="sidebar-section">Library</div>
+    <button class="nav-item" data-tab="assets"><span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>Asset library</button>
+    <button class="nav-item" data-tab="playbook"><span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>Playbook</button>
+
+    <div class="sidebar-footer">
+      <div class="user-row"><div class="user-avatar">St</div><div><div style="color:var(--ink);font-weight:500;">Studio</div><div style="font-size:11.5px;color:var(--ink-muted);">Design + Video</div></div></div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="main-header">
+      <button class="mobile-nav-btn" id="mobile-nav-btn" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+      <div class="crumb-stack"><div class="crumb-eyebrow" id="crumb-eyebrow">Studio</div><div class="crumb-title" id="crumb-title">Home</div></div>
+      <div id="header-actions"></div>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// AUTH
+const AUTH_KEY = 'studio_signed_in';
+const VALID_USER = 'STUDIO';
+const VALID_PASS = 'STUDIO';
+function isSignedIn() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch(e) { return false; } }
+function signIn() { try { sessionStorage.setItem(AUTH_KEY, '1'); } catch(e) {} document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+function signOut() { try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {} document.getElementById('portal').classList.remove('active'); document.getElementById('login-screen').style.display = 'grid'; document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').classList.remove('show'); }
+document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); const u=document.getElementById('login-user').value.trim().toUpperCase(); const p=document.getElementById('login-pass').value.trim().toUpperCase(); if(u===VALID_USER&&p===VALID_PASS) signIn(); else document.getElementById('login-error').classList.add('show'); });
+document.getElementById('logout-btn').addEventListener('click', signOut);
+if (isSignedIn()) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+
+// SAMPLE DATA
+const now = Date.now();
+const DAY = 86400000, HR = 3600000;
+
+// Brief stages: queued, in-progress, review, shipped
+// Discipline: design, video
+// Source: medialy, cso
+const BRIEFS = [
+  // From Medialy — content piece tied to a posting schedule
+  { id: 'BR-001', source: 'medialy', sourceRef: 'MED-CT-201', discipline: 'video', status: 'queued', stage: null, receivedAt: now - 3*HR,
+    clientName: 'Bizdoc', clientNiche: 'Tax & compliance',
+    type: 'Reel', title: 'The 3 letters every business owner ignores from FIRS',
+    spec: { format: 'Talking head, 9:16, 30-45s', hook: '"You ignored the third one. Here\'s what happens next."', cta: 'DM "TAX" to book a call', captions: 'Yes — burned in', music: 'Subtle, instrumental, low energy' },
+    assets: ['raw_footage_bizdoc_apr22.mov', 'logo_bizdoc.svg', 'brand_colors.txt'],
+    deadline: '2026-04-28', autoAccepted: false },
+
+  { id: 'BR-002', source: 'medialy', sourceRef: 'MED-CT-202', discipline: 'design', status: 'queued', stage: null, receivedAt: now - 22*HR,
+    clientName: 'Bizdoc', clientNiche: 'Tax & compliance',
+    type: 'Carousel', title: 'TIN vs RC vs TCC — what each one actually means',
+    spec: { format: '7 slides, 1:1, brand-consistent', style: 'Editorial, lots of whitespace, single key idea per slide', cta: 'Save for later' },
+    assets: ['copy_doc_carousel_TIN.docx', 'brand_kit_bizdoc.pdf'],
+    deadline: '2026-04-29', autoAccepted: false },
+
+  { id: 'BR-003', source: 'medialy', sourceRef: 'MED-CT-203', discipline: 'video', status: 'in-progress', stage: 'editing', startedAt: now - 2*DAY,
+    clientName: 'Belle Boutique', clientNiche: 'Fashion — Lagos',
+    type: 'Reel', title: 'Behind the scenes: hand-stitching a bridal piece',
+    spec: { format: 'B-roll voiceover, 9:16, 60s', hook: 'Visual hook — close-up of needle pulling thread', cta: 'Comment "BRIDE" for the lookbook', captions: 'Yes — minimal, only on key lines', music: 'Cinematic, emotional' },
+    assets: ['bts_belle_4k_001.mp4', 'bts_belle_4k_002.mp4', 'voiceover_belle_v2.wav'],
+    deadline: '2026-05-02', progress: 0.6 },
+
+  // From CSO — standalone work, no Medialy involvement
+  { id: 'BR-004', source: 'cso', sourceRef: 'HAM-NTH-077', discipline: 'design', status: 'queued', stage: null, receivedAt: now - 8*HR,
+    clientName: 'Northstar Africa', clientNiche: 'Investor relations',
+    type: 'Pitch deck',
+    title: 'Series-A pitch deck — 14 slides',
+    spec: { format: '16:9 PowerPoint + PDF export', style: 'Restrained, navy + cream palette, charts must be re-drawn (no screenshots)', deliverables: 'Editable .pptx + flat .pdf' },
+    assets: ['Northstar_pitch_v3_draft.pptx', 'financials.xlsx', 'brand_guide_northstar.pdf'],
+    deadline: '2026-04-30', urgency: 'high' },
+
+  { id: 'BR-005', source: 'cso', sourceRef: 'HAM-FRS-205', discipline: 'design', status: 'in-progress', stage: 'review', startedAt: now - 4*DAY,
+    clientName: 'Fresh Laundry', clientNiche: 'Laundry chain',
+    type: 'Logo + identity',
+    title: 'Logo, mark, type system, 2-page brand sheet',
+    spec: { format: 'Logo (svg, png) + mini brand sheet (pdf)', style: 'Friendly, modern, water/clean motif but not literal', revisions: 'Up to 2 rounds included' },
+    assets: ['inspiration_links.txt', 'fresh_brief_call_notes.docx'],
+    deadline: '2026-05-05', progress: 0.85 },
+
+  { id: 'BR-006', source: 'cso', sourceRef: 'HAM-VLT-108', discipline: 'video', status: 'shipped', shippedAt: now - 7*DAY,
+    clientName: 'Vault Advisory', clientNiche: 'Wealth management',
+    type: 'Founder intro video',
+    title: '60-second founder intro for landing page',
+    deliverables: { final: 'vault_founder_intro_final.mp4', thumb: 'vault_founder_thumb.jpg' } },
+
+  { id: 'BR-007', source: 'medialy', sourceRef: 'MED-CT-204', discipline: 'design', status: 'shipped', shippedAt: now - 2*DAY,
+    clientName: 'Spark Academy', clientNiche: 'Edtech',
+    type: 'Static post',
+    title: 'Tuesday tip — "The 5pm rule for studying"',
+    deliverables: { final: 'spark_tip_apr24.png', source: 'spark_tip_apr24.fig' } }
+];
+
+// Asset library — finished deliverables organized by client
+const LIBRARY = [
+  { id: 'AL-001', clientName: 'Bizdoc', name: 'Logo set (full + mark + monochrome)', type: 'Logo', date: '2026-03-12' },
+  { id: 'AL-002', clientName: 'Bizdoc', name: 'Brand sheet — colors, type, voice', type: 'Brand', date: '2026-03-12' },
+  { id: 'AL-003', clientName: 'Belle Boutique', name: 'Lookbook spring 2026', type: 'Layout', date: '2026-03-28' },
+  { id: 'AL-004', clientName: 'Vault Advisory', name: 'Founder intro 60s', type: 'Video', date: '2026-04-19' },
+  { id: 'AL-005', clientName: 'Spark Academy', name: 'Tuesday tips template (Figma)', type: 'Template', date: '2026-04-02' },
+  { id: 'AL-006', clientName: 'Northstar Africa', name: 'Investor one-pager', type: 'PDF', date: '2026-04-10' }
+];
+
+// CHECKLISTS
+const CHECKLISTS = {
+  design_kickoff: { name: 'Design Brief Kickoff', items: [
+    { text: 'Read brief twice, end to end', guide: 'how-to-read-creative-brief' },
+    { text: 'Open every asset attached and verify they\'re usable', guide: null },
+    { text: 'Confirm format/dimensions/deliverables match brief', guide: null },
+    { text: 'List 3 reference visuals before opening Figma', guide: 'design-reference-discipline' },
+    { text: 'Block 90 minutes for first concept — no Slack, no email', guide: null },
+    { text: 'Move to "in-progress" when you start the file', guide: null }
+  ]},
+  design_review: { name: 'Design Internal Review', items: [
+    { text: 'Spell-check everything — proper names, numbers, dates', guide: null },
+    { text: 'View at 100% AND at thumbnail — does it work both?', guide: null },
+    { text: 'Check accessibility (contrast, font size, focus order)', guide: null },
+    { text: 'Export final files in every requested format', guide: null },
+    { text: 'Save source file with date version (v1, v2, final)', guide: null },
+    { text: 'Mark "ready to ship" → CSO/Medialy delivers', guide: null }
+  ]},
+  video_kickoff: { name: 'Video Brief Kickoff', items: [
+    { text: 'Review every clip in the assets folder', guide: null },
+    { text: 'Note hooks, b-roll, key shots before editing', guide: null },
+    { text: 'Confirm aspect ratio + duration target', guide: null },
+    { text: 'Find or confirm music license', guide: 'video-music-licensing' },
+    { text: 'Build a rough cut (no music, no captions yet)', guide: null }
+  ]},
+  video_polish: { name: 'Video Polish & Export', items: [
+    { text: 'Sound levelling — voice peaks at -3dB', guide: null },
+    { text: 'Color grade pass — match across cuts', guide: null },
+    { text: 'Captions — burned in, brand font, brand color', guide: 'caption-style-guide' },
+    { text: 'Music levelling — duck to -18dB under VO', guide: null },
+    { text: 'Export master + platform-specific cuts (9:16 + 1:1)', guide: null },
+    { text: 'Generate thumbnail still', guide: null },
+    { text: 'Mark "ready to ship"', guide: null }
+  ]}
+};
+
+// PLAYBOOK GUIDES
+const GUIDES = [
+  { id: 'how-to-read-creative-brief', tag: 'process', tagColor: 'tag-blue', name: 'How to read a creative brief',
+    tldr: 'Read twice. Find the gap. Confirm scope before opening any file.',
+    sections: {
+      'Why this matters': 'Briefs from Medialy or CSO are filtered through their lens — not the client\'s. Your job is to spot what\'s missing before you start, not after.',
+      'Step by step': [
+        'Read the whole brief without judging — get the shape',
+        'Read it again, underlining every concrete deliverable',
+        'List every assumption (format, length, tone, audience)',
+        'Compare deadline to scope — is this realistic for one person?',
+        'Reply with 2-3 questions or a thumbs-up before starting'
+      ],
+      'Red flags': ['Vague tone descriptor ("modern", "clean")', 'Missing format or dimensions', 'No examples of past work the client liked', 'Deadline before assets are even sent']
+    } },
+  { id: 'design-reference-discipline', tag: 'process', tagColor: 'tag-blue', name: 'How to use references without copying',
+    tldr: 'Three references. From three different sources. None from the same designer.',
+    sections: {
+      'TL;DR': 'References sharpen your taste. They don\'t replace your work. If your output looks like one reference, you copied it.',
+      'Process': ['Find 3 references that share a feeling, not a layout', 'Note WHY each one works (not what it looks like)', 'Close the references before you open the canvas', 'After first draft, look at refs again and ask: did I borrow ideas or shapes?'],
+      'Never': ['Stack one reference behind your canvas as a tracing template', 'Use one designer\'s entire portfolio as your guide', 'Show client the reference and promise "like this but ours"']
+    } },
+  { id: 'video-music-licensing', tag: 'legal', tagColor: 'tag-coral', name: 'Music licensing rules',
+    tldr: 'Only royalty-free or licensed tracks. No shortcuts. CSO covers cost.',
+    sections: {
+      'Approved sources': ['Epidemic Sound (Hamzury subscription)', 'Artlist (Hamzury subscription)', 'YouTube Audio Library — confirm "no attribution required" tracks', 'Original composition by hired musician (with signed release)'],
+      'Banned': ['Spotify rips', 'TikTok trending sounds (without verifying license for that client account)', '"It\'s just a small piece" — no'],
+      'If unsure': 'Ask Medialy or CSO before publishing. Cheaper than a takedown.'
+    } },
+  { id: 'caption-style-guide', tag: 'process', tagColor: 'tag-blue', name: 'Caption style — Hamzury house rules',
+    tldr: 'Sentence case. One line at a time. Brand font + color. No emojis in caption text.',
+    sections: {
+      'Type': 'Inter Bold, 36-44pt depending on aspect ratio. Drop shadow at 30% opacity for readability.',
+      'Color': 'White text, division accent for emphasis (not whole sentences)',
+      'Line': 'Maximum 6 words per line. Maximum 2 lines on screen at once. Always sentence case — never ALL CAPS.',
+      'Timing': 'Caption appears on the word. Disappears with breath. Never linger.',
+      'Brand alignment': 'Bizdoc captions = forest green emphasis. Scalar = golden yellow. Medialy = royal blue. HUB = aged navy.'
+    } },
+  { id: 'how-to-handle-revisions', tag: 'delivery', tagColor: 'tag-green', name: 'How to handle revisions',
+    tldr: 'Two rounds free. After that, scope creep — push back to CSO/Medialy.',
+    sections: {
+      'Default': '2 rounds of revision included. Round 1 = structural changes (reorder, swap visuals). Round 2 = polish (typo, slight color tweak).',
+      'When client asks for round 3+': 'Do not silently absorb. Tell CSO or Medialy: "This is round 3. Do you want to charge or absorb?"',
+      'How to push back politely': '"We\'ve hit the included revision count. Happy to keep going — confirm with [CSO/Medialy] how to handle the additional time."',
+      'Never': ['Argue with client directly — go through CSO or Medialy', 'Quietly redo work for free 4 times', 'Skip a revision because "they won\'t notice"']
+    } },
+  { id: 'how-to-name-files', tag: 'process', tagColor: 'tag-blue', name: 'File naming convention',
+    tldr: 'CLIENT_TYPE_DATE_VERSION.ext. Always lowercase. Always.',
+    sections: {
+      'Format': 'clientname_type_yyyymmdd_v1.ext',
+      'Examples': ['bizdoc_carousel_20260424_v1.fig', 'bellebox_reel_20260425_final.mp4', 'northstar_pitchdeck_20260430_v2.pptx'],
+      'Rules': ['Always lowercase', 'No spaces — use underscores', 'YYYYMMDD format only (sorts correctly)', 'v1, v2, v3, then "final" — never "final_final"', 'Source file and exports same base name']
+    } },
+  { id: 'how-to-ship-clean', tag: 'delivery', tagColor: 'tag-green', name: 'How to ship clean work',
+    tldr: 'Final files in every format. Source files saved. Thumbnail. Then mark ready.',
+    sections: {
+      'Design ship list': ['Final exports in every format requested', 'Source file (Figma, Illustrator, Photoshop)', 'A 600px-wide preview thumbnail', 'Filenames per the convention'],
+      'Video ship list': ['Master export (highest quality)', 'Platform versions (9:16, 1:1, 16:9 as needed)', 'Thumbnail still as JPG', 'Captions baked in', 'Music licensed and noted in shipping note'],
+      'Then': ['Move brief to "Ready to ship"', 'CSO or Medialy delivers to client', 'You move on — do not chase delivery']
+    } },
+  { id: 'how-to-stay-in-flow', tag: 'process', tagColor: 'tag-blue', name: 'How to stay in flow',
+    tldr: 'Block 90 minutes. Phone in another room. Music with no lyrics. Don\'t check Slack.',
+    sections: {
+      'Why': 'Creative work needs uninterrupted blocks. 5 distractions in 2 hours = 0 hours of real work.',
+      'Routine': ['Open the brief, open the canvas, set a 90-min timer', 'Phone in another room or on do-not-disturb', 'Music must have no lyrics (lyrics steal attention)', 'No Slack. No email. No "quick check"'],
+      'After the block': ['Stretch. Walk 5 min. Drink water', 'Then second 90-min block, or a 30-min admin pass'],
+      'Never': ['Edit a video with phone notifications on', 'Try to design a logo while in a Slack thread']
+    } }
+];
+
+// STATE
+let currentTab = 'home';
+let currentBriefId = null;
+let currentSubtab = 'overview';
+let activeRole = 'all'; // 'all' | 'design' | 'video'
+const content = document.getElementById('content');
+const crumbEyebrow = document.getElementById('crumb-eyebrow');
+const crumbTitle = document.getElementById('crumb-title');
+const headerActions = document.getElementById('header-actions');
+
+function getMyTasks() {
+  const tasks = [];
+  BRIEFS.filter(b => b.status === 'queued').forEach(b => {
+    if (activeRole !== 'all' && b.discipline !== activeRole) return;
+    const days = Math.ceil((new Date(b.deadline).getTime() - now) / DAY);
+    const priority = days < 0 ? 'red' : days <= 2 ? 'red' : days <= 5 ? 'amber' : 'green';
+    tasks.push({
+      priority, title: `Review brief: ${b.clientName} — ${b.type}`,
+      sub: `${b.discipline === 'video' ? '🎬' : '🎨'} from ${b.source === 'medialy' ? 'Medialy' : 'CSO'} · ${b.budget || '—'} · received ${relativeTime(b.receivedAt)}`,
+      due: days < 0 ? 'Overdue' : days === 0 ? 'Today' : days + 'd left',
+      action: () => { currentBriefId = b.id; openTab('brief'); }
+    });
+  });
+  BRIEFS.filter(b => b.status === 'in-progress').forEach(b => {
+    if (activeRole !== 'all' && b.discipline !== activeRole) return;
+    const days = Math.ceil((new Date(b.deadline).getTime() - now) / DAY);
+    if (days < 0) tasks.push({ priority: 'red', title: `OVERDUE: ${b.clientName}`, sub: `${b.type} · was due ${b.deadline}`, due: 'Overdue', action: () => { currentBriefId = b.id; openTab('brief'); } });
+    else if (days <= 2) tasks.push({ priority: 'red', title: `${b.clientName} ${b.type} due in ${days}d`, sub: `Stage: ${b.stage}`, due: `${days}d left`, action: () => { currentBriefId = b.id; openTab('brief'); } });
+    else if (days <= 5) tasks.push({ priority: 'amber', title: `${b.clientName} ${b.type}`, sub: `Stage: ${b.stage} · due ${b.deadline}`, due: `${days}d left`, action: () => { currentBriefId = b.id; openTab('brief'); } });
+  });
+  const order = { red: 0, amber: 1, green: 2 };
+  tasks.sort((a, b) => order[a.priority] - order[b.priority]);
+  return tasks;
+}
+
+function updateCounts() {
+  const queuedAll = BRIEFS.filter(b => b.status === 'queued');
+  const tasks = getMyTasks();
+  const designQ = BRIEFS.filter(b => b.discipline === 'design' && b.status !== 'shipped').length;
+  const videoQ = BRIEFS.filter(b => b.discipline === 'video' && b.status !== 'shipped').length;
+  const ship = BRIEFS.filter(b => b.status === 'in-progress' && b.stage === 'review').length;
+  document.getElementById('count-tasks').textContent = tasks.length;
+  document.getElementById('count-tasks').style.display = tasks.length ? '' : 'none';
+  document.getElementById('count-incoming').textContent = queuedAll.length;
+  document.getElementById('count-incoming').style.display = queuedAll.length ? '' : 'none';
+  document.getElementById('count-design').textContent = designQ;
+  document.getElementById('count-video').textContent = videoQ;
+  document.getElementById('count-ship').textContent = ship;
+  document.getElementById('count-ship').style.display = ship ? '' : 'none';
+}
+
+function openTab(tab) {
+  currentTab = tab;
+  if (tab !== 'brief') currentBriefId = null;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  headerActions.innerHTML = '';
+  render();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => openTab(n.dataset.tab)));
+document.getElementById('mobile-nav-btn').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('mobile-open'));
+
+function render() {
+  if (currentBriefId) { renderBrief(); return; }
+  switch (currentTab) {
+    case 'home': renderHome(); break;
+    case 'leads': renderLeads(); break;
+    case 'mytasks': renderMyTasks(); break;
+    case 'incoming': renderIncoming(); break;
+    case 'design-queue': renderQueue('design'); break;
+    case 'video-queue': renderQueue('video'); break;
+    case 'ship': renderShip(); break;
+    case 'assets': renderAssets(); break;
+    case 'playbook': renderPlaybook(); break;
+  }
+}
+function setHeader(eyebrow, title) { crumbEyebrow.textContent = eyebrow; crumbTitle.textContent = title; }
+
+function renderHome() {
+  setHeader('Studio', 'Home');
+  const tasks = getMyTasks();
+  const queuedAll = BRIEFS.filter(b => b.status === 'queued');
+  const inProgress = BRIEFS.filter(b => b.status === 'in-progress');
+  const shippedThisMonth = BRIEFS.filter(b => b.status === 'shipped' && b.shippedAt > now - 30*DAY).length;
+  const fromMedialy = queuedAll.filter(b => b.source === 'medialy').length;
+  const fromCso = queuedAll.filter(b => b.source === 'cso').length;
+
+  content.innerHTML = `
+    <div class="home-hero">
+      <h1 class="hero-title">Welcome to <em>Studio</em>.</h1>
+      <p class="hero-sub">Hamzury's in-house design + video team. Briefs come in from Medialy (when content is planned) and from CSO (standalone client work). You make. We ship.</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:24px;flex-wrap:wrap;">
+      <div style="font-size:13px;color:var(--ink-muted);">Filter by lane:</div>
+      <div class="role-toggle">
+        <button class="${activeRole==='all'?'active':''}" data-role="all">All</button>
+        <button class="${activeRole==='design'?'active':''}" data-role="design">Designer</button>
+        <button class="${activeRole==='video'?'active':''}" data-role="video">Video editor</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">My tasks</div><div class="stat-value ${tasks.length>5?'danger':'warn'}">${tasks.length}</div><div class="stat-meta">${tasks.filter(t=>t.priority==='red').length} urgent · ${tasks.filter(t=>t.priority==='amber').length} this week</div></div>
+      <div class="stat-card"><div class="stat-label">Queued briefs</div><div class="stat-value">${queuedAll.length}</div><div class="stat-meta">${fromMedialy} from Medialy · ${fromCso} from CSO</div></div>
+      <div class="stat-card"><div class="stat-label">In production</div><div class="stat-value">${inProgress.length}</div><div class="stat-meta">Active work</div></div>
+      <div class="stat-card"><div class="stat-label">Shipped (30d)</div><div class="stat-value success">${shippedThisMonth}</div><div class="stat-meta">Delivered to CSO/Medialy</div></div>
+    </div>
+    ${queuedAll.length ? `
+      <div class="section-title">New briefs <button class="pill-btn" onclick="openTab('incoming')">View all →</button></div>
+      <div style="margin-bottom:32px;">
+        ${queuedAll.filter(b => activeRole === 'all' || b.discipline === activeRole).slice(0,4).map(b => `
+          <div class="task-card" onclick="openBriefFromCard('${b.id}')">
+            <div class="task-priority ${urgencyOf(b)}"></div>
+            <div class="task-meta">
+              <div class="task-title">${escapeHtml(b.clientName)} — ${escapeHtml(b.type)}: ${escapeHtml(b.title)}</div>
+              <div class="task-sub">
+                <span class="source-strip ${b.source}"><span class="dot"></span>from ${b.source === 'medialy' ? 'Medialy' : 'CSO'}</span>
+                · ${b.discipline === 'video' ? '🎬 Video' : '🎨 Design'}
+                · deadline ${b.deadline}
+              </div>
+            </div>
+            <div class="task-due">${relativeTime(b.receivedAt)}</div>
+          </div>
+        `).join('') || '<div class="empty-state" style="padding:24px;"><div>No queued briefs in this lane.</div></div>'}
+      </div>
+    ` : ''}
+    <div class="section-title">Today's priorities <button class="pill-btn" onclick="openTab('mytasks')">All →</button></div>
+    ${tasks.slice(0, 5).map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta"><div class="task-title">${escapeHtml(t.title)}</div><div class="task-sub">${escapeHtml(t.sub)}</div></div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${t.due}</div>
+      </div>
+    `).join('') || '<div class="empty-state"><div class="big">All caught up</div><div>Nothing pressing right now. Good time for the Playbook.</div></div>'}
+  `;
+  document.querySelectorAll('[data-role]').forEach(b => b.addEventListener('click', () => { activeRole = b.dataset.role; render(); }));
+}
+
+window.openBriefFromCard = (id) => { currentBriefId = id; openTab('brief'); };
+
+function renderMyTasks() {
+  setHeader('My workspace', 'My tasks');
+  const tasks = getMyTasks();
+  if (!tasks.length) { content.innerHTML = `<div class="empty-state"><div class="big">All caught up 🫡</div><div>No urgent tasks. Read a guide. Stretch. Make tea.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Auto-generated from incoming briefs and active deadlines. Sorted by urgency.</p>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap;">
+      <div class="role-toggle">
+        <button class="${activeRole==='all'?'active':''}" data-role="all">All</button>
+        <button class="${activeRole==='design'?'active':''}" data-role="design">Designer</button>
+        <button class="${activeRole==='video'?'active':''}" data-role="video">Video editor</button>
+      </div>
+    </div>
+    <div class="section-title">${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}</div>
+    ${tasks.map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta"><div class="task-title">${escapeHtml(t.title)}</div><div class="task-sub">${escapeHtml(t.sub)}</div></div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${t.due}</div>
+      </div>
+    `).join('')}
+  `;
+  document.querySelectorAll('[data-role]').forEach(b => b.addEventListener('click', () => { activeRole = b.dataset.role; render(); }));
+}
+
+function renderIncoming() {
+  setHeader('Pipeline', 'Incoming briefs');
+  const list = BRIEFS.filter(b => b.status === 'queued');
+  if (!list.length) { content.innerHTML = `<div class="empty-state"><div class="big">No briefs waiting</div><div>Queue is clear. Pick something from in-progress or read a guide.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:640px;margin-bottom:22px;line-height:1.55;">Queue from <strong>Medialy</strong> (planned content) and <strong>CSO</strong> (standalone client work). Designers and video editors pick from the same queue based on discipline.</p>
+    <div style="display:grid;gap:14px;">
+      ${list.map(b => `
+        <div class="panel-card" style="margin-bottom:0;cursor:pointer;" onclick="openBriefFromCard('${b.id}')">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:10px;">
+            <div>
+              <div class="panel-eyebrow">
+                <span class="source-strip ${b.source}"><span class="dot"></span>from ${b.source === 'medialy' ? 'Medialy' : 'CSO'}</span>
+                · ref ${b.sourceRef} · received ${relativeTime(b.receivedAt)}
+              </div>
+              <div class="panel-title" style="margin-bottom:4px;">${escapeHtml(b.clientName)} <span style="font-family:var(--sans);font-size:13px;color:var(--ink-muted);font-weight:400;">${escapeHtml(b.clientNiche || '')}</span></div>
+            </div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <span class="tag ${b.discipline === 'video' ? 'tag-blue' : 'tag-accent'}">${b.discipline === 'video' ? '🎬 Video' : '🎨 Design'}</span>
+              <span class="tag tag-grey">${escapeHtml(b.type)}</span>
+            </div>
+          </div>
+          <div style="font-size:14px;color:var(--ink);margin-bottom:10px;font-weight:500;">${escapeHtml(b.title)}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px 18px;font-size:12.5px;">
+            ${Object.entries(b.spec || {}).slice(0, 3).map(([k,v]) => `
+              <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">${escapeHtml(k)}</div><div style="color:var(--ink-soft);line-height:1.4;">${escapeHtml(v)}</div></div>
+            `).join('')}
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px;">Deadline</div><div style="color:var(--ink-soft);">${escapeHtml(b.deadline)}</div></div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderQueue(discipline) {
+  setHeader('Production', discipline === 'design' ? 'Design queue' : 'Video queue');
+  const stages = ['queued', 'in-progress', 'review', 'shipped'];
+  const stageNames = { queued: 'Queued', 'in-progress': 'In progress', review: 'In review', shipped: 'Shipped' };
+  const list = BRIEFS.filter(b => b.discipline === discipline);
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">${discipline === 'design' ? 'Design lane — graphics, carousels, logos, decks, layouts.' : 'Video lane — reels, founder videos, B-roll, montages.'} Click a card to open the brief.</p>
+    <div class="kanban" style="grid-template-columns:repeat(4,1fr);">
+      ${stages.map(stage => {
+        const inStage = list.filter(b => stage === 'queued' ? b.status === 'queued' : stage === 'shipped' ? b.status === 'shipped' : (b.status === 'in-progress' && (stage === 'review' ? b.stage === 'review' : b.stage !== 'review')));
+        return `
+          <div class="kanban-col">
+            <div class="kanban-head">${stageNames[stage]} <span class="count">${inStage.length}</span></div>
+            ${inStage.map(b => {
+              const days = b.deadline ? Math.ceil((new Date(b.deadline).getTime() - now) / DAY) : null;
+              return `
+                <div class="brief-card" onclick="openBriefFromCard('${b.id}')">
+                  <div class="bname">${escapeHtml(b.title)}</div>
+                  <div class="bclient">${escapeHtml(b.clientName)} · ${escapeHtml(b.type)}</div>
+                  <div class="bmeta">
+                    <span class="source-strip ${b.source}" style="font-size:10px;padding:2px 7px;"><span class="dot"></span>${b.source}</span>
+                    ${days !== null && b.status !== 'shipped' ? `<span class="${days <= 2 ? 'urgent' : ''}">${days < 0 ? 'Overdue' : days+'d'}</span>` : '<span>—</span>'}
+                  </div>
+                </div>
+              `;
+            }).join('') || '<div style="font-size:11.5px;color:var(--ink-faint);text-align:center;padding:14px 4px;">empty</div>'}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderShip() {
+  setHeader('Pipeline', 'Ready to ship');
+  const list = BRIEFS.filter(b => b.status === 'in-progress' && b.stage === 'review');
+  if (!list.length) { content.innerHTML = `<div class="empty-state"><div class="big">Nothing queued to ship</div><div>When a brief reaches review and passes internal QA, mark it from the brief view.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Briefs in final review. Once you mark "Ship", the source workspace (Medialy or CSO) takes delivery.</p>
+    <div style="display:grid;gap:12px;">
+      ${list.map(b => `
+        <div class="panel-card" style="margin-bottom:0;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;">
+            <div>
+              <div class="panel-eyebrow"><span class="source-strip ${b.source}"><span class="dot"></span>to ${b.source === 'medialy' ? 'Medialy' : 'CSO'}</span> · ref ${b.sourceRef}</div>
+              <div class="panel-title" style="margin-bottom:4px;">${escapeHtml(b.title)}</div>
+              <div style="font-size:13px;color:var(--ink-muted);">${escapeHtml(b.clientName)} · ${escapeHtml(b.type)}</div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn pill-btn" onclick="openBriefFromCard('${b.id}')">Open</button>
+              <button class="btn btn-primary" onclick="shipBrief('${b.id}')">Ship to ${b.source === 'medialy' ? 'Medialy' : 'CSO'} ↗</button>
+            </div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderAssets() {
+  setHeader('Library', 'Asset library');
+  if (!LIBRARY.length) { content.innerHTML = `<div class="empty-state"><div class="big">Library is empty</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every shipped deliverable, organized by client. Source files + final exports. Pull from here when starting new work for the same client.</p>
+    <div class="asset-grid">
+      ${LIBRARY.map(a => `
+        <div class="asset-card">
+          <div class="asset-thumb">${escapeHtml(a.type[0])}</div>
+          <div class="asset-meta">
+            <div class="asset-name">${escapeHtml(a.name)}</div>
+            <div class="asset-sub">${escapeHtml(a.clientName)} · ${escapeHtml(a.type)} · ${escapeHtml(a.date)}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderPlaybook() {
+  setHeader('Knowledge', 'Playbook');
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">House rules + craft guides. Read once, reference forever. New designers and editors productive on day 1.</p>
+    <input type="search" class="playbook-search" id="pb-search" placeholder="Search guides...">
+    <div id="pb-list">${renderGuides('')}</div>
+  `;
+  document.getElementById('pb-search').addEventListener('input', e => { document.getElementById('pb-list').innerHTML = renderGuides(e.target.value); });
+}
+function renderGuides(filter) {
+  const q = filter.toLowerCase().trim();
+  const list = q ? GUIDES.filter(g => (g.name + ' ' + g.tldr + ' ' + g.tag).toLowerCase().includes(q)) : GUIDES;
+  if (!list.length) return '<div class="empty-state">No guides match "' + escapeHtml(q) + '"</div>';
+  return list.map(g => `
+    <div class="guide-card" data-id="${g.id}">
+      <button class="guide-head" onclick="toggleGuide('${g.id}')">
+        <div class="guide-meta">
+          <span class="guide-tag ${g.tagColor}">${g.tag}</span>
+          <div class="guide-name">${escapeHtml(g.name)}</div>
+          <div class="guide-tldr">${escapeHtml(g.tldr)}</div>
+        </div>
+        <div class="guide-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </button>
+      <div class="guide-body">
+        ${Object.entries(g.sections).map(([label, content]) => `
+          <div class="guide-section">
+            <div class="guide-section-label">${label}</div>
+            ${Array.isArray(content) ? `<ul class="guide-list">${content.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>` : `<div class="guide-text">${escapeHtml(content)}</div>`}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+window.toggleGuide = (id) => { document.querySelectorAll('.guide-card').forEach(c => { if (c.dataset.id === id) c.classList.toggle('open'); else c.classList.remove('open'); }); };
+
+function renderBrief() {
+  const b = BRIEFS.find(x => x.id === currentBriefId);
+  if (!b) { currentBriefId = null; openTab('home'); return; }
+  setHeader('Brief', b.title);
+  headerActions.innerHTML = `<button class="pill-btn" onclick="exitBrief()">← Back</button>`;
+
+  const isQueued = b.status === 'queued';
+  const tabs = isQueued
+    ? [{ id: 'overview', label: 'Brief details' }]
+    : [{ id: 'overview', label: 'Overview' }, { id: 'spec', label: 'Spec' }, { id: 'assets', label: 'Assets' }, { id: 'progress', label: 'Progress' }];
+
+  let checklist = null;
+  if (b.discipline === 'design') {
+    if (isQueued || b.stage === 'designing') checklist = CHECKLISTS.design_kickoff;
+    else if (b.stage === 'review') checklist = CHECKLISTS.design_review;
+  } else {
+    if (isQueued || b.stage === 'editing') checklist = CHECKLISTS.video_kickoff;
+    else if (b.stage === 'review') checklist = CHECKLISTS.video_polish;
+  }
+
+  let body = '';
+  if (currentSubtab === 'overview' || isQueued) body = renderBriefOverview(b, isQueued);
+  else if (currentSubtab === 'spec') body = renderBriefSpec(b);
+  else if (currentSubtab === 'assets') body = renderBriefAssets(b);
+  else if (currentSubtab === 'progress') body = renderBriefProgress(b);
+
+  content.innerHTML = `
+    <div class="client-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+          <span class="source-strip ${b.source}"><span class="dot"></span>from ${b.source === 'medialy' ? 'Medialy' : 'CSO'}</span>
+          <span class="tag ${b.discipline === 'video' ? 'tag-blue' : 'tag-accent'}">${b.discipline === 'video' ? '🎬 Video' : '🎨 Design'}</span>
+          <span class="tag tag-grey">${escapeHtml(b.type)}</span>
+          ${isQueued ? '<span class="tag tag-amber">Queued</span>' : `<span class="tag tag-green">In progress · ${b.stage || ''}</span>`}
+        </div>
+        <div class="client-name">${escapeHtml(b.title)}</div>
+        <div class="client-meta">
+          <span><strong>Client:</strong> ${escapeHtml(b.clientName)}</span>
+          <span><strong>Ref:</strong> ${escapeHtml(b.sourceRef)}</span>
+          ${b.deadline ? `<span><strong>Deadline:</strong> ${escapeHtml(b.deadline)}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isQueued ? `<button class="btn btn-primary" onclick="acceptBrief('${b.id}')">Accept brief →</button>` : `<button class="btn btn-primary" onclick="shipBrief('${b.id}')">Ship to ${b.source === 'medialy' ? 'Medialy' : 'CSO'} ↗</button>`}
+      </div>
+    </div>
+    <div class="tab-bar">${tabs.map(t => `<button class="tab-btn ${t.id === currentSubtab ? 'active' : ''}" data-subtab="${t.id}">${t.label}</button>`).join('')}</div>
+    <div class="work-checklist-grid">
+      <div class="work-area">${body}</div>
+      ${checklist ? `<div>${renderChecklistPanel(b, checklist)}</div>` : ''}
+    </div>
+  `;
+  content.querySelectorAll('[data-subtab]').forEach(el => el.addEventListener('click', () => { currentSubtab = el.dataset.subtab; renderBrief(); }));
+  content.querySelectorAll('.checklist-item').forEach(el => el.addEventListener('click', () => {
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!b._cl) b._cl = {};
+    if (!b._cl[checklist.name]) b._cl[checklist.name] = {};
+    b._cl[checklist.name][idx] = !b._cl[checklist.name][idx];
+    renderBrief();
+  }));
+}
+
+function renderChecklistPanel(b, checklist) {
+  const done = (b._cl && b._cl[checklist.name]) || {};
+  const completedCount = checklist.items.filter((_, i) => done[i]).length;
+  const pct = Math.round((completedCount / checklist.items.length) * 100);
+  return `
+    <div class="checklist-panel">
+      <div class="checklist-title">${escapeHtml(checklist.name)}</div>
+      <div class="checklist-meta">${completedCount} of ${checklist.items.length} steps · ${pct}% complete</div>
+      <div class="checklist-progress"><div class="checklist-progress-fill" style="width:${pct}%;"></div></div>
+      ${checklist.items.map((item, i) => `
+        <div class="checklist-item ${done[i] ? 'done' : ''}" data-idx="${i}">
+          <div class="checklist-check"></div>
+          <div>
+            <div class="checklist-text">${escapeHtml(item.text)}</div>
+            ${item.guide ? `<a class="checklist-guide-link" href="javascript:void(0)" onclick="event.stopPropagation();openTab('playbook');">📖 Read guide</a>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderBriefOverview(b, isQueued) {
+  const specRows = Object.entries(b.spec || {});
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">${isQueued ? 'New brief — review and accept' : 'Brief details'}</div>
+      <div class="panel-title">What ${b.source === 'medialy' ? 'Medialy' : 'CSO'} sent</div>
+      <dl class="field-grid">
+        <dt>Type</dt><dd>${escapeHtml(b.type)}</dd>
+        <dt>Title</dt><dd>${escapeHtml(b.title)}</dd>
+        <dt>Discipline</dt><dd>${b.discipline === 'video' ? '🎬 Video editor' : '🎨 Designer'}</dd>
+        <dt>Client</dt><dd>${escapeHtml(b.clientName)}${b.clientNiche ? ' — <span style="color:var(--ink-muted);">' + escapeHtml(b.clientNiche) + '</span>' : ''}</dd>
+        <dt>Deadline</dt><dd>${escapeHtml(b.deadline || '—')}</dd>
+      </dl>
+      ${specRows.length ? `
+        <div class="panel-eyebrow" style="margin-top:18px;">Spec</div>
+        <dl class="field-grid">
+          ${specRows.map(([k,v]) => `<dt>${escapeHtml(k.charAt(0).toUpperCase()+k.slice(1))}</dt><dd>${escapeHtml(v)}</dd>`).join('')}
+        </dl>
+      ` : ''}
+      ${isQueued ? `
+        <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="acceptBrief('${b.id}')">Accept brief →</button>
+          <button class="btn pill-btn" onclick="bounceBrief('${b.id}')">Bounce back to ${b.source === 'medialy' ? 'Medialy' : 'CSO'}</button>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function renderBriefSpec(b) {
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Production spec</div>
+      <div class="panel-title">${escapeHtml(b.type)} — full spec</div>
+      <dl class="field-grid">
+        ${Object.entries(b.spec || {}).map(([k,v]) => `<dt>${escapeHtml(k.charAt(0).toUpperCase()+k.slice(1))}</dt><dd>${escapeHtml(v)}</dd>`).join('')}
+      </dl>
+    </div>
+  `;
+}
+
+function renderBriefAssets(b) {
+  if (!b.assets || !b.assets.length) return '<div class="empty-state"><div class="big">No assets attached</div><div>Brief came in without files. Reply asking for source materials.</div></div>';
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Source materials</div>
+      <div class="panel-title">Files from ${b.source === 'medialy' ? 'Medialy' : 'CSO'}</div>
+      <ul style="list-style:none;padding:0;margin-top:8px;">
+        ${b.assets.map(a => `
+          <li style="padding:10px 0;border-bottom:0.5px solid var(--line-soft);font-size:13.5px;display:flex;justify-content:space-between;align-items:center;">
+            <span><span style="color:var(--accent);margin-right:8px;">📎</span>${escapeHtml(a)}</span>
+            <a href="#" onclick="event.preventDefault();" style="color:var(--accent);text-decoration:none;font-size:12.5px;">Download</a>
+          </li>
+        `).join('')}
+      </ul>
+    </div>
+  `;
+}
+
+function renderBriefProgress(b) {
+  if (!b.progress && b.progress !== 0) return '<div class="empty-state"><div class="big">No progress logged yet</div><div>Update progress from the checklist panel.</div></div>';
+  const pct = Math.round((b.progress || 0) * 100);
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Progress</div>
+      <div class="panel-title">${pct}% complete</div>
+      <div style="height:8px;background:var(--line);border-radius:4px;overflow:hidden;margin-top:12px;"><div style="height:100%;background:var(--accent);width:${pct}%;transition:width 0.3s;"></div></div>
+      <p style="margin-top:14px;font-size:13.5px;color:var(--ink-muted);line-height:1.55;">Progress is auto-derived from checklist completion. Open the checklist on the right to keep moving.</p>
+    </div>
+  `;
+}
+
+window.acceptBrief = (id) => {
+  const b = BRIEFS.find(x => x.id === id);
+  if (!b) return;
+  b.status = 'in-progress';
+  b.startedAt = Date.now();
+  b.stage = b.discipline === 'design' ? 'designing' : 'editing';
+  b.progress = 0;
+  alert('Accepted! ' + b.clientName + ' — ' + b.type + ' is now in production.');
+  updateCounts(); currentSubtab = 'overview'; render();
+};
+
+window.bounceBrief = (id) => {
+  const b = BRIEFS.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm('Bounce this brief back to ' + (b.source === 'medialy' ? 'Medialy' : 'CSO') + '? They\'ll get a note that the brief needs more info.')) return;
+  alert('Bounced. ' + (b.source === 'medialy' ? 'Medialy' : 'CSO') + ' has been notified.');
+};
+
+window.shipBrief = (id) => {
+  const b = BRIEFS.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm('Ship this brief to ' + (b.source === 'medialy' ? 'Medialy' : 'CSO') + '? Make sure all final files are uploaded.')) return;
+  b.status = 'shipped';
+  b.shippedAt = Date.now();
+  alert('Shipped! ' + (b.source === 'medialy' ? 'Medialy' : 'CSO') + ' will deliver to ' + b.clientName + '.');
+  currentBriefId = null;
+  updateCounts(); openTab('home');
+};
+
+window.exitBrief = () => { currentBriefId = null; openTab('home'); };
+
+function urgencyOf(b) {
+  if (!b.deadline) return 'green';
+  const days = Math.ceil((new Date(b.deadline).getTime() - now) / DAY);
+  if (days < 0 || days <= 2) return 'red';
+  if (days <= 5) return 'amber';
+  return 'green';
+}
+
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]); }
+function relativeTime(ts) { if (!ts) return '—'; const d = Date.now()-ts; if (d<3600000) return Math.round(d/60000)+'m ago'; if (d<86400000) return Math.round(d/3600000)+'h ago'; const days=Math.round(d/86400000); if(days===1)return'yesterday'; if(days<7)return days+'d ago'; return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+
+// ─── Live Leads from Apps Script ────────────────────────────────────────
+console.log('[hamzury-workspaces] live leads wired v1');
+const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const WORKSPACE_FILTER = 'medialy';
+
+function renderLeads() {
+  setHeader('Operations', 'Live Leads');
+  content.innerHTML = `
+    <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
+            Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
+          </h1>
+          <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
+            Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
+          <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+        </div>
+      </div>
+      <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
+        <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
+        <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+      </div>
+    </section>
+  `;
+  document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
+  loadLiveLeads();
+}
+
+async function loadLiveLeads() {
+  const status = document.getElementById('leads-status');
+  const list = document.getElementById('leads-list');
+  const empty = document.getElementById('leads-empty');
+  const badge = document.getElementById('leads-badge');
+
+  try {
+    if (status) status.textContent = 'Loading…';
+    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const data = await res.json();
+    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
+
+    let rows = all;
+    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
+      rows = all.filter(r => {
+        const form = String(r.Form || '').toLowerCase();
+        const title = String(r['Form Title'] || '').toLowerCase();
+        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
+      });
+    }
+
+    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+
+    if (badge) {
+      if (rows.length === 0) badge.style.display = 'none';
+      else { badge.textContent = rows.length; badge.style.display = 'inline-block'; }
+    }
+
+    if (!list) return;
+    list.innerHTML = '';
+    if (rows.length === 0) {
+      if (empty) empty.hidden = false;
+    } else {
+      if (empty) empty.hidden = true;
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+        const dt = new Date(r['Received At']);
+        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        card.innerHTML = `
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
+              ${escapeLeadHtml(r['Client Name'] || '—')}
+              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
+              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
+              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
+              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+              ${escapeLeadHtml(r.Status || 'New')}
+            </span>
+            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch (e) {
+    console.warn('[live-leads] fetch failed', e);
+    if (status) status.textContent = 'Connection error';
+  }
+}
+
+function escapeLeadHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+loadLiveLeads();
+setInterval(loadLiveLeads, 30000);
+
+updateCounts(); render();
+</script>
+
+</body>
+</html>

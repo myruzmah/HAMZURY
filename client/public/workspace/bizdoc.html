@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bizdoc — Compliance & Growth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #F7F8FA;
+    --paper: #FFFFFF;
+    --ink: #0A1628;
+    --ink-soft: #2C3E54;
+    --ink-muted: #6B7A8F;
+    --ink-faint: #B0BCC9;
+    --line: #E1E6EC;
+    --line-soft: #EFF2F6;
+    --sidebar: #F0F3F8;
+    --accent: #0F2C4A;
+    --accent-soft: #1A4373;
+    --accent-pale: #E3EAF3;
+    --success: #1A6B3C;
+    --warn: #B8731F;
+    --danger: #A3301F;
+    --info: #1A56C7;
+    --focus: rgba(15,44,74,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; font-family: var(--sans); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; letter-spacing: -0.005em; overflow: hidden;
+  }
+
+  /* ============ LOGIN ============ */
+  .login-screen {
+    height: 100vh; display: grid; place-items: center;
+    background:
+      radial-gradient(circle at 25% 20%, rgba(15,44,74,0.06), transparent 50%),
+      radial-gradient(circle at 75% 80%, rgba(184,115,31,0.04), transparent 50%),
+      var(--bg);
+  }
+  .login-card { width: 100%; max-width: 380px; padding: 40px; }
+  .login-brand {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 32px;
+    font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em;
+  }
+  .login-brand .dot {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 15px; font-weight: 500;
+  }
+  .login-eyebrow { font-size: 11.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  .login-title { font-family: var(--serif); font-size: 36px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 12px; }
+  .login-title em { font-style: italic; color: var(--accent); }
+  .login-sub { font-size: 14.5px; color: var(--ink-muted); margin-bottom: 32px; line-height: 1.5; }
+  .login-field { margin-bottom: 14px; }
+  .login-field label { display: block; font-size: 12.5px; font-weight: 500; color: var(--ink-soft); margin-bottom: 6px; }
+  .login-input {
+    width: 100%; padding: 12px 14px; background: var(--paper);
+    border: 0.5px solid var(--line); border-radius: 10px;
+    font: 400 15px var(--sans); color: var(--ink); letter-spacing: -0.005em;
+  }
+  .login-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--focus); }
+  .login-btn {
+    width: 100%; padding: 13px; border: none; border-radius: 10px;
+    background: var(--accent); color: #fff; font: 500 15px var(--sans);
+    cursor: pointer; margin-top: 10px; transition: filter 0.12s;
+  }
+  .login-btn:hover { filter: brightness(1.1); }
+  .login-error {
+    display: none; margin-top: 14px; padding: 10px 14px;
+    background: rgba(163,48,31,0.08); color: var(--danger);
+    border-radius: 8px; font-size: 13px;
+  }
+  .login-error.show { display: block; }
+  .login-hint { margin-top: 24px; padding-top: 24px; border-top: 0.5px solid var(--line); font-size: 12.5px; color: var(--ink-muted); line-height: 1.5; }
+
+  /* ============ PORTAL ============ */
+  .portal { display: none; grid-template-columns: 240px 1fr; height: 100vh; }
+  .portal.active { display: grid; }
+  @media (max-width: 900px) {
+    .portal.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .mobile-nav-btn { display: flex !important; }
+  }
+
+  .sidebar {
+    background: var(--sidebar); border-right: 0.5px solid var(--line);
+    padding: 20px 14px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+  }
+  .sidebar-brand {
+    display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px;
+    font-family: var(--serif); font-size: 19px; font-weight: 500; letter-spacing: -0.02em;
+  }
+  .brand-dot {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 12px;
+  }
+  .sidebar-section {
+    padding: 18px 10px 6px; font-size: 11.5px; font-weight: 500;
+    color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+    border-radius: 7px; cursor: pointer; font-size: 14px; color: var(--ink-soft);
+    transition: background 0.12s; letter-spacing: -0.003em; font-weight: 400;
+    border: none; background: none; width: 100%; text-align: left; font-family: inherit;
+  }
+  .nav-item:hover { background: var(--paper); color: var(--ink); }
+  .nav-item.active {
+    background: var(--paper); color: var(--accent); font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .nav-icon { width: 18px; height: 18px; display: grid; place-items: center; flex-shrink: 0; }
+  .nav-icon svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 1.5; fill: none; }
+  .nav-count {
+    margin-left: auto; font-size: 11.5px; background: var(--line);
+    padding: 1px 7px; border-radius: 10px; color: var(--ink-muted);
+    min-width: 20px; text-align: center; font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .nav-item.active .nav-count { background: var(--accent); color: #fff; }
+  .nav-count.alert { background: var(--danger); color: #fff; }
+  .nav-count.warn { background: var(--warn); color: #fff; }
+  .sidebar-footer {
+    margin-top: auto; padding: 12px 10px 4px; border-top: 0.5px solid var(--line);
+  }
+  .user-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-soft); padding: 6px 0; }
+  .user-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center; font-size: 11px; font-weight: 500;
+  }
+  .logout-btn {
+    width: 100%; margin-top: 6px; padding: 6px 10px; background: none; border: none;
+    font: 400 12.5px var(--sans); color: var(--ink-muted); text-align: left;
+    cursor: pointer; border-radius: 6px; font-family: inherit;
+  }
+  .logout-btn:hover { background: var(--paper); color: var(--ink); }
+
+  /* ============ MAIN ============ */
+  .main-area { overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+  .main-header {
+    padding: 14px 28px; border-bottom: 0.5px solid var(--line);
+    background: rgba(247,248,250,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    display: flex; align-items: center; gap: 14px; flex-shrink: 0;
+  }
+  .mobile-nav-btn {
+    display: none; width: 36px; height: 36px; border-radius: 8px;
+    border: 0.5px solid var(--line); background: var(--paper);
+    cursor: pointer; place-items: center;
+  }
+  .mobile-nav-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .crumb-stack { flex: 1; min-width: 0; }
+  .crumb-eyebrow { font-size: 11px; font-weight: 500; color: var(--ink-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 1px; }
+  .crumb-title { font-family: var(--serif); font-size: 22px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.1; }
+
+  .pill-btn {
+    padding: 6px 14px; border: 0.5px solid var(--line);
+    border-radius: 999px; background: var(--paper);
+    cursor: pointer; font: 500 12.5px var(--sans); color: var(--ink-soft);
+    letter-spacing: -0.003em; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 5px; font-family: inherit;
+  }
+  .pill-btn:hover { color: var(--accent); border-color: var(--accent); }
+  .pill-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .pill-btn.primary:hover { filter: brightness(1.1); color: #fff; }
+
+  .content { flex: 1; overflow-y: auto; padding: 28px 32px 60px; }
+  @media (max-width: 600px) { .content { padding: 22px 20px 40px; } }
+
+  /* ============ HOME ============ */
+  .home-hero { padding: 8px 0 28px; border-bottom: 0.5px solid var(--line); margin-bottom: 28px; }
+  .hero-title { font-family: var(--serif); font-size: 38px; font-weight: 400; letter-spacing: -0.025em; line-height: 1.05; margin-bottom: 10px; }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub { font-size: 15.5px; color: var(--ink-soft); line-height: 1.55; max-width: 580px; }
+  @media (max-width: 600px) { .hero-title { font-size: 30px; } }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 32px; }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-card {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 18px 20px;
+  }
+  .stat-label { font-size: 12.5px; color: var(--ink-muted); margin-bottom: 6px; }
+  .stat-value { font-size: 28px; font-weight: 500; letter-spacing: -0.025em; font-variant-numeric: tabular-nums; line-height: 1.05; color: var(--accent); }
+  .stat-value.danger { color: var(--danger); }
+  .stat-value.warn { color: var(--warn); }
+  .stat-value.success { color: var(--success); }
+  .stat-meta { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
+
+  .section-title {
+    font-size: 13px; font-weight: 500; color: var(--ink-muted);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* ============ TABLE ============ */
+  .table-wrap {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 18px; font-size: 13.5px; letter-spacing: -0.003em; border-bottom: 0.5px solid var(--line-soft); }
+  th { background: var(--line-soft); font-size: 11.5px; font-weight: 500; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; transition: background 0.1s; }
+  tr.clickable:hover td { background: var(--accent-pale); }
+  .cell-name { font-weight: 500; color: var(--ink); }
+  .cell-sub { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .cell-time { font-size: 12.5px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+  .cell-right { text-align: right; }
+
+  .tag {
+    display: inline-block; padding: 2px 9px; border-radius: 5px;
+    font-size: 12px; font-weight: 500; letter-spacing: -0.003em;
+  }
+  .tag-blue { background: rgba(26,86,199,0.1); color: var(--info); }
+  .tag-amber { background: rgba(184,115,31,0.12); color: var(--warn); }
+  .tag-green { background: rgba(26,107,60,0.1); color: var(--success); }
+  .tag-coral { background: rgba(163,48,31,0.1); color: var(--danger); }
+  .tag-grey { background: var(--line); color: var(--ink-soft); }
+  .tag-accent { background: var(--accent-pale); color: var(--accent); }
+
+  .empty-state { padding: 60px 20px; text-align: center; color: var(--ink-muted); font-size: 14px; }
+  .empty-state .big { font-family: var(--serif); font-size: 22px; color: var(--ink-soft); margin-bottom: 6px; }
+
+  /* ============ MY TASKS ============ */
+  .task-card {
+    background: var(--paper); border: 0.5px solid var(--line); border-radius: 10px;
+    padding: 14px 18px; margin-bottom: 8px; cursor: pointer;
+    display: flex; align-items: center; gap: 14px; transition: all 0.12s;
+  }
+  .task-card:hover { border-color: var(--accent); transform: translateX(2px); }
+  .task-priority {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .task-priority.red { background: var(--danger); }
+  .task-priority.amber { background: var(--warn); }
+  .task-priority.green { background: var(--success); }
+  .task-meta { flex: 1; }
+  .task-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+  .task-sub { font-size: 12.5px; color: var(--ink-muted); }
+  .task-due { font-size: 12px; color: var(--ink-muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .task-due.overdue { color: var(--danger); font-weight: 500; }
+
+  /* ============ CLIENT WORKSPACE ============ */
+  .client-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 20px; padding-bottom: 22px; margin-bottom: 22px;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .client-name {
+    font-family: var(--serif); font-size: 28px; font-weight: 500;
+    letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 6px;
+  }
+  .client-meta { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: var(--ink-muted); }
+  .client-meta strong { color: var(--ink-soft); font-weight: 400; }
+
+  .tab-bar {
+    display: flex; gap: 4px; overflow-x: auto;
+    border-bottom: 0.5px solid var(--line); margin-bottom: 22px;
+  }
+  .tab-bar::-webkit-scrollbar { display: none; }
+  .tab-btn {
+    padding: 9px 14px; background: none; border: none;
+    color: var(--ink-muted); font: 500 13.5px var(--sans);
+    cursor: pointer; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; white-space: nowrap;
+    letter-spacing: -0.003em; font-family: inherit;
+  }
+  .tab-btn:hover { color: var(--ink); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* Two-column: work + checklist */
+  .work-checklist-grid {
+    display: grid; grid-template-columns: 1fr 320px; gap: 22px;
+  }
+  @media (max-width: 900px) { .work-checklist-grid { grid-template-columns: 1fr; } }
+
+  .panel-card {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 22px; margin-bottom: 16px;
+  }
+  .panel-title {
+    font-family: var(--serif); font-size: 18px; font-weight: 500;
+    letter-spacing: -0.015em; margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-eyebrow {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  .field-grid {
+    display: grid; grid-template-columns: 180px 1fr;
+    gap: 12px 22px; margin-bottom: 22px;
+  }
+  @media (max-width: 700px) { .field-grid { grid-template-columns: 1fr; gap: 6px 0; } }
+  .field-grid dt { color: var(--ink-muted); font-size: 13.5px; padding-top: 8px; }
+  .field-grid dd { color: var(--ink); }
+  .field-input, .field-textarea {
+    width: 100%; padding: 8px 12px; background: var(--paper);
+    border: 0.5px solid var(--line); border-radius: 8px;
+    font: 400 14px var(--sans); color: var(--ink); letter-spacing: -0.003em;
+    transition: border-color 0.15s;
+  }
+  .field-input:focus, .field-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+  .field-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+  /* Checklist sidebar */
+  .checklist-panel {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 20px; position: sticky; top: 0;
+    max-height: 80vh; overflow-y: auto;
+  }
+  .checklist-title { font-family: var(--serif); font-size: 16px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+  .checklist-meta { font-size: 12px; color: var(--ink-muted); margin-bottom: 14px; }
+  .checklist-progress {
+    height: 4px; border-radius: 2px; background: var(--line); overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .checklist-progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .checklist-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 8px 0;
+    cursor: pointer; transition: opacity 0.12s;
+  }
+  .checklist-item:hover { opacity: 0.85; }
+  .checklist-check {
+    width: 18px; height: 18px; border-radius: 5px;
+    border: 1.5px solid var(--ink-faint); flex-shrink: 0;
+    display: grid; place-items: center; transition: all 0.15s;
+    margin-top: 1px;
+  }
+  .checklist-item.done .checklist-check {
+    background: var(--success); border-color: var(--success);
+  }
+  .checklist-item.done .checklist-check::after {
+    content: ''; width: 4px; height: 8px;
+    border: solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg); margin-bottom: 2px;
+  }
+  .checklist-text {
+    font-size: 13px; line-height: 1.45; color: var(--ink);
+    transition: all 0.12s;
+  }
+  .checklist-item.done .checklist-text { color: var(--ink-faint); text-decoration: line-through; }
+  .checklist-guide-link {
+    font-size: 11.5px; color: var(--accent); margin-top: 4px;
+    text-decoration: none; display: inline-block;
+  }
+  .checklist-guide-link:hover { text-decoration: underline; }
+
+  /* ============ COMPLIANCE CALENDAR ============ */
+  .calendar-table { width: 100%; }
+  .calendar-table th { background: var(--line-soft); font-size: 11px; padding: 8px 12px; }
+  .calendar-table td { padding: 10px 12px; font-size: 13px; }
+  .filing-status {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 9px; border-radius: 5px; font-size: 11.5px; font-weight: 500;
+  }
+  .filing-status.filed { background: rgba(26,107,60,0.1); color: var(--success); }
+  .filing-status.due-soon { background: rgba(184,115,31,0.12); color: var(--warn); }
+  .filing-status.overdue { background: rgba(163,48,31,0.1); color: var(--danger); }
+  .filing-status.pending { background: var(--line); color: var(--ink-soft); }
+
+  /* ============ PLAYBOOK ============ */
+  .playbook-search {
+    width: 100%; padding: 12px 16px 12px 42px; background: var(--paper);
+    border: 0.5px solid var(--line); border-radius: 999px;
+    font: 400 14.5px var(--sans); margin-bottom: 22px;
+    background-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='7' stroke='%236B7A8F' stroke-width='1.8'/%3E%3Cpath d='M21 21L16.5 16.5' stroke='%236B7A8F' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 16px center;
+  }
+  .playbook-search:focus { outline: none; border-color: var(--accent); }
+  .guide-card {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; margin-bottom: 12px; overflow: hidden;
+  }
+  .guide-card.open { border-color: var(--accent); }
+  .guide-head {
+    padding: 16px 20px; cursor: pointer; display: flex;
+    justify-content: space-between; align-items: center; gap: 14px;
+    background: none; border: none; width: 100%; text-align: left; font-family: inherit;
+  }
+  .guide-head:hover { background: var(--accent-pale); }
+  .guide-meta { flex: 1; min-width: 0; }
+  .guide-tag {
+    display: inline-block; padding: 2px 8px; border-radius: 5px;
+    font-size: 11px; font-weight: 500; letter-spacing: 0.02em;
+    margin-bottom: 5px; text-transform: uppercase;
+  }
+  .guide-name {
+    font-family: var(--serif); font-size: 17px; font-weight: 500;
+    letter-spacing: -0.015em; line-height: 1.2;
+  }
+  .guide-tldr { font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; line-height: 1.45; }
+  .guide-chev {
+    width: 26px; height: 26px; border-radius: 50%; background: var(--line-soft);
+    display: grid; place-items: center; transition: transform 0.2s; flex-shrink: 0;
+  }
+  .guide-card.open .guide-chev { transform: rotate(180deg); }
+  .guide-chev svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 1.8; }
+  .guide-body { display: none; padding: 0 20px 20px; border-top: 0.5px solid var(--line-soft); }
+  .guide-card.open .guide-body { display: block; }
+  .guide-section { margin-top: 14px; }
+  .guide-section-label {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px;
+  }
+  .guide-text { font-size: 14px; line-height: 1.6; color: var(--ink); }
+  .guide-list { margin: 4px 0 0 18px; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .guide-list li { margin-bottom: 4px; }
+
+  .btn {
+    padding: 9px 18px; border-radius: 999px;
+    border: 0.5px solid var(--line); background: var(--paper);
+    cursor: pointer; font: 500 13.5px var(--sans); color: var(--ink-soft);
+    transition: all 0.12s; font-family: inherit;
+  }
+  .btn:hover { color: var(--ink); border-color: var(--accent); }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn-primary:hover { filter: brightness(1.1); color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <div class="dot">B</div>
+      <span>Bizdoc</span>
+    </div>
+    <div class="login-eyebrow">Compliance & Growth</div>
+    <h1 class="login-title">Sign in to <em>protect</em>.</h1>
+    <p class="login-sub">Bizdoc operations workspace — receive briefs from CSO, manage compliance, file taxes, deliver clean records back.</p>
+    <form id="login-form" autocomplete="off">
+      <div class="login-field">
+        <label for="login-user">Username</label>
+        <input type="text" class="login-input" id="login-user" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <label for="login-pass">Password</label>
+        <input type="password" class="login-input" id="login-pass" autocomplete="current-password">
+      </div>
+      <button type="submit" class="login-btn">Sign in</button>
+      <div class="login-error" id="login-error">Wrong username or password.</div>
+    </form>
+    <div class="login-hint">Bizdoc team only. CSO assigns clients — we file, register, and deliver back.</div>
+  </div>
+</div>
+
+<!-- PORTAL -->
+<div class="portal" id="portal">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-dot">B</div>
+      <span>Bizdoc</span>
+    </div>
+
+    <div class="sidebar-section">Workspace</div>
+    <button class="nav-item active" data-tab="home">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 12L12 4l9 8M5 10v10h14V10"/></svg></span>
+      Home
+    </button>
+    <button class="nav-item" data-tab="leads">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" stroke="currentColor" stroke-width="2" fill="none"/></svg></span>
+      Live Leads
+      <span id="leads-badge" style="margin-left:auto;background:var(--accent-warm,#B8731F);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:600;display:none;">0</span>
+    </button>
+    <button class="nav-item" data-tab="mytasks">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+      My tasks
+      <span class="nav-count alert" id="count-tasks">0</span>
+    </button>
+    <button class="nav-item" data-tab="incoming">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>
+      Incoming briefs
+      <span class="nav-count warn" id="count-incoming">0</span>
+    </button>
+    <button class="nav-item" data-tab="active">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7"/></svg></span>
+      Active clients
+      <span class="nav-count" id="count-active">0</span>
+    </button>
+
+    <div class="sidebar-section">Tax management</div>
+    <button class="nav-item" data-tab="calendar">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+      Compliance calendar
+    </button>
+    <button class="nav-item" data-tab="filings">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 3h6l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4z"/></svg></span>
+      Filings tracker
+    </button>
+    <button class="nav-item" data-tab="penalties">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg></span>
+      Penalty monitor
+      <span class="nav-count warn" id="count-penalties">0</span>
+    </button>
+
+    <div class="sidebar-section">Knowledge</div>
+    <button class="nav-item" data-tab="ship">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></svg></span>
+      Ready to ship
+      <span class="nav-count" id="count-ship">0</span>
+    </button>
+    <button class="nav-item" data-tab="playbook">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></span>
+      Playbook
+    </button>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">B</div>
+        <div>
+          <div style="color:var(--ink);font-weight:500;">Bizdoc Team</div>
+          <div style="font-size:11.5px;color:var(--ink-muted);">Compliance & growth</div>
+        </div>
+      </div>
+      <button class="logout-btn" id="logout-btn">Sign out</button>
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="main-header">
+      <button class="mobile-nav-btn" id="mobile-nav-btn" aria-label="Menu">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="crumb-stack">
+        <div class="crumb-eyebrow" id="crumb-eyebrow">Bizdoc Operations</div>
+        <div class="crumb-title" id="crumb-title">Home</div>
+      </div>
+      <div id="header-actions"></div>
+    </header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<script>
+// ============= AUTH =============
+const AUTH_KEY = 'bizdoc_signed_in';
+const VALID_USER = 'BIZDOC';
+const VALID_PASS = 'BIZDOC';
+function isSignedIn() { try { return sessionStorage.getItem(AUTH_KEY) === '1'; } catch(e) { return false; } }
+function signIn() { try { sessionStorage.setItem(AUTH_KEY, '1'); } catch(e) {} document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+function signOut() { try { sessionStorage.removeItem(AUTH_KEY); } catch(e) {} document.getElementById('portal').classList.remove('active'); document.getElementById('login-screen').style.display = 'grid'; document.getElementById('login-user').value=''; document.getElementById('login-pass').value=''; document.getElementById('login-error').classList.remove('show'); }
+document.getElementById('login-form').addEventListener('submit', e => { e.preventDefault(); const u=document.getElementById('login-user').value.trim(); const p=document.getElementById('login-pass').value.trim(); if(u===VALID_USER&&p===VALID_PASS) signIn(); else document.getElementById('login-error').classList.add('show'); });
+document.getElementById('logout-btn').addEventListener('click', signOut);
+if (isSignedIn()) { document.getElementById('login-screen').style.display = 'none'; document.getElementById('portal').classList.add('active'); }
+
+// ============= SAMPLE DATA =============
+const now = Date.now();
+const DAY = 86400000, HR = 3600000;
+
+const CLIENTS = [
+  {
+    id: 'BZD-001', status: 'incoming', receivedAt: now - 3*HR,
+    csoRef: 'HAM-LMN-203', clientName: 'Lumen Logistics', clientNiche: 'B2B logistics — Lagos',
+    serviceFromCSO: 'Compliance Management', plan: 'Annual retainer', startDate: '2026-05-01',
+    contact: 'Adebayo Ogundimu', phone: '+234 803 412 5567', email: 'adebayo@lumen.ng',
+    rcNumber: 'RC 1847299', tin: '20541223-0001', vatRegistered: true,
+    autoFilled: {
+      whatClientNeeds: 'Full annual compliance management. Last filing was 18 months ago — they need catch-up + ongoing.',
+      concerns: 'FIRS sent a letter about outstanding VAT. Worried about penalty.',
+      docsProvided: 'CAC certificate, MEMART, TIN cert, last 6 months bank statements'
+    }
+  },
+  {
+    id: 'BZD-002', status: 'incoming', receivedAt: now - 18*HR,
+    csoRef: 'HAM-LAW-307', clientName: 'The Law Office', clientNiche: 'Legal services',
+    serviceFromCSO: 'CAC Registration', plan: 'One-time', startDate: '2026-04-25',
+    contact: 'Yusuf Ibrahim', phone: '+234 815 228 9910', email: 'yusuf@lawoffice.ng',
+    autoFilled: {
+      whatClientNeeds: 'Register law firm as Limited Liability Company. Already has 2 partners.',
+      concerns: 'Wants name "The Law Office Limited" — needs availability check',
+      docsProvided: 'Director NIN, passport photo, signature, proposed office address'
+    }
+  },
+  {
+    id: 'BZD-003', status: 'active', acceptedAt: now - 6*DAY,
+    csoRef: 'HAM-VLT-108', clientName: 'Vault Advisory', clientNiche: 'Tax & compliance advisory',
+    serviceFromCSO: 'Compliance Management', plan: 'Annual retainer (₦150k/yr, 7 months deposit)',
+    startDate: '2026-04-15', currentMonth: 1,
+    contact: 'Emeka Nwosu', phone: '+234 906 221 7734', email: 'emeka@vault.ng',
+    rcNumber: 'RC 1093822', tin: '19283746-0001', vatRegistered: true,
+    filings: [
+      { id: 'F-001', type: 'VAT', period: 'March 2026', dueDate: '2026-04-21', filedDate: '2026-04-19', status: 'filed', amount: '₦127,500', receipt: 'firs-receipt-vat-mar26.pdf' },
+      { id: 'F-002', type: 'PAYE', period: 'March 2026', dueDate: '2026-04-10', filedDate: '2026-04-09', status: 'filed', amount: '₦88,200', receipt: 'firs-receipt-paye-mar26.pdf' },
+      { id: 'F-003', type: 'VAT', period: 'April 2026', dueDate: '2026-05-21', filedDate: null, status: 'due-soon', amount: 'Calc pending', receipt: null },
+      { id: 'F-004', type: 'PAYE', period: 'April 2026', dueDate: '2026-05-10', filedDate: null, status: 'due-soon', amount: 'Calc pending', receipt: null }
+    ],
+    monthlyReport: {
+      lastSent: '2026-04-01',
+      nextDue: '2026-05-01',
+      summary: 'March VAT filed (₦127.5k), PAYE filed (₦88.2k), no penalties, TCC remains valid.'
+    }
+  },
+  {
+    id: 'BZD-004', status: 'active', acceptedAt: now - 22*DAY,
+    csoRef: 'HAM-NTH-077', clientName: 'Northstar Africa', clientNiche: 'Pan-African investment',
+    serviceFromCSO: 'Compliance Management', plan: 'Annual retainer',
+    startDate: '2026-04-01', currentMonth: 1,
+    contact: 'Tunde Akindele', phone: '+234 909 234 5566', email: 'tunde@northstar.africa',
+    rcNumber: 'RC 1726354', tin: '15678234-0001', vatRegistered: true,
+    filings: [
+      { id: 'F-005', type: 'VAT', period: 'March 2026', dueDate: '2026-04-21', filedDate: '2026-04-20', status: 'filed', amount: '₦340,500', receipt: 'firs-receipt-vat-mar26.pdf' },
+      { id: 'F-006', type: 'PAYE', period: 'March 2026', dueDate: '2026-04-10', filedDate: null, status: 'overdue', amount: '₦620,000 (est)', receipt: null }
+    ]
+  },
+  {
+    id: 'BZD-005', status: 'shipped', shippedAt: now - 4*DAY,
+    csoRef: 'HAM-SAF-094', clientName: 'Saffron Skin', clientNiche: 'Skincare brand',
+    serviceFromCSO: 'CAC Registration', plan: 'One-time', completedAt: now - 4*DAY
+  }
+];
+
+const PENALTIES = [
+  { id: 'P-001', clientId: 'BZD-004', clientName: 'Northstar Africa', type: 'PAYE late filing', amount: '₦25,000', issuedDate: '2026-04-12', status: 'Negotiating waiver', risk: 'Medium' }
+];
+
+// CHECKLISTS - workflow embedded with each task type
+// SERVICE CATALOG — every Bizdoc service with its checklist, required docs, fee, timeline
+const SERVICES = {
+  // === REGISTRATION ===
+  cac_ltd: {
+    category: 'Registration',
+    name: 'CAC — Limited Liability Company',
+    fee: '₦35,000', timeline: '7-10 working days',
+    requiredDocs: ['Director NIN (all directors)', 'Director passport photo', 'Director signature', 'Proposed company name (3 options)', 'Registered office address', 'Share capital structure', 'Nature of business'],
+    checklist: [
+      { text: 'Run name availability search (CAC portal, ₦500 fee)', guide: 'how-to-cac-name-search' },
+      { text: 'Reserve approved name (60-day reservation)', guide: null },
+      { text: 'Collect director NINs, passport photos, signatures', guide: null },
+      { text: 'Confirm registered office address', guide: null },
+      { text: 'Confirm share capital structure with client', guide: null },
+      { text: 'Prepare incorporation documents (MEMART)', guide: null },
+      { text: 'Pay registration fees on CAC portal', guide: null },
+      { text: 'Submit application via CAC portal', guide: null },
+      { text: 'Track application status (typically 5-10 days)', guide: null },
+      { text: 'Download Certificate of Incorporation', guide: null },
+      { text: 'Download stamped MEMART', guide: null },
+      { text: 'Apply for TIN at Joint Tax Board', guide: null },
+      { text: 'Upload all documents to client folder', guide: null },
+      { text: 'Send completed package to CSO', guide: null }
+    ]
+  },
+  cac_bn: {
+    category: 'Registration',
+    name: 'CAC — Business Name (Sole Proprietor)',
+    fee: '₦20,000', timeline: '3-5 working days',
+    requiredDocs: ['Owner NIN', 'Owner passport photo', 'Owner signature', 'Proposed business name (3 options)', 'Business address', 'Nature of business'],
+    checklist: [
+      { text: 'Run name availability search', guide: 'how-to-cac-name-search' },
+      { text: 'Reserve approved name', guide: null },
+      { text: 'Collect owner NIN + passport photo + signature', guide: null },
+      { text: 'Prepare BN registration form', guide: null },
+      { text: 'Pay registration fees', guide: null },
+      { text: 'Submit application', guide: null },
+      { text: 'Download BN certificate', guide: null },
+      { text: 'Apply for TIN', guide: null },
+      { text: 'Upload to client folder', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cac_ngo: {
+    category: 'Registration',
+    name: 'CAC — Incorporated Trustees (NGO)',
+    fee: '₦50,000', timeline: '4-8 weeks',
+    requiredDocs: ['Trustees NIN, photos, signatures (min 2)', 'Proposed name (3 options)', 'Constitution', 'Trustees declaration', 'Newspaper publication evidence'],
+    checklist: [
+      { text: 'Run name search', guide: null },
+      { text: 'Reserve name', guide: null },
+      { text: 'Collect trustee documents', guide: null },
+      { text: 'Draft constitution', guide: null },
+      { text: 'Newspaper publication (28 days notice)', guide: null },
+      { text: 'Wait 28-day objection period', guide: null },
+      { text: 'Submit application with publication evidence', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download Certificate of Trusteeship', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  tin: {
+    category: 'Registration',
+    name: 'TIN Registration (Tax Identification)',
+    fee: '₦25,000', timeline: '3-7 working days',
+    requiredDocs: ['CAC Certificate of Incorporation OR BN cert', 'Director/Owner NIN', 'Utility bill (business address proof)', 'Director passport photo'],
+    checklist: [
+      { text: 'Verify CAC documents are valid', guide: null },
+      { text: 'Login to Joint Tax Board portal (jtb.gov.ng)', guide: null },
+      { text: 'Submit TIN application', guide: null },
+      { text: 'Upload CAC + NIN + utility bill', guide: null },
+      { text: 'Wait for verification', guide: null },
+      { text: 'Download TIN certificate', guide: null },
+      { text: 'Upload to client folder', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  vat_reg: {
+    category: 'Registration',
+    name: 'VAT Registration (FIRS)',
+    fee: '₦20,000', timeline: '3-5 working days',
+    requiredDocs: ['CAC certificate', 'TIN', 'MEMART', 'Director NIN', 'Office address proof'],
+    checklist: [
+      { text: 'Verify TIN is valid', guide: null },
+      { text: 'Login to FIRS taxpromax portal', guide: 'how-to-firs-login' },
+      { text: 'Apply for VAT registration', guide: null },
+      { text: 'Upload required documents', guide: null },
+      { text: 'Wait for approval', guide: null },
+      { text: 'Download VAT registration certificate', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  nafdac: {
+    category: 'Registration',
+    name: 'NAFDAC Registration (Food/Pharma/Cosmetics)',
+    fee: '₦150,000+', timeline: '3-6 months',
+    requiredDocs: ['CAC certificate', 'TIN', 'Product samples', 'Lab analysis report', 'Packaging artwork', 'Product formulation/ingredients', 'Factory inspection clearance'],
+    checklist: [
+      { text: 'Confirm product category (food, drug, cosmetic, herbal)', guide: null },
+      { text: 'Apply for premises registration first', guide: null },
+      { text: 'Schedule factory/premises inspection', guide: null },
+      { text: 'Submit product registration application', guide: null },
+      { text: 'Provide product samples for lab analysis', guide: null },
+      { text: 'Pay all required fees (registration + analysis)', guide: null },
+      { text: 'Track lab analysis (4-8 weeks)', guide: null },
+      { text: 'Respond to any NAFDAC queries', guide: null },
+      { text: 'Receive NAFDAC number', guide: null },
+      { text: 'Download certificate', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  pencom: {
+    category: 'Registration',
+    name: 'PENCOM Compliance (Pension)',
+    fee: '₦30,000', timeline: '2-3 weeks',
+    requiredDocs: ['CAC certificate', 'TIN', 'Employee list (min 3 employees required)', 'Chosen PFA', 'Employer contribution evidence'],
+    checklist: [
+      { text: 'Confirm client has 3+ employees', guide: null },
+      { text: 'Help client choose PFA (Pension Fund Administrator)', guide: null },
+      { text: 'Register company with PENCOM', guide: null },
+      { text: 'Open employer pension account with PFA', guide: null },
+      { text: 'Set up monthly contribution schedule (10% employer + 8% employee)', guide: null },
+      { text: 'Apply for Pension Compliance Certificate', guide: null },
+      { text: 'Receive certificate', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  scuml: {
+    category: 'Registration',
+    name: 'SCUML Certificate (Anti-Money Laundering)',
+    fee: '₦50,000', timeline: '2-4 weeks',
+    requiredDocs: ['CAC certificate', 'TIN', 'MEMART', 'Director KYC', 'Business address proof', 'Compliance officer details'],
+    checklist: [
+      { text: 'Confirm client falls under DNFI (Designated Non-Financial Institution)', guide: null },
+      { text: 'Appoint compliance officer', guide: null },
+      { text: 'Apply via SCUML portal', guide: null },
+      { text: 'Submit all required documents', guide: null },
+      { text: 'Pay registration fees', guide: null },
+      { text: 'Schedule SCUML inspection if required', guide: null },
+      { text: 'Receive SCUML certificate', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  // === MODIFICATIONS ===
+  cac_change_name: {
+    category: 'Modification',
+    name: 'CAC — Change of Company Name',
+    fee: '₦40,000', timeline: '2-3 weeks',
+    requiredDocs: ['Existing CAC certificate', 'Board resolution (special)', 'Members resolution', 'New proposed name (3 options)', 'Updated MEMART'],
+    checklist: [
+      { text: 'Confirm new name not already taken (search)', guide: 'how-to-cac-name-search' },
+      { text: 'Get board + members special resolution', guide: null },
+      { text: 'Reserve new name', guide: null },
+      { text: 'Update MEMART with new name', guide: null },
+      { text: 'Pay change-of-name fees', guide: null },
+      { text: 'Submit application via CAC portal', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download updated certificate', guide: null },
+      { text: 'Update TIN, VAT, bank, etc. with new name', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cac_change_directors: {
+    category: 'Modification',
+    name: 'CAC — Change of Directors',
+    fee: '₦30,000', timeline: '1-2 weeks',
+    requiredDocs: ['Existing CAC certificate', 'Board resolution', 'Outgoing director resignation letter', 'New director NIN, photo, signature', 'Form CAC 7A'],
+    checklist: [
+      { text: 'Get board resolution for the change', guide: null },
+      { text: 'Collect outgoing director resignation letter', guide: null },
+      { text: 'Collect new director KYC docs (NIN, photo, signature)', guide: null },
+      { text: 'Prepare Form CAC 7A', guide: null },
+      { text: 'Pay filing fees', guide: null },
+      { text: 'Submit via CAC portal', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download updated record', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cac_change_address: {
+    category: 'Modification',
+    name: 'CAC — Change of Registered Address',
+    fee: '₦25,000', timeline: '1-2 weeks',
+    requiredDocs: ['Existing CAC certificate', 'Board resolution', 'New address proof (utility bill, tenancy)', 'Form CAC 3'],
+    checklist: [
+      { text: 'Get board resolution', guide: null },
+      { text: 'Collect new address proof', guide: null },
+      { text: 'Prepare Form CAC 3', guide: null },
+      { text: 'Pay filing fees', guide: null },
+      { text: 'Submit via CAC portal', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download updated record', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cac_increase_capital: {
+    category: 'Modification',
+    name: 'CAC — Increase in Share Capital',
+    fee: 'Stamp duty + ₦35,000', timeline: '2-3 weeks',
+    requiredDocs: ['Board resolution (special)', 'Members resolution', 'Updated MEMART', 'Stamp duty payment receipt'],
+    checklist: [
+      { text: 'Get special resolution from members', guide: null },
+      { text: 'Calculate new stamp duty owed', guide: null },
+      { text: 'Pay stamp duty (FIRS)', guide: null },
+      { text: 'Update MEMART with new capital', guide: null },
+      { text: 'Pay CAC filing fees', guide: null },
+      { text: 'Submit via CAC portal', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download updated MEMART', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cac_annual_returns: {
+    category: 'Modification',
+    name: 'CAC — Annual Returns Filing',
+    fee: '₦15,000 per year', timeline: '3-5 working days',
+    requiredDocs: ['Existing CAC certificate', 'Audited accounts (for LTD)', 'List of current officers', 'Statement of affairs'],
+    checklist: [
+      { text: 'Confirm how many years are outstanding', guide: null },
+      { text: 'Calculate any late penalties', guide: null },
+      { text: 'Get audited accounts if Ltd', guide: null },
+      { text: 'Prepare annual returns form', guide: null },
+      { text: 'Pay returns fees + any penalties', guide: null },
+      { text: 'File via CAC portal', guide: null },
+      { text: 'Download confirmation', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cac_restoration: {
+    category: 'Modification',
+    name: 'CAC — Restoration of Dissolved Company',
+    fee: '₦100,000+', timeline: '6-12 weeks',
+    requiredDocs: ['Original CAC certificate', 'Court affidavit explaining reason', 'Outstanding annual returns', 'Outstanding tax filings', 'Legal application'],
+    checklist: [
+      { text: 'Confirm company is officially dissolved (CAC search)', guide: null },
+      { text: 'Identify reason for dissolution', guide: null },
+      { text: 'File all outstanding annual returns first', guide: null },
+      { text: 'File all outstanding tax filings', guide: null },
+      { text: 'Prepare court affidavit', guide: null },
+      { text: 'Apply for restoration via CAC', guide: null },
+      { text: 'Pay restoration fees + all penalties', guide: null },
+      { text: 'Track approval (long process)', guide: null },
+      { text: 'Receive restoration order', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  // === CERTIFICATE GENERATION ===
+  tcc: {
+    category: 'Certificate',
+    name: 'Tax Clearance Certificate (TCC)',
+    fee: '₦35,000', timeline: '5-10 working days',
+    requiredDocs: ['CAC certificate', 'TIN', 'Last 3 years tax filings', 'Last 3 years audited accounts'],
+    checklist: [
+      { text: 'Confirm all VAT filings current (last 3 years)', guide: null },
+      { text: 'Confirm all CIT filings current', guide: null },
+      { text: 'Confirm all PAYE filings current', guide: null },
+      { text: 'Resolve any outstanding penalties first', guide: 'how-to-handle-penalty' },
+      { text: 'Login to FIRS taxpromax', guide: 'how-to-firs-login' },
+      { text: 'Apply for TCC for chosen period', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download TCC', guide: 'how-to-tcc' },
+      { text: 'Save to client folder', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  cert_replacement: {
+    category: 'Certificate',
+    name: 'Replacement of Certificate of Incorporation',
+    fee: '₦20,000', timeline: '5-7 working days',
+    requiredDocs: ['Police report (if lost)', 'Affidavit of loss', 'Newspaper publication of loss', 'Director details for verification'],
+    checklist: [
+      { text: 'Get affidavit of loss', guide: null },
+      { text: 'Get police extract (if applicable)', guide: null },
+      { text: 'Newspaper publication of loss', guide: null },
+      { text: 'Apply for replacement via CAC', guide: null },
+      { text: 'Pay replacement fees', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download replacement certificate', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  ctc: {
+    category: 'Certificate',
+    name: 'Certified True Copy (CTC) — CAC Documents',
+    fee: '₦15,000 per document', timeline: '3-5 working days',
+    requiredDocs: ['Existing CAC certificate', 'Application letter on company letterhead', 'Director NIN'],
+    checklist: [
+      { text: 'Identify which documents need CTC', guide: null },
+      { text: 'Prepare application letter', guide: null },
+      { text: 'Apply via CAC portal', guide: null },
+      { text: 'Pay CTC fees per document', guide: null },
+      { text: 'Track approval', guide: null },
+      { text: 'Download stamped CTCs', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  status_report: {
+    category: 'Certificate',
+    name: 'CAC Status Report',
+    fee: '₦10,000', timeline: '1-2 working days',
+    requiredDocs: ['Company name OR RC number'],
+    checklist: [
+      { text: 'Confirm RC number with client', guide: null },
+      { text: 'Apply via CAC portal', guide: null },
+      { text: 'Pay status report fee', guide: null },
+      { text: 'Download report (usually same day)', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  // === DOCUMENT SERVICES ===
+  business_plan: {
+    category: 'Document Services',
+    name: 'Business Plan Writing',
+    fee: '₦75,000', timeline: '7-14 working days',
+    requiredDocs: ['Business idea brief', 'Founder background', 'Market info', 'Financial projections data', 'Existing operations details (if any)'],
+    checklist: [
+      { text: 'Discovery call with client (deep listen)', guide: null },
+      { text: 'Industry & market research', guide: null },
+      { text: 'Competitor analysis', guide: null },
+      { text: 'Financial modeling (3-year projections)', guide: null },
+      { text: 'Draft executive summary', guide: null },
+      { text: 'Write product/service section', guide: null },
+      { text: 'Write market analysis section', guide: null },
+      { text: 'Write operations & management section', guide: null },
+      { text: 'Write financial section', guide: null },
+      { text: 'Design layout (charts, branding)', guide: null },
+      { text: 'Draft 1 review with CSO', guide: null },
+      { text: 'Final polish', guide: null },
+      { text: 'Send to CSO', guide: null }
+    ]
+  },
+  trademark: {
+    category: 'Document Services',
+    name: 'Trademark Registration',
+    fee: '₦80,000', timeline: '12-18 months',
+    requiredDocs: ['Trademark logo/name', 'Description of goods/services (Nice classification)', 'Applicant details (CAC if company, NIN if individual)', 'Power of attorney'],
+    checklist: [
+      { text: 'Run trademark availability search', guide: null },
+      { text: 'Determine Nice classification (which class)', guide: null },
+      { text: 'Prepare application', guide: null },
+      { text: 'Pay filing fees', guide: null },
+      { text: 'Submit to Trademarks Registry', guide: null },
+      { text: 'Receive acceptance letter (3-6 months)', guide: null },
+      { text: 'Publication in trademark journal', guide: null },
+      { text: 'Wait 60-day opposition period', guide: null },
+      { text: 'If no opposition: certificate issued (12-18 months total)', guide: null },
+      { text: 'Send certificate to CSO', guide: null }
+    ]
+  },
+  patent: {
+    category: 'Document Services',
+    name: 'Patent Filing',
+    fee: '₦150,000+', timeline: '2-3 years',
+    requiredDocs: ['Detailed invention description', 'Technical drawings', 'Claims', 'Applicant details', 'Power of attorney'],
+    checklist: [
+      { text: 'Conduct novelty search', guide: null },
+      { text: 'Prepare patent specification', guide: null },
+      { text: 'Prepare technical drawings', guide: null },
+      { text: 'Draft claims', guide: null },
+      { text: 'File application', guide: null },
+      { text: 'Pay filing fees', guide: null },
+      { text: 'Substantive examination', guide: null },
+      { text: 'Respond to examiner queries', guide: null },
+      { text: 'Receive patent certificate', guide: null }
+    ]
+  },
+  // === ONGOING SERVICES ===
+  compliance_mgmt: {
+    category: 'Ongoing Retainer',
+    name: 'Compliance Management (Annual Retainer)',
+    fee: '₦150,000/yr (7 months deposit upfront)', timeline: 'Ongoing',
+    requiredDocs: ['CAC certificate', 'TIN', 'VAT certificate', 'MEMART', 'Last 6 months bank statements', 'Latest tax filings', 'Director details'],
+    checklist: [
+      { text: 'Onboarding call with client', guide: null },
+      { text: 'Collect all baseline documents', guide: null },
+      { text: 'Compliance audit — current status', guide: null },
+      { text: 'Set up monthly VAT filing schedule', guide: null },
+      { text: 'Set up monthly PAYE filing schedule', guide: null },
+      { text: 'Set up annual CIT filing schedule', guide: null },
+      { text: 'Set up annual returns reminder', guide: null },
+      { text: 'Schedule monthly client reports', guide: 'how-to-monthly-report' },
+      { text: 'Onboarding complete — switch to ongoing mode', guide: null }
+    ]
+  }
+};
+
+const SERVICE_CATEGORIES = ['Registration', 'Modification', 'Certificate', 'Document Services', 'Ongoing Retainer'];
+
+const CHECKLISTS = {
+  vat_filing: {
+    name: 'VAT Filing Checklist',
+    items: [
+      { text: 'Pull period sales data from client', guide: 'how-to-pull-vat-data' },
+      { text: 'Calculate output VAT (7.5% of sales)', guide: null },
+      { text: 'Calculate input VAT credits from purchases', guide: null },
+      { text: 'Confirm net VAT payable with client', guide: null },
+      { text: 'Login to FIRS portal', guide: 'how-to-firs-login' },
+      { text: 'File VAT return form', guide: null },
+      { text: 'Pay VAT amount via Remita', guide: null },
+      { text: 'Download FIRS receipt', guide: null },
+      { text: 'Upload receipt to client folder', guide: null },
+      { text: 'Update Bizdoc filings tracker', guide: null },
+      { text: 'Notify CSO via "Send to CSO" button', guide: null }
+    ]
+  },
+  paye_filing: {
+    name: 'PAYE Filing Checklist',
+    items: [
+      { text: 'Get current month payroll from client', guide: null },
+      { text: 'Calculate PAYE per employee using current tax tables', guide: 'how-to-paye-calc' },
+      { text: 'Calculate Pension (employer + employee)', guide: null },
+      { text: 'Calculate NHF if applicable', guide: null },
+      { text: 'Confirm totals with client', guide: null },
+      { text: 'Login to State IRS portal (LIRS for Lagos)', guide: null },
+      { text: 'File PAYE return', guide: null },
+      { text: 'Pay PAYE amount', guide: null },
+      { text: 'Download receipt + upload to client folder', guide: null },
+      { text: 'Update Bizdoc tracker', guide: null }
+    ]
+  },
+  cac_registration: {
+    name: 'CAC Registration Checklist',
+    items: [
+      { text: 'Run name availability search (CAC portal)', guide: 'how-to-cac-name-search' },
+      { text: 'Reserve approved name', guide: null },
+      { text: 'Collect director NIN, passport photo, signature', guide: null },
+      { text: 'Prepare incorporation forms', guide: null },
+      { text: 'Pay registration fees', guide: null },
+      { text: 'Submit application via CAC portal', guide: null },
+      { text: 'Track application status (typically 5-10 days)', guide: null },
+      { text: 'Download Certificate of Incorporation', guide: null },
+      { text: 'Download stamped MEMART', guide: null },
+      { text: 'Apply for TIN (Joint Tax Board)', guide: null },
+      { text: 'Upload all documents to client folder', guide: null },
+      { text: 'Send completed package to CSO', guide: null }
+    ]
+  },
+  monthly_report: {
+    name: 'Monthly Client Report Checklist',
+    items: [
+      { text: 'Review all filings for the month', guide: null },
+      { text: 'Note any penalties or compliance flags', guide: null },
+      { text: 'Check upcoming deadlines (next 60 days)', guide: null },
+      { text: 'Generate report via Bizdoc auto-template', guide: null },
+      { text: 'Review and personalize for client', guide: null },
+      { text: 'Mark "Ready to ship" → CSO delivers to client', guide: null }
+    ]
+  }
+};
+
+// PLAYBOOK GUIDES
+const GUIDES = [
+  {
+    id: 'how-to-vat-filing',
+    tag: 'tax', tagColor: 'tag-amber',
+    name: 'How to file VAT for a client',
+    tldr: 'Pull data → calculate → confirm → file on FIRS → upload receipt → log in tracker.',
+    sections: {
+      'When to do this': 'VAT is filed monthly. Deadline is the 21st of the following month. So March VAT is due April 21st.',
+      'What you need from client': 'Sales totals for the period (gross), input VAT receipts (any VAT charged on purchases), bank statement for verification.',
+      'Step by step': [
+        'Open client folder → request "VAT data for [month]" if not already received',
+        'In Excel: calculate Output VAT = 7.5% of total taxable sales',
+        'Add up Input VAT credits from supplier receipts',
+        'Net VAT payable = Output - Input',
+        'WhatsApp client to confirm the number BEFORE filing',
+        'Login to FIRS taxpromax portal (taxpromax.firs.gov.ng)',
+        'Click VAT → New Return → enter period → enter amounts',
+        'Submit return → Pay via Remita → download receipt',
+        'Save receipt to client Drive folder named "VAT-[month]-[year]"',
+        'Open Bizdoc → Active client → mark filing as Filed with date and amount'
+      ],
+      'Common mistakes': [
+        'Filing without confirming numbers with client (they remember different sales)',
+        'Forgetting to claim input VAT credits (over-paying)',
+        'Filing late (penalty: 5% of amount + ₦10,000)',
+        'Not uploading the receipt (auditor will ask later, you won\'t find it)'
+      ],
+      'When stuck': 'Contact senior team via Bizdoc Slack channel. If FIRS portal is down, see "FIRS portal is down" guide.'
+    }
+  },
+  {
+    id: 'how-to-firs-login',
+    tag: 'system', tagColor: 'tag-blue',
+    name: 'How to login to FIRS TaxProMax portal',
+    tldr: 'Use client TIN as username + their FIRS password. If forgotten, request reset via official email.',
+    sections: {
+      'When to do this': 'Every time you need to file VAT, CIT, or other federal taxes for a client.',
+      'Step by step': [
+        'Go to taxpromax.firs.gov.ng',
+        'Username = client\'s TIN (10 digits, e.g. 20541223-0001)',
+        'Password = stored in client\'s secure vault (Bizdoc > Client > Vault tab)',
+        'If password forgotten → click "Forgot password" → answer security question → check client\'s registered email',
+        'If 2FA active → use authenticator app shared with team'
+      ],
+      'Security rules': [
+        'NEVER share client login outside the Bizdoc team',
+        'Always logout after each session',
+        'If you suspect a credential leak, change password immediately and log in penalty monitor'
+      ]
+    }
+  },
+  {
+    id: 'how-to-firs-down',
+    tag: 'troubleshoot', tagColor: 'tag-coral',
+    name: 'What to do when FIRS portal is down',
+    tldr: 'Document downtime, file via official email backup, escalate if down > 6hrs.',
+    sections: {
+      'TL;DR': 'FIRS portal goes down sometimes, especially near deadlines. Have a backup plan.',
+      'If portal is down 1-3 hours': [
+        'Don\'t panic. Try again in 30 mins.',
+        'Use this time to double-check your numbers'
+      ],
+      'If down 3-6 hours and deadline is tomorrow': [
+        'Email FIRS at filing@firs.gov.ng with: client TIN, period, amounts',
+        'Take screenshot of the down portal as evidence',
+        'Save email + screenshot to client folder'
+      ],
+      'If still down on deadline day': [
+        'File via email AND attempt portal every 30 mins',
+        'Document the timeline in writing',
+        'Keep client informed via CSO',
+        'When portal is back, file properly and reference the email submission'
+      ],
+      'Penalty waiver': 'If FIRS later assesses a penalty, the documented downtime is your evidence. We have successfully waived 90%+ of these.'
+    }
+  },
+  {
+    id: 'how-to-paye-calc',
+    tag: 'tax', tagColor: 'tag-amber',
+    name: 'How to calculate PAYE for a client',
+    tldr: 'Use current Nigerian tax tables. Apply consolidated relief, then bracketed rates. Add pension + NHF.',
+    sections: {
+      'TL;DR': 'PAYE = tax taken from employee salaries. Calculated per person, summed, filed monthly.',
+      'Per-employee calculation': [
+        'Gross annual salary',
+        'Subtract Consolidated Relief Allowance: 20% of gross + ₦200,000',
+        'Subtract Pension contribution (8%)',
+        'Subtract NHF if applicable (2.5%)',
+        'Subtract Life insurance if applicable',
+        'Result = Taxable income',
+        'Apply tax bands (current rates: 7%, 11%, 15%, 19%, 21%, 24%)',
+        'Annual tax / 12 = Monthly PAYE'
+      ],
+      'Pension': [
+        'Employee: 8% of gross',
+        'Employer: 10% of gross',
+        'Total goes to chosen PFA'
+      ],
+      'Common mistakes': [
+        'Using outdated tax tables — verify current bands every January',
+        'Forgetting to include consolidated relief',
+        'Applying NHF when employee earns less than ₦30k/month (not applicable)'
+      ]
+    }
+  },
+  {
+    id: 'how-to-handle-penalty',
+    tag: 'recovery', tagColor: 'tag-coral',
+    name: 'How to handle a client penalty',
+    tldr: 'Document cause → notify CSO → attempt waiver if first offense → if not, negotiate payment plan.',
+    sections: {
+      'TL;DR': 'Penalties happen. Stay calm, document, fight smartly.',
+      'Step 1 — Document the cause': [
+        'Was it client error (didn\'t send data)?',
+        'Was it portal/system issue?',
+        'Was it our error (missed deadline)?',
+        'Be honest in the log — we use this to improve'
+      ],
+      'Step 2 — Notify CSO': [
+        'CSO needs to manage client expectations',
+        'Don\'t let client be surprised by FIRS letter'
+      ],
+      'Step 3 — Attempt waiver (if first offense)': [
+        'Write letter to FIRS controller for the client\'s tax office',
+        'Cite: first offense, willingness to pay base tax immediately, request waiver of penalty',
+        'Success rate: 60-70% for first offenses'
+      ],
+      'Step 4 — If waiver denied': [
+        'Pay the base tax immediately',
+        'Negotiate penalty payment plan (3-6 months)',
+        'Document in penalty monitor'
+      ],
+      'If our error': [
+        'Bizdoc covers the penalty (stipulated in retainer)',
+        'Internal review to prevent recurrence'
+      ]
+    }
+  },
+  {
+    id: 'how-to-cac-name-search',
+    tag: 'registration', tagColor: 'tag-green',
+    name: 'How to do CAC name availability search',
+    tldr: 'Use CAC portal name search. If "available" → reserve immediately for 60 days. ₦500 fee.',
+    sections: {
+      'When': 'First step of every CAC registration. Before collecting any client documents.',
+      'Step by step': [
+        'Go to pre.cac.gov.ng',
+        'Click "Name Reservation"',
+        'Enter proposed name + entity type (Ltd, BN, etc.)',
+        'Pay ₦500 search fee',
+        'Result usually within 24hrs',
+        'If APPROVED → reserve name immediately (it\'s held for 60 days)',
+        'If NOT APPROVED → try variation or fully different name'
+      ],
+      'Names that get rejected': [
+        'Too similar to existing company',
+        'Use of restricted words (Federal, Government, Nigerian, Bank without licence, etc.)',
+        'Misleading names (Ltd when registering as BN)'
+      ],
+      'Pro tip': 'Always have client provide 3 name options ranked by preference. Saves time when first one is rejected.'
+    }
+  },
+  {
+    id: 'how-to-monthly-report',
+    tag: 'client', tagColor: 'tag-blue',
+    name: 'How to write the monthly client report',
+    tldr: 'Calm tone, specific numbers, what we did + what is coming. CSO sends it to client.',
+    sections: {
+      'TL;DR': 'The monthly report is what justifies the ₦150k/yr retainer. It must show value clearly.',
+      'Structure': [
+        'Opening: 1-2 sentences acknowledging the month',
+        'What we did this month (specific filings + amounts + dates)',
+        'Any flags (penalties avoided, issues resolved)',
+        'What is coming next month (deadlines)',
+        'Anything we need from client',
+        'Closing: 1 sentence reassurance'
+      ],
+      'Tone': 'Confident but not boastful. Specific not vague. "We filed your March VAT of ₦127,500 on April 19th" — not "VAT was handled."',
+      'Time budget': '20 minutes per client per month. The auto-template does 80%, you personalize 20%.',
+      'When to escalate': 'If something genuinely concerning came up that month (FIRS audit notice, big penalty, etc.), flag to senior team BEFORE writing the report.'
+    }
+  },
+  {
+    id: 'how-to-tcc',
+    tag: 'tax', tagColor: 'tag-amber',
+    name: 'How to generate a Tax Clearance Certificate',
+    tldr: 'Client must be up-to-date on filings. Apply via taxpromax. 5-10 working days.',
+    sections: {
+      'When client requests TCC': 'Usually for tender, contract, visa, or licence application.',
+      'Pre-flight check': [
+        'Are all VAT filings current? (Last 3 years)',
+        'Are all CIT filings current?',
+        'Are PAYE filings current?',
+        'Any outstanding penalties? Resolve first.'
+      ],
+      'Application': [
+        'Login to FIRS taxpromax',
+        'Select TCC',
+        'Choose period (usually previous calendar year)',
+        'Submit application',
+        'FIRS verifies → issues TCC (5-10 working days)'
+      ],
+      'After approval': 'Download TCC PDF, save to client folder, mark "ready to ship" in Bizdoc → CSO sends to client. TCC is valid for 1 year.'
+    }
+  }
+];
+
+// ============= STATE =============
+let currentTab = 'home';
+let currentClientId = null;
+let currentSubtab = 'overview';
+let currentChecklist = null;
+
+const content = document.getElementById('content');
+const crumbEyebrow = document.getElementById('crumb-eyebrow');
+const crumbTitle = document.getElementById('crumb-title');
+const headerActions = document.getElementById('header-actions');
+
+// Auto-generate "My tasks" from current state
+function getMyTasks() {
+  const tasks = [];
+  // Incoming briefs awaiting acceptance
+  CLIENTS.filter(c => c.status === 'incoming').forEach(c => {
+    tasks.push({
+      priority: 'amber',
+      title: `Review brief from CSO: ${c.clientName}`,
+      sub: `${c.serviceFromCSO} · received ${relativeTime(c.receivedAt)}`,
+      due: 'Today',
+      action: () => { currentClientId = c.id; openTab('client'); }
+    });
+  });
+  // Overdue filings
+  CLIENTS.filter(c => c.filings).forEach(c => {
+    c.filings.forEach(f => {
+      if (f.status === 'overdue') {
+        tasks.push({
+          priority: 'red',
+          title: `OVERDUE: ${c.clientName} ${f.type} for ${f.period}`,
+          sub: `Due ${f.dueDate} · ${f.amount}`,
+          due: 'Overdue',
+          action: () => { currentClientId = c.id; openTab('client'); }
+        });
+      } else if (f.status === 'due-soon') {
+        const daysLeft = Math.ceil((new Date(f.dueDate).getTime() - now) / DAY);
+        if (daysLeft <= 14) {
+          tasks.push({
+            priority: daysLeft <= 7 ? 'amber' : 'green',
+            title: `${c.clientName}: ${f.type} for ${f.period}`,
+            sub: `Due ${f.dueDate}`,
+            due: daysLeft <= 0 ? 'Today' : `${daysLeft}d left`,
+            action: () => { currentClientId = c.id; openTab('client'); }
+          });
+        }
+      }
+    });
+  });
+  // Monthly reports approaching
+  CLIENTS.filter(c => c.monthlyReport).forEach(c => {
+    const due = new Date(c.monthlyReport.nextDue).getTime();
+    const daysLeft = Math.ceil((due - now) / DAY);
+    if (daysLeft <= 7) {
+      tasks.push({
+        priority: daysLeft <= 2 ? 'amber' : 'green',
+        title: `Write ${c.clientName} monthly report`,
+        sub: `Due ${c.monthlyReport.nextDue}`,
+        due: daysLeft <= 0 ? 'Today' : `${daysLeft}d left`,
+        action: () => { currentClientId = c.id; openTab('client'); }
+      });
+    }
+  });
+  // Penalty resolution
+  PENALTIES.filter(p => p.status !== 'Resolved').forEach(p => {
+    tasks.push({
+      priority: 'red',
+      title: `Penalty: ${p.clientName} — ${p.type}`,
+      sub: `${p.amount} · ${p.status}`,
+      due: 'Active',
+      action: () => openTab('penalties')
+    });
+  });
+  // Sort by priority
+  const order = { red: 0, amber: 1, green: 2 };
+  tasks.sort((a, b) => order[a.priority] - order[b.priority]);
+  return tasks;
+}
+
+function updateCounts() {
+  const tasks = getMyTasks();
+  document.getElementById('count-tasks').textContent = tasks.length;
+  document.getElementById('count-tasks').style.display = tasks.length ? '' : 'none';
+  document.getElementById('count-incoming').textContent = CLIENTS.filter(c => c.status === 'incoming').length;
+  document.getElementById('count-incoming').style.display = CLIENTS.filter(c => c.status === 'incoming').length ? '' : 'none';
+  document.getElementById('count-active').textContent = CLIENTS.filter(c => c.status === 'active').length;
+  document.getElementById('count-penalties').textContent = PENALTIES.filter(p => p.status !== 'Resolved').length;
+  document.getElementById('count-penalties').style.display = PENALTIES.filter(p => p.status !== 'Resolved').length ? '' : 'none';
+  // ready to ship: monthly reports due or filings ready to be reported to CSO
+  const ship = CLIENTS.filter(c => c.status === 'active').length;
+  document.getElementById('count-ship').textContent = 0;
+  document.getElementById('count-ship').style.display = 'none';
+}
+
+function openTab(tab) {
+  currentTab = tab;
+  if (tab !== 'client') currentClientId = null;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === tab));
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  headerActions.innerHTML = '';
+  render();
+}
+document.querySelectorAll('.nav-item').forEach(n => n.addEventListener('click', () => openTab(n.dataset.tab)));
+document.getElementById('mobile-nav-btn').addEventListener('click', () => document.getElementById('sidebar').classList.toggle('mobile-open'));
+
+function render() {
+  if (currentClientId) { renderClient(); return; }
+  switch (currentTab) {
+    case 'home': renderHome(); break;
+    case 'leads': renderLeads(); break;
+    case 'mytasks': renderMyTasks(); break;
+    case 'incoming': renderIncoming(); break;
+    case 'active': renderActive(); break;
+    case 'calendar': renderCalendar(); break;
+    case 'filings': renderFilings(); break;
+    case 'penalties': renderPenalties(); break;
+    case 'ship': renderShip(); break;
+    case 'playbook': renderPlaybook(); break;
+  }
+}
+
+function setHeader(eyebrow, title) { crumbEyebrow.textContent = eyebrow; crumbTitle.textContent = title; }
+
+// ============= HOME =============
+function renderHome() {
+  setHeader('Bizdoc Operations', 'Home');
+  const tasks = getMyTasks();
+  const incoming = CLIENTS.filter(c => c.status === 'incoming');
+  const active = CLIENTS.filter(c => c.status === 'active');
+  const overdueFilings = active.flatMap(c => (c.filings || []).filter(f => f.status === 'overdue').map(f => ({ ...f, clientName: c.clientName })));
+
+  content.innerHTML = `
+    <div class="home-hero">
+      <h1 class="hero-title">Welcome to <em>Bizdoc</em>.</h1>
+      <p class="hero-sub">Receive briefs from CSO, file taxes on time, register businesses, deliver clean records back. The client never sees us — CSO is the face. We are the engine.</p>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">My tasks</div>
+        <div class="stat-value ${tasks.length > 5 ? 'danger' : 'warn'}">${tasks.length}</div>
+        <div class="stat-meta">${tasks.filter(t => t.priority === 'red').length} urgent · ${tasks.filter(t => t.priority === 'amber').length} this week</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active clients</div>
+        <div class="stat-value">${active.length}</div>
+        <div class="stat-meta">On retainer</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Overdue filings</div>
+        <div class="stat-value ${overdueFilings.length ? 'danger' : 'success'}">${overdueFilings.length}</div>
+        <div class="stat-meta">${overdueFilings.length ? 'Action required' : 'All current'}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Active penalties</div>
+        <div class="stat-value ${PENALTIES.filter(p=>p.status!=='Resolved').length ? 'warn' : 'success'}">${PENALTIES.filter(p=>p.status!=='Resolved').length}</div>
+        <div class="stat-meta">In resolution</div>
+      </div>
+    </div>
+
+    ${incoming.length ? `
+      <div class="section-title">New from CSO <button class="pill-btn" onclick="openTab('incoming')">View all →</button></div>
+      <div style="margin-bottom:32px;">
+        ${incoming.map(c => `
+          <div class="task-card" onclick="openClientFromCard('${c.id}')">
+            <div class="task-priority amber"></div>
+            <div class="task-meta">
+              <div class="task-title">${c.clientName} — ${c.serviceFromCSO}</div>
+              <div class="task-sub">CSO ref ${c.csoRef} · ${c.contact} · ${c.plan}</div>
+            </div>
+            <div class="task-due">${relativeTime(c.receivedAt)}</div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+
+    <div class="section-title">Today's priorities <button class="pill-btn" onclick="openTab('mytasks')">All tasks →</button></div>
+    ${tasks.slice(0, 5).map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          <div class="task-sub">${escapeHtml(t.sub)}</div>
+        </div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${t.due}</div>
+      </div>
+    `).join('') || '<div class="empty-state"><div class="big">All caught up</div><div>No urgent tasks for today.</div></div>'}
+  `;
+}
+
+window.openClientFromCard = (id) => { currentClientId = id; openTab('client'); };
+
+// ============= MY TASKS =============
+function renderMyTasks() {
+  setHeader('My workspace', 'My tasks');
+  const tasks = getMyTasks();
+  if (!tasks.length) {
+    content.innerHTML = `<div class="empty-state"><div class="big">All caught up 🫡</div><div>Nothing pressing right now. Good time to read the Playbook or check the compliance calendar.</div></div>`;
+    return;
+  }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Auto-generated from incoming briefs, upcoming deadlines, overdue filings, monthly reports due, and active penalties. Sorted by urgency.</p>
+    <div class="section-title">${tasks.length} ${tasks.length === 1 ? 'task' : 'tasks'}</div>
+    ${tasks.map(t => `
+      <div class="task-card" onclick="(${t.action.toString()})()">
+        <div class="task-priority ${t.priority}"></div>
+        <div class="task-meta">
+          <div class="task-title">${escapeHtml(t.title)}</div>
+          <div class="task-sub">${escapeHtml(t.sub)}</div>
+        </div>
+        <div class="task-due ${t.due === 'Overdue' ? 'overdue' : ''}">${t.due}</div>
+      </div>
+    `).join('')}
+  `;
+}
+
+// ============= INCOMING =============
+function renderIncoming() {
+  setHeader('Pipeline', 'Incoming briefs from CSO');
+  const list = CLIENTS.filter(c => c.status === 'incoming');
+  if (!list.length) { content.innerHTML = `<div class="empty-state"><div class="big">No briefs waiting</div><div>CSO has not sent any new clients recently.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Each brief is a client CSO has accepted and assigned to Bizdoc. Read it, accept it, start the work.</p>
+    <div style="display:grid;gap:14px;">
+      ${list.map(c => `
+        <div class="panel-card" style="margin-bottom:0;cursor:pointer;" onclick="openClientFromCard('${c.id}')">
+          <div class="panel-eyebrow">CSO ref · ${c.csoRef} · received ${relativeTime(c.receivedAt)}</div>
+          <div class="panel-title">${escapeHtml(c.clientName)} <span style="font-family:var(--sans);font-size:13px;color:var(--ink-muted);font-weight:400;">${escapeHtml(c.clientNiche)}</span></div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:14px;">
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Service</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(c.serviceFromCSO)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Plan</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(c.plan)}</div></div>
+            <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Start</div><div style="font-size:13.5px;color:var(--ink);">${escapeHtml(c.startDate)}</div></div>
+          </div>
+          <div style="font-size:13px;color:var(--ink-soft);background:var(--accent-pale);padding:11px 14px;border-radius:8px;line-height:1.55;">
+            <strong style="color:var(--accent);">What client needs:</strong> ${escapeHtml(c.autoFilled.whatClientNeeds)}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ============= ACTIVE =============
+function renderActive() {
+  setHeader('Pipeline', 'Active clients');
+  const list = CLIENTS.filter(c => c.status === 'active');
+  if (!list.length) { content.innerHTML = `<div class="empty-state"><div class="big">No active clients</div><div>Accept a brief to start.</div></div>`; return; }
+  content.innerHTML = `
+    <div class="section-title">${list.length} ${list.length === 1 ? 'client' : 'clients'} on retainer</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Service</th><th>Filings status</th><th>Next due</th></tr></thead>
+        <tbody>
+          ${list.map(c => {
+            const filings = c.filings || [];
+            const filed = filings.filter(f => f.status === 'filed').length;
+            const overdue = filings.filter(f => f.status === 'overdue').length;
+            const next = filings.filter(f => f.status !== 'filed').sort((a,b) => new Date(a.dueDate)-new Date(b.dueDate))[0];
+            return `
+              <tr class="clickable" onclick="openClientFromCard('${c.id}')">
+                <td><div class="cell-name">${escapeHtml(c.clientName)}</div><div class="cell-sub">${escapeHtml(c.clientNiche)}</div></td>
+                <td><span class="tag tag-accent">${escapeHtml(c.serviceFromCSO)}</span></td>
+                <td>${filed}/${filings.length} filed${overdue ? ` · <span class="tag tag-coral">${overdue} overdue</span>` : ''}</td>
+                <td class="cell-time">${next ? `${next.type} · ${next.dueDate}` : 'All current'}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ============= COMPLIANCE CALENDAR =============
+function renderCalendar() {
+  setHeader('Tax Management', 'Compliance calendar');
+  const all = CLIENTS.filter(c => c.filings).flatMap(c => c.filings.map(f => ({ ...f, clientName: c.clientName, clientId: c.id })));
+  all.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  if (!all.length) { content.innerHTML = `<div class="empty-state"><div class="big">No filings yet</div><div>When you accept a compliance management client, their calendar populates here.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every tax obligation across every active client. Sorted by due date — soonest first.</p>
+    <div class="table-wrap">
+      <table class="calendar-table">
+        <thead><tr><th>Client</th><th>Tax type</th><th>Period</th><th>Due date</th><th>Status</th><th>Amount</th></tr></thead>
+        <tbody>
+          ${all.map(f => `
+            <tr class="clickable" onclick="openClientFromCard('${f.clientId}')">
+              <td class="cell-name">${escapeHtml(f.clientName)}</td>
+              <td><span class="tag tag-accent">${f.type}</span></td>
+              <td>${f.period}</td>
+              <td class="cell-time">${f.dueDate}</td>
+              <td><span class="filing-status ${f.status}">${f.status === 'filed' ? '✓ Filed' : f.status === 'overdue' ? '⚠ Overdue' : f.status === 'due-soon' ? 'Due soon' : 'Pending'}</span></td>
+              <td>${escapeHtml(f.amount || '—')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ============= FILINGS =============
+function renderFilings() {
+  setHeader('Tax Management', 'Filings tracker');
+  const all = CLIENTS.filter(c => c.filings).flatMap(c => c.filings.map(f => ({ ...f, clientName: c.clientName, clientId: c.id })));
+  all.sort((a, b) => new Date(b.dueDate) - new Date(a.dueDate));
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Complete record of every filing — past, present, future. Search by client to drill into one record.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Filing</th><th>Client</th><th>Period</th><th>Filed</th><th>Status</th><th>Amount</th><th>Receipt</th></tr></thead>
+        <tbody>
+          ${all.map(f => `
+            <tr class="clickable" onclick="openClientFromCard('${f.clientId}')">
+              <td><span class="tag tag-accent">${f.type}</span></td>
+              <td class="cell-name">${escapeHtml(f.clientName)}</td>
+              <td>${f.period}</td>
+              <td class="cell-time">${f.filedDate || '—'}</td>
+              <td><span class="filing-status ${f.status}">${f.status === 'filed' ? '✓' : f.status === 'overdue' ? '⚠' : '○'} ${f.status}</span></td>
+              <td>${escapeHtml(f.amount || '—')}</td>
+              <td>${f.receipt ? '<span class="tag tag-green">📎 PDF</span>' : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ============= PENALTIES =============
+function renderPenalties() {
+  setHeader('Tax Management', 'Penalty monitor');
+  if (!PENALTIES.length) { content.innerHTML = `<div class="empty-state"><div class="big">No penalties 🛡</div><div>All clients are clean.</div></div>`; return; }
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Active penalty resolutions. Read the Playbook entry "How to handle a client penalty" for the resolution process.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Type</th><th>Amount</th><th>Issued</th><th>Status</th><th>Risk</th></tr></thead>
+        <tbody>
+          ${PENALTIES.map(p => `
+            <tr class="clickable" onclick="openClientFromCard('${p.clientId}')">
+              <td class="cell-name">${escapeHtml(p.clientName)}</td>
+              <td>${escapeHtml(p.type)}</td>
+              <td>${escapeHtml(p.amount)}</td>
+              <td class="cell-time">${p.issuedDate}</td>
+              <td><span class="tag ${p.status === 'Resolved' ? 'tag-green' : 'tag-amber'}">${p.status}</span></td>
+              <td><span class="tag ${p.risk === 'High' ? 'tag-coral' : p.risk === 'Medium' ? 'tag-amber' : 'tag-grey'}">${p.risk}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ============= READY TO SHIP =============
+function renderShip() {
+  setHeader('Pipeline', 'Ready to ship to CSO');
+  content.innerHTML = `<div class="empty-state"><div class="big">Nothing queued</div><div>When a filing is complete or a monthly report is ready, mark it from the client view to send to CSO.</div></div>`;
+}
+
+// ============= PLAYBOOK =============
+function renderPlaybook() {
+  setHeader('Knowledge', 'Playbook');
+  content.innerHTML = `
+    <p style="font-size:14.5px;color:var(--ink-soft);max-width:600px;margin-bottom:22px;line-height:1.55;">Every guide your team needs. Scan the TL;DR or read deep. New hires get productive on day 1 with this.</p>
+    <input type="search" class="playbook-search" id="pb-search" placeholder="Search guides...">
+    <div id="pb-list">${renderGuides('')}</div>
+  `;
+  document.getElementById('pb-search').addEventListener('input', e => {
+    document.getElementById('pb-list').innerHTML = renderGuides(e.target.value);
+    bindGuideToggles();
+  });
+  bindGuideToggles();
+}
+function renderGuides(filter) {
+  const q = filter.toLowerCase().trim();
+  const list = q ? GUIDES.filter(g => (g.name + ' ' + g.tldr + ' ' + g.tag).toLowerCase().includes(q)) : GUIDES;
+  if (!list.length) return '<div class="empty-state">No guides match "' + escapeHtml(q) + '"</div>';
+  return list.map(g => `
+    <div class="guide-card" data-id="${g.id}">
+      <button class="guide-head" onclick="toggleGuide('${g.id}')">
+        <div class="guide-meta">
+          <span class="guide-tag ${g.tagColor}">${g.tag}</span>
+          <div class="guide-name">${escapeHtml(g.name)}</div>
+          <div class="guide-tldr">${escapeHtml(g.tldr)}</div>
+        </div>
+        <div class="guide-chev"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></div>
+      </button>
+      <div class="guide-body">
+        ${Object.entries(g.sections).map(([label, content]) => `
+          <div class="guide-section">
+            <div class="guide-section-label">${label}</div>
+            ${Array.isArray(content)
+              ? `<ul class="guide-list">${content.map(item => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
+              : `<div class="guide-text">${escapeHtml(content)}</div>`}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+function bindGuideToggles() {}
+window.toggleGuide = (id) => {
+  document.querySelectorAll('.guide-card').forEach(c => {
+    if (c.dataset.id === id) c.classList.toggle('open');
+    else c.classList.remove('open');
+  });
+};
+
+// ============= CLIENT WORKSPACE =============
+function renderClient() {
+  const c = CLIENTS.find(x => x.id === currentClientId);
+  if (!c) { currentClientId = null; openTab('home'); return; }
+  setHeader('Active client', c.clientName);
+  headerActions.innerHTML = `<button class="pill-btn" onclick="exitClient()">← Back</button>`;
+
+  const isIncoming = c.status === 'incoming';
+
+  // Special view: service picker (shown when accepting a brief)
+  if (currentSubtab === 'pick-service') {
+    content.innerHTML = renderServicePicker(c);
+    return;
+  }
+
+  const tabs = isIncoming
+    ? [{ id: 'overview', label: 'Brief from CSO' }]
+    : [
+        { id: 'overview', label: 'Overview' },
+        { id: 'docs-needed', label: 'Documents needed' },
+        { id: 'filings', label: 'Filings' },
+        { id: 'reports', label: 'Reports' },
+        { id: 'docs', label: 'Document vault' }
+      ];
+
+  // Use the picked service's checklist if active; fallback for incoming
+  let checklist = null;
+  if (!isIncoming && c.activeChecklist) {
+    checklist = { name: c.servicePicked + ' Checklist', items: c.activeChecklist };
+  }
+
+  let body = '';
+  if (currentSubtab === 'overview' || isIncoming) body = renderClientOverview(c, isIncoming);
+  else if (currentSubtab === 'docs-needed') body = renderDocsNeeded(c);
+  else if (currentSubtab === 'filings') body = renderClientFilings(c);
+  else if (currentSubtab === 'reports') body = renderClientReports(c);
+  else if (currentSubtab === 'docs') body = renderClientDocs(c);
+
+  content.innerHTML = `
+    <div class="client-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+          <span class="client-name">${escapeHtml(c.clientName)}</span>
+          ${c.servicePicked ? `<span class="tag tag-accent">${escapeHtml(c.servicePicked)}</span>` : `<span class="tag tag-amber">${escapeHtml(c.serviceFromCSO)}</span>`}
+          ${isIncoming ? '<span class="tag tag-amber">Incoming</span>' : '<span class="tag tag-green">Active</span>'}
+        </div>
+        <div class="client-meta">
+          <span><strong>Niche:</strong> ${escapeHtml(c.clientNiche)}</span>
+          <span><strong>CSO ref:</strong> ${c.csoRef}</span>
+          ${c.contact ? `<span><strong>Contact:</strong> ${escapeHtml(c.contact)}</span>` : ''}
+          ${c.serviceFee ? `<span><strong>Fee:</strong> ${c.serviceFee}</span>` : ''}
+          ${c.serviceTimeline ? `<span><strong>Timeline:</strong> ${c.serviceTimeline}</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isIncoming ? `<button class="btn btn-primary" onclick="acceptBrief('${c.id}')">Pick service & accept →</button>` :
+          `<button class="btn" onclick="changeService('${c.id}')">Change service</button>
+           <button class="btn btn-primary">Send to CSO ↗</button>`}
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      ${tabs.map(t => `<button class="tab-btn ${t.id === currentSubtab ? 'active' : ''}" data-subtab="${t.id}">${t.label}</button>`).join('')}
+    </div>
+
+    <div class="work-checklist-grid">
+      <div class="work-area">${body}</div>
+      ${checklist ? `<div class="checklist-side">${renderChecklistPanel(checklist)}</div>` : ''}
+    </div>
+  `;
+
+  content.querySelectorAll('[data-subtab]').forEach(el => el.addEventListener('click', () => { currentSubtab = el.dataset.subtab; renderClient(); }));
+  content.querySelectorAll('.checklist-item').forEach(el => el.addEventListener('click', () => {
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!c._checklistDone) c._checklistDone = {};
+    if (!c._checklistDone[checklist.name]) c._checklistDone[checklist.name] = {};
+    c._checklistDone[checklist.name][idx] = !c._checklistDone[checklist.name][idx];
+    renderClient();
+  }));
+  content.querySelectorAll('[data-doc-idx]').forEach(el => el.addEventListener('click', () => {
+    const idx = parseInt(el.dataset.docIdx, 10);
+    if (!c._docsReceived) c._docsReceived = {};
+    c._docsReceived[idx] = !c._docsReceived[idx];
+    renderClient();
+  }));
+}
+
+function renderServicePicker(c) {
+  const grouped = {};
+  SERVICE_CATEGORIES.forEach(cat => {
+    grouped[cat] = Object.entries(SERVICES).filter(([k, s]) => s.category === cat);
+  });
+
+  // Try to suggest a likely service based on what CSO sent
+  const suggestion = c.serviceFromCSO ? c.serviceFromCSO.toLowerCase() : '';
+  let suggestedKey = null;
+  if (suggestion.includes('compliance')) suggestedKey = 'compliance_mgmt';
+  else if (suggestion.includes('cac')) suggestedKey = 'cac_ltd';
+  else if (suggestion.includes('tin')) suggestedKey = 'tin';
+  else if (suggestion.includes('tcc')) suggestedKey = 'tcc';
+  else if (suggestion.includes('plan')) suggestedKey = 'business_plan';
+  else if (suggestion.includes('trademark')) suggestedKey = 'trademark';
+
+  return `
+    <div class="client-header">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap;">
+          <span class="client-name">${escapeHtml(c.clientName)}</span>
+          <span class="tag tag-amber">Picking service</span>
+        </div>
+        <div class="client-meta"><span><strong>CSO said:</strong> ${escapeHtml(c.serviceFromCSO)}</span></div>
+      </div>
+      <button class="pill-btn" onclick="(currentSubtab='overview',renderClient())">← Back to brief</button>
+    </div>
+
+    <div class="panel-card" style="background:var(--accent-pale);border-color:var(--accent);">
+      <div class="panel-eyebrow">Pick the exact service</div>
+      <div class="panel-title">What does ${escapeHtml(c.clientName)} actually need?</div>
+      <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;">CSO sent <strong>"${escapeHtml(c.serviceFromCSO)}"</strong> as a hint. Pick the precise service from the catalog below — the right checklist, document requirements, fee, and timeline will load automatically.</p>
+      ${suggestedKey ? `<div style="margin-top:12px;font-size:13px;color:var(--accent);">💡 Suggested: <strong>${escapeHtml(SERVICES[suggestedKey].name)}</strong></div>` : ''}
+    </div>
+
+    ${SERVICE_CATEGORIES.map(cat => `
+      <div style="margin-bottom:24px;">
+        <div class="section-title">${cat}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;">
+          ${grouped[cat].map(([key, svc]) => `
+            <div class="panel-card" style="margin-bottom:0;cursor:pointer;${suggestedKey === key ? 'border-color:var(--accent);background:var(--accent-pale);' : ''}" onclick="confirmService('${c.id}', '${key}')">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
+                <div style="font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:-0.01em;line-height:1.25;">${escapeHtml(svc.name)}</div>
+                ${suggestedKey === key ? '<span class="tag tag-green">Suggested</span>' : ''}
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--ink-muted);margin-bottom:8px;">
+                <span><strong style="color:var(--ink-soft);">Fee:</strong> ${escapeHtml(svc.fee)}</span>
+                <span><strong style="color:var(--ink-soft);">Timeline:</strong> ${escapeHtml(svc.timeline)}</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--ink-muted);line-height:1.4;">${svc.checklist.length} workflow steps · ${svc.requiredDocs.length} documents needed</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+}
+
+function renderDocsNeeded(c) {
+  const docs = c.requiredDocs || [];
+  if (!docs.length) return '<div class="empty-state"><div class="big">No service picked</div><div>Pick a service to see required documents.</div></div>';
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">For ${escapeHtml(c.servicePicked)}</div>
+      <div class="panel-title">Documents required from client</div>
+      <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.55;margin-bottom:14px;">Send this list to CSO if any documents are still missing. Tick each one as it arrives.</p>
+      ${docs.map((doc, i) => `
+        <div class="checklist-item ${(c._docsReceived && c._docsReceived[i]) ? 'done' : ''}" data-doc-idx="${i}">
+          <div class="checklist-check"></div>
+          <div class="checklist-text">${escapeHtml(doc)}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderChecklistPanel(checklist) {
+  const c = CLIENTS.find(x => x.id === currentClientId);
+  const done = (c._checklistDone && c._checklistDone[checklist.name]) || {};
+  const completedCount = checklist.items.filter((_, i) => done[i]).length;
+  const pct = Math.round((completedCount / checklist.items.length) * 100);
+  return `
+    <div class="checklist-panel">
+      <div class="checklist-title">${escapeHtml(checklist.name)}</div>
+      <div class="checklist-meta">${completedCount} of ${checklist.items.length} steps · ${pct}% complete</div>
+      <div class="checklist-progress"><div class="checklist-progress-fill" style="width:${pct}%;"></div></div>
+      ${checklist.items.map((item, i) => `
+        <div class="checklist-item ${done[i] ? 'done' : ''}" data-idx="${i}">
+          <div class="checklist-check"></div>
+          <div>
+            <div class="checklist-text">${escapeHtml(item.text)}</div>
+            ${item.guide ? `<a class="checklist-guide-link" href="javascript:void(0)" onclick="event.stopPropagation();openTab('playbook');">📖 Read guide</a>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderClientOverview(c, isIncoming) {
+  if (isIncoming) {
+    return `
+      <div class="panel-card">
+        <div class="panel-eyebrow">From CSO</div>
+        <div class="panel-title">Brief details</div>
+        <dl class="field-grid">
+          <dt>What client needs</dt><dd>${escapeHtml(c.autoFilled.whatClientNeeds)}</dd>
+          <dt>Concerns</dt><dd>${escapeHtml(c.autoFilled.concerns || '—')}</dd>
+          <dt>Documents provided</dt><dd>${escapeHtml(c.autoFilled.docsProvided || '—')}</dd>
+          <dt>Plan</dt><dd>${escapeHtml(c.plan)}</dd>
+          <dt>Start date</dt><dd>${escapeHtml(c.startDate)}</dd>
+          <dt>Email</dt><dd>${escapeHtml(c.email || '—')}</dd>
+          <dt>Phone</dt><dd>${escapeHtml(c.phone || '—')}</dd>
+        </dl>
+      </div>
+      <div class="panel-card">
+        <div class="panel-eyebrow">Next step</div>
+        <div class="panel-title">Accept this brief</div>
+        <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;">When you accept, this client moves to Active and the appropriate workflow checklist appears. You can start filing/registering immediately.</p>
+        <button class="btn btn-primary" style="margin-top:12px;" onclick="acceptBrief('${c.id}')">Accept brief →</button>
+      </div>
+    `;
+  }
+  const filings = c.filings || [];
+  const filed = filings.filter(f => f.status === 'filed').length;
+  const overdue = filings.filter(f => f.status === 'overdue').length;
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">At a glance</div>
+      <div class="panel-title">Client status</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
+        <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Filings status</div><div style="font-size:18px;font-weight:500;color:${overdue?'var(--danger)':'var(--success)'};">${filed}/${filings.length}${overdue ? ` (${overdue} overdue)` : ''}</div></div>
+        <div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">VAT registered</div><div style="font-size:18px;font-weight:500;">${c.vatRegistered ? '✓ Yes' : 'No'}</div></div>
+        ${c.monthlyReport ? `<div><div style="font-size:11px;color:var(--ink-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Last report</div><div style="font-size:14px;color:var(--ink-soft);">${c.monthlyReport.lastSent}</div></div>` : ''}
+      </div>
+    </div>
+    ${c.monthlyReport ? `
+      <div class="panel-card">
+        <div class="panel-eyebrow">Latest monthly report</div>
+        <div class="panel-title">Sent ${c.monthlyReport.lastSent}</div>
+        <p style="font-size:14px;color:var(--ink-soft);line-height:1.55;">${escapeHtml(c.monthlyReport.summary)}</p>
+        <div style="margin-top:14px;font-size:12.5px;color:var(--ink-muted);">Next due: <strong>${c.monthlyReport.nextDue}</strong></div>
+      </div>
+    ` : ''}
+  `;
+}
+
+function renderClientFilings(c) {
+  const filings = c.filings || [];
+  if (!filings.length) return '<div class="empty-state"><div class="big">No filings yet</div></div>';
+  return `
+    <div class="panel-card" style="padding:0;">
+      <table>
+        <thead><tr><th>Type</th><th>Period</th><th>Due</th><th>Filed</th><th>Status</th><th>Amount</th></tr></thead>
+        <tbody>
+          ${filings.map(f => `
+            <tr>
+              <td><span class="tag tag-accent">${f.type}</span></td>
+              <td>${f.period}</td>
+              <td class="cell-time">${f.dueDate}</td>
+              <td class="cell-time">${f.filedDate || '—'}</td>
+              <td><span class="filing-status ${f.status}">${f.status === 'filed' ? '✓ Filed' : f.status === 'overdue' ? '⚠ Overdue' : 'Pending'}</span></td>
+              <td>${escapeHtml(f.amount || '—')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderClientCalendar(c) {
+  return renderClientFilings(c);
+}
+
+function renderClientReports(c) {
+  if (!c.monthlyReport) return '<div class="empty-state"><div class="big">No reports yet</div></div>';
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Monthly report — ${c.monthlyReport.lastSent}</div>
+      <div class="panel-title">${c.clientName} — Monthly compliance summary</div>
+      <p style="font-size:14px;line-height:1.6;color:var(--ink);">${escapeHtml(c.monthlyReport.summary)}</p>
+      <div style="margin-top:18px;display:flex;gap:8px;">
+        <button class="btn btn-primary">Generate next report →</button>
+        <button class="btn">Edit template</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderClientDocs(c) {
+  return `
+    <div class="panel-card">
+      <div class="panel-eyebrow">Document vault</div>
+      <div class="panel-title">Client documents</div>
+      <p style="font-size:13.5px;color:var(--ink-soft);line-height:1.55;">All client compliance documents organized by type and year. Backend storage will be wired to Google Drive.</p>
+      <ul style="margin-top:14px;font-size:13.5px;color:var(--ink-soft);line-height:1.8;">
+        <li>📄 CAC Certificate of Incorporation (2023)</li>
+        <li>📄 MEMART (2023)</li>
+        <li>📄 TIN Certificate</li>
+        <li>📄 VAT Registration Certificate</li>
+        <li>📁 Bank statements — past 12 months</li>
+        <li>📁 Filed returns — VAT, PAYE, CIT (organized by year)</li>
+        <li>📁 FIRS receipts</li>
+      </ul>
+    </div>
+  `;
+}
+
+window.acceptBrief = (id) => {
+  const c = CLIENTS.find(x => x.id === id);
+  if (!c) return;
+  // Open service picker
+  currentClientId = id;
+  currentSubtab = 'pick-service';
+  render();
+};
+
+window.confirmService = (clientId, serviceKey) => {
+  const c = CLIENTS.find(x => x.id === clientId);
+  if (!c) return;
+  const svc = SERVICES[serviceKey];
+  if (!svc) return;
+  c.status = 'active';
+  c.acceptedAt = Date.now();
+  c.serviceKey = serviceKey;
+  c.serviceCategory = svc.category;
+  c.servicePicked = svc.name;
+  c.serviceFee = svc.fee;
+  c.serviceTimeline = svc.timeline;
+  c.requiredDocs = svc.requiredDocs;
+  c.activeChecklist = svc.checklist;
+  if (svc.category === 'Ongoing Retainer') {
+    c.currentMonth = 1;
+    c.filings = c.filings || [];
+    c.monthlyReport = c.monthlyReport || { lastSent: c.startDate, nextDue: addDays(c.startDate, 30), summary: 'Onboarding complete. Awaiting first month of data.' };
+  }
+  alert('Accepted! ' + c.clientName + ' — ' + svc.name + '. Checklist loaded.');
+  updateCounts();
+  currentSubtab = 'overview';
+  render();
+};
+
+window.changeService = (clientId) => {
+  const c = CLIENTS.find(x => x.id === clientId);
+  if (!c) return;
+  currentClientId = clientId;
+  currentSubtab = 'pick-service';
+  render();
+};
+
+window.exitClient = () => { currentClientId = null; openTab('home'); };
+
+// ============= UTILS =============
+function escapeHtml(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]); }
+function relativeTime(ts) { if (!ts) return '—'; const d = Date.now()-ts; if (d<3600000) return Math.round(d/60000)+'m ago'; if (d<86400000) return Math.round(d/3600000)+'h ago'; const days=Math.round(d/86400000); if(days===1)return'yesterday'; if(days<7)return days+'d ago'; return new Date(ts).toLocaleDateString('en-GB',{day:'numeric',month:'short'}); }
+function addDays(dateStr, days) { const d = new Date(dateStr); d.setDate(d.getDate()+days); return d.toISOString().slice(0,10); }
+
+// ─── Live Leads from Apps Script ────────────────────────────────────────
+console.log('[hamzury-workspaces] live leads wired v1');
+const LEADS_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const WORKSPACE_FILTER = 'bizdoc';
+
+function renderLeads() {
+  setHeader('Operations', 'Live Leads');
+  content.innerHTML = `
+    <section data-panel="leads" style="padding:24px;max-width:1200px;margin:0 auto;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+        <div>
+          <h1 style="font-family:var(--serif);font-size:32px;font-weight:400;letter-spacing:-0.02em;margin:0;">
+            Live <em style="color:var(--accent-warm);font-style:italic;">Leads</em>
+          </h1>
+          <p style="color:var(--ink-muted);font-size:14px;margin-top:4px;">
+            Live from the chat command center across hamzury.com / bizdoc / scalar / medialy. Auto-refreshes every 30 seconds.
+          </p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="leads-status" style="font-size:12px;color:var(--ink-muted);">Loading…</span>
+          <button id="leads-refresh" style="padding:8px 14px;background:var(--ink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;">Refresh</button>
+        </div>
+      </div>
+      <div id="leads-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="leads-empty" hidden style="text-align:center;padding:60px 20px;color:var(--ink-muted);">
+        <p style="font-size:15px;margin-bottom:6px;">No leads yet.</p>
+        <p style="font-size:13px;">When visitors complete the chat flow on hamzury.com, leads appear here in real time.</p>
+      </div>
+    </section>
+  `;
+  document.getElementById('leads-refresh')?.addEventListener('click', loadLiveLeads);
+  loadLiveLeads();
+}
+
+async function loadLiveLeads() {
+  const status = document.getElementById('leads-status');
+  const list = document.getElementById('leads-list');
+  const empty = document.getElementById('leads-empty');
+  const badge = document.getElementById('leads-badge');
+
+  try {
+    if (status) status.textContent = 'Loading…';
+    const res = await fetch(LEADS_WEBHOOK, { method: 'GET' });
+    const data = await res.json();
+    const all = [...(data.diagnostics || []), ...(data.requirements || [])];
+
+    let rows = all;
+    if (WORKSPACE_FILTER && WORKSPACE_FILTER !== 'all') {
+      rows = all.filter(r => {
+        const form = String(r.Form || '').toLowerCase();
+        const title = String(r['Form Title'] || '').toLowerCase();
+        return form.includes(WORKSPACE_FILTER) || title.includes(WORKSPACE_FILTER);
+      });
+    }
+
+    rows.sort((a, b) => new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime());
+
+    if (badge) {
+      if (rows.length === 0) {
+        badge.style.display = 'none';
+      } else {
+        badge.textContent = rows.length;
+        badge.style.display = 'inline-block';
+      }
+    }
+
+    if (!list) return;
+    list.innerHTML = '';
+    if (rows.length === 0) {
+      if (empty) empty.hidden = false;
+    } else {
+      if (empty) empty.hidden = true;
+      for (const r of rows) {
+        const card = document.createElement('div');
+        card.style.cssText = 'background:var(--paper,#fff);border:0.5px solid var(--line,#E8E8E4);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;';
+        const dt = new Date(r['Received At']);
+        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+        card.innerHTML = `
+          <div style="flex:1;min-width:200px;">
+            <div style="font-family:var(--serif,Georgia);font-size:18px;font-weight:500;color:var(--ink,#0A0A0A);">
+              ${escapeLeadHtml(r['Client Name'] || '—')}
+              ${r.Business ? `<span style="color:var(--ink-muted,#86868B);font-size:14px;font-style:italic;"> · ${escapeLeadHtml(r.Business)}</span>` : ''}
+            </div>
+            <div style="font-size:12px;color:var(--ink-muted,#86868B);margin-top:6px;font-family:var(--mono,monospace);">
+              ${escapeLeadHtml(r.Reference || '')} · ${escapeLeadHtml(r['Form Title'] || r.Form || 'submission')}
+            </div>
+            <div style="font-size:13px;color:var(--ink-soft,#3C3C3E);margin-top:8px;display:flex;gap:14px;flex-wrap:wrap;">
+              ${r.Email ? `<span>📧 ${escapeLeadHtml(r.Email)}</span>` : ''}
+              ${r.Phone ? `<span>📞 ${escapeLeadHtml(String(r.Phone))}</span>` : ''}
+            </div>
+          </div>
+          <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="background:rgba(184,115,31,0.1);color:var(--accent-warm,#B8731F);padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">
+              ${escapeLeadHtml(r.Status || 'New')}
+            </span>
+            <span style="font-size:11px;color:var(--ink-muted,#86868B);">${dtStr}</span>
+          </div>
+        `;
+        list.appendChild(card);
+      }
+    }
+
+    if (status) status.textContent = `${rows.length} lead${rows.length===1?'':'s'} · ${new Date().toLocaleTimeString('en-NG',{hour:'2-digit',minute:'2-digit'})}`;
+  } catch (e) {
+    console.warn('[live-leads] fetch failed', e);
+    if (status) status.textContent = 'Connection error';
+  }
+}
+
+function escapeLeadHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Background-refresh badge counts every 30s
+loadLiveLeads();
+setInterval(loadLiveLeads, 30000);
+
+updateCounts();
+render();
+</script>
+
+</body>
+</html>
