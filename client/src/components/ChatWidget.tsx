@@ -218,6 +218,275 @@ const DEPT_LABEL: Record<Department2, string> = {
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
+   GROUPED MENU TREES (Phase 1 — structural restructure of v14 flat lists)
+   --------------------------------------------------------------------------
+   Each company exposes a hierarchical menu instead of a flat 6/24 list.
+   Visitors drill down through groups to a leaf (service / diagnostic /
+   callback / placeholder). The chat keeps a `menuPath` stack so "← Back"
+   simply pops one level.
+
+   Where a leaf maps to an existing requirement-forms.ts service id, we
+   use that id directly so the post-payment intake form continues to fire.
+   New leaves with no form yet use a `phase2_<slug>` id and carry a
+   `// TODO Phase 2: build requirement form` marker for the next pass.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+type MenuNode =
+  | { kind: "group"; label: string; children: MenuNode[] }
+  | {
+      kind: "service";
+      label: string;
+      serviceId: string;
+      subtitle?: string;
+      flagship?: boolean;
+    }
+  | { kind: "diagnostic"; label: string; route: string }
+  | { kind: "callback"; label: string }
+  | { kind: "placeholder"; label: string };
+
+/* ── BIZDOC tree ────────────────────────────────────────────────────────── */
+const BIZDOC_TREE: MenuNode[] = [
+  {
+    kind: "group",
+    label: "1. Registrations & Licences",
+    children: [
+      { kind: "service", label: "CAC Business Registration", serviceId: "cac" },
+      { kind: "service", label: "TIN — Tax Identification Number", serviceId: "tin" },
+      { kind: "service", label: "Business Licences", serviceId: "licences" },
+      // TODO Phase 2: build requirement form for SCUML Certificate
+      { kind: "service", label: "SCUML Certificate", serviceId: "phase2_scuml" },
+      // TODO Phase 2: build requirement form for NAFDAC Registration
+      { kind: "service", label: "NAFDAC Registration", serviceId: "phase2_nafdac" },
+      // TODO Phase 2: build requirement form for other industry licences
+      { kind: "service", label: "Other industry licence", serviceId: "phase2_other_licence" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "2. Ongoing Management & Compliance",
+    children: [
+      {
+        kind: "service",
+        label: "Compliance Management — annual retainer ★",
+        serviceId: "compliance",
+        flagship: true,
+      },
+      // TODO Phase 2: build requirement form for monthly tax filings
+      { kind: "service", label: "Tax Management — monthly filings", serviceId: "phase2_tax_management" },
+      // TODO Phase 2: build requirement form for annual returns & filings
+      { kind: "service", label: "Annual Returns & Filings", serviceId: "phase2_annual_returns" },
+      // TODO Phase 2: build requirement form for ongoing regulatory support
+      { kind: "service", label: "Ongoing Regulatory Support", serviceId: "phase2_regulatory_support" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "3. Legal Documents & Templates",
+    children: [
+      // TODO Phase 2: build requirement form for contract templates
+      { kind: "service", label: "Contract templates (employment, partnership, NDA, etc.)", serviceId: "phase2_contract_templates" },
+      { kind: "service", label: "Trademark Registration", serviceId: "trademark" },
+      // TODO Phase 2: build requirement form for custom legal drafting
+      { kind: "service", label: "Custom legal document drafting", serviceId: "phase2_legal_drafting" },
+      // TODO Phase 2: build requirement form for document review
+      { kind: "service", label: "Document review", serviceId: "phase2_document_review" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "4. Specialized Business Setup",
+    children: [
+      // Phase 2 will replace this with the 25-business checklist menu.
+      { kind: "placeholder", label: "Coming soon — 25 specialized business types" },
+    ],
+  },
+  {
+    kind: "diagnostic",
+    label: "5. I'm not sure — give me a free Business Diagnostic",
+    route: "/diagnose-business",
+  },
+  { kind: "callback", label: "Request a call" },
+];
+
+/* ── SCALAR tree ────────────────────────────────────────────────────────── */
+const SCALAR_TREE: MenuNode[] = [
+  {
+    kind: "group",
+    label: "1. Build something new",
+    children: [
+      { kind: "service", label: "Website Design", serviceId: "website" },
+      // TODO Phase 2: build requirement form for web app / SaaS
+      { kind: "service", label: "Web Application / SaaS", serviceId: "phase2_web_app" },
+      // TODO Phase 2: build requirement form for mobile app
+      { kind: "service", label: "Mobile App (iOS/Android)", serviceId: "phase2_mobile_app" },
+      { kind: "service", label: "E-commerce Platform", serviceId: "ecommerce" },
+      { kind: "service", label: "Custom CRM", serviceId: "crm" },
+      // TODO Phase 2: build requirement form for internal business tools
+      { kind: "service", label: "Internal Business Tools", serviceId: "phase2_internal_tools" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "2. Maintain existing systems",
+    children: [
+      {
+        kind: "service",
+        label: "Software Management retainer ★",
+        serviceId: "software_mgmt",
+        flagship: true,
+      },
+      // TODO Phase 2: build requirement form for bug fixes & improvements
+      { kind: "service", label: "Bug fixes & improvements", serviceId: "phase2_bug_fixes" },
+      // TODO Phase 2: build requirement form for performance optimization
+      { kind: "service", label: "Performance optimization", serviceId: "phase2_perf_opt" },
+      // TODO Phase 2: build requirement form for security audit & hardening
+      { kind: "service", label: "Security audit & hardening", serviceId: "phase2_security_audit" },
+      // TODO Phase 2: build requirement form for migration / upgrade
+      { kind: "service", label: "Migration / upgrade", serviceId: "phase2_migration" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "3. Integrations & automations",
+    children: [
+      // TODO Phase 2: build requirement form for Make/Zapier automations
+      { kind: "service", label: "Workflow Automation (Make / Zapier)", serviceId: "phase2_workflow_automation" },
+      // TODO Phase 2: build requirement form for API integrations
+      { kind: "service", label: "API integrations between systems", serviceId: "phase2_api_integrations" },
+      // TODO Phase 2: build requirement form for payment integrations
+      { kind: "service", label: "Payment integrations", serviceId: "phase2_payment_integrations" },
+      // TODO Phase 2: build requirement form for WhatsApp Business API integration
+      { kind: "service", label: "WhatsApp Business API integration", serviceId: "phase2_whatsapp_api" },
+      // Reuse existing automation requirement form for "custom integrations" catch-all.
+      { kind: "service", label: "Custom integrations", serviceId: "automation" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "4. AI & advanced systems",
+    children: [
+      // TODO Phase 2: build requirement form for AI chatbot
+      { kind: "service", label: "AI chatbot / customer service", serviceId: "phase2_ai_chatbot" },
+      // TODO Phase 2: build requirement form for AI content generation
+      { kind: "service", label: "AI content generation system", serviceId: "phase2_ai_content_gen" },
+      // TODO Phase 2: build requirement form for custom AI on customer data
+      { kind: "service", label: "Custom AI for your data", serviceId: "phase2_custom_ai" },
+      // Reuse existing ai_integration form for "AI integrated into existing systems".
+      { kind: "service", label: "AI integrated into existing systems", serviceId: "ai_integration" },
+      // TODO Phase 2: build requirement form for AI consultation & strategy
+      { kind: "service", label: "AI consultation & strategy", serviceId: "phase2_ai_consult" },
+    ],
+  },
+  {
+    kind: "diagnostic",
+    label: "5. I'm not sure — give me a free Software Audit",
+    route: "/diagnose-software",
+  },
+  { kind: "callback", label: "Request a call" },
+];
+
+/* ── MEDIALY tree ───────────────────────────────────────────────────────── */
+const MEDIALY_TREE: MenuNode[] = [
+  {
+    kind: "group",
+    label: "1. Brand & Identity",
+    children: [
+      // TODO Phase 2: split logo-only requirement form out of "brand"
+      { kind: "service", label: "Logo Design", serviceId: "phase2_logo_design" },
+      { kind: "service", label: "Full Brand Identity package", serviceId: "brand" },
+      // TODO Phase 2: build requirement form for rebrand projects
+      { kind: "service", label: "Rebrand existing business", serviceId: "phase2_rebrand" },
+      // TODO Phase 2: build requirement form for brand guidelines doc
+      { kind: "service", label: "Brand guidelines document", serviceId: "phase2_brand_guidelines" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "2. Ongoing Content & Social Media",
+    children: [
+      {
+        kind: "service",
+        label: "Social Media Management retainer ★",
+        serviceId: "media_mgmt",
+        flagship: true,
+      },
+      // Reuse existing social form for IG+TikTok specifically.
+      { kind: "service", label: "Instagram & TikTok Management", serviceId: "social" },
+      // TODO Phase 2: build requirement form for LinkedIn founder content
+      { kind: "service", label: "LinkedIn Content for Founders", serviceId: "phase2_linkedin_founder" },
+      // TODO Phase 2: build requirement form for WhatsApp Business marketing
+      { kind: "service", label: "WhatsApp Business Marketing", serviceId: "phase2_whatsapp_marketing" },
+      // TODO Phase 2: build requirement form for multi-platform management
+      { kind: "service", label: "Multi-platform Management", serviceId: "phase2_multi_platform" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "3. Production (Video, Podcast, Photo)",
+    children: [
+      { kind: "service", label: "Video Production (one-off shoot)", serviceId: "video" },
+      { kind: "service", label: "Podcast Production", serviceId: "podcast" },
+      // TODO Phase 2: build requirement form for photography sessions
+      { kind: "service", label: "Photography Sessions", serviceId: "phase2_photography" },
+      // TODO Phase 2: build requirement form for reels / short-form series
+      { kind: "service", label: "Reels / Short-form Video Series", serviceId: "phase2_reels_series" },
+      // TODO Phase 2: build requirement form for event coverage
+      { kind: "service", label: "Event Coverage", serviceId: "phase2_event_coverage" },
+    ],
+  },
+  {
+    kind: "group",
+    label: "4. Strategy & Audits",
+    children: [
+      { kind: "service", label: "Content Strategy & Calendar", serviceId: "content_strategy" },
+      // TODO Phase 2: build requirement form for social audits
+      { kind: "service", label: "Social Media Audit", serviceId: "phase2_social_audit" },
+      // TODO Phase 2: build requirement form for brand positioning workshop
+      { kind: "service", label: "Brand Positioning Workshop", serviceId: "phase2_brand_positioning" },
+      // TODO Phase 2: build requirement form for influencer strategy
+      { kind: "service", label: "Influencer Strategy", serviceId: "phase2_influencer_strategy" },
+    ],
+  },
+  {
+    kind: "diagnostic",
+    label: "5. I'm not sure — give me a free Brand Diagnostic",
+    route: "/diagnose-media",
+  },
+  { kind: "callback", label: "Request a call" },
+];
+
+/* ── HUB / Skills tree (flat — already clean from requirement-forms.ts) ─ */
+const HUB_TREE: MenuNode[] = [
+  { kind: "service", label: "Tech Skills Training", serviceId: "tech_training" },
+  { kind: "service", label: "AI for Business", serviceId: "ai_business" },
+  { kind: "service", label: "Entrepreneurship Program", serviceId: "entrepreneurship" },
+  { kind: "service", label: "Team Training Workshop", serviceId: "team_training" },
+  { kind: "service", label: "Certification Programs", serviceId: "certification" },
+  { kind: "service", label: "Skills Management", serviceId: "skills_mgmt" },
+];
+
+/* ── HAMZURY tree (parent — reuses division trees instead of duplicating) ─ */
+const HAMZURY_TREE: MenuNode[] = [
+  { kind: "group", label: "Business · Compliance & Growth", children: BIZDOC_TREE },
+  { kind: "group", label: "Software · Digital Systems", children: SCALAR_TREE },
+  { kind: "group", label: "Media · Content & Presence", children: MEDIALY_TREE },
+  { kind: "group", label: "Skills · Training & Development", children: HUB_TREE },
+  {
+    kind: "diagnostic",
+    label: "Clarity Session · Full Business Checkup",
+    route: "/clarity-session",
+  },
+  { kind: "callback", label: "Request a call" },
+];
+
+const COMPANY_TREE: Record<CompanyKey, MenuNode[]> = {
+  hamzury: HAMZURY_TREE,
+  bizdoc:  BIZDOC_TREE,
+  scalar:  SCALAR_TREE,
+  medialy: MEDIALY_TREE,
+};
+
+/* ══════════════════════════════════════════════════════════════════════════
    FAQ CONTENT (preserved from v11 — surfaced as quick-replies)
    ══════════════════════════════════════════════════════════════════════════ */
 type FAQ = { q: string; a: string };
@@ -381,6 +650,14 @@ function WhatsAppChatPanel({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const initRef = useRef(false);
 
+  /* ── Menu navigation stack (Phase 1 grouped menus) ──────────────────────
+   *  Each entry is the GROUP NODE the visitor drilled into, in order. The
+   *  current visible level is the children of the last entry (or the
+   *  company root tree when the stack is empty). Tapping a group pushes;
+   *  tapping "← Back" pops.
+   * --------------------------------------------------------------------- */
+  const menuPathRef = useRef<MenuNode[]>([]);
+
   /* ── Keep the thread scrolled to the bottom on every change ────────── */
   useEffect(() => {
     const el = scrollRef.current;
@@ -442,21 +719,42 @@ function WhatsAppChatPanel({
     );
   }, [addBotMessage]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onPickServicesIntro = () => {
-    addUserMessage("Browse our services");
-    const visibleServices: Service[] =
-      company.services === "all"
-        ? SERVICE_CATALOG
-        : SERVICE_CATALOG.filter((s) => (company.services as RequirementId[]).includes(s.id));
+  /* ── Menu helpers (Phase 1) ─────────────────────────────────────────── */
 
-    const replies: QuickReply[] = visibleServices.map((s) => ({
-      label: s.name,
-      onClick: () => onPickService(s),
+  /** Compute the children list at the current menu path. */
+  const currentMenuLevel = (): MenuNode[] => {
+    const stack = menuPathRef.current;
+    if (stack.length === 0) return COMPANY_TREE[companyKey];
+    const top = stack[stack.length - 1];
+    return top.kind === "group" ? top.children : [];
+  };
+
+  /** Bot-message prompt text for the current level. */
+  const promptForLevel = (): string => {
+    const stack = menuPathRef.current;
+    if (stack.length === 0) {
+      return company.services === "all"
+        ? "Welcome — pick where to start:"
+        : `Welcome to ${company.name}. What do you need today?`;
+    }
+    const top = stack[stack.length - 1];
+    return top.kind === "group" ? `${top.label} — pick one:` : "Pick one:";
+  };
+
+  /** Render the current menu level as quick replies + Back. */
+  const renderCurrentLevel = () => {
+    const level = currentMenuLevel();
+    const replies: QuickReply[] = level.map((node) => ({
+      label: node.label,
+      onClick: () => onPickNode(node),
     }));
 
-    // On division sites, append cross-sell hand-off rows so visitors can
-    // jump to the sister company without ever leaving the chat.
-    if (company.crossSellOffer && company.sisterCompanies) {
+    // Cross-sell appears once at the ROOT of a division-site tree only.
+    if (
+      menuPathRef.current.length === 0 &&
+      company.crossSellOffer &&
+      company.sisterCompanies
+    ) {
       for (const [dept, target] of Object.entries(company.sisterCompanies) as [
         Department2,
         CompanyKey
@@ -467,26 +765,106 @@ function WhatsAppChatPanel({
         });
       }
     }
-    replies.push({ label: "Back", onClick: () => showMainMenu() });
 
-    addBotMessage(
-      company.services === "all"
-        ? "Here's what we do across all four divisions:"
-        : `Here's what ${company.name} does:`,
-      replies
-    );
+    if (menuPathRef.current.length > 0) {
+      replies.push({ label: "← Back", onClick: () => onMenuBack() });
+    } else {
+      replies.push({ label: "Back to main menu", onClick: () => showMainMenu() });
+    }
+
+    addBotMessage(promptForLevel(), replies);
   };
 
-  const onPickService = (s: Service) => {
-    addUserMessage(`Tell me about ${s.name}`);
-    addBotMessage(`${s.name} — ${s.blurb}`, [
+  /** Visitor tapped a node at the current level — dispatch by kind. */
+  const onPickNode = (node: MenuNode) => {
+    addUserMessage(node.label);
+    switch (node.kind) {
+      case "group":
+        menuPathRef.current = [...menuPathRef.current, node];
+        renderCurrentLevel();
+        return;
+      case "service":
+        onPickServiceLeaf(node);
+        return;
+      case "diagnostic":
+        onPickDiagnosticLeaf(node);
+        return;
+      case "callback":
+        // Re-use existing callback flow but skip the duplicate user-message
+        // (we already added one above).
+        setAwaitingCallback(true);
+        addBotMessage("Sure — what's the best number to reach you on?", [
+          {
+            label: `Or call us now: +${CSO_PHONE}`,
+            onClick: () => {
+              if (typeof window !== "undefined") {
+                window.location.href = `tel:+${CSO_PHONE}`;
+              }
+            },
+          },
+        ]);
+        return;
+      case "placeholder":
+        addBotMessage(
+          "Coming soon — we're finalising this section. In the meantime, our team can walk you through it on a call.",
+          [
+            { label: "Request a call", onClick: () => onPickCallback() },
+            { label: "← Back", onClick: () => onMenuBack() },
+          ]
+        );
+        return;
+    }
+  };
+
+  /** Pop one level off the menu path. */
+  const onMenuBack = () => {
+    menuPathRef.current = menuPathRef.current.slice(0, -1);
+    renderCurrentLevel();
+  };
+
+  /** Look up an existing service-catalog entry for a leaf id (if any). */
+  const lookupServiceMeta = (
+    leaf: Extract<MenuNode, { kind: "service" }>
+  ): Service | undefined =>
+    SERVICE_CATALOG.find((s) => s.id === leaf.serviceId);
+
+  /** Service leaf tapped — show description + diagnose / callback / back. */
+  const onPickServiceLeaf = (
+    leaf: Extract<MenuNode, { kind: "service" }>
+  ) => {
+    const meta = lookupServiceMeta(leaf);
+    const subtitle =
+      leaf.subtitle ?? meta?.blurb ??
+      "Our team will walk you through scope, timeline and price.";
+    const flagshipPrefix = leaf.flagship ? "★ Flagship — " : "";
+    addBotMessage(`${flagshipPrefix}${leaf.label} — ${subtitle}`, [
       {
         label: "Take the free diagnosis",
-        onClick: () => onLaunchDiagnosis(s),
+        onClick: () => onLaunchDiagnosis(meta),
       },
       { label: "Request a call back", onClick: () => onPickCallback() },
-      { label: "Back to services", onClick: () => onPickServicesIntro() },
+      { label: "← Back", onClick: () => renderCurrentLevel() },
     ]);
+  };
+
+  /** Diagnostic leaf tapped — open route in a new tab. */
+  const onPickDiagnosticLeaf = (
+    leaf: Extract<MenuNode, { kind: "diagnostic" }>
+  ) => {
+    addBotMessage(
+      `Opening the ${company.diagnosticTitle} in a new tab. ${company.diagnosticBlurb}`,
+      [{ label: "Back to main menu", onClick: () => showMainMenu() }]
+    );
+    if (typeof window !== "undefined") {
+      window.open(leaf.route, "_blank", "noopener,noreferrer");
+      toast.success(`Opening the ${company.diagnosticTitle}`);
+    }
+  };
+
+  const onPickServicesIntro = () => {
+    addUserMessage("Browse our services");
+    menuPathRef.current = [];
+    renderCurrentLevel();
   };
 
   const onLaunchDiagnosis = (s?: Service) => {
