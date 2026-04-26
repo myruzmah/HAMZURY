@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
-  MessageCircle, X, Phone, Star, HelpCircle, Send, ChevronLeft,
+  MessageCircle, X, Phone, HelpCircle, Send, ChevronLeft,
   Building2, CreditCard, Rocket, ShieldCheck, Clock, Users, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -943,14 +943,11 @@ function Dot({ delay }: { delay: string }) {
    --------------------------------------------------------------------------
    Same anchor as the chat panel (bottom-right 380×600 / full-screen mobile).
    Three-step navigation: Categories → Questions → Answer, with Back buttons.
-   Star icon in the header opens the rating modal (lifted via prop).
    ══════════════════════════════════════════════════════════════════════════ */
 function FaqPanel({
   onClose,
-  onOpenRating,
 }: {
   onClose: () => void;
-  onOpenRating: () => void;
 }) {
   type View =
     | { kind: "categories" }
@@ -1023,18 +1020,6 @@ function FaqPanel({
               : "Answer"}
           </div>
         </div>
-        <button
-          onClick={onOpenRating}
-          aria-label="Rate your experience"
-          title="Rate your experience"
-          style={{
-            width: 34, height: 34, borderRadius: 8, border: "none", cursor: "pointer",
-            backgroundColor: "transparent", color: "#fff",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <Star size={18} />
-        </button>
         <button
           onClick={onClose}
           aria-label="Close FAQ"
@@ -1174,33 +1159,6 @@ function FaqPanel({
           </div>
         )}
 
-        {/* Footer rating prompt */}
-        <div
-          style={{
-            marginTop: 22,
-            paddingTop: 14,
-            borderTop: "1px solid #E5E7EB",
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <button
-            onClick={onOpenRating}
-            style={{
-              fontSize: 12.5,
-              color: GOLD,
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 500,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            <Star size={14} /> Rate your experience
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -1226,10 +1184,8 @@ export default function ChatWidget({
 
   const [faqOpen, setFaqOpen] = useState(false);
   const [bubbleNotes, setBubbleNotes] = useState<string[]>([]);
-  const [feedbackOpen, setFeedbackOpen] = useState(false);
-  const [feedbackRating, setFeedbackRating] = useState(0);
-  const [feedbackMsg, setFeedbackMsg] = useState("");
   const [showBadge, setShowBadge] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const closeChat = () => {
     if (isControlled) onClose?.();
@@ -1240,12 +1196,14 @@ export default function ChatWidget({
     setBubbleNotes([]);
     setShowBadge(false);
     setFaqOpen(false);
+    setMenuOpen(false);
     if (!isControlled) setInternalOpen(true);
   };
 
   const openFaq = () => {
     setBubbleNotes([]);
     setShowBadge(false);
+    setMenuOpen(false);
     if (!isControlled) setInternalOpen(false);
     else onClose?.();
     setFaqOpen(true);
@@ -1279,12 +1237,7 @@ export default function ChatWidget({
   return (
     <>
       {chatOpen && <WhatsAppChatPanel department={department} onClose={closeChat} />}
-      {faqOpen && (
-        <FaqPanel
-          onClose={() => setFaqOpen(false)}
-          onOpenRating={() => setFeedbackOpen(true)}
-        />
-      )}
+      {faqOpen && <FaqPanel onClose={() => setFaqOpen(false)} />}
 
       {/* Teaser notifications above the action menu (only when nothing open) */}
       {!isControlled && !anyPanelOpen && bubbleNotes.length > 0 && (
@@ -1305,7 +1258,7 @@ export default function ChatWidget({
         </div>
       )}
 
-      {/* Three floating action buttons — bottom-right, vertical stack.
+      {/* Speed-dial: ONE main bubble. Tap to reveal Call · WhatsApp · FAQ.
            Hidden while a panel is open. */}
       {!isControlled && !anyPanelOpen && (
         <div
@@ -1315,111 +1268,76 @@ export default function ChatWidget({
               '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif',
           }}
         >
-          {/* WhatsApp (primary) */}
+          {/* Sub-buttons appear ABOVE main bubble when menuOpen */}
+          {menuOpen && (
+            <>
+              {/* FAQ (top) */}
+              <button
+                onClick={openFaq}
+                className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
+                style={{
+                  width: 48, height: 48,
+                  backgroundColor: WA_HEADER,
+                  color: "#fff",
+                }}
+                aria-label="Open FAQ"
+                title="Browse FAQ"
+              >
+                <HelpCircle size={20} />
+              </button>
+
+              {/* Call (middle) */}
+              <a
+                href={`tel:+${CSO_PHONE}`}
+                onClick={() => setMenuOpen(false)}
+                className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
+                style={{
+                  width: 48, height: 48,
+                  backgroundColor: "#1F2937",
+                  color: "#fff",
+                }}
+                aria-label={`Call +${CSO_PHONE}`}
+                title="Call us"
+              >
+                <Phone size={20} />
+              </a>
+
+              {/* WhatsApp (bottom of sub-stack — opens our embedded chat) */}
+              <button
+                data-chat-trigger
+                onClick={openChat}
+                className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
+                style={{
+                  width: 48, height: 48,
+                  backgroundColor: WA_BUBBLE,
+                  color: "#fff",
+                }}
+                aria-label="Open chat"
+                title="Chat with us"
+              >
+                <MessageCircle size={20} />
+              </button>
+            </>
+          )}
+
+          {/* Main bubble — tap to toggle menu */}
           <button
-            data-chat-trigger
-            onClick={openChat}
-            className="rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-110 relative"
+            onClick={() => setMenuOpen(v => !v)}
+            className="rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 relative"
             style={{
               width: 56, height: 56,
-              backgroundColor: WA_BUBBLE,
+              backgroundColor: menuOpen ? "#1F2937" : WA_BUBBLE,
               color: "#fff",
             }}
-            aria-label="Open WhatsApp chat"
-            title="Chat with us"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            title={menuOpen ? "Close" : "Tap to chat"}
           >
-            <MessageCircle size={24} />
-            {showBadge && (
+            {menuOpen ? <X size={22} /> : <MessageCircle size={24} />}
+            {!menuOpen && showBadge && (
               <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">
                 1
               </span>
             )}
-          </button>
-
-          {/* Call (tel: link) */}
-          <a
-            href={`tel:+${CSO_PHONE}`}
-            className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
-            style={{
-              width: 52, height: 52,
-              backgroundColor: "#1F2937",
-              color: "#fff",
-            }}
-            aria-label={`Call +${CSO_PHONE}`}
-            title="Call us"
-          >
-            <Phone size={20} />
-          </a>
-
-          {/* FAQ */}
-          <button
-            onClick={openFaq}
-            className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
-            style={{
-              width: 52, height: 52,
-              backgroundColor: WA_HEADER,
-              color: "#fff",
-            }}
-            aria-label="Open FAQ"
-            title="Browse FAQ"
-          >
-            <HelpCircle size={22} />
-          </button>
-        </div>
-      )}
-
-      {/* Rating popup — anchored bottom-right, raised above the action menu
-           or panel as appropriate. Trigger lives in FAQ panel header/footer. */}
-      {feedbackOpen && (
-        <div
-          className="fixed z-[80] bg-white rounded-2xl shadow-2xl border border-[#1A1A1A]/10 p-5 w-72"
-          style={{ bottom: anyPanelOpen ? 96 : 230, right: 24 }}
-        >
-          <div className="flex justify-between items-center mb-3">
-            <p className="text-[14px] font-semibold" style={{ color: CHARCOAL }}>
-              Rate your experience
-            </p>
-            <button onClick={() => setFeedbackOpen(false)} className="opacity-40 hover:opacity-100">
-              <X size={16} />
-            </button>
-          </div>
-          <div className="flex gap-1 mb-3">
-            {[1, 2, 3, 4, 5].map((n) => (
-              <button
-                key={n}
-                onClick={() => setFeedbackRating(n)}
-                className="transition-transform hover:scale-110"
-              >
-                <Star
-                  size={28}
-                  fill={n <= feedbackRating ? GOLD : "none"}
-                  stroke={n <= feedbackRating ? GOLD : "#D1D5DB"}
-                  strokeWidth={1.5}
-                />
-              </button>
-            ))}
-          </div>
-          <textarea
-            value={feedbackMsg}
-            onChange={(e) => setFeedbackMsg(e.target.value)}
-            placeholder="Tell us more (optional)"
-            className="w-full border rounded-xl px-3 py-2 text-[13px] outline-none resize-none h-20 mb-3"
-            style={{ borderColor: "rgba(45,45,45,0.1)", backgroundColor: "#FAFAFA" }}
-          />
-          <button
-            onClick={() => {
-              if (feedbackRating) {
-                toast.success(`Thank you for your ${feedbackRating}-star feedback`);
-                setFeedbackOpen(false);
-                setFeedbackRating(0);
-                setFeedbackMsg("");
-              }
-            }}
-            disabled={feedbackRating === 0}
-            className="w-full py-2.5 rounded-full text-[13px] font-medium text-white transition-opacity disabled:opacity-40"
-            style={{ backgroundColor: CHARCOAL }}
-          >
-            Submit
           </button>
         </div>
       )}
