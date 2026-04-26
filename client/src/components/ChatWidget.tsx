@@ -4,6 +4,11 @@ import {
   Building2, CreditCard, Rocket, ShieldCheck, Clock, Users, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  BIZDOC_SPECIALIZED,
+  type SpecializedBusiness,
+  type ChecklistItem,
+} from "@/lib/bizdoc-specialized-checklists";
 
 /* ══════════════════════════════════════════════════════════════════════════
    HAMZURY Chat — v12: TRUE WhatsApp-style chat interface
@@ -242,7 +247,10 @@ type MenuNode =
     }
   | { kind: "diagnostic"; label: string; route: string }
   | { kind: "callback"; label: string }
-  | { kind: "placeholder"; label: string };
+  | { kind: "placeholder"; label: string }
+  /* Phase 2: a leaf for one of the 25 Bizdoc Specialized Business Setup
+   *  types. Renders the document checklist for that business inline. */
+  | { kind: "specialized"; label: string; specializedId: string };
 
 /* ── BIZDOC tree ────────────────────────────────────────────────────────── */
 const BIZDOC_TREE: MenuNode[] = [
@@ -295,10 +303,15 @@ const BIZDOC_TREE: MenuNode[] = [
   {
     kind: "group",
     label: "4. Specialized Business Setup",
-    children: [
-      // Phase 2 will replace this with the 25-business checklist menu.
-      { kind: "placeholder", label: "Coming soon — 25 specialized business types" },
-    ],
+    /* Phase 2 (v15): 25 specialized-business leaves built from
+     *  client/src/lib/bizdoc-specialized-checklists.ts. Each leaf, when
+     *  tapped, renders the per-business checklist inline as a single
+     *  bot bubble of tickable items. */
+    children: BIZDOC_SPECIALIZED.map((b) => ({
+      kind: "specialized",
+      label: b.label,
+      specializedId: b.id,
+    })),
   },
   {
     kind: "diagnostic",
@@ -606,11 +619,23 @@ const FAQ_CATEGORIES: FAQCategory[] = [
    ══════════════════════════════════════════════════════════════════════════ */
 type QuickReply = { label: string; onClick: () => void };
 
+/** Phase 2 (v15) — a tickable checklist rendered inside a single bot bubble.
+ *  The bubble shows the intro text, then one row per item (☐/☑ + title +
+ *  "Why:" sub-text), then a "Continue →" call-to-action that fires the
+ *  passed `onContinue` callback with the IDs of unticked (missing) items.
+ */
+type ChecklistAttachment = {
+  items: ChecklistItem[];          // immutable item set for this bubble
+  onContinue: (missingIdx: number[]) => void;
+  continueLabel?: string;          // optional override for the CTA label
+};
+
 type Message = {
   id: number;
   role: "bot" | "user";
   text: string;
   quickReplies?: QuickReply[];
+  checklist?: ChecklistAttachment;
   timestamp: Date;
 };
 
@@ -684,6 +709,21 @@ function WhatsAppChatPanel({
         setMessages((prev) => [
           ...prev,
           { id: nextId(), role: "bot", text, quickReplies, timestamp: new Date() },
+        ]);
+      }, delay);
+    },
+    []
+  );
+
+  /** Append a bot message that carries a tickable checklist payload. */
+  const addBotChecklistMessage = useCallback(
+    (text: string, checklist: ChecklistAttachment, delay = 800) => {
+      setIsTyping(true);
+      window.setTimeout(() => {
+        setIsTyping(false);
+        setMessages((prev) => [
+          ...prev,
+          { id: nextId(), role: "bot", text, checklist, timestamp: new Date() },
         ]);
       }, delay);
     },
@@ -786,6 +826,9 @@ function WhatsAppChatPanel({
       case "service":
         onPickServiceLeaf(node);
         return;
+      case "specialized":
+        onPickSpecializedLeaf(node);
+        return;
       case "diagnostic":
         onPickDiagnosticLeaf(node);
         return;
@@ -845,6 +888,100 @@ function WhatsAppChatPanel({
       { label: "Request a call back", onClick: () => onPickCallback() },
       { label: "← Back", onClick: () => renderCurrentLevel() },
     ]);
+  };
+
+  /** Specialized-business leaf tapped (Phase 2 — Bizdoc Group 4).
+   *  Renders the per-business document checklist as a single tickable
+   *  bot bubble. After "Continue →", bot lists what's missing and hands
+   *  off with a callback option (Phase 3 will replace the hand-off with
+   *  the real pre-payment questionnaire + price calc). */
+  const onPickSpecializedLeaf = (
+    leaf: Extract<MenuNode, { kind: "specialized" }>
+  ) => {
+    const biz: SpecializedBusiness | undefined = BIZDOC_SPECIALIZED.find(
+      (b) => b.id === leaf.specializedId
+    );
+    if (!biz) {
+      // Defensive — should never fire because the menu is built from the
+      // same array. Surface as a generic placeholder rather than crashing.
+      addBotMessage(
+        "We're finalising this checklist. Our team can walk you through it on a call.",
+        [
+          { label: "Request a call", onClick: () => onPickCallback() },
+          { label: "← Back", onClick: () => onMenuBack() },
+        ]
+      );
+      return;
+    }
+
+    const intro =
+      `Setting up a ${biz.label} business in Nigeria requires several ` +
+      `registrations. Tick what you already have so we know exactly what ` +
+      `to help you with.`;
+
+    addBotChecklistMessage(intro, {
+      items: biz.checklist,
+      onContinue: (missingIdx) => onSpecializedContinue(biz, missingIdx),
+    });
+  };
+
+  /** Visitor tapped "Continue →" inside the checklist bubble. We list the
+   *  missing items as a follow-up bot message + an interim hand-off (the
+   *  Phase 3 pre-payment questionnaire will replace this). */
+  const onSpecializedContinue = (
+    biz: SpecializedBusiness,
+    missingIdx: number[]
+  ) => {
+    addUserMessage(
+      missingIdx.length === 0
+        ? "Continue → I have everything"
+        : `Continue → I'm missing ${missingIdx.length} item${missingIdx.length === 1 ? "" : "s"}`
+    );
+
+    if (missingIdx.length === 0) {
+      addBotMessage(
+        `Great — you already have the full ${biz.label} compliance pack. ` +
+          `We'll calculate the price after the next 3 questions (Phase 3 ` +
+          `coming soon). For now, Maryam will follow up shortly with a quote.`,
+        [
+          { label: "Request a call back", onClick: () => onPickCallback() },
+          { label: "← Back to specialized businesses", onClick: () => onMenuBack() },
+          { label: "Back to main menu", onClick: () => showMainMenu() },
+        ]
+      );
+      // Capture the interim lead so CSO sees the visitor's path even though
+      // Phase 3 isn't live yet.
+      captureLead("free_text", `Specialized:${biz.id} | missing:none`);
+      return;
+    }
+
+    const missingList = missingIdx
+      .map((i) => `• ${biz.checklist[i].title}`)
+      .join("\n");
+    const text =
+      `Got it. Based on what you ticked, here's what's still missing for a ` +
+      `${biz.label} setup:\n\n${missingList}\n\n` +
+      `We'll calculate the price after the next 3 questions (Phase 3 coming ` +
+      `soon). For now, Maryam will follow up shortly with a quote.`;
+
+    addBotMessage(text, [
+      { label: "Request a call back", onClick: () => onPickCallback() },
+      { label: "← Back to specialized businesses", onClick: () => onMenuBack() },
+      { label: "Back to main menu", onClick: () => showMainMenu() },
+    ]);
+
+    captureLead(
+      "free_text",
+      `Specialized:${biz.id} | missing:${missingIdx
+        .map((i) => biz.checklist[i].title)
+        .join(", ")}`
+    );
+
+    // Catch-all #25: extra free-text hint nudging the visitor to type their
+    // exact business so the team can send a tailored checklist.
+    if (biz.notes) {
+      addBotMessage(biz.notes, undefined, 1500);
+    }
   };
 
   /** Diagnostic leaf tapped — open route in a new tab. */
@@ -1220,6 +1357,9 @@ function MessageBubble({ message }: { message: Message }) {
           }}
         >
           <div style={{ whiteSpace: "pre-wrap" }}>{message.text}</div>
+          {message.checklist && (
+            <ChecklistBlock attachment={message.checklist} />
+          )}
           <div
             style={{
               fontSize: 10.5,
@@ -1265,6 +1405,121 @@ function MessageBubble({ message }: { message: Message }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CHECKLIST BLOCK — tickable items rendered inside a bot bubble
+   --------------------------------------------------------------------------
+   Phase 2 (v15): used by the Bizdoc "Specialized Business Setup" flow.
+   Each item has a ☐/☑ tap target, a bold title, and a "Why:" sub-line.
+   After "Continue →" is tapped, the bubble locks (no more toggling) and
+   the parent flow handler decides what to do with the missing items.
+   ══════════════════════════════════════════════════════════════════════════ */
+function ChecklistBlock({ attachment }: { attachment: ChecklistAttachment }) {
+  const { items, onContinue, continueLabel } = attachment;
+  const [ticked, setTicked] = useState<boolean[]>(() => items.map(() => false));
+  const [submitted, setSubmitted] = useState(false);
+
+  const toggle = (i: number) => {
+    if (submitted) return;
+    setTicked((prev) => {
+      const next = [...prev];
+      next[i] = !next[i];
+      return next;
+    });
+  };
+
+  const handleContinue = () => {
+    if (submitted) return;
+    setSubmitted(true);
+    const missingIdx = ticked
+      .map((t, i) => (t ? -1 : i))
+      .filter((i) => i >= 0);
+    onContinue(missingIdx);
+  };
+
+  return (
+    <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+      {items.map((item, i) => {
+        const isOn = ticked[i];
+        return (
+          <button
+            key={i}
+            onClick={() => toggle(i)}
+            disabled={submitted}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 8,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: `1px solid ${isOn ? WA_HEADER : WA_BOT_BORDER}`,
+              backgroundColor: isOn ? "#E8F5EE" : "#FAFAFA",
+              cursor: submitted ? "default" : "pointer",
+              textAlign: "left",
+              opacity: submitted && !isOn ? 0.6 : 1,
+              transition: "background-color 0.15s, border-color 0.15s",
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                fontSize: 16,
+                lineHeight: 1.2,
+                color: isOn ? WA_HEADER : "#9CA3AF",
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            >
+              {isOn ? "\u2611" : "\u2610"}
+            </span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span
+                style={{
+                  display: "block",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  color: DARK,
+                  lineHeight: 1.3,
+                }}
+              >
+                {item.title}
+              </span>
+              <span
+                style={{
+                  display: "block",
+                  fontSize: 11.5,
+                  color: "#4B5563",
+                  marginTop: 2,
+                  lineHeight: 1.4,
+                }}
+              >
+                <span style={{ fontWeight: 600 }}>Why:</span> {item.why}
+              </span>
+            </span>
+          </button>
+        );
+      })}
+      <button
+        onClick={handleContinue}
+        disabled={submitted}
+        style={{
+          marginTop: 4,
+          alignSelf: "flex-end",
+          padding: "8px 14px",
+          borderRadius: 999,
+          border: "none",
+          backgroundColor: submitted ? "#9CA3AF" : WA_HEADER,
+          color: "#fff",
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: submitted ? "default" : "pointer",
+        }}
+      >
+        {continueLabel ?? "Continue \u2192"}
+      </button>
     </div>
   );
 }
