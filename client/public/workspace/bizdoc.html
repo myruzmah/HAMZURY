@@ -434,6 +434,107 @@
   .btn:hover { color: var(--ink); border-color: var(--accent); }
   .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
   .btn-primary:hover { filter: brightness(1.1); color: #fff; }
+
+  /* ── Live inbox (briefs assigned by CSO via Apps Script) ─────── */
+  .live-section { padding: 28px 32px 60px; max-width: 1100px; margin: 0 auto; }
+  .live-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    gap: 24px; flex-wrap: wrap;
+    padding-bottom: 22px; border-bottom: 0.5px solid var(--line); margin-bottom: 22px;
+  }
+  .live-meta { display: flex; align-items: center; gap: 12px; }
+  .live-status { font-size: 12px; color: var(--ink-muted); }
+  .live-list { display: flex; flex-direction: column; gap: 14px; }
+  .live-card {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap;
+    transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  }
+  .live-card:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.04); border-color: var(--ink-faint, #C7C7CC); }
+  .live-card-body { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
+  .live-card-name {
+    font-family: var(--serif);
+    font-size: 18px; font-weight: 500; color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .live-card-biz { color: var(--ink-muted); font-size: 14.5px; font-style: italic; font-weight: 400; }
+  .live-card-meta {
+    font-family: var(--mono);
+    font-size: 11.5px; color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+  .live-card-contact {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .live-card-hint {
+    margin-top: 4px;
+    display: inline-block;
+    background: rgba(15, 44, 74, 0.06);
+    color: var(--accent);
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11.5px; font-weight: 500;
+    align-self: flex-start;
+  }
+  .live-card-note {
+    margin-top: 4px;
+    font-size: 13px; color: var(--ink-soft);
+    font-style: italic; line-height: 1.5;
+    border-left: 2px solid var(--line); padding-left: 10px;
+  }
+  .live-card-side {
+    display: flex; flex-direction: column; align-items: flex-end;
+    gap: 8px; flex-shrink: 0; min-width: 140px;
+  }
+  .live-card-status {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .live-card-status.incoming { background: rgba(184, 115, 31, 0.12); color: #B8731F; }
+  .live-card-status.active   { background: rgba(15, 44, 74, 0.10);  color: var(--accent); }
+  .live-card-status.shipped  { background: rgba(60, 60, 62, 0.08);  color: var(--ink-soft); }
+  .live-card-time { font-size: 11.5px; color: var(--ink-muted); }
+  .live-card-actions { display: flex; flex-direction: column; gap: 6px; align-items: flex-end; width: 100%; }
+  .live-action-btn {
+    padding: 6px 14px;
+    background: var(--accent); color: #fff;
+    border: 0.5px solid var(--accent);
+    border-radius: 999px;
+    font: 500 12px var(--sans);
+    cursor: pointer;
+    transition: filter 0.12s ease;
+  }
+  .live-action-btn:hover { filter: brightness(1.1); }
+  .live-action-btn[disabled] { opacity: 0.5; cursor: default; }
+  .live-action-btn.ghost { background: var(--paper); color: var(--ink); border-color: var(--line); }
+  .live-action-btn.ghost:hover { background: var(--sidebar); border-color: var(--ink-muted); filter: none; }
+  .live-ship-area { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+  .live-ship-area textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 0.5px solid var(--line); border-radius: 10px;
+    font: 400 12.5px var(--sans);
+    color: var(--ink);
+    resize: vertical;
+    min-height: 56px;
+    background: var(--paper);
+  }
+  .live-ship-area textarea:focus { outline: none; border-color: var(--accent); }
+  .live-empty {
+    text-align: center;
+    padding: 80px 20px;
+    border: 0.5px dashed var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+  }
+  .live-empty-title { font-family: var(--serif); font-size: 18px; color: var(--ink); margin-bottom: 6px; }
+  .live-empty-sub { font-size: 13.5px; color: var(--ink-muted); max-width: 380px; margin: 0 auto; }
 </style>
 </head>
 <body>
@@ -486,6 +587,11 @@
       <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>
       Incoming briefs
       <span class="nav-count warn" id="count-incoming">0</span>
+    </button>
+    <button class="nav-item" data-tab="live">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2" fill="none"/></svg></span>
+      Live inbox
+      <span class="nav-count warn" id="count-live" style="display:none;">0</span>
     </button>
     <button class="nav-item" data-tab="active">
       <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7"/></svg></span>
@@ -1398,6 +1504,7 @@ function render() {
     case 'home': renderHome(); break;
     case 'mytasks': renderMyTasks(); break;
     case 'incoming': renderIncoming(); break;
+    case 'live': renderLive(); break;
     case 'active': renderActive(); break;
     case 'calendar': renderCalendar(); break;
     case 'filings': renderFilings(); break;
@@ -2043,6 +2150,142 @@ function addDays(dateStr, days) { const d = new Date(dateStr); d.setDate(d.getDa
 
 updateCounts();
 render();
+
+// ============= LIVE INBOX (briefs assigned by CSO via Apps Script) =============
+const LIVE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const LIVE_WORKSPACE = 'bizdoc';
+let LIVE_BRIEFS = [];
+
+async function fetchLiveBriefs() {
+  try {
+    const res = await fetch(LIVE_WEBHOOK + '?action=getBriefs&workspace=' + LIVE_WORKSPACE, { method: 'GET' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    LIVE_BRIEFS = (data.briefs || []).slice().sort((a, b) =>
+      new Date(b['Received At']).getTime() - new Date(a['Received At']).getTime()
+    );
+    const countEl = document.getElementById('count-live');
+    const incomingCount = LIVE_BRIEFS.filter(b => b.Status === 'incoming').length;
+    countEl.textContent = incomingCount;
+    countEl.style.display = incomingCount ? '' : 'none';
+    if (currentTab === 'live') renderLive();
+  } catch (e) {
+    if (currentTab === 'live') {
+      const status = document.getElementById('live-status');
+      if (status) status.textContent = 'Could not refresh — retrying';
+    }
+  }
+}
+
+function renderLive() {
+  setHeader('Bizdoc Operations', 'Live inbox');
+  const t = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+  const briefs = LIVE_BRIEFS;
+
+  let body;
+  if (briefs.length === 0) {
+    body =
+      '<div class="live-empty">' +
+        '<p class="live-empty-title">No briefs yet.</p>' +
+        '<p class="live-empty-sub">When CSO assigns a brief to Bizdoc, it lands here. Auto-refreshes every 60 seconds.</p>' +
+      '</div>';
+  } else {
+    body = '<div class="live-list">' + briefs.map(renderBriefCard).join('') + '</div>';
+  }
+
+  content.innerHTML =
+    '<section class="live-section">' +
+      '<div class="live-head">' +
+        '<div>' +
+          '<h1 class="hero-title">Welcome to <em>Live inbox</em>.</h1>' +
+          '<p class="hero-sub">Briefs assigned by CSO. Accept to start, ship back when done.</p>' +
+        '</div>' +
+        '<div class="live-meta">' +
+          '<span class="live-status" id="live-status">' + briefs.length + ' brief' + (briefs.length === 1 ? '' : 's') + ' · updated ' + t + '</span>' +
+          '<button class="btn" onclick="fetchLiveBriefs()">Refresh</button>' +
+        '</div>' +
+      '</div>' +
+      body +
+    '</section>';
+}
+
+function renderBriefCard(b) {
+  const ref = escapeHtml(b['Brief Ref'] || '');
+  const sourceRef = escapeHtml(b['Source Lead Ref'] || '—');
+  const dt = b['Received At'] ? new Date(b['Received At']) : null;
+  const dtStr = dt ? dt.toLocaleString('en-NG', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  const status = String(b.Status || 'incoming');
+  const statusLabel = status.charAt(0).toUpperCase() + status.slice(1);
+  const name = escapeHtml(b['Client Name'] || '—');
+  const biz = b.Business ? '<span class="live-card-biz"> · ' + escapeHtml(b.Business) + '</span>' : '';
+  const meta = ref + ' · from ' + sourceRef;
+  const email = b.Email ? '<span>' + escapeHtml(b.Email) + '</span>' : '';
+  const phone = b.Phone ? '<span>' + escapeHtml(String(b.Phone)) + '</span>' : '';
+  const hint = b['Service Hint'] ? '<span class="live-card-hint">' + escapeHtml(b['Service Hint']) + '</span>' : '';
+  const note = b['Note from CSO'] ? '<div class="live-card-note">' + escapeHtml(b['Note from CSO']) + '</div>' : '';
+
+  let actions = '';
+  if (status === 'incoming') {
+    actions =
+      '<div class="live-card-actions">' +
+        '<button class="live-action-btn" onclick="acceptLiveBrief(\'' + ref + '\')">Accept brief</button>' +
+      '</div>';
+  } else if (status === 'active') {
+    actions =
+      '<div class="live-ship-area">' +
+        '<textarea id="ship-notes-' + ref + '" placeholder="Ship notes (optional)"></textarea>' +
+        '<button class="live-action-btn" onclick="shipLiveBrief(\'' + ref + '\')">Ship to CSO</button>' +
+      '</div>';
+  } else if (status === 'shipped') {
+    const shipNotes = b['Ship Notes'] ? '<div class="live-card-note">Shipped: ' + escapeHtml(b['Ship Notes']) + '</div>' : '';
+    actions = shipNotes;
+  }
+
+  return '<article class="live-card">' +
+    '<div class="live-card-body">' +
+      '<div class="live-card-name">' + name + biz + '</div>' +
+      '<div class="live-card-meta">' + meta + '</div>' +
+      (email || phone ? '<div class="live-card-contact">' + email + phone + '</div>' : '') +
+      hint +
+      note +
+    '</div>' +
+    '<div class="live-card-side">' +
+      '<span class="live-card-status ' + status + '">' + statusLabel + '</span>' +
+      '<span class="live-card-time">' + dtStr + '</span>' +
+      actions +
+    '</div>' +
+  '</article>';
+}
+
+window.acceptLiveBrief = function(briefRef) {
+  // Optimistic UI update
+  const b = LIVE_BRIEFS.find(x => x['Brief Ref'] === briefRef);
+  if (b) b.Status = 'active';
+  if (currentTab === 'live') renderLive();
+  fetch(LIVE_WEBHOOK, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'acceptBrief', workspace: LIVE_WORKSPACE, briefRef: briefRef })
+  }).catch(() => { /* fire-and-forget */ });
+};
+
+window.shipLiveBrief = function(briefRef) {
+  const ta = document.getElementById('ship-notes-' + briefRef);
+  const notes = ta ? ta.value.trim() : '';
+  const b = LIVE_BRIEFS.find(x => x['Brief Ref'] === briefRef);
+  if (b) { b.Status = 'shipped'; b['Ship Notes'] = notes; }
+  if (currentTab === 'live') renderLive();
+  fetch(LIVE_WEBHOOK, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'shipToCSO', workspace: LIVE_WORKSPACE, briefRef: briefRef, notes: notes })
+  }).catch(() => { /* fire-and-forget */ });
+};
+
+fetchLiveBriefs();
+setInterval(() => { if (!document.hidden) fetchLiveBriefs(); }, 60000);
 </script>
 
 </body>

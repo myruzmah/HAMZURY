@@ -733,6 +733,63 @@
     margin-bottom: 6px;
   }
   .inbox-empty-sub { font-size: 13.5px; color: var(--ink-muted); max-width: 360px; margin: 0 auto; }
+
+  /* ── Inbox assign action (extends inbox-card) ─────────────────── */
+  .inbox-assign-wrap { position: relative; }
+  .inbox-assign-btn {
+    margin-top: 4px;
+    padding: 5px 12px;
+    background: var(--paper);
+    color: var(--ink);
+    border: 0.5px solid var(--line);
+    border-radius: 999px;
+    font: 500 11.5px var(--sans);
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .inbox-assign-btn:hover { background: var(--sidebar); border-color: var(--ink-muted); }
+  .inbox-assign-btn:disabled { opacity: 0.5; cursor: default; }
+  .inbox-assign-pop {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+    padding: 6px;
+    min-width: 180px;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .inbox-assign-pop[hidden] { display: none; }
+  .inbox-assign-opt {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    font: 500 13px var(--serif);
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.12s ease;
+  }
+  .inbox-assign-opt:hover { background: var(--sidebar); }
+  .inbox-card-status.assigned {
+    background: rgba(60, 60, 62, 0.08);
+    color: var(--ink-soft);
+  }
+  .inbox-assign-trail {
+    margin-top: 6px;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
 </style>
 </head>
 <body>
@@ -1417,6 +1474,8 @@ renderScripts();
 
 // ─── Inbox: Live chat leads from Apps Script ──────────────────────────
 const INBOX_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+const INBOX_WORKSPACES = ['bizdoc', 'scalar', 'medialy', 'studio'];
+const inboxAssigned = new Map();   // sourceRef → { workspace, at }
 
 async function loadInbox() {
   const status = document.getElementById('inbox-status');
@@ -1440,26 +1499,7 @@ async function loadInbox() {
       empty.hidden = true;
       if (badge) { badge.textContent = all.length; badge.hidden = false; }
       for (const r of all) {
-        const card = document.createElement('article');
-        card.className = 'inbox-card';
-        const dt = new Date(r['Received At']);
-        const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
-        const name = inboxEsc(r['Client Name'] || '—');
-        const biz = r.Business ? `<span class="inbox-card-biz"> · ${inboxEsc(r.Business)}</span>` : '';
-        const meta = `${inboxEsc(r.Reference || '')} · ${inboxEsc(r['Form Title'] || r.Form || 'submission')}`;
-        const email = r.Email ? `<span>${inboxEsc(r.Email)}</span>` : '';
-        const phone = r.Phone ? `<span>${inboxEsc(String(r.Phone))}</span>` : '';
-        card.innerHTML =
-          '<div class="inbox-card-body">' +
-            '<div class="inbox-card-name">' + name + biz + '</div>' +
-            '<div class="inbox-card-meta">' + meta + '</div>' +
-            (email || phone ? '<div class="inbox-card-contact">' + email + phone + '</div>' : '') +
-          '</div>' +
-          '<div class="inbox-card-side">' +
-            '<span class="inbox-card-status">' + inboxEsc(r.Status || 'New') + '</span>' +
-            '<span class="inbox-card-time">' + dtStr + '</span>' +
-          '</div>';
-        list.appendChild(card);
+        list.appendChild(renderInboxCard(r));
       }
     }
 
@@ -1472,9 +1512,111 @@ async function loadInbox() {
   }
 }
 
+function renderInboxCard(r) {
+  const card = document.createElement('article');
+  card.className = 'inbox-card';
+  const dt = new Date(r['Received At']);
+  const dtStr = dt.toLocaleString('en-NG', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+  const name = inboxEsc(r['Client Name'] || '—');
+  const biz = r.Business ? '<span class="inbox-card-biz"> · ' + inboxEsc(r.Business) + '</span>' : '';
+  const meta = inboxEsc(r.Reference || '') + ' · ' + inboxEsc(r['Form Title'] || r.Form || 'submission');
+  const email = r.Email ? '<span>' + inboxEsc(r.Email) + '</span>' : '';
+  const phone = r.Phone ? '<span>' + inboxEsc(String(r.Phone)) + '</span>' : '';
+  const sourceRef = String(r.Reference || '');
+  const assigned = inboxAssigned.get(sourceRef);
+
+  const statusClass = assigned ? 'inbox-card-status assigned' : 'inbox-card-status';
+  const statusText = assigned ? 'Assigned' : inboxEsc(r.Status || 'New');
+  const trail = assigned
+    ? '<div class="inbox-assign-trail">→ Assigned to ' + inboxEsc(capitalise(assigned.workspace)) + ' · ' + assigned.at + '</div>'
+    : '';
+
+  const optionButtons = INBOX_WORKSPACES.map(w =>
+    '<button class="inbox-assign-opt" data-ws="' + w + '">' + capitalise(w) + '</button>'
+  ).join('');
+
+  const assignControl = assigned
+    ? ''
+    : '<div class="inbox-assign-wrap">' +
+        '<button class="inbox-assign-btn" data-action="open-pop">Assign →</button>' +
+        '<div class="inbox-assign-pop" hidden>' + optionButtons + '</div>' +
+      '</div>';
+
+  card.innerHTML =
+    '<div class="inbox-card-body">' +
+      '<div class="inbox-card-name">' + name + biz + '</div>' +
+      '<div class="inbox-card-meta">' + meta + '</div>' +
+      (email || phone ? '<div class="inbox-card-contact">' + email + phone + '</div>' : '') +
+      trail +
+    '</div>' +
+    '<div class="inbox-card-side">' +
+      '<span class="' + statusClass + '">' + statusText + '</span>' +
+      '<span class="inbox-card-time">' + dtStr + '</span>' +
+      assignControl +
+    '</div>';
+
+  // Wire assign popover + options
+  if (!assigned) {
+    const openBtn = card.querySelector('[data-action="open-pop"]');
+    const pop = card.querySelector('.inbox-assign-pop');
+    openBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // Close other popovers
+      document.querySelectorAll('.inbox-assign-pop').forEach(p => { if (p !== pop) p.hidden = true; });
+      pop.hidden = !pop.hidden;
+    });
+    card.querySelectorAll('.inbox-assign-opt').forEach(btn => {
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const ws = btn.dataset.ws;
+        pop.hidden = true;
+        assignLead(r, ws, card);
+      });
+    });
+  }
+
+  return card;
+}
+
+function assignLead(r, workspace, card) {
+  const ref = String(r.Reference || '');
+  const payload = {
+    action: 'assignToWorkspace',
+    workspace: workspace,
+    sourceRef: ref,
+    clientName: r['Client Name'] || '',
+    business: r.Business || '',
+    email: r.Email || '',
+    phone: String(r.Phone || ''),
+    serviceHint: r['Form Title'] || r.Form || '',
+    note: '',
+    assignedBy: 'CSO'
+  };
+  // Optimistic UI — mark assigned immediately, fire-and-forget POST
+  const at = new Date().toLocaleTimeString('en-NG', { hour: '2-digit', minute: '2-digit' });
+  inboxAssigned.set(ref, { workspace: workspace, at: at });
+  // Re-render this card in-place
+  const fresh = renderInboxCard(r);
+  card.replaceWith(fresh);
+
+  fetch(INBOX_WEBHOOK, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).catch(() => { /* fire-and-forget */ });
+}
+
+function capitalise(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }
+
 function inboxEsc(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// Click outside any inbox-assign-pop closes it
+document.addEventListener('click', () => {
+  document.querySelectorAll('.inbox-assign-pop').forEach(p => p.hidden = true);
+});
 
 document.getElementById('inbox-refresh')?.addEventListener('click', loadInbox);
 loadInbox();
