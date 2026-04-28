@@ -1,0 +1,1996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamzury — Project Requirements</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Apple system font stack — renders SF Pro on Apple devices */
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #FAFAF7;
+    --paper: #FFFFFF;
+    --ink: #0A0A0A;
+    --ink-soft: #3C3C3E;
+    --ink-muted: #86868B;
+    --ink-faint: #C7C7CC;
+    --line: #E5E5E5;
+    --line-soft: #F2F2F0;
+    --accent: #0A0A0A;
+    --accent-warm: #B8731F;
+    --success: #1E7A48;
+    --danger: #D92A1C;
+    --focus: rgba(10,10,10,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100vh;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv01", "cv11";
+    letter-spacing: -0.01em;
+  }
+
+  /* ============ DEMO SWITCHER ============ */
+  .demo-bar {
+    position: fixed;
+    top: 16px;
+    right: 20px;
+    z-index: 100;
+    background: rgba(10,10,10,0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: #fff;
+    padding: 7px 8px 7px 14px;
+    border-radius: 980px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+  }
+  .demo-bar .label { opacity: 0.65; letter-spacing: 0; }
+  .demo-bar select {
+    background: #fff;
+    color: var(--ink);
+    border: none;
+    padding: 6px 26px 6px 12px;
+    border-radius: 980px;
+    font: 500 12.5px var(--sans);
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%230A0A0A' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    max-width: 260px;
+  }
+  .demo-bar select optgroup {
+    font-weight: 500;
+    color: var(--accent-warm);
+    font-style: normal;
+  }
+  .demo-bar select option {
+    color: var(--ink);
+    font-weight: 400;
+    padding: 4px 8px;
+  }
+
+  /* ============ SHELL ============ */
+  .app {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .topbar {
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 960px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) { .topbar { padding: 16px 20px; } }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .brand-dot {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .main {
+    flex: 1;
+    padding: 24px 32px 60px;
+    max-width: 820px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) { .main { padding: 20px 20px 40px; } }
+
+  /* ============ INTRO ============ */
+  .intro {
+    text-align: left;
+    padding: 40px 0 32px;
+    animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .eyebrow {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent-warm);
+    letter-spacing: 0.01em;
+    margin-bottom: 14px;
+  }
+  .intro-title {
+    font-family: var(--serif);
+    font-size: 46px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.08;
+    margin-bottom: 16px;
+  }
+  .intro-title em { font-style: italic; color: var(--accent-warm); }
+  @media (max-width: 600px) { .intro-title { font-size: 34px; } }
+
+  .intro-body {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 580px;
+    margin-bottom: 28px;
+    letter-spacing: -0.005em;
+  }
+
+  .intro-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    padding: 20px 0;
+    border-top: 0.5px solid var(--line);
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 32px;
+  }
+  .meta-item .k {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 2px;
+  }
+  .meta-item .v {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  /* ============ PROGRESS ============ */
+  .progress-bar {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 32px;
+  }
+  .progress-step {
+    flex: 1;
+    height: 3px;
+    border-radius: 999px;
+    background: var(--line);
+    transition: background 0.4s;
+  }
+  .progress-step.active { background: var(--ink); }
+  .progress-step.done { background: var(--ink); }
+
+  .progress-text {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  /* ============ STEP ============ */
+  .step {
+    animation: fadeIn 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    padding-bottom: 40px;
+  }
+
+  .step-title {
+    font-family: var(--serif);
+    font-size: 34px;
+    font-weight: 400;
+    letter-spacing: -0.022em;
+    line-height: 1.12;
+    margin-bottom: 12px;
+  }
+  .step-subtitle {
+    font-size: 16px;
+    color: var(--ink-muted);
+    line-height: 1.5;
+    margin-bottom: 32px;
+    letter-spacing: -0.005em;
+  }
+
+  /* ============ FIELDS ============ */
+  .field {
+    margin-bottom: 24px;
+  }
+  .field-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--ink);
+    letter-spacing: -0.003em;
+  }
+  .field-hint {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 6px;
+    line-height: 1.45;
+  }
+  .field-required {
+    color: var(--accent-warm);
+    margin-left: 2px;
+  }
+
+  .input, .textarea {
+    width: 100%;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    font: 400 16px var(--sans);
+    letter-spacing: -0.005em;
+    color: var(--ink);
+    transition: all 0.15s;
+  }
+  .input:hover, .textarea:hover { border-color: var(--ink-faint); }
+  .input:focus, .textarea:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 4px var(--focus);
+  }
+  .input::placeholder, .textarea::placeholder { color: var(--ink-faint); }
+  .textarea { resize: vertical; min-height: 110px; line-height: 1.5; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .field-row { grid-template-columns: 1fr; } }
+
+  /* ============ FILE UPLOAD ============ */
+  .upload-zone {
+    border: 1.5px dashed var(--line);
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--paper);
+  }
+  .upload-zone:hover {
+    border-color: var(--ink);
+    background: var(--line-soft);
+  }
+  .upload-zone.dragging {
+    border-color: var(--ink);
+    background: var(--line-soft);
+    transform: scale(1.005);
+  }
+  .upload-icon {
+    width: 36px; height: 36px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    background: var(--line-soft);
+    display: grid; place-items: center;
+  }
+  .upload-icon svg { width: 18px; height: 18px; stroke: var(--ink-soft); }
+  .upload-primary {
+    font-size: 14.5px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--ink);
+  }
+  .upload-secondary {
+    font-size: 13px;
+    color: var(--ink-muted);
+  }
+  .upload-zone input[type="file"] { display: none; }
+
+  .file-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 10px;
+    animation: fadeIn 0.25s;
+  }
+  .file-icon {
+    width: 32px; height: 32px;
+    border-radius: 7px;
+    background: var(--line-soft);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .file-icon svg { width: 16px; height: 16px; stroke: var(--ink-soft); }
+  .file-meta { flex: 1; min-width: 0; }
+  .file-name {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.003em;
+  }
+  .file-size { font-size: 12.5px; color: var(--ink-muted); margin-top: 1px; }
+  .file-remove {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--ink-muted);
+    font-size: 16px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .file-remove:hover { background: var(--line-soft); color: var(--danger); }
+
+  /* ============ REVIEW ============ */
+  .review-section {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+  .review-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 0.5px solid var(--line);
+  }
+  .review-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    letter-spacing: -0.003em;
+  }
+  .review-edit {
+    font-size: 13px;
+    color: var(--accent-warm);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+  }
+  .review-edit:hover { text-decoration: underline; }
+  .review-grid { display: grid; gap: 10px; }
+  .review-item {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .review-item dt { color: var(--ink-muted); letter-spacing: -0.003em; }
+  .review-item dd { color: var(--ink); font-weight: 400; }
+  .review-item dd.empty { color: var(--ink-faint); font-style: italic; }
+  @media (max-width: 600px) {
+    .review-item { grid-template-columns: 1fr; gap: 2px; }
+    .review-item dt { font-size: 12px; }
+  }
+
+  /* ============ FOOTER ============ */
+  .footer {
+    position: sticky;
+    bottom: 0;
+    background: linear-gradient(to top, var(--bg) 70%, transparent);
+    padding: 20px 0 24px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+  }
+
+  .btn {
+    font: 500 15px var(--sans);
+    padding: 13px 28px;
+    border-radius: 980px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.003em;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #333; }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-primary:disabled {
+    background: var(--ink-faint);
+    cursor: not-allowed;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-soft);
+  }
+  .btn-ghost:hover { color: var(--ink); background: var(--line-soft); }
+
+  /* ============ OUTRO ============ */
+  .outro {
+    padding: 60px 0;
+    text-align: left;
+    animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .outro-mark {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: var(--ink);
+    display: grid; place-items: center;
+    margin-bottom: 24px;
+  }
+  .outro-mark svg { width: 24px; height: 24px; }
+  .outro-ref {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--line-soft);
+    font: 500 13px var(--mono);
+    color: var(--ink-soft);
+    letter-spacing: 0.02em;
+  }
+
+  /* misc */
+  .service-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--line-soft);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-bottom: 14px;
+    letter-spacing: -0.003em;
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-bar" id="demo-bar">
+  <span class="label">Preview · switch package</span>
+  <select id="service-selector"></select>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-dot">H</div>
+      <span>Hamzury</span>
+    </div>
+  </div>
+
+  <div class="main" id="main"></div>
+</div>
+
+<script>
+// ============= SERVICE REQUIREMENT FLOWS =============
+const SERVICES = {
+  cac: {
+    department: 'business',
+    name: 'CAC Registration',
+    intro: {
+      title: 'Let\'s <em>register</em> your business.',
+      body: 'We need a few details to file with the Corporate Affairs Commission. This takes about 8–10 minutes, and you can save and return anytime.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'Proposed names',
+        subtitle: 'We check availability and file with your first choice. If taken, we use the second.',
+        fields: [
+          { type: 'text', id: 'name1', label: 'First choice business name', required: true, placeholder: 'e.g. Hamzury Limited' },
+          { type: 'text', id: 'name2', label: 'Second choice', required: true, placeholder: 'In case the first is taken' },
+          { type: 'select', id: 'entity_type', label: 'Entity type', required: true, options: ['Limited Liability Company (Ltd)', 'Business Name (BN)', 'Incorporated Trustees', 'Partnership', 'I\'m not sure — advise me'] }
+        ]
+      },
+      {
+        title: 'About the business',
+        subtitle: 'What it does, where it\'s based.',
+        fields: [
+          { type: 'textarea', id: 'nature', label: 'Nature of business', required: true, placeholder: 'Describe what the business does in 2–3 sentences.' },
+          { type: 'text', id: 'address', label: 'Proposed registered address', required: true, placeholder: 'Street, city, state' },
+          { type: 'number', id: 'share_capital', label: 'Share capital (₦)', placeholder: '100,000 (default minimum)', hint: 'Leave blank to use the CAC minimum.' }
+        ]
+      },
+      {
+        title: 'Director details',
+        subtitle: 'For the primary director. We\'ll collect additional directors separately if needed.',
+        fields: [
+          { type: 'text', id: 'director_name', label: 'Full name', required: true },
+          { type: 'text', id: 'director_address', label: 'Residential address', required: true },
+          { type: 'tel', id: 'director_phone', label: 'Phone number', required: true, placeholder: '+234 ...' },
+          { type: 'email', id: 'director_email', label: 'Email address', required: true }
+        ]
+      },
+      {
+        title: 'Documents',
+        subtitle: 'Upload the director\'s ID and a passport photograph. Images or PDFs, up to 10MB each.',
+        fields: [
+          { type: 'file', id: 'director_id', label: 'Government ID (NIN, Driver\'s Licence, or International Passport)', required: true, accept: 'image/*,.pdf' },
+          { type: 'file', id: 'passport_photo', label: 'Passport photograph', required: true, accept: 'image/*' },
+          { type: 'file', id: 'signature', label: 'Signature (white background, clear)', accept: 'image/*' }
+        ]
+      },
+      {
+        title: 'Anything else?',
+        subtitle: 'Additional notes, special requests, or questions for our team.',
+        fields: [
+          { type: 'textarea', id: 'notes', label: 'Notes', placeholder: 'Optional — anything you\'d like us to know.' }
+        ]
+      }
+    ]
+  },
+
+  compliance: {
+    department: 'business',
+    name: 'Compliance Management',
+    intro: {
+      title: 'Let\'s <em>onboard</em> your business.',
+      body: 'Everything we need to take compliance off your plate for the year. You\'ll upload key documents once, and we handle the rest.',
+      duration: '10–12 minutes'
+    },
+    steps: [
+      {
+        title: 'Business basics',
+        subtitle: 'The foundation of your compliance profile.',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business legal name', required: true },
+          { type: 'text', id: 'rc_number', label: 'RC / BN number', required: true, placeholder: 'e.g. RC 123456' },
+          { type: 'text', id: 'tin', label: 'Tax Identification Number (TIN)', required: true },
+          { type: 'text', id: 'address', label: 'Registered address', required: true }
+        ]
+      },
+      {
+        title: 'Documents',
+        subtitle: 'Upload your current compliance documents. Anything missing, we\'ll flag and help you get.',
+        fields: [
+          { type: 'file', id: 'cac_cert', label: 'CAC Certificate of Incorporation', required: true, accept: '.pdf,image/*' },
+          { type: 'file', id: 'memart', label: 'Memorandum & Articles of Association', accept: '.pdf,image/*' },
+          { type: 'file', id: 'tin_cert', label: 'TIN certificate', accept: '.pdf,image/*' },
+          { type: 'file', id: 'last_tax', label: 'Last filed tax returns (if any)', accept: '.pdf,image/*' },
+          { type: 'file', id: 'bank_statement', label: 'Last 6 months bank statements', accept: '.pdf', multiple: true }
+        ]
+      },
+      {
+        title: 'Team access',
+        subtitle: 'Who we coordinate with each month.',
+        fields: [
+          { type: 'text', id: 'contact_name', label: 'Primary point-of-contact name', required: true },
+          { type: 'text', id: 'contact_role', label: 'Their role', required: true, placeholder: 'e.g. Founder, Accountant, Admin' },
+          { type: 'email', id: 'contact_email', label: 'Email', required: true },
+          { type: 'tel', id: 'contact_phone', label: 'Phone / WhatsApp', required: true }
+        ]
+      },
+      {
+        title: 'Current situation',
+        subtitle: 'A quick snapshot so we start the year with clear eyes.',
+        fields: [
+          { type: 'select', id: 'last_filing', label: 'When did you last file taxes?', required: true, options: ['Within the past 6 months', 'Within the past year', '1–2 years ago', 'More than 2 years', 'Never filed', 'Not sure'] },
+          { type: 'select', id: 'penalty_status', label: 'Any outstanding penalties?', required: true, options: ['None that I know of', 'Yes, we\'re dealing with some', 'Possibly — we haven\'t checked', 'Not sure'] },
+          { type: 'textarea', id: 'concerns', label: 'Anything you\'re worried about?', placeholder: 'Tax letters you\'ve been avoiding, audits, issues with FIRS — tell us now so we can protect you.' }
+        ]
+      }
+    ]
+  },
+
+  website: {
+    department: 'software',
+    name: 'Website Design',
+    intro: {
+      title: 'Let\'s build your <em>website</em>.',
+      body: 'Everything we need to design something that represents your brand and actually converts. If you\'re missing anything, we can help you create it.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'The business',
+        subtitle: 'Who you are and who you serve.',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'text', id: 'tagline', label: 'Tagline or one-liner', placeholder: 'What you do, in one sentence.' },
+          { type: 'textarea', id: 'about', label: 'About the business', required: true, placeholder: 'What you do, who you serve, what makes you different.' },
+          { type: 'textarea', id: 'audience', label: 'Who visits your website?', required: true, placeholder: 'Describe your ideal customer. Age, role, pain points, what they\'re looking for.' }
+        ]
+      },
+      {
+        title: 'The site',
+        subtitle: 'What the site needs to do and look like.',
+        fields: [
+          { type: 'select', id: 'page_count', label: 'How many pages?', required: true, options: ['Just a landing page (1)', 'Essential pages (3–5)', 'Full site (6–10)', 'Large site (10+)'] },
+          { type: 'textarea', id: 'main_goal', label: 'What should visitors do on the site?', required: true, placeholder: 'Book a call, buy a product, fill a form, read content — be specific.' },
+          { type: 'text', id: 'domain', label: 'Preferred domain name', placeholder: 'yourbusiness.com — or tell us you need help choosing.' },
+          { type: 'textarea', id: 'inspiration', label: 'Websites you love', placeholder: 'Paste 2–3 links to sites you want yours to feel like. Doesn\'t need to be your industry.' }
+        ]
+      },
+      {
+        title: 'Brand assets',
+        subtitle: 'Upload what you have. If you\'re missing anything, we can create it.',
+        fields: [
+          { type: 'file', id: 'logo', label: 'Logo (vector preferred — .svg, .ai, .eps)', accept: '.svg,.ai,.eps,image/*' },
+          { type: 'file', id: 'brand_guide', label: 'Brand guide (if you have one)', accept: '.pdf,image/*' },
+          { type: 'textarea', id: 'colors', label: 'Brand colors', placeholder: 'List hex codes if you have them, or describe the feeling.' },
+          { type: 'file', id: 'photos', label: 'Product or team photos', accept: 'image/*', multiple: true }
+        ]
+      },
+      {
+        title: 'Content',
+        subtitle: 'The words and information that will live on the site.',
+        fields: [
+          { type: 'select', id: 'content_status', label: 'Do you have website copy written?', required: true, options: ['Yes, all written', 'Some of it', 'No — please write it for us (+₦50,000)', 'Not sure where to start'] },
+          { type: 'file', id: 'content_file', label: 'Content document (if you have one)', accept: '.pdf,.doc,.docx,.txt' },
+          { type: 'textarea', id: 'services_offered', label: 'Services or products to feature', placeholder: 'List them — we\'ll structure them on the site.' }
+        ]
+      }
+    ]
+  },
+
+  brand: {
+    department: 'media',
+    name: 'Brand Identity',
+    intro: {
+      title: 'Let\'s shape your <em>brand</em>.',
+      body: 'A brand identity is how your business looks, sounds, and feels. Answer these thoughtfully — what you share here shapes everything we design.',
+      duration: '10–12 minutes'
+    },
+    steps: [
+      {
+        title: 'The business',
+        subtitle: 'The foundation.',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'textarea', id: 'mission', label: 'What does your business exist to do?', required: true, placeholder: 'One or two honest sentences. Not marketing language — the real reason.' },
+          { type: 'textarea', id: 'audience', label: 'Who is it for?', required: true, placeholder: 'Be specific. "Everyone" is never the answer.' }
+        ]
+      },
+      {
+        title: 'Personality',
+        subtitle: 'How your brand should feel when someone encounters it.',
+        fields: [
+          { type: 'textarea', id: 'personality', label: 'If your brand were a person, how would you describe them?', required: true, placeholder: 'Calm? Bold? Witty? Reassuring? Playful? Serious? Mix of these?' },
+          { type: 'textarea', id: 'not_personality', label: 'What should your brand NEVER feel like?', placeholder: 'Cheap? Corporate? Aggressive? Generic? Name the opposite.' },
+          { type: 'textarea', id: 'competitors', label: 'Three competitors or reference brands', placeholder: 'Paste links or names. Tell us what you like (or don\'t) about each.' }
+        ]
+      },
+      {
+        title: 'Existing assets',
+        subtitle: 'Anything you have already — we work with it or evolve from it.',
+        fields: [
+          { type: 'file', id: 'current_logo', label: 'Current logo (if any)', accept: 'image/*,.svg,.ai,.eps,.pdf' },
+          { type: 'file', id: 'current_materials', label: 'Other existing materials', accept: 'image/*,.pdf', multiple: true, hint: 'Business cards, flyers, social posts — anything that shows your current look.' },
+          { type: 'textarea', id: 'color_preferences', label: 'Color preferences', placeholder: 'Colors you love, hate, or must include (maybe a cultural or personal reason).' }
+        ]
+      },
+      {
+        title: 'Vision',
+        subtitle: 'Where this brand is going.',
+        fields: [
+          { type: 'textarea', id: 'long_vision', label: 'Where do you see this business in 5 years?', placeholder: 'A brand needs to grow into its future, not just fit its present.' },
+          { type: 'select', id: 'budget_range', label: 'Is this the final identity or a starting point?', options: ['Final — this needs to last years', 'Starting point — we\'ll evolve it', 'Not sure yet'] }
+        ]
+      }
+    ]
+  },
+
+  social: {
+    department: 'media',
+    name: 'Instagram & TikTok Management',
+    intro: {
+      title: 'Let\'s take over your <em>socials</em>.',
+      body: 'A few details on your business, accounts, and audience so we start posting with your voice — not a generic agency one.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'Your accounts',
+        subtitle: 'So we can access and take over posting.',
+        fields: [
+          { type: 'text', id: 'ig_handle', label: 'Instagram handle', required: true, placeholder: '@yourbusiness' },
+          { type: 'text', id: 'tiktok_handle', label: 'TikTok handle' },
+          { type: 'select', id: 'access_method', label: 'How should we access accounts?', required: true, options: ['Meta Business Suite (recommended)', 'Shared login', 'Not sure — advise us'] },
+          { type: 'textarea', id: 'current_status', label: 'Current state of your accounts', placeholder: 'Active? Dormant? Embarrassing? Honest answers help.' }
+        ]
+      },
+      {
+        title: 'Your business',
+        subtitle: 'Product / service knowledge transfer.',
+        fields: [
+          { type: 'textarea', id: 'offer', label: 'What do you sell / offer?', required: true, placeholder: 'Products, services, price points.' },
+          { type: 'textarea', id: 'audience', label: 'Who are you trying to reach?', required: true, placeholder: 'Be specific. Age, gender, location, interests, pain points.' },
+          { type: 'textarea', id: 'tone', label: 'Your brand voice', placeholder: 'Casual? Professional? Witty? Educational? Mix — but which mix?' }
+        ]
+      },
+      {
+        title: 'Content assets',
+        subtitle: 'Photos, videos, and brand materials we can use.',
+        fields: [
+          { type: 'file', id: 'brand_guide', label: 'Brand guide (if any)', accept: '.pdf,image/*' },
+          { type: 'file', id: 'photos', label: 'Product / team photos', accept: 'image/*', multiple: true },
+          { type: 'file', id: 'videos', label: 'Existing video clips', accept: 'video/*', multiple: true, hint: 'Raw clips are fine — we edit.' },
+          { type: 'textarea', id: 'content_pillars', label: 'Content topics you\'d like us to cover', placeholder: 'E.g. educational, behind-the-scenes, product demos, testimonials.' }
+        ]
+      },
+      {
+        title: 'Goals',
+        subtitle: 'What success looks like.',
+        fields: [
+          { type: 'textarea', id: 'goal', label: 'What\'s the main thing you want from social?', required: true, placeholder: 'Leads? Followers? Brand awareness? Sales? Authority? Community?' },
+          { type: 'textarea', id: 'competitors', label: 'Competitor accounts we should study', placeholder: 'Paste 2–3 handles of businesses doing this well.' }
+        ]
+      }
+    ]
+  },
+
+  // ====== BUSINESS — remaining ======
+  tin: {
+    department: 'business',
+    name: 'Tax Registration (TIN)',
+    intro: {
+      title: 'Let\'s get your <em>TIN</em>.',
+      body: 'Everything we need to file your Tax Identification Number with the Federal Inland Revenue Service.',
+      duration: '5–7 minutes'
+    },
+    steps: [
+      {
+        title: 'Business basics',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business legal name', required: true },
+          { type: 'text', id: 'rc_number', label: 'RC / BN number', required: true, placeholder: 'e.g. RC 123456' },
+          { type: 'textarea', id: 'nature', label: 'Nature of business', required: true, placeholder: 'What does the business do?' },
+          { type: 'text', id: 'address', label: 'Registered address', required: true }
+        ]
+      },
+      {
+        title: 'Director / proprietor',
+        fields: [
+          { type: 'text', id: 'director_name', label: 'Full name', required: true },
+          { type: 'tel', id: 'director_phone', label: 'Phone', required: true, placeholder: '+234 ...' },
+          { type: 'email', id: 'director_email', label: 'Email', required: true },
+          { type: 'text', id: 'director_nin', label: 'NIN', required: true, hint: 'Your 11-digit National Identification Number.' }
+        ]
+      },
+      {
+        title: 'Documents',
+        subtitle: 'Upload clear images or PDFs. Max 10MB each.',
+        fields: [
+          { type: 'file', id: 'cac_cert', label: 'CAC Certificate', required: true, accept: '.pdf,image/*' },
+          { type: 'file', id: 'memart', label: 'MEMART (if Ltd)', accept: '.pdf,image/*' },
+          { type: 'file', id: 'director_id', label: 'Director\'s government ID', required: true, accept: '.pdf,image/*' },
+          { type: 'file', id: 'utility_bill', label: 'Recent utility bill for proof of address', accept: '.pdf,image/*', hint: 'Not older than 3 months.' }
+        ]
+      }
+    ]
+  },
+
+  licences: {
+    department: 'business',
+    name: 'Business Licences',
+    intro: {
+      title: 'Let\'s get your <em>licence</em> sorted.',
+      body: 'Tell us which licence, where, and we handle the regulator.',
+      duration: '7–9 minutes'
+    },
+    steps: [
+      {
+        title: 'Which licence?',
+        fields: [
+          { type: 'select', id: 'licence_type', label: 'Licence type', required: true, options: ['NAFDAC (food, drug, cosmetics)', 'SCUML (DNFBPs)', 'SON (standards)', 'NESREA (environmental)', 'State operating permit', 'Industry-specific (specify below)', 'Not sure — advise me'] },
+          { type: 'textarea', id: 'specifics', label: 'Describe what you need', placeholder: 'Which product, what state, any deadline?' },
+          { type: 'select', id: 'urgency', label: 'Urgency', required: true, options: ['Standard (6–8 weeks)', 'Expedited (3–4 weeks)', 'Emergency — already operating and need this fast'] }
+        ]
+      },
+      {
+        title: 'Business details',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'text', id: 'rc_number', label: 'RC / BN number', required: true },
+          { type: 'text', id: 'tin', label: 'TIN', required: true },
+          { type: 'text', id: 'premises_address', label: 'Premises address', required: true, hint: 'The exact location the licence will cover.' }
+        ]
+      },
+      {
+        title: 'Documents',
+        fields: [
+          { type: 'file', id: 'cac_cert', label: 'CAC Certificate', required: true, accept: '.pdf,image/*' },
+          { type: 'file', id: 'tin_cert', label: 'TIN Certificate', accept: '.pdf,image/*' },
+          { type: 'file', id: 'premises_photos', label: 'Photos of your premises', accept: 'image/*', multiple: true },
+          { type: 'file', id: 'product_docs', label: 'Product / service documentation', accept: '.pdf,image/*', multiple: true, hint: 'Specs, labels, ingredient lists — whatever applies.' }
+        ]
+      }
+    ]
+  },
+
+  plan: {
+    department: 'business',
+    name: 'Business Plan',
+    intro: {
+      title: 'Let\'s write your <em>plan</em>.',
+      body: 'A real business plan that raises money or guides decisions — not a 40-page document that sits on a shelf.',
+      duration: '10–12 minutes'
+    },
+    steps: [
+      {
+        title: 'The business',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'select', id: 'stage', label: 'Stage', required: true, options: ['Idea — not started', 'Pre-revenue — building', 'Earning — under ₦5M/yr', 'Earning — ₦5–50M/yr', 'Earning — over ₦50M/yr'] },
+          { type: 'text', id: 'industry', label: 'Industry', required: true },
+          { type: 'textarea', id: 'what_you_do', label: 'What does the business do?', required: true, placeholder: 'In plain language — pretend you\'re describing it to your mum.' }
+        ]
+      },
+      {
+        title: 'The plan',
+        subtitle: 'Purpose of this document.',
+        fields: [
+          { type: 'select', id: 'purpose', label: 'What\'s this plan for?', required: true, options: ['Raising investor funding', 'Applying for a bank loan', 'Applying for a grant', 'Internal strategy', 'Partner / stakeholder alignment', 'Multiple of the above'] },
+          { type: 'text', id: 'audience', label: 'Who will read it?', placeholder: 'Specific investor? Bank? Grant body?' },
+          { type: 'textarea', id: 'goals', label: 'Specific goals this plan should help you achieve', required: true, placeholder: 'Be specific with amounts and timelines.' }
+        ]
+      },
+      {
+        title: 'The market',
+        fields: [
+          { type: 'textarea', id: 'customer', label: 'Who is your ideal customer?', required: true, placeholder: 'Be specific — demographics, behaviours, where they spend time.' },
+          { type: 'textarea', id: 'problem', label: 'What problem do you solve for them?', required: true },
+          { type: 'textarea', id: 'competitors', label: 'Main competitors and how you\'re different', required: true }
+        ]
+      },
+      {
+        title: 'What you have',
+        fields: [
+          { type: 'file', id: 'existing_docs', label: 'Any existing documents we can use', accept: '.pdf,.doc,.docx,image/*', multiple: true, hint: 'Old pitch decks, financial projections, market research — anything.' },
+          { type: 'textarea', id: 'financials', label: 'Financial snapshot', placeholder: 'Current monthly revenue, costs, what you need funding for. Rough numbers are fine.' }
+        ]
+      }
+    ]
+  },
+
+  trademark: {
+    department: 'business',
+    name: 'Trademark Registration',
+    intro: {
+      title: 'Let\'s <em>protect</em> your brand.',
+      body: 'We file with the Trademarks, Patents & Designs Registry on your behalf.',
+      duration: '6–8 minutes'
+    },
+    steps: [
+      {
+        title: 'The mark',
+        fields: [
+          { type: 'text', id: 'brand_name', label: 'Name / word mark to register', required: true },
+          { type: 'textarea', id: 'description', label: 'Describe what this mark represents', required: true, placeholder: 'What products / services does it cover?' },
+          { type: 'select', id: 'mark_type', label: 'Type of mark', required: true, options: ['Word only (text)', 'Logo only (image)', 'Word + logo combined', 'Not sure — advise me'] }
+        ]
+      },
+      {
+        title: 'Applicant',
+        fields: [
+          { type: 'select', id: 'applicant_type', label: 'Registering as', required: true, options: ['Individual', 'Registered company'] },
+          { type: 'text', id: 'applicant_name', label: 'Applicant full name / company name', required: true },
+          { type: 'text', id: 'applicant_address', label: 'Address', required: true },
+          { type: 'email', id: 'applicant_email', label: 'Email', required: true },
+          { type: 'tel', id: 'applicant_phone', label: 'Phone', required: true }
+        ]
+      },
+      {
+        title: 'Documents',
+        fields: [
+          { type: 'file', id: 'logo_file', label: 'Logo file (high-resolution)', accept: 'image/*,.svg,.ai,.eps,.pdf', required: true },
+          { type: 'file', id: 'applicant_id', label: 'Applicant\'s ID (NIN, passport) or CAC Certificate', required: true, accept: '.pdf,image/*' },
+          { type: 'file', id: 'specimen', label: 'Specimen of use (optional)', accept: 'image/*,.pdf', hint: 'A photo of the mark in use — on packaging, a signboard, your website.' }
+        ]
+      }
+    ]
+  },
+
+  // ====== SOFTWARE — remaining ======
+  crm: {
+    department: 'software',
+    name: 'CRM Setup',
+    intro: {
+      title: 'Let\'s <em>organise</em> your leads.',
+      body: 'We set up a CRM that actually fits how your business works — not a tool you\'ll stop using in a month.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'Your business',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'select', id: 'team_size', label: 'Team size', required: true, options: ['Just me', '2–5 people', '6–15 people', '16–50 people', 'Over 50'] },
+          { type: 'select', id: 'industry', label: 'Industry', required: true, options: ['Retail / e-commerce', 'Services / consulting', 'Real estate', 'Financial services', 'Education', 'Health', 'Tech', 'Other'] }
+        ]
+      },
+      {
+        title: 'How leads reach you',
+        fields: [
+          { type: 'textarea', id: 'lead_sources', label: 'Where do leads currently come from?', required: true, placeholder: 'WhatsApp, Instagram, website, referrals, walk-ins…' },
+          { type: 'textarea', id: 'sales_stages', label: 'Walk us through your sales process', required: true, placeholder: 'From "new lead" to "paid customer" — what are the stages?' },
+          { type: 'select', id: 'volume', label: 'How many new leads per month?', required: true, options: ['Under 10', '10–50', '50–200', '200–1000', 'Over 1000'] }
+        ]
+      },
+      {
+        title: 'Tools & data',
+        fields: [
+          { type: 'textarea', id: 'current_tools', label: 'What tools / sheets do you currently use?', placeholder: 'Google Sheets, WhatsApp groups, notebooks — honest answer.' },
+          { type: 'file', id: 'existing_data', label: 'Existing lead data (if any)', accept: '.csv,.xlsx,.xls,.pdf', multiple: true, hint: 'Spreadsheets, exports — we\'ll migrate them.' },
+          { type: 'textarea', id: 'integrations', label: 'Systems we should integrate with', placeholder: 'Email, payment gateway, website forms, WhatsApp?' }
+        ]
+      },
+      {
+        title: 'Team & access',
+        fields: [
+          { type: 'textarea', id: 'team_list', label: 'Who on your team needs access?', placeholder: 'Name + role + email, one per line.' },
+          { type: 'text', id: 'main_contact', label: 'Main point of contact', required: true },
+          { type: 'email', id: 'contact_email', label: 'Their email', required: true }
+        ]
+      }
+    ]
+  },
+
+  ai_integration: {
+    department: 'software',
+    name: 'AI Integration',
+    intro: {
+      title: 'Let\'s put <em>AI</em> to work.',
+      body: 'Before we build anything, we need to understand your business and where AI can actually save you time or money.',
+      duration: '10–12 minutes'
+    },
+    steps: [
+      {
+        title: 'Your business',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'textarea', id: 'what_you_do', label: 'What does your business do?', required: true },
+          { type: 'select', id: 'team_size', label: 'Team size', required: true, options: ['Just me', '2–5', '6–15', '16–50', 'Over 50'] }
+        ]
+      },
+      {
+        title: 'Priority use case',
+        subtitle: 'The one thing you want AI to help with first.',
+        fields: [
+          { type: 'textarea', id: 'use_case', label: 'Describe the specific task or problem', required: true, placeholder: 'E.g. "reply to the 200+ WhatsApp inquiries we get daily" or "score which leads to follow up first".' },
+          { type: 'select', id: 'current_cost', label: 'How is this done today?', options: ['By me personally', 'A staff member', 'An outsourced agent', 'It\'s not done — things fall through', 'Mix'] },
+          { type: 'textarea', id: 'pain', label: 'What does it cost you today?', placeholder: 'Time, money, lost sales, stress — quantify if you can.' }
+        ]
+      },
+      {
+        title: 'Data & systems',
+        fields: [
+          { type: 'textarea', id: 'data_sources', label: 'Where does the relevant data live?', placeholder: 'WhatsApp, a CRM, spreadsheets, website database…' },
+          { type: 'select', id: 'data_privacy', label: 'Privacy requirements', required: true, options: ['Standard — no special constraints', 'Contains customer personal data (NDPR applies)', 'Contains financial / sensitive data', 'Not sure — advise me'] },
+          { type: 'file', id: 'sample_data', label: 'Sample data (optional)', accept: '.csv,.xlsx,.json,.pdf', multiple: true, hint: 'Anonymise before uploading if it contains real customer info.' }
+        ]
+      },
+      {
+        title: 'Team readiness',
+        fields: [
+          { type: 'select', id: 'ai_experience', label: 'Your team\'s current AI experience', options: ['We use AI daily', 'We\'ve played with ChatGPT', 'Curious but not used it', 'Sceptical'] },
+          { type: 'text', id: 'champion', label: 'Who on your team will own this?', placeholder: 'Name + role. This person works with us throughout.' }
+        ]
+      }
+    ]
+  },
+
+  automation: {
+    department: 'software',
+    name: 'Workflow Automation',
+    intro: {
+      title: 'Let\'s automate the <em>repetitive</em> stuff.',
+      body: 'Tell us the tasks your team keeps doing by hand. We\'ll tell you which ones can run themselves.',
+      duration: '7–9 minutes'
+    },
+    steps: [
+      {
+        title: 'The task',
+        fields: [
+          { type: 'textarea', id: 'task_name', label: 'Describe the repetitive task', required: true, placeholder: 'E.g. "every time someone pays, I manually send them an invoice, a thank-you message, and add them to a WhatsApp group".' },
+          { type: 'select', id: 'frequency', label: 'How often does it happen?', required: true, options: ['Multiple times daily', 'Daily', 'A few times a week', 'Weekly', 'Monthly'] },
+          { type: 'select', id: 'time_spent', label: 'How long does it take each time?', required: true, options: ['Under 5 mins', '5–15 mins', '15–30 mins', '30–60 mins', 'Over an hour'] }
+        ]
+      },
+      {
+        title: 'Current steps',
+        fields: [
+          { type: 'textarea', id: 'steps', label: 'Walk us through every step', required: true, placeholder: 'Step 1: Check WhatsApp for payment receipt. Step 2: Copy name to spreadsheet. Step 3: Send invoice template...' },
+          { type: 'textarea', id: 'tools_used', label: 'Which tools are involved?', placeholder: 'WhatsApp, Excel, Gmail, payment gateway, accounting software…' }
+        ]
+      },
+      {
+        title: 'Scope',
+        fields: [
+          { type: 'select', id: 'scope', label: 'How many workflows do you want automated?', required: true, options: ['Just this one for now', '2–3 workflows', '5+ workflows', 'I want an audit — tell me which ones to start with'] },
+          { type: 'textarea', id: 'other_tasks', label: 'Other tasks you\'d also like automated', placeholder: 'List them — we\'ll prioritise together.' }
+        ]
+      }
+    ]
+  },
+
+  ecommerce: {
+    department: 'software',
+    name: 'E-commerce Platform',
+    intro: {
+      title: 'Let\'s build your <em>store</em>.',
+      body: 'A Nigerian-ready e-commerce site — Paystack, Flutterwave, delivery logic, inventory, the works.',
+      duration: '10–12 minutes'
+    },
+    steps: [
+      {
+        title: 'The business',
+        fields: [
+          { type: 'text', id: 'store_name', label: 'Store name', required: true },
+          { type: 'textarea', id: 'what_you_sell', label: 'What do you sell?', required: true },
+          { type: 'select', id: 'current_channel', label: 'Where do you currently sell?', options: ['Instagram DMs', 'WhatsApp', 'Jumia / Konga', 'Physical store', 'Nowhere yet — fresh start', 'Multiple of the above'] }
+        ]
+      },
+      {
+        title: 'Catalogue',
+        fields: [
+          { type: 'select', id: 'product_count', label: 'How many products?', required: true, options: ['Under 10', '10–50', '50–200', '200–1000', 'Over 1000'] },
+          { type: 'file', id: 'product_sheet', label: 'Product info (spreadsheet)', accept: '.csv,.xlsx,.xls', hint: 'Name, price, description, stock — one row per product.' },
+          { type: 'file', id: 'product_photos', label: 'Product photos', accept: 'image/*', multiple: true, hint: 'High-res if possible. We\'ll optimise them.' }
+        ]
+      },
+      {
+        title: 'Operations',
+        fields: [
+          { type: 'select', id: 'payment', label: 'Which payment method?', required: true, options: ['Paystack', 'Flutterwave', 'Both', 'Not sure — advise me'] },
+          { type: 'textarea', id: 'delivery_zones', label: 'Delivery zones and fees', placeholder: 'E.g. "Lagos mainland ₦2,000, Lagos island ₦3,500, rest of Nigeria ₦5,000".' },
+          { type: 'select', id: 'delivery_partner', label: 'Delivery handled by', options: ['I handle it myself', 'A courier we already use', 'Need you to recommend one', 'Not applicable (digital products)'] }
+        ]
+      },
+      {
+        title: 'Brand & domain',
+        fields: [
+          { type: 'text', id: 'domain', label: 'Preferred domain', placeholder: 'yourstore.com — or tell us you need help choosing.' },
+          { type: 'file', id: 'logo', label: 'Logo', accept: '.svg,.ai,.eps,image/*' },
+          { type: 'file', id: 'brand_guide', label: 'Brand guide (if any)', accept: '.pdf,image/*' }
+        ]
+      }
+    ]
+  },
+
+  software_mgmt: {
+    department: 'software',
+    name: 'Software Management (monthly)',
+    intro: {
+      title: 'Let\'s <em>maintain</em> your systems.',
+      body: 'Ongoing care for your digital tools — updates, security, performance, and a monthly report.',
+      duration: '6–8 minutes'
+    },
+    steps: [
+      {
+        title: 'What we\'re managing',
+        fields: [
+          { type: 'textarea', id: 'systems_list', label: 'List the systems', required: true, placeholder: 'Website (example.com), CRM (Zoho), Analytics, WhatsApp Business, payment gateway…' },
+          { type: 'select', id: 'priority', label: 'What matters most?', required: true, options: ['Zero downtime', 'Regular updates & new features', 'Security & data protection', 'Performance & speed', 'All of the above'] }
+        ]
+      },
+      {
+        title: 'Access',
+        fields: [
+          { type: 'select', id: 'access_method', label: 'How will we access systems?', required: true, options: ['You give us admin accounts', 'We use your account with 2FA sharing', 'Read-only access where possible', 'Mix — let\'s discuss per system'] },
+          { type: 'textarea', id: 'known_issues', label: 'Known issues we should address first', placeholder: 'Things that are broken, slow, or bothering you.' }
+        ]
+      },
+      {
+        title: 'Team contact',
+        fields: [
+          { type: 'text', id: 'contact_name', label: 'Point of contact', required: true },
+          { type: 'email', id: 'contact_email', label: 'Email', required: true },
+          { type: 'tel', id: 'contact_phone', label: 'Phone / WhatsApp', required: true },
+          { type: 'select', id: 'report_cadence', label: 'Preferred report cadence', required: true, options: ['Monthly is fine', 'Bi-weekly', 'Weekly summary + monthly deep-dive'] }
+        ]
+      }
+    ]
+  },
+
+  // ====== MEDIA — remaining ======
+  podcast: {
+    department: 'media',
+    name: 'Podcast Production',
+    intro: {
+      title: 'Let\'s launch your <em>podcast</em>.',
+      body: 'From concept to distribution. You show up to record; we handle everything else.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'The show',
+        fields: [
+          { type: 'text', id: 'show_name', label: 'Show name (working title is fine)', required: true },
+          { type: 'textarea', id: 'topic', label: 'What\'s it about?', required: true, placeholder: 'One or two sentences — the pitch.' },
+          { type: 'textarea', id: 'audience', label: 'Who\'s it for?', required: true, placeholder: 'Be specific about who you want to tune in.' }
+        ]
+      },
+      {
+        title: 'Format',
+        fields: [
+          { type: 'select', id: 'format', label: 'Format', required: true, options: ['Solo (you talking)', 'Co-hosted', 'Interview-based', 'Panel discussions', 'Mixed'] },
+          { type: 'select', id: 'media_type', label: 'Video or audio?', required: true, options: ['Audio only', 'Video + audio (we distribute both)', 'Not sure — advise me'] },
+          { type: 'select', id: 'episode_length', label: 'Episode length', required: true, options: ['15–30 mins', '30–60 mins', '60+ mins', 'Varies'] },
+          { type: 'select', id: 'cadence', label: 'Publishing cadence', required: true, options: ['Weekly', 'Bi-weekly', 'Monthly', 'Season-based (batch release)'] }
+        ]
+      },
+      {
+        title: 'Production',
+        fields: [
+          { type: 'text', id: 'host_name', label: 'Main host name', required: true },
+          { type: 'select', id: 'recording_location', label: 'Where will you record?', options: ['Our studio', 'My office', 'Home setup', 'Remote (each person from their own location)', 'Need recommendation'] },
+          { type: 'textarea', id: 'guests', label: 'Initial guest wishlist', placeholder: 'First 5–10 guests you\'d love to have on.' }
+        ]
+      },
+      {
+        title: 'Brand assets',
+        fields: [
+          { type: 'file', id: 'artwork', label: 'Existing show artwork (if any)', accept: 'image/*,.svg,.ai' },
+          { type: 'textarea', id: 'vibe', label: 'Describe the visual vibe', placeholder: 'Minimal and serious? Bold and colourful? Cinematic?' }
+        ]
+      }
+    ]
+  },
+
+  content_strategy: {
+    department: 'media',
+    name: 'Content Strategy',
+    intro: {
+      title: 'Let\'s build your <em>content plan</em>.',
+      body: 'A 90-day content strategy custom to your business, audience, and goals — not template garbage.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'The business',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'textarea', id: 'offer', label: 'What do you sell / offer?', required: true },
+          { type: 'textarea', id: 'audience', label: 'Who is your content for?', required: true, placeholder: 'Be specific. Age, role, pain points, where they hang out.' }
+        ]
+      },
+      {
+        title: 'Current state',
+        fields: [
+          { type: 'textarea', id: 'channels', label: 'Which platforms are you on?', required: true, placeholder: 'IG, TikTok, LinkedIn, YouTube, newsletter, blog — and how often you post on each.' },
+          { type: 'select', id: 'performance', label: 'How\'s it performing?', required: true, options: ['Going well', 'Mixed — some posts hit, most don\'t', 'Inconsistent', 'Flatlined', 'Haven\'t really started'] },
+          { type: 'file', id: 'analytics', label: 'Analytics exports (optional)', accept: '.pdf,.csv,.xlsx,image/*', multiple: true, hint: 'Instagram Insights, YouTube analytics, anything.' }
+        ]
+      },
+      {
+        title: 'Goals',
+        fields: [
+          { type: 'select', id: 'primary_goal', label: 'Main goal over the next 90 days', required: true, options: ['Leads / sales', 'Follower growth', 'Brand awareness', 'Authority / thought leadership', 'Community building'] },
+          { type: 'textarea', id: 'success_metric', label: 'What\'s your success number?', placeholder: 'E.g. "get to 50 leads/month from content" or "hit 20k IG followers".' }
+        ]
+      },
+      {
+        title: 'Assets',
+        fields: [
+          { type: 'file', id: 'brand_guide', label: 'Brand guide (if any)', accept: '.pdf,image/*' },
+          { type: 'textarea', id: 'competitors', label: 'Competitors doing content well', placeholder: 'Links or handles — what do you like about their approach?' }
+        ]
+      }
+    ]
+  },
+
+  video: {
+    department: 'media',
+    name: 'Video Production',
+    intro: {
+      title: 'Let\'s <em>shoot</em> it.',
+      body: 'Concept, pre-production, shoot, edit, delivery. Tell us what you\'re making.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'The project',
+        fields: [
+          { type: 'select', id: 'video_type', label: 'Type of video', required: true, options: ['Brand film / about us', 'Product launch / promo', 'Ad campaign', 'Testimonial', 'Event coverage', 'Explainer / tutorial', 'Music video', 'Other'] },
+          { type: 'textarea', id: 'goal', label: 'Main goal', required: true, placeholder: 'What should this video do for your business?' },
+          { type: 'select', id: 'length', label: 'Target length', required: true, options: ['Under 30 seconds', '30s – 1 min', '1–3 mins', '3–5 mins', '5+ mins'] }
+        ]
+      },
+      {
+        title: 'Production',
+        fields: [
+          { type: 'text', id: 'shoot_location', label: 'Proposed shoot location', placeholder: 'Address or city. "You choose" is fine.' },
+          { type: 'textarea', id: 'talent', label: 'Who\'s on camera?', placeholder: 'Founder? Staff? Models? Customers? Need us to cast?' },
+          { type: 'select', id: 'script_status', label: 'Script / concept', required: true, options: ['I have a full script', 'I have a rough idea', 'Please help me develop it from scratch'] }
+        ]
+      },
+      {
+        title: 'Deliverables',
+        fields: [
+          { type: 'select', id: 'deadline', label: 'When do you need it?', required: true, options: ['Within 1 week (rush)', '2 weeks', '3–4 weeks', '1–2 months', 'Flexible'] },
+          { type: 'textarea', id: 'aspect_ratios', label: 'Which aspect ratios / formats?', placeholder: 'Vertical (9:16), square (1:1), landscape (16:9)? For which platforms?' }
+        ]
+      },
+      {
+        title: 'Brand & references',
+        fields: [
+          { type: 'file', id: 'logo', label: 'Logo', accept: '.svg,.ai,.eps,image/*' },
+          { type: 'textarea', id: 'references', label: 'Reference videos', placeholder: 'Paste 2–3 YouTube / Instagram links of videos whose style you like.' }
+        ]
+      }
+    ]
+  },
+
+  media_mgmt: {
+    department: 'media',
+    name: 'Media Management (monthly)',
+    intro: {
+      title: 'Let\'s take over your <em>media</em>.',
+      body: 'Your brand, voice, and content across every channel — handled. You focus on the business.',
+      duration: '10–12 minutes'
+    },
+    steps: [
+      {
+        title: 'Channels',
+        fields: [
+          { type: 'textarea', id: 'channels_list', label: 'List all your channels', required: true, placeholder: 'Instagram @x, TikTok @y, LinkedIn, YouTube, newsletter, WhatsApp status — everything.' },
+          { type: 'select', id: 'access_method', label: 'Access method', required: true, options: ['Meta Business Suite', 'Shared logins', 'Mix — discuss per channel'] }
+        ]
+      },
+      {
+        title: 'Your business',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name', required: true },
+          { type: 'textarea', id: 'offer', label: 'What you sell / offer', required: true },
+          { type: 'textarea', id: 'audience', label: 'Who you\'re trying to reach', required: true },
+          { type: 'textarea', id: 'voice', label: 'Your brand voice', placeholder: 'Casual? Authoritative? Playful? Mix — which mix?' }
+        ]
+      },
+      {
+        title: 'Content assets',
+        fields: [
+          { type: 'file', id: 'brand_guide', label: 'Brand guide', accept: '.pdf,image/*' },
+          { type: 'file', id: 'photos_videos', label: 'Existing photos and videos', accept: 'image/*,video/*', multiple: true, hint: 'Raw assets we can work with.' },
+          { type: 'textarea', id: 'pillars', label: 'Content pillars you want to cover', placeholder: 'E.g. educational, BTS, product demos, testimonials, personal stories.' }
+        ]
+      },
+      {
+        title: 'Goals & cadence',
+        fields: [
+          { type: 'select', id: 'primary_goal', label: 'Main goal', required: true, options: ['Leads / sales', 'Follower growth', 'Authority / credibility', 'Community', 'Mix'] },
+          { type: 'textarea', id: 'posting_preferences', label: 'Posting frequency preferences', placeholder: 'E.g. "IG — 4x/week feed + daily stories, TikTok — 3x/week, Newsletter — monthly".' }
+        ]
+      }
+    ]
+  },
+
+  // ====== SKILLS — all six ======
+  tech_training: {
+    department: 'skills',
+    name: 'Tech Skills Training',
+    intro: {
+      title: 'Let\'s <em>skill up</em>.',
+      body: 'A focused training programme tailored to you or your team. Not a YouTube playlist — structured learning with accountability.',
+      duration: '6–8 minutes'
+    },
+    steps: [
+      {
+        title: 'The learner',
+        fields: [
+          { type: 'select', id: 'learner_type', label: 'Who is this for?', required: true, options: ['Just me', 'A team member (one)', 'A team (2–5)', 'A team (6–15)', 'A large group (15+)'] },
+          { type: 'select', id: 'current_level', label: 'Current skill level', required: true, options: ['Absolute beginner', 'Can use the basics', 'Intermediate — want to go deeper', 'Advanced — need specialist training'] }
+        ]
+      },
+      {
+        title: 'The skill',
+        fields: [
+          { type: 'select', id: 'skill_area', label: 'Skill area', required: true, options: ['Web development', 'Product / UX design', 'Data analysis', 'Digital marketing', 'Cybersecurity', 'Project management', 'Other (specify below)'] },
+          { type: 'textarea', id: 'specific_skill', label: 'Be specific about what you want to learn', required: true, placeholder: 'E.g. "React + Tailwind to build production apps" rather than just "coding".' },
+          { type: 'textarea', id: 'goal', label: 'What will you do with this skill?', placeholder: 'Land a job? Build a product? Support your business?' }
+        ]
+      },
+      {
+        title: 'Format & schedule',
+        fields: [
+          { type: 'select', id: 'format', label: 'Preferred format', required: true, options: ['In-person', 'Online (live)', 'Self-paced with mentorship', 'Hybrid'] },
+          { type: 'select', id: 'pace', label: 'Time available per week', required: true, options: ['Under 3 hours', '3–6 hours', '6–10 hours', '10+ hours', 'Full-time intensive'] },
+          { type: 'text', id: 'target_date', label: 'Target completion date (optional)', placeholder: 'Any deadline we should work toward?' }
+        ]
+      }
+    ]
+  },
+
+  ai_business: {
+    department: 'skills',
+    name: 'AI for Business',
+    intro: {
+      title: 'Let\'s master <em>AI</em> for your work.',
+      body: 'Practical AI skills that make you and your team faster, not a theory course.',
+      duration: '6–8 minutes'
+    },
+    steps: [
+      {
+        title: 'About you',
+        fields: [
+          { type: 'select', id: 'role', label: 'Your role', required: true, options: ['Founder / CEO', 'Department lead', 'Operator / individual contributor', 'Sole trader', 'Mixed'] },
+          { type: 'text', id: 'industry', label: 'Industry', required: true },
+          { type: 'select', id: 'experience', label: 'Current AI experience', required: true, options: ['Zero', 'Used ChatGPT a few times', 'Use AI weekly', 'Use AI daily but want structured training'] }
+        ]
+      },
+      {
+        title: 'What you want to use AI for',
+        fields: [
+          { type: 'textarea', id: 'priorities', label: 'Top 3 things you want AI to help with', required: true, placeholder: '1. ...\n2. ...\n3. ...' },
+          { type: 'select', id: 'tools_preference', label: 'Any tool preference?', options: ['ChatGPT', 'Claude', 'Gemini', 'All — want to understand tradeoffs', 'No preference — recommend'] }
+        ]
+      },
+      {
+        title: 'Learning setup',
+        fields: [
+          { type: 'select', id: 'team_size', label: 'Team size (if team training)', options: ['Just me', '2–5', '6–15', '16+'] },
+          { type: 'select', id: 'format', label: 'Preferred format', required: true, options: ['In-person workshop', 'Online live sessions', 'Self-paced + Q&A'] },
+          { type: 'textarea', id: 'success', label: 'What does success look like?', placeholder: 'E.g. "I save 10 hours a week" or "my team replies to customers 3x faster".' }
+        ]
+      }
+    ]
+  },
+
+  entrepreneurship: {
+    department: 'skills',
+    name: 'Entrepreneurship Program',
+    intro: {
+      title: 'Let\'s build the <em>founder</em> in you.',
+      body: 'A structured programme for serious founders — real frameworks, real accountability, real peers.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'You',
+        fields: [
+          { type: 'text', id: 'full_name', label: 'Full name', required: true },
+          { type: 'select', id: 'stage', label: 'Where are you?', required: true, options: ['Pre-idea — I want to start something', 'Idea stage — not built yet', 'Built and launched — pre-revenue', 'Earning — want to grow', 'Established — want to scale / exit'] },
+          { type: 'text', id: 'time_in_business', label: 'How long have you been building?', placeholder: 'E.g. "2 months", "3 years", "haven\'t started yet"' }
+        ]
+      },
+      {
+        title: 'The business',
+        fields: [
+          { type: 'text', id: 'business_name', label: 'Business name (if any)', placeholder: 'Or leave blank if not yet named.' },
+          { type: 'textarea', id: 'what_you_do', label: 'What are you building?', required: true, placeholder: 'The pitch, in plain words.' },
+          { type: 'textarea', id: 'biggest_problem', label: 'What\'s the biggest problem you\'re stuck on right now?', placeholder: 'Be honest — this shapes what we focus on.' }
+        ]
+      },
+      {
+        title: 'Commitment',
+        fields: [
+          { type: 'select', id: 'time_available', label: 'How many hours/week can you commit?', required: true, options: ['3–5 hours', '6–10 hours', '10+ hours', 'Full-time — this is my main focus'] },
+          { type: 'textarea', id: 'goal_12mo', label: '12-month goal', placeholder: 'Concrete — revenue target? Product launch? First hire?' }
+        ]
+      },
+      {
+        title: 'Background (optional)',
+        fields: [
+          { type: 'file', id: 'cv', label: 'CV / LinkedIn export', accept: '.pdf,.doc,.docx' },
+          { type: 'file', id: 'pitch_deck', label: 'Pitch deck (if you have one)', accept: '.pdf,.ppt,.pptx' }
+        ]
+      }
+    ]
+  },
+
+  team_training: {
+    department: 'skills',
+    name: 'Team Training Workshop',
+    intro: {
+      title: 'Let\'s <em>upskill</em> your team.',
+      body: 'A focused workshop for your team on whatever capability is missing. We design it to your brief.',
+      duration: '7–9 minutes'
+    },
+    steps: [
+      {
+        title: 'The team',
+        fields: [
+          { type: 'select', id: 'team_size', label: 'How many attendees?', required: true, options: ['Under 10', '10–25', '25–50', '50–100', 'Over 100'] },
+          { type: 'textarea', id: 'roles', label: 'What roles are they in?', required: true, placeholder: 'E.g. "5 sales reps, 2 managers, 3 customer support"' },
+          { type: 'select', id: 'experience_level', label: 'Experience level mix', required: true, options: ['Mostly junior', 'Mostly mid-level', 'Mostly senior', 'Mixed'] }
+        ]
+      },
+      {
+        title: 'The topic',
+        fields: [
+          { type: 'textarea', id: 'topic', label: 'Topic / theme of the workshop', required: true, placeholder: 'E.g. "Closing B2B sales calls", "Customer service for luxury clients", "Excel for finance teams".' },
+          { type: 'textarea', id: 'outcomes', label: 'What should they walk away able to do?', required: true, placeholder: '3 specific, measurable outcomes.' }
+        ]
+      },
+      {
+        title: 'Logistics',
+        fields: [
+          { type: 'select', id: 'format', label: 'Format', required: true, options: ['In-person at our venue', 'In-person at your venue', 'Online live', 'Hybrid'] },
+          { type: 'select', id: 'duration', label: 'Duration', required: true, options: ['Half day (3–4 hours)', 'Full day', '2 days', '3+ days'] },
+          { type: 'text', id: 'preferred_dates', label: 'Preferred dates / window' },
+          { type: 'text', id: 'venue', label: 'Venue (if known)' }
+        ]
+      },
+      {
+        title: 'Support needs',
+        fields: [
+          { type: 'textarea', id: 'support', label: 'Anything we need to provide or arrange?', placeholder: 'Materials, meals, laptops, certificates, specific facilitator profile…' }
+        ]
+      }
+    ]
+  },
+
+  certification: {
+    department: 'skills',
+    name: 'Certification Programs',
+    intro: {
+      title: 'Let\'s get you <em>certified</em>.',
+      body: 'Structured prep for recognised industry certifications — study path, mock exams, guidance.',
+      duration: '6–8 minutes'
+    },
+    steps: [
+      {
+        title: 'The certification',
+        fields: [
+          { type: 'text', id: 'cert_name', label: 'Certification name', required: true, placeholder: 'E.g. PMP, AWS Solutions Architect, CFA Level 1, Google PM Cert…' },
+          { type: 'select', id: 'body', label: 'Awarding body', options: ['PMI', 'AWS', 'Google', 'Microsoft', 'Cisco', 'CFA Institute', 'ACCA', 'Other (specify above)'] },
+          { type: 'text', id: 'target_exam_date', label: 'Target exam date', placeholder: 'Your deadline — even rough is fine.' }
+        ]
+      },
+      {
+        title: 'Your background',
+        fields: [
+          { type: 'select', id: 'prep_level', label: 'How prepared do you feel?', required: true, options: ['Starting from zero', 'Some prior exposure', 'Mid-way — need structured push', 'Close to exam-ready — need mock practice'] },
+          { type: 'textarea', id: 'experience', label: 'Relevant work experience', placeholder: 'Years in the field, relevant roles, related certifications.' },
+          { type: 'file', id: 'prior_certs', label: 'Prior certificates (if any)', accept: '.pdf,image/*', multiple: true }
+        ]
+      },
+      {
+        title: 'Study plan',
+        fields: [
+          { type: 'select', id: 'study_hours', label: 'Hours/week you can commit', required: true, options: ['Under 5', '5–10', '10–20', '20+'] },
+          { type: 'select', id: 'format', label: 'Preferred format', required: true, options: ['1-on-1 coaching', 'Group cohort', 'Self-paced with check-ins'] }
+        ]
+      }
+    ]
+  },
+
+  skills_mgmt: {
+    department: 'skills',
+    name: 'Skills Management (monthly)',
+    intro: {
+      title: 'Let\'s build a <em>learning team</em>.',
+      body: 'Ongoing skill development for your whole team — skill audits, learning paths, progress tracking.',
+      duration: '8–10 minutes'
+    },
+    steps: [
+      {
+        title: 'The team',
+        fields: [
+          { type: 'select', id: 'team_size', label: 'Team size', required: true, options: ['Under 10', '10–25', '25–50', '50–100', 'Over 100'] },
+          { type: 'textarea', id: 'departments', label: 'Departments / functions', required: true, placeholder: 'E.g. Sales (4), Engineering (6), Design (2), Ops (3)…' },
+          { type: 'file', id: 'team_roster', label: 'Team roster (spreadsheet)', accept: '.csv,.xlsx,.xls', hint: 'Name, role, department. We use this to build individual plans.' }
+        ]
+      },
+      {
+        title: 'Current baseline',
+        fields: [
+          { type: 'select', id: 'audit_status', label: 'Have you done a skills audit recently?', required: true, options: ['Yes — within the past 6 months', 'Yes — over a year ago', 'No — we need one', 'Not sure what that is'] },
+          { type: 'textarea', id: 'known_gaps', label: 'Known skill gaps', placeholder: 'What your team can\'t currently do that they need to.' }
+        ]
+      },
+      {
+        title: 'Growth plan',
+        fields: [
+          { type: 'textarea', id: 'priority_skills', label: 'Priority skills for the next 12 months', required: true, placeholder: 'Ranked list — what matters most.' },
+          { type: 'select', id: 'budget', label: 'Annual learning & development budget', options: ['Under ₦500k', '₦500k – ₦2M', '₦2M – ₦5M', 'Over ₦5M', 'Haven\'t set one — advise us'] },
+          { type: 'text', id: 'owner', label: 'Who owns L&D on your team?', placeholder: 'Name + role. If no one yet, write "nobody yet".' }
+        ]
+      }
+    ]
+  }
+};
+
+// ============= DEPARTMENT GROUPING =============
+const DEPARTMENTS = {
+  business: { name: 'Business · Compliance & Growth', order: ['cac', 'tin', 'licences', 'plan', 'trademark', 'compliance'] },
+  software: { name: 'Software · Digital Systems', order: ['website', 'crm', 'ai_integration', 'automation', 'ecommerce', 'software_mgmt'] },
+  media: { name: 'Media · Content & Presence', order: ['brand', 'social', 'podcast', 'content_strategy', 'video', 'media_mgmt'] },
+  skills: { name: 'Skills · Training & Development', order: ['tech_training', 'ai_business', 'entrepreneurship', 'team_training', 'certification', 'skills_mgmt'] }
+};
+
+// ============= STATE =============
+// Parse URL to determine service (e.g. /requirements/cac?ref=HAM-XXX or ?service=cac&ref=HAM-XXX)
+const reqParams = new URLSearchParams(window.location.search);
+const isProdMode = reqParams.get('prod') === '1';
+let serviceFromUrl = reqParams.get('service');
+const refFromUrl = reqParams.get('ref') || '';
+
+if (!serviceFromUrl) {
+  const pathParts = window.location.pathname.toLowerCase().split('/').filter(Boolean);
+  const last = pathParts[pathParts.length - 1];
+  if (last && SERVICES[last]) serviceFromUrl = last;
+}
+
+let currentService = (serviceFromUrl && SERVICES[serviceFromUrl]) ? serviceFromUrl : 'cac';
+let currentStep = -1;
+let answers = {};
+let files = {};
+
+// Hide switcher only when explicitly in production mode (?prod=1)
+if (isProdMode) {
+  document.getElementById('demo-bar').style.display = 'none';
+}
+
+// Webhook for backend submission. Leave empty to use graceful fallback.
+const WEBHOOK_URL = '';
+
+const main = document.getElementById('main');
+const selector = document.getElementById('service-selector');
+
+function getService() { return SERVICES[currentService]; }
+function getTotalSteps() { return getService().steps.length; }
+
+// ============= RENDER =============
+function render() {
+  const svc = getService();
+  const total = getTotalSteps();
+
+  if (currentStep === -1) { renderIntro(svc); return; }
+  if (currentStep === total) { renderReview(svc); return; }
+  if (currentStep > total) { renderDone(svc); return; }
+
+  renderStep(svc, currentStep);
+}
+
+function renderIntro(svc) {
+  main.innerHTML = `
+    <div class="intro">
+      <div class="eyebrow">Project requirements</div>
+      <span class="service-tag">${svc.name}</span>
+      <h1 class="intro-title">${svc.intro.title}</h1>
+      <p class="intro-body">${svc.intro.body}</p>
+      <div class="intro-meta">
+        <div class="meta-item">
+          <div class="k">Duration</div>
+          <div class="v">${svc.intro.duration}</div>
+        </div>
+        <div class="meta-item">
+          <div class="k">Steps</div>
+          <div class="v">${svc.steps.length}</div>
+        </div>
+        <div class="meta-item">
+          <div class="k">Save anytime</div>
+          <div class="v">Secure · private</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="startFlow()">Begin →</button>
+    </div>
+  `;
+}
+
+function renderStep(svc, i) {
+  const step = svc.steps[i];
+  const total = getTotalSteps();
+
+  const progressSteps = Array.from({ length: total }, (_, idx) => {
+    const cls = idx < i ? 'done' : idx === i ? 'active' : '';
+    return `<div class="progress-step ${cls}"></div>`;
+  }).join('');
+
+  const fieldsHtml = step.fields.map(f => renderField(f)).join('');
+
+  main.innerHTML = `
+    <div class="progress-text">
+      <span>Step ${i + 1} of ${total}</span>
+      <span>${svc.name}</span>
+    </div>
+    <div class="progress-bar">${progressSteps}</div>
+    <div class="step">
+      <h2 class="step-title">${step.title}</h2>
+      ${step.subtitle ? `<p class="step-subtitle">${step.subtitle}</p>` : ''}
+      ${fieldsHtml}
+    </div>
+    <div class="footer">
+      <button class="btn btn-ghost" onclick="prevStep()">${i === 0 ? '← Back to intro' : '← Previous'}</button>
+      <button class="btn btn-primary" onclick="nextStep()">${i === total - 1 ? 'Review →' : 'Continue →'}</button>
+    </div>
+  `;
+
+  attachFileHandlers();
+}
+
+function renderField(f) {
+  const req = f.required ? '<span class="field-required">*</span>' : '';
+  const hint = f.hint ? `<div class="field-hint">${f.hint}</div>` : '';
+  const val = answers[f.id] || '';
+
+  if (f.type === 'text' || f.type === 'email' || f.type === 'tel' || f.type === 'number') {
+    return `
+      <div class="field">
+        <label class="field-label" for="f-${f.id}">${f.label}${req}</label>
+        <input class="input" type="${f.type}" id="f-${f.id}" data-fid="${f.id}" placeholder="${f.placeholder || ''}" value="${escapeHtml(val)}">
+        ${hint}
+      </div>
+    `;
+  }
+  if (f.type === 'textarea') {
+    return `
+      <div class="field">
+        <label class="field-label" for="f-${f.id}">${f.label}${req}</label>
+        <textarea class="textarea" id="f-${f.id}" data-fid="${f.id}" placeholder="${f.placeholder || ''}">${escapeHtml(val)}</textarea>
+        ${hint}
+      </div>
+    `;
+  }
+  if (f.type === 'select') {
+    const opts = f.options.map(o => `<option value="${escapeHtml(o)}" ${val === o ? 'selected' : ''}>${o}</option>`).join('');
+    return `
+      <div class="field">
+        <label class="field-label" for="f-${f.id}">${f.label}${req}</label>
+        <select class="input" id="f-${f.id}" data-fid="${f.id}">
+          <option value="" ${!val ? 'selected' : ''}>Select one…</option>
+          ${opts}
+        </select>
+        ${hint}
+      </div>
+    `;
+  }
+  if (f.type === 'file') {
+    const fileList = (files[f.id] || []).map((file, idx) => `
+      <div class="file-row">
+        <div class="file-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M14 3v5h5M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-5z"/></svg>
+        </div>
+        <div class="file-meta">
+          <div class="file-name">${escapeHtml(file.name)}</div>
+          <div class="file-size">${formatBytes(file.size)}</div>
+        </div>
+        <button class="file-remove" onclick="removeFile('${f.id}', ${idx})" title="Remove">×</button>
+      </div>
+    `).join('');
+
+    return `
+      <div class="field">
+        <label class="field-label">${f.label}${req}</label>
+        <label class="upload-zone" data-fid="${f.id}">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M12 16V4m-5 5l5-5 5 5m-12 7v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
+          </div>
+          <div class="upload-primary">Drop file${f.multiple ? 's' : ''} here or <u>browse</u></div>
+          <div class="upload-secondary">${f.accept ? 'Accepted: ' + f.accept.replace(/\./g, '').replace(/,/g, ', ') : 'Any file'} · max 10MB${f.multiple ? ' each' : ''}</div>
+          <input type="file" data-fid="${f.id}" ${f.accept ? `accept="${f.accept}"` : ''} ${f.multiple ? 'multiple' : ''}>
+        </label>
+        <div class="file-list">${fileList}</div>
+        ${hint}
+      </div>
+    `;
+  }
+  return '';
+}
+
+function renderReview(svc) {
+  captureStep(); // capture current before review
+  const sections = svc.steps.map((step, idx) => {
+    const rows = step.fields.map(f => {
+      let val = '';
+      if (f.type === 'file') {
+        const arr = files[f.id] || [];
+        val = arr.length ? arr.map(x => x.name).join(', ') : '<em class="empty">None uploaded</em>';
+      } else {
+        val = answers[f.id] || '<em class="empty">Not provided</em>';
+        if (typeof val === 'string' && val.length > 200) val = escapeHtml(val.slice(0, 200)) + '…';
+        else if (!val.startsWith || !val.startsWith('<em')) val = escapeHtml(val);
+      }
+      return `
+        <div class="review-item">
+          <dt>${f.label}</dt>
+          <dd>${val}</dd>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="review-section">
+        <div class="review-head">
+          <div class="review-title">${step.title}</div>
+          <button class="review-edit" onclick="jumpToStep(${idx})">Edit</button>
+        </div>
+        <dl class="review-grid">${rows}</dl>
+      </div>
+    `;
+  }).join('');
+
+  main.innerHTML = `
+    <div class="progress-text">
+      <span>Review</span>
+      <span>${svc.name}</span>
+    </div>
+    <div class="step">
+      <h2 class="step-title">Review before submitting.</h2>
+      <p class="step-subtitle">Double-check everything. You can edit any section.</p>
+      ${sections}
+      <div style="margin-top:16px;padding:16px 20px;background:var(--paper);border:0.5px solid var(--line);border-radius:12px;">
+        <label style="display:flex;gap:10px;align-items:flex-start;cursor:pointer;font-size:13.5px;line-height:1.5;color:var(--ink-soft);">
+          <input type="checkbox" id="req-consent" style="margin-top:3px;flex-shrink:0;" ${answers.__consent ? 'checked' : ''}>
+          <span>I confirm the information provided is accurate and agree to Hamzury storing these details and documents to deliver this service. My data is kept private and protected under the Nigeria Data Protection Regulation (NDPR).</span>
+        </label>
+      </div>
+      <div id="req-error" style="display:none;margin-top:10px;padding:10px 14px;background:#FCE8E4;color:#A3301F;border-radius:8px;font-size:13.5px;"></div>
+    </div>
+    <div class="footer">
+      <button class="btn btn-ghost" onclick="prevStep()">← Previous</button>
+      <button class="btn btn-primary" onclick="submitForm()">Submit requirements →</button>
+    </div>
+  `;
+}
+
+function renderDone(svc) {
+  const ref = refFromUrl || ('HAM-' + Date.now().toString(36).toUpperCase().slice(-6));
+  const fileCount = Object.values(files).reduce((n, arr) => n + arr.length, 0);
+  main.innerHTML = `
+    <div class="outro">
+      <div class="outro-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12l5 5 9-10"/>
+        </svg>
+      </div>
+      <div class="eyebrow">Submitted</div>
+      <h1 class="intro-title">We've got what we need.</h1>
+      <p class="intro-body">Your ${svc.name} requirements are in. A specialist is reviewing now and will reach out on WhatsApp within 4 working hours with a confirmed project timeline and next steps.</p>
+      ${fileCount > 0 ? `<p style="font-size:14px;color:var(--ink-muted);margin-bottom:24px;line-height:1.55;">If any of your ${fileCount} uploaded file${fileCount > 1 ? 's' : ''} didn't come through clearly, we'll ask you to resend via WhatsApp.</p>` : ''}
+      <div class="outro-ref">Reference · ${ref}</div>
+    </div>
+  `;
+}
+
+// ============= ACTIONS =============
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[s]);
+}
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function attachFileHandlers() {
+  document.querySelectorAll('.upload-zone').forEach(zone => {
+    const fid = zone.dataset.fid;
+    const input = zone.querySelector('input[type="file"]');
+
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      zone.classList.add('dragging');
+    });
+    zone.addEventListener('dragleave', () => zone.classList.remove('dragging'));
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragging');
+      handleFiles(fid, e.dataTransfer.files);
+    });
+
+    input.addEventListener('change', (e) => {
+      handleFiles(fid, e.target.files);
+    });
+  });
+}
+
+function handleFiles(fid, fileList) {
+  const arr = Array.from(fileList);
+  const valid = arr.filter(f => f.size <= 10 * 1024 * 1024);
+  if (valid.length < arr.length) {
+    alert('Some files were over 10MB and skipped.');
+  }
+  if (!files[fid]) files[fid] = [];
+  // Check if multiple allowed
+  const svc = getService();
+  const field = svc.steps[currentStep].fields.find(f => f.id === fid);
+  if (field && !field.multiple) {
+    files[fid] = valid.slice(0, 1);
+  } else {
+    files[fid].push(...valid);
+  }
+  render();
+}
+
+window.removeFile = (fid, idx) => {
+  files[fid].splice(idx, 1);
+  if (files[fid].length === 0) delete files[fid];
+  render();
+};
+
+function captureStep() {
+  document.querySelectorAll('[data-fid]').forEach(el => {
+    if (el.tagName === 'INPUT' && el.type === 'file') return;
+    const fid = el.dataset.fid;
+    answers[fid] = el.value;
+  });
+}
+
+window.startFlow = () => {
+  currentStep = 0;
+  render();
+};
+
+window.nextStep = () => {
+  captureStep();
+  currentStep++;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.prevStep = () => {
+  captureStep();
+  currentStep--;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+window.jumpToStep = (i) => {
+  currentStep = i;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Convert a File object to base64 (without the data: prefix)
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const base64 = result.includes(',') ? result.split(',')[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+window.submitForm = async () => {
+  // Capture consent
+  const consent = document.getElementById('req-consent')?.checked || false;
+  answers.__consent = consent;
+  const errBox = document.getElementById('req-error');
+  const submitBtn = document.querySelector('.footer .btn-primary');
+
+  if (!consent) {
+    if (errBox) { errBox.textContent = 'Please confirm before submitting.'; errBox.style.display = 'block'; }
+    return;
+  }
+
+  // Show loading state
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+  }
+  if (errBox) errBox.style.display = 'none';
+
+  // POST to backend if configured
+  if (WEBHOOK_URL) {
+    try {
+      // Convert all files to base64 in parallel
+      const filePayloads = [];
+      for (const [fid, arr] of Object.entries(files)) {
+        for (const file of arr) {
+          if (submitBtn) submitBtn.textContent = `Uploading ${file.name}…`;
+          try {
+            const base64 = await fileToBase64(file);
+            filePayloads.push({
+              field: fid,
+              name: file.name,
+              mimeType: file.type || 'application/octet-stream',
+              size: file.size,
+              base64: base64
+            });
+          } catch (fileErr) {
+            console.error('Could not read file:', file.name, fileErr);
+          }
+        }
+      }
+
+      if (submitBtn) submitBtn.textContent = 'Sending…';
+
+      await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          formType: 'requirement',
+          service: currentService,
+          serviceName: getService().name,
+          paymentRef: refFromUrl,
+          ref: refFromUrl || ('HAM-' + Date.now().toString(36).toUpperCase().slice(-6)),
+          submittedAt: new Date().toISOString(),
+          answers: answers,
+          files: filePayloads
+        })
+      });
+    } catch (e) {
+      console.error('Submit failed:', e);
+      // Continue to thank-you anyway — the team will follow up via WhatsApp
+    }
+  }
+
+  currentStep = getTotalSteps() + 1;
+  render();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+// Populate service selector grouped by department
+(function populateSelector() {
+  const sel = document.getElementById('service-selector');
+  sel.innerHTML = '';
+  Object.entries(DEPARTMENTS).forEach(([deptKey, dept]) => {
+    const og = document.createElement('optgroup');
+    og.label = dept.name;
+    dept.order.forEach(svcKey => {
+      if (!SERVICES[svcKey]) return;
+      const opt = document.createElement('option');
+      opt.value = svcKey;
+      opt.textContent = SERVICES[svcKey].name;
+      if (svcKey === currentService) opt.selected = true;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+})();
+
+selector.addEventListener('change', (e) => {
+  currentService = e.target.value;
+  currentStep = -1;
+  answers = {};
+  files = {};
+  render();
+});
+
+render();
+</script>
+
+</body>
+</html>

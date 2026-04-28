@@ -1,0 +1,2091 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamzury — CSO Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
+
+    --bg: #FAFAF7;
+    --paper: #FFFFFF;
+    --ink: #0A0A0A;
+    --ink-soft: #3C3C3E;
+    --ink-muted: #86868B;
+    --ink-faint: #C7C7CC;
+    --line: #E8E8E4;
+    --line-soft: #F2F2F0;
+    --sidebar: #F5F5F2;
+    --accent-warm: #B8731F;
+    --tag-blue-bg: #E8F0FE;  --tag-blue-fg: #1A56C7;
+    --tag-amber-bg: #FDF1DD; --tag-amber-fg: #7A4A12;
+    --tag-green-bg: #E3F5E8; --tag-green-fg: #1A6B3C;
+    --tag-coral-bg: #FCE8E4; --tag-coral-fg: #A3301F;
+    --tag-grey-bg: #F0F0EC;  --tag-grey-fg: #54544E;
+    --focus: rgba(10,10,10,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv11";
+    letter-spacing: -0.005em;
+    overflow: hidden;
+  }
+
+  .app {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+  }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+
+  /* ============ SIDEBAR ============ */
+  .sidebar {
+    background: var(--sidebar);
+    border-right: 0.5px solid var(--line);
+    padding: 20px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+  }
+
+  .sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px 18px;
+    font-family: var(--serif);
+    font-size: 19px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .brand-dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif);
+    font-size: 12px;
+  }
+  .sidebar-section {
+    padding: 18px 10px 6px;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--ink-soft);
+    transition: background 0.12s;
+    letter-spacing: -0.003em;
+    font-weight: 400;
+  }
+  .nav-item:hover { background: rgba(0,0,0,0.04); color: var(--ink); }
+  .nav-item.active {
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .nav-icon {
+    width: 18px; height: 18px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .nav-icon svg {
+    width: 16px; height: 16px;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    fill: none;
+  }
+  .nav-count {
+    margin-left: auto;
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    background: rgba(0,0,0,0.06);
+    padding: 1px 7px;
+    border-radius: 10px;
+    color: var(--ink-muted);
+    min-width: 20px;
+    text-align: center;
+    font-weight: 500;
+  }
+  .nav-item.active .nav-count {
+    background: var(--ink);
+    color: #fff;
+  }
+
+  /* ============ MAIN ============ */
+  .main {
+    overflow-y: auto;
+    height: 100vh;
+  }
+
+  .main-header {
+    padding: 24px 32px 18px;
+    border-bottom: 0.5px solid var(--line);
+    background: rgba(250,250,247,0.85);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  @media (max-width: 600px) { .main-header { padding: 18px 20px 14px; } }
+
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .page-title {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+  }
+  .page-title em { font-style: italic; color: var(--accent-warm); }
+  .page-sub {
+    font-size: 13.5px;
+    color: var(--ink-muted);
+    margin-top: 2px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .search-box {
+    position: relative;
+    width: 260px;
+  }
+  @media (max-width: 900px) { .search-box { width: 180px; } }
+  @media (max-width: 600px) { .search-box { width: 140px; } }
+
+  .search-input {
+    width: 100%;
+    padding: 7px 12px 7px 32px;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 8px;
+    font: 400 13.5px var(--sans);
+    color: var(--ink);
+    letter-spacing: -0.003em;
+  }
+  .search-input:focus {
+    outline: none;
+    border-color: var(--ink);
+    box-shadow: 0 0 0 3px var(--focus);
+  }
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px; height: 14px;
+    stroke: var(--ink-muted);
+    stroke-width: 1.8;
+    fill: none;
+    pointer-events: none;
+  }
+
+  .btn {
+    padding: 7px 14px;
+    border-radius: 7px;
+    border: 0.5px solid var(--line);
+    background: var(--paper);
+    font: 500 13px var(--sans);
+    color: var(--ink-soft);
+    cursor: pointer;
+    letter-spacing: -0.003em;
+    transition: all 0.12s;
+  }
+  .btn:hover { border-color: var(--ink-faint); color: var(--ink); }
+  .btn-primary {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+  .btn-primary:hover { background: #333; color: #fff; border-color: #333; }
+
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .chip {
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    font: 500 12.5px var(--sans);
+    color: var(--ink-soft);
+    cursor: pointer;
+    letter-spacing: -0.003em;
+    transition: all 0.12s;
+  }
+  .chip:hover { border-color: var(--ink-faint); color: var(--ink); }
+  .chip.active {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+  }
+
+  /* ============ CONTENT ============ */
+  .content {
+    padding: 24px 32px 40px;
+  }
+  @media (max-width: 600px) { .content { padding: 18px 20px 40px; } }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  @media (max-width: 900px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .stat-card {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .stat-label {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+    letter-spacing: -0.002em;
+  }
+  .stat-value {
+    font-size: 30px;
+    font-weight: 400;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+    color: var(--ink);
+  }
+  .stat-meta {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .stat-meta .up { color: #1A6B3C; font-weight: 500; }
+  .stat-meta .down { color: #A3301F; font-weight: 500; }
+
+  /* Table */
+  .section-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    color: var(--ink);
+    letter-spacing: -0.003em;
+  }
+  .table-wrap {
+    background: var(--paper);
+    border: 0.5px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  th, td {
+    text-align: left;
+    padding: 12px 18px;
+    font-size: 13.5px;
+    letter-spacing: -0.003em;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  th {
+    background: var(--line-soft);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    position: sticky;
+    top: 0;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr.clickable { cursor: pointer; transition: background 0.1s; }
+  tr.clickable:hover td { background: var(--line-soft); }
+
+  .cell-name {
+    font-weight: 500;
+    color: var(--ink);
+  }
+  .cell-sub {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-top: 1px;
+  }
+  .cell-time {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .cell-right { text-align: right; }
+
+  /* Tags */
+  .tag {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: -0.003em;
+  }
+  .tag-blue { background: var(--tag-blue-bg); color: var(--tag-blue-fg); }
+  .tag-amber { background: var(--tag-amber-bg); color: var(--tag-amber-fg); }
+  .tag-green { background: var(--tag-green-bg); color: var(--tag-green-fg); }
+  .tag-coral { background: var(--tag-coral-bg); color: var(--tag-coral-fg); }
+  .tag-grey { background: var(--tag-grey-bg); color: var(--tag-grey-fg); }
+
+  .status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: 1px;
+  }
+  .status-new { background: var(--tag-blue-fg); }
+  .status-reviewing { background: var(--tag-amber-fg); }
+  .status-contacted { background: var(--tag-green-fg); }
+  .status-completed { background: var(--ink-faint); }
+
+  /* Empty state */
+  .empty-state {
+    padding: 60px 20px;
+    text-align: center;
+    color: var(--ink-muted);
+    font-size: 14px;
+  }
+  .empty-state .big {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+
+  /* ============ DRAWER ============ */
+  .drawer-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(10,10,10,0.35);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .drawer-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .drawer {
+    position: fixed;
+    right: 0;
+    top: 0;
+    width: 540px;
+    max-width: 100%;
+    height: 100vh;
+    background: var(--paper);
+    box-shadow: -12px 0 40px rgba(0,0,0,0.12);
+    z-index: 60;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    padding: 20px 24px 16px;
+    border-bottom: 0.5px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .drawer-head-info .eyebrow {
+    font-size: 12px;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+    letter-spacing: -0.003em;
+  }
+  .drawer-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--ink);
+  }
+  .drawer-meta {
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-top: 4px;
+  }
+  .drawer-close {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--line-soft);
+    cursor: pointer;
+    display: grid; place-items: center;
+    color: var(--ink-soft);
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .drawer-close:hover { background: var(--line); color: var(--ink); }
+
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px 40px;
+  }
+
+  .drawer-section {
+    margin-bottom: 28px;
+  }
+  .drawer-section-title {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 8px 16px;
+    font-size: 14px;
+    letter-spacing: -0.003em;
+  }
+  .info-grid dt { color: var(--ink-muted); }
+  .info-grid dd { color: var(--ink); }
+  .info-grid a { color: var(--tag-blue-fg); text-decoration: none; }
+  .info-grid a:hover { text-decoration: underline; }
+
+  .qa-item {
+    padding: 14px 0;
+    border-bottom: 0.5px dashed var(--line);
+  }
+  .qa-item:last-child { border-bottom: none; }
+  .qa-q {
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+    letter-spacing: -0.003em;
+  }
+  .qa-a {
+    font-size: 14.5px;
+    color: var(--ink);
+    line-height: 1.5;
+    letter-spacing: -0.005em;
+  }
+  .qa-a.skipped {
+    color: var(--ink-faint);
+    font-style: italic;
+  }
+  .qa-a ul { padding-left: 16px; margin: 2px 0; }
+  .qa-a li { margin: 2px 0; }
+
+  .file-row-drawer {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--line-soft);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+  }
+  .file-row-drawer .file-ico {
+    width: 24px; height: 24px;
+    border-radius: 5px;
+    background: var(--paper);
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .file-row-drawer .file-ico svg { width: 12px; height: 12px; stroke: var(--ink-soft); fill: none; stroke-width: 1.6; }
+  .file-row-drawer .file-n { flex: 1; font-weight: 500; letter-spacing: -0.003em; }
+  .file-row-drawer .file-s { color: var(--ink-muted); font-size: 12.5px; }
+
+  .drawer-footer {
+    padding: 16px 24px;
+    border-top: 0.5px solid var(--line);
+    display: flex;
+    gap: 8px;
+    background: var(--paper);
+  }
+  .drawer-footer .btn { flex: 1; padding: 10px 16px; font-size: 13.5px; }
+
+  /* timeline for client detail */
+  .timeline {
+    position: relative;
+    padding-left: 22px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--line);
+  }
+  .tl-item {
+    position: relative;
+    padding: 4px 0 16px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -20px;
+    top: 7px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--paper);
+    border: 1.5px solid var(--ink-faint);
+  }
+  .tl-item.event-pay::before { border-color: var(--tag-amber-fg); background: var(--tag-amber-bg); }
+  .tl-item.event-form::before { border-color: var(--tag-blue-fg); background: var(--tag-blue-bg); }
+  .tl-item.event-diag::before { border-color: var(--tag-green-fg); background: var(--tag-green-bg); }
+  .tl-item.event-call::before { border-color: var(--tag-coral-fg); background: var(--tag-coral-bg); }
+  .tl-label { font-size: 13.5px; font-weight: 500; color: var(--ink); letter-spacing: -0.003em; }
+  .tl-time { font-size: 12px; color: var(--ink-muted); margin-top: 1px; }
+  .tl-detail { font-size: 13px; color: var(--ink-soft); margin-top: 4px; line-height: 1.4; }
+
+  .avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-weight: 500;
+    font-size: 12.5px;
+    flex-shrink: 0;
+    letter-spacing: -0.003em;
+  }
+  .avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  /* Preview banner */
+  .preview-banner {
+    background: #FDF1DD;
+    border-bottom: 0.5px solid #E8C77E;
+    padding: 10px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #7A4A12;
+    gap: 16px;
+  }
+  .preview-banner strong { font-weight: 500; }
+  .preview-banner button {
+    background: #7A4A12;
+    color: #fff;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font: 500 12.5px var(--sans);
+    cursor: pointer;
+  }
+  .preview-banner button:hover { background: #5a3509; }
+</style>
+</head>
+<body>
+
+<div class="preview-banner" id="preview-banner">
+  <div>
+    <strong>⚠ Preview mode:</strong> this dashboard is populated with sample data for layout preview. Click "Clear sample data" before your team uses this live — and do not share the URL until authentication is added.
+  </div>
+  <button onclick="clearSampleData()">Clear sample data</button>
+</div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-dot">H</div>
+      <span>Hamzury</span>
+    </div>
+
+    <div class="sidebar-section">CSO workspace</div>
+
+    <div class="nav-item active" data-view="overview">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg></span>
+      Overview
+    </div>
+    <div class="nav-item" data-view="inbox">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 8l9 6 9-6M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg></span>
+      Inbox
+      <span class="nav-count" id="count-inbox">0</span>
+    </div>
+
+    <div class="sidebar-section">Submissions</div>
+
+    <div class="nav-item" data-view="diagnostics">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h0"/></svg></span>
+      Diagnostics
+      <span class="nav-count" id="count-diag">0</span>
+    </div>
+    <div class="nav-item" data-view="requirements">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M9 3h6l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4zM9 3v5h6"/></svg></span>
+      Requirements
+      <span class="nav-count" id="count-req">0</span>
+    </div>
+    <div class="nav-item" data-view="payments">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 11h18M8 15h3"/></svg></span>
+      Payments
+      <span class="nav-count" id="count-pay">0</span>
+    </div>
+    <div class="nav-item" data-view="calls">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A17 17 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></span>
+      Call requests
+      <span class="nav-count" id="count-call">0</span>
+    </div>
+
+    <div class="sidebar-section">Pipeline</div>
+
+    <div class="nav-item" data-view="followups">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+      Follow-ups
+      <span class="nav-count" id="count-followups">0</span>
+    </div>
+    <div class="nav-item" data-view="deliveries">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg></span>
+      Deliveries
+      <span class="nav-count" id="count-deliveries">0</span>
+    </div>
+    <div class="nav-item" data-view="upsells">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+      Upsells
+      <span class="nav-count" id="count-upsells">0</span>
+    </div>
+
+    <div class="sidebar-section">People</div>
+
+    <div class="nav-item" data-view="clients">
+      <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-7 7-7s7 3 7 7M17 11a3 3 0 1 0 0-6M22 21c0-3-2-6-5-6"/></svg></span>
+      Clients
+      <span class="nav-count" id="count-clients">0</span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="main-header">
+      <div class="header-top">
+        <div>
+          <h1 class="page-title" id="page-title">Overview</h1>
+          <div class="page-sub" id="page-sub">What's landed this week</div>
+        </div>
+        <div class="header-actions">
+          <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>
+            <input class="search-input" type="search" placeholder="Search name, business, service..." id="search">
+          </div>
+          <button class="btn">Export</button>
+        </div>
+      </div>
+      <div class="filter-row" id="filter-row"></div>
+    </div>
+
+    <div class="content" id="content"></div>
+  </main>
+
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-backdrop" id="backdrop"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header" id="drawer-header"></div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-footer" id="drawer-footer"></div>
+</div>
+
+<script>
+// ============= SEED DATA =============
+// Realistic Nigerian-market data to preview what the dashboard looks like with activity
+
+const now = Date.now();
+const MIN = 60 * 1000, HR = 60 * MIN, DAY = 24 * HR;
+
+const CLIENTS = {
+  c001: { name: 'Adebayo Ogundimu', email: 'adebayo@lumenlogistics.ng', phone: '+234 803 412 5567', business: 'Lumen Logistics' },
+  c002: { name: 'Funmi Okoye', email: 'funmi@freshlaundry.co', phone: '+234 814 998 2210', business: 'Fresh Laundry Co.' },
+  c003: { name: 'Emeka Nwosu', email: 'emeka@vaultadvisory.ng', phone: '+234 906 221 7734', business: 'Vault Advisory' },
+  c004: { name: 'Chidinma Eze', email: 'chidi@saffronskin.com', phone: '+234 812 556 8891', business: 'Saffron Skin' },
+  c005: { name: 'Tunde Akindele', email: 'tunde@northstar.africa', phone: '+234 909 234 5566', business: 'Northstar Africa' },
+  c006: { name: 'Blessing Umeh', email: 'blessing@craftedkitchen.ng', phone: '+234 803 776 4423', business: 'Crafted Kitchen' },
+  c007: { name: 'Yusuf Ibrahim', email: 'yusuf@thelawoffice.ng', phone: '+234 815 228 9910', business: 'The Law Office' },
+  c008: { name: 'Aisha Bello', email: 'aisha@belleboutique.com', phone: '+234 817 445 3321', business: 'Belle Boutique' },
+  c009: { name: 'Obinna Okeke', email: 'obinna@sparkacademy.ng', phone: '+234 906 112 7788', business: 'Spark Academy' },
+  c010: { name: 'Temi Alabi', email: 'temi@kindredstudio.co', phone: '+234 803 998 4411', business: 'Kindred Studio' }
+};
+
+const DIAGNOSTIC_QUESTIONS = {
+  business: [
+    'When you think about your business right now, what\'s the one thing that quietly worries you?',
+    'Is your business formally registered with the Corporate Affairs Commission?',
+    'When was the last time you filed your taxes?',
+    'Do you know exactly how much tax you paid last year?',
+    'How do you currently track your business income and expenses?',
+    'If a client asked you for a Tax Clearance Certificate today, could you provide one within 48 hours?',
+    'When you imagine your business one year from now, what does "handled" look like to you?'
+  ],
+  software: [
+    'When someone searches your business online right now, what do they find?',
+    'How do leads currently reach you?',
+    'Where do you keep track of leads and conversations?',
+    'How many times a week does your team do the same task by hand?',
+    'Have you tried using AI in your business yet?',
+    'If your website went offline today, how much would it actually affect sales?',
+    'What\'s one task that, if it ran itself, would give you your Sunday back?'
+  ],
+  media: [
+    'When was the last time you posted on your main social channel?',
+    'If someone new finds your Instagram today, would they immediately know what your business does?',
+    'Who creates your content right now?',
+    'What\'s your content plan for next month?',
+    'Which of these have you felt recently?',
+    'If one piece of content could go viral this month, what would you want it to be about?',
+    'What would a strong media presence actually look like for your business in six months?'
+  ],
+  skills: [
+    'When you think about your team, who\'s quietly outgrowing their role?',
+    'When was the last time your team did formal training?',
+    'Is there a specific skill gap right now that\'s costing you money?',
+    'How do you currently keep your own skills sharp?',
+    'If you could add one new capability to your team in the next six months, what would it be?',
+    'How much do you currently budget for team development?',
+    'When your team thinks about their future at your company, do they see growth?'
+  ],
+  clarity: [
+    'When you think about your business, what\'s the feeling you want to have in 12 months?',
+    'What\'s the one thing you\'d love someone else to take off your plate?',
+    'On a calm Sunday, what\'s the business thought that still keeps you up?',
+    'Is your business formally registered with CAC?',
+    'When was the last time you filed your taxes?',
+    'If you were audited tomorrow, how ready would you feel?',
+    'Where do leads and customer conversations actually live?',
+    'What\'s the most repetitive task your team does each week?',
+    'If a stranger found your business online today, what would they think?',
+    'Which of these sound like you?',
+    'What\'s one skill gap on your team that\'s costing you this year?',
+    'How does your team currently keep growing their skills?',
+    'What does a thriving version of your business look like?',
+    'What\'s the one change, in the next 90 days, that would matter most?'
+  ]
+};
+
+const SUBMISSIONS = [
+  // --- Diagnostics ---
+  {
+    id: 'SUB-001', type: 'diagnostic', form: 'clarity', clientId: 'c001',
+    submittedAt: now - 2 * HR, status: 'new',
+    answers: [
+      'Peace. Real peace — like knowing everything is handled.',
+      'Invoicing and client chasing. I hate it.',
+      'Whether we\'ll have cash flow for Q1. We just signed two big contracts but delivery takes 90 days.',
+      'Registered but not sure what\'s current',
+      '1–2 years ago',
+      2,
+      'Spreadsheets',
+      'Generating delivery reports. Every Monday someone builds them by hand for 3 hours.',
+      'Neutral — it\'s fine',
+      ['We have no consistent content', 'Our brand looks inconsistent'],
+      'We don\'t have a strong operations lead. I\'m the ops lead and I shouldn\'t be.',
+      'Self-directed — they figure it out',
+      'Me out of day-to-day. Team running without me. New city, same business bigger.',
+      'Hire a proper operations manager and actually trust them.'
+    ]
+  },
+  {
+    id: 'SUB-002', type: 'diagnostic', form: 'business', clientId: 'c003',
+    submittedAt: now - 5 * HR, status: 'reviewing',
+    followup: {
+      reason: 'Awaiting decision — sent compliance management quote',
+      nextDate: now + 2 * DAY,
+      notes: 'Emeka asked for the breakdown of monthly tasks. Sent yesterday. Following up Friday after he reviews with his accountant.',
+      closed: false
+    },
+    progressLog: [
+      { sentAt: now - 4 * HR, by: 'Hamzury Team', note: 'Sent detailed compliance management proposal with monthly breakdown.' }
+    ],
+    answers: [
+      'FIRS sent a letter I haven\'t opened. It\'s been three weeks.',
+      'Yes, fully registered with CAC',
+      '1–2 years ago',
+      'Not really',
+      'My bank statements — that\'s it',
+      'No, I couldn\'t',
+      'Waking up knowing I don\'t have to think about tax. At all.'
+    ]
+  },
+  {
+    id: 'SUB-003', type: 'diagnostic', form: 'media', clientId: 'c004',
+    submittedAt: now - 1 * DAY, status: 'contacted',
+    answers: [
+      'Longer than a month',
+      'Probably confusing',
+      'Me personally, when I can',
+      'There is no plan',
+      ['I post but nothing grows', 'I don\'t know what to say', 'I wish someone else could just handle it'],
+      'The science behind why people over-scrub their face and damage their skin barrier.',
+      '40k followers, engaged community, people tagging friends in our posts weekly.'
+    ]
+  },
+  {
+    id: 'SUB-004', type: 'diagnostic', form: 'skills', clientId: 'c005',
+    submittedAt: now - 2 * DAY, status: 'new',
+    answers: [
+      'Kemi — our lead designer. She\'s doing strategy work without the title or pay.',
+      'More than a year ago',
+      'Product management. We keep shipping what the loudest person asks for.',
+      'YouTube and Google when I need to',
+      'Product management. A real framework for deciding what to build.',
+      'Under ₦50,000 per year',
+      'Somewhat'
+    ]
+  },
+  {
+    id: 'SUB-005', type: 'diagnostic', form: 'software', clientId: 'c006',
+    submittedAt: now - 3 * DAY, status: 'reviewing',
+    answers: [
+      'Just my social media',
+      ['WhatsApp', 'Instagram / Facebook DMs', 'Referrals'],
+      'WhatsApp chat history',
+      'More than 30 times',
+      'Not sure if it applies to my business',
+      1,
+      'Sending quote follow-ups. I do it at midnight because I never have time during the day.'
+    ]
+  },
+  {
+    id: 'SUB-006', type: 'diagnostic', form: 'clarity', clientId: 'c009',
+    submittedAt: now - 4 * DAY, status: 'completed',
+    answers: [
+      'Stability. Knowing we\'ll still be here in 5 years.',
+      'Recruitment. Finding great tutors is killing me.',
+      'Whether we\'re actually changing lives or just making noise.',
+      'Yes, fully',
+      'Within the past year',
+      4,
+      'Spreadsheets',
+      'Lesson scheduling and payroll reconciliation.',
+      'Impressed — we look sharp',
+      [],
+      'Curriculum design. We wing it.',
+      'Structured training and learning paths',
+      'A proper campus. 500 students. Credible brand in tech education.',
+      'Hire a proper recruitment partner.'
+    ]
+  },
+
+  // --- Requirements (post-payment) ---
+  {
+    id: 'REQ-001', type: 'requirement', service: 'cac', serviceName: 'CAC Registration', clientId: 'c007',
+    submittedAt: now - 3 * HR, status: 'new',
+    amount: '₦35,000',
+    answers: {
+      'First choice business name': 'The Law Office Limited',
+      'Second choice': 'Ibrahim Counsel Limited',
+      'Entity type': 'Limited Liability Company (Ltd)',
+      'Nature of business': 'Legal services including corporate advisory, real estate law, and litigation support.',
+      'Proposed registered address': '14B Ajose Adeogun Street, Victoria Island, Lagos',
+      'Share capital': '1,000,000',
+      'Director name': 'Yusuf Ibrahim',
+      'Director address': '14B Ajose Adeogun Street, Victoria Island, Lagos',
+      'Director phone': '+234 815 228 9910',
+      'Director email': 'yusuf@thelawoffice.ng'
+    },
+    files: [
+      { name: 'yusuf-nin-card.jpg', size: 1820000, field: 'Government ID' },
+      { name: 'yusuf-passport.jpg', size: 845000, field: 'Passport photograph' },
+      { name: 'yusuf-signature.png', size: 124000, field: 'Signature' }
+    ]
+  },
+  {
+    id: 'REQ-002', type: 'requirement', service: 'compliance', serviceName: 'Compliance Management', clientId: 'c001',
+    submittedAt: now - 12 * HR, status: 'reviewing',
+    amount: '₦150,000/yr',
+    answers: {
+      'Business legal name': 'Lumen Logistics Limited',
+      'RC number': 'RC 1847299',
+      'TIN': '20541223-0001',
+      'Registered address': '24 Opebi Road, Ikeja, Lagos',
+      'Primary contact name': 'Adebayo Ogundimu',
+      'Role': 'Founder',
+      'Email': 'adebayo@lumenlogistics.ng',
+      'Phone': '+234 803 412 5567',
+      'Last filing': '1–2 years ago',
+      'Penalty status': 'Possibly — we haven\'t checked',
+      'Concerns': 'FIRS sent a letter about outstanding VAT. I need this dealt with gently — I can\'t afford a penalty scandal with my biggest client in the loop.'
+    },
+    files: [
+      { name: 'lumen-cac-certificate.pdf', size: 2100000, field: 'CAC Certificate' },
+      { name: 'lumen-memart.pdf', size: 3840000, field: 'MEMART' },
+      { name: 'lumen-tin.pdf', size: 980000, field: 'TIN certificate' },
+      { name: 'bank-statement-jul.pdf', size: 1560000, field: 'Bank statement' },
+      { name: 'bank-statement-aug.pdf', size: 1620000, field: 'Bank statement' },
+      { name: 'bank-statement-sep.pdf', size: 1590000, field: 'Bank statement' }
+    ]
+  },
+  {
+    id: 'REQ-003', type: 'requirement', service: 'website', serviceName: 'Website Design', clientId: 'c008',
+    submittedAt: now - 2 * DAY, status: 'completed',
+    amount: '₦250,000',
+    answers: {
+      'Business name': 'Belle Boutique',
+      'Tagline': 'Timeless silhouettes. Lagos craftsmanship.',
+      'About': 'We design and hand-make limited-edition bridal and occasion wear for Lagos and West African clients.',
+      'Audience': 'Women 28-45, professional, preparing for wedding or major life event. High taste, low patience for bad service.',
+      'Page count': 'Essential pages (3–5)',
+      'Main goal': 'Book a consultation call for a custom piece.',
+      'Domain': 'belleboutique.ng',
+      'Content status': 'Some of it'
+    },
+    files: [
+      { name: 'belle-logo-vector.svg', size: 45000, field: 'Logo' },
+      { name: 'brand-guide-v3.pdf', size: 4200000, field: 'Brand guide' },
+      { name: 'studio-shoot-sept.zip', size: 8700000, field: 'Product photos' }
+    ],
+    progressLog: [
+      { sentAt: now - 1.5 * DAY, by: 'Hamzury Team', note: 'Sent first design draft for review on WhatsApp.' },
+      { sentAt: now - 1 * DAY, by: 'Hamzury Team', note: 'Client approved layout. Moving into development.' },
+      { sentAt: now - 6 * HR, by: 'Hamzury Team', note: 'Site is live at belleboutique.ng. Sent client login + walkthrough video.' }
+    ],
+    delivery: {
+      deliveredAt: now - 4 * HR,
+      notes: 'Site delivered with admin training. Client to manage product uploads going forward. 30-day support window starts today.'
+    },
+    upsell: {
+      suggestion: 'Instagram & TikTok Management',
+      notes: 'Aisha mentioned struggling with social consistency. Now that site converts, social drives traffic to it. Natural next step.',
+      taggedAt: now - 3 * HR
+    }
+  },
+  {
+    id: 'REQ-004', type: 'requirement', service: 'brand', serviceName: 'Brand Identity', clientId: 'c010',
+    submittedAt: now - 6 * HR, status: 'new',
+    amount: '₦180,000',
+    answers: {
+      'Business name': 'Kindred Studio',
+      'Mission': 'To make photography feel like a conversation with a friend — not a performance.',
+      'Audience': 'Couples and families in Lagos who hate stiff, over-directed shoots. They want honest moments, not Pinterest poses.',
+      'Personality': 'Warm, patient, a little cheeky. Like a best friend who also happens to be technically excellent.',
+      'Not personality': 'Cold, corporate, clinical. Anything that feels like a hospital waiting room.',
+      'Competitors': 'Local: @papercranestudio (too polished). International: Mary McCartney (love her softness). The Kinfolk aesthetic.'
+    },
+    files: [
+      { name: 'current-logo.png', size: 215000, field: 'Current logo' },
+      { name: 'business-card-mockup.pdf', size: 660000, field: 'Existing materials' }
+    ]
+  },
+
+  // --- Payments ---
+  {
+    id: 'PAY-001', type: 'payment', service: 'cac', serviceName: 'CAC Registration', clientId: 'c007',
+    submittedAt: now - 3 * HR, status: 'completed', amount: '₦35,000'
+  },
+  {
+    id: 'PAY-002', type: 'payment', service: 'compliance', serviceName: 'Compliance Management', clientId: 'c001',
+    submittedAt: now - 14 * HR, status: 'completed', amount: '₦87,500',
+    note: '7-month deposit of yearly plan'
+  },
+  {
+    id: 'PAY-003', type: 'payment', service: 'website', serviceName: 'Website Design', clientId: 'c008',
+    submittedAt: now - 2 * DAY - 4 * HR, status: 'completed', amount: '₦250,000'
+  },
+  {
+    id: 'PAY-004', type: 'payment', service: 'brand', serviceName: 'Brand Identity', clientId: 'c010',
+    submittedAt: now - 7 * HR, status: 'completed', amount: '₦180,000'
+  },
+  {
+    id: 'PAY-005', type: 'payment', service: 'plan', serviceName: 'Business Plan', clientId: 'c002',
+    submittedAt: now - 3 * DAY, status: 'completed', amount: '₦75,000'
+  },
+
+  // --- Call requests ---
+  {
+    id: 'CALL-001', type: 'call', category: 'Business', clientId: 'c002',
+    submittedAt: now - 40 * MIN, status: 'new',
+    note: 'Wants to discuss yearly Compliance Management for two related businesses.'
+  },
+  {
+    id: 'CALL-002', type: 'call', category: 'Software', clientId: 'c005',
+    submittedAt: now - 2 * HR, status: 'contacted',
+    note: 'CRM setup + AI integration. Budget confirmed at ~₦600k.'
+  },
+  {
+    id: 'CALL-003', type: 'call', category: 'Media', clientId: 'c006',
+    submittedAt: now - 18 * HR, status: 'new',
+    note: 'Urgent — agency dropped them last week. Needs social handover by end of month.'
+  }
+];
+
+// ============= STATE =============
+let currentView = 'overview';
+let currentFilter = 'all';
+let searchQuery = '';
+let openSubmission = null;
+
+// ============= HELPERS =============
+function relativeTime(ts) {
+  const diff = now - ts;
+  if (diff < MIN) return 'Just now';
+  if (diff < HR) return Math.round(diff / MIN) + 'm ago';
+  if (diff < DAY) return Math.round(diff / HR) + 'h ago';
+  const days = Math.round(diff / DAY);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return days + 'd ago';
+  return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+function absTime(ts) {
+  return new Date(ts).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(0) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+
+function getStatusTag(s) {
+  const map = {
+    'new': 'tag-blue',
+    'reviewing': 'tag-amber',
+    'contacted': 'tag-green',
+    'completed': 'tag-grey'
+  };
+  return `<span class="tag ${map[s]}"><span class="status-dot status-${s}"></span>${s}</span>`;
+}
+
+function getTypeTag(t) {
+  const map = {
+    'diagnostic': { cls: 'tag-blue', label: 'Diagnostic' },
+    'requirement': { cls: 'tag-amber', label: 'Requirement' },
+    'payment': { cls: 'tag-green', label: 'Payment' },
+    'call': { cls: 'tag-coral', label: 'Call' }
+  };
+  const m = map[t];
+  return `<span class="tag ${m.cls}">${m.label}</span>`;
+}
+
+function getFormLabel(key) {
+  const map = { clarity: 'Clarity Session', business: 'Diagnose · Business', software: 'Diagnose · Software', media: 'Diagnose · Media', skills: 'Diagnose · Skills' };
+  return map[key] || key;
+}
+
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[c]);
+}
+
+function avatarColor(name) {
+  const colors = ['#F3E4CE', '#E8F0FE', '#E3F5E8', '#FCE8E4', '#F0F0EC'];
+  const idx = name.charCodeAt(0) % colors.length;
+  return colors[idx];
+}
+function avatarFg(name) {
+  const colors = ['#7A4A12', '#1A56C7', '#1A6B3C', '#A3301F', '#54544E'];
+  const idx = name.charCodeAt(0) % colors.length;
+  return colors[idx];
+}
+function initials(name) {
+  const parts = name.split(' ');
+  return ((parts[0] || '')[0] + (parts[1] || '')[0]).toUpperCase();
+}
+
+// ============= COUNTS =============
+function updateCounts() {
+  document.getElementById('count-inbox').textContent = SUBMISSIONS.filter(s => s.status === 'new').length;
+  document.getElementById('count-diag').textContent = SUBMISSIONS.filter(s => s.type === 'diagnostic').length;
+  document.getElementById('count-req').textContent = SUBMISSIONS.filter(s => s.type === 'requirement').length;
+  document.getElementById('count-pay').textContent = SUBMISSIONS.filter(s => s.type === 'payment').length;
+  document.getElementById('count-call').textContent = SUBMISSIONS.filter(s => s.type === 'call').length;
+  document.getElementById('count-clients').textContent = Object.keys(CLIENTS).length;
+
+  // New: pipeline counts
+  const followupsEl = document.getElementById('count-followups');
+  const deliveriesEl = document.getElementById('count-deliveries');
+  const upsellsEl = document.getElementById('count-upsells');
+  if (followupsEl) followupsEl.textContent = SUBMISSIONS.filter(s => s.followup && !s.followup.closed).length;
+  if (deliveriesEl) deliveriesEl.textContent = SUBMISSIONS.filter(s => s.delivery).length;
+  if (upsellsEl) upsellsEl.textContent = SUBMISSIONS.filter(s => s.upsell).length;
+}
+
+// ============= RENDER ROUTING =============
+function render() {
+  // Nav
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.view === currentView);
+  });
+
+  const titles = {
+    overview: { t: 'Overview', s: 'What\'s landed this week' },
+    inbox: { t: 'Inbox', s: 'New submissions — awaiting review' },
+    diagnostics: { t: 'Diagnostics', s: 'Clarity Sessions and department diagnoses' },
+    requirements: { t: 'Requirements', s: 'Project briefs and file uploads post-payment' },
+    payments: { t: 'Payments', s: 'Confirmed payments, by service' },
+    calls: { t: 'Call requests', s: 'Clients who tapped "Request a call"' },
+    followups: { t: 'Follow-ups', s: 'Unclosed leads — warm but not signed yet' },
+    deliveries: { t: 'Deliveries', s: 'Work completed and handed over to clients' },
+    upsells: { t: 'Upsells', s: 'Existing clients tagged for a next service' },
+    clients: { t: 'Clients', s: 'Unique profiles across all touchpoints' }
+  };
+  document.getElementById('page-title').textContent = titles[currentView].t;
+  document.getElementById('page-sub').textContent = titles[currentView].s;
+
+  // Filters bar
+  renderFilters();
+
+  // Content
+  if (currentView === 'overview') renderOverview();
+  else if (currentView === 'clients') renderClients();
+  else if (currentView === 'followups') renderFollowups();
+  else if (currentView === 'deliveries') renderDeliveries();
+  else if (currentView === 'upsells') renderUpsells();
+  else renderSubmissionTable();
+}
+
+function renderFilters() {
+  const bar = document.getElementById('filter-row');
+  if (currentView === 'overview' || currentView === 'clients') {
+    bar.innerHTML = '';
+    return;
+  }
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'new', label: 'New' },
+    { id: 'reviewing', label: 'Reviewing' },
+    { id: 'contacted', label: 'Contacted' },
+    { id: 'completed', label: 'Completed' }
+  ];
+  bar.innerHTML = filters.map(f =>
+    `<button class="chip ${currentFilter === f.id ? 'active' : ''}" data-filter="${f.id}">${f.label}</button>`
+  ).join('');
+  bar.querySelectorAll('.chip').forEach(c => {
+    c.addEventListener('click', () => {
+      currentFilter = c.dataset.filter;
+      render();
+    });
+  });
+}
+
+// ============= OVERVIEW =============
+function renderOverview() {
+  const content = document.getElementById('content');
+
+  const pendingCount = SUBMISSIONS.filter(s => s.status === 'new').length;
+  const weekCount = SUBMISSIONS.filter(s => s.submittedAt > now - 7 * DAY).length;
+  const paidCount = SUBMISSIONS.filter(s => s.type === 'payment').length;
+  const diagCount = SUBMISSIONS.filter(s => s.type === 'diagnostic').length;
+
+  const totalRevenue = SUBMISSIONS
+    .filter(s => s.type === 'payment')
+    .reduce((sum, s) => {
+      const v = parseInt((s.amount || '').replace(/[^\d]/g, ''), 10);
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+
+  const recentFive = [...SUBMISSIONS]
+    .sort((a, b) => b.submittedAt - a.submittedAt)
+    .slice(0, 6);
+
+  content.innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Awaiting review</div>
+        <div class="stat-value">${pendingCount}</div>
+        <div class="stat-meta">Needs your attention</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">This week</div>
+        <div class="stat-value">${weekCount}</div>
+        <div class="stat-meta"><span class="up">↑</span> submissions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Revenue received</div>
+        <div class="stat-value">₦${(totalRevenue / 1000).toFixed(0)}k</div>
+        <div class="stat-meta">${paidCount} payments confirmed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Diagnostics completed</div>
+        <div class="stat-value">${diagCount}</div>
+        <div class="stat-meta">Clarity and department forms</div>
+      </div>
+    </div>
+
+    <div class="section-title">Latest activity</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Activity</th>
+            <th>Status</th>
+            <th class="cell-right">When</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${recentFive.map(s => {
+            const c = CLIENTS[s.clientId];
+            let activity;
+            if (s.type === 'diagnostic') activity = `Completed ${getFormLabel(s.form)}`;
+            else if (s.type === 'requirement') activity = `Submitted ${s.serviceName} requirements`;
+            else if (s.type === 'payment') activity = `Paid ${s.amount} · ${s.serviceName}`;
+            else if (s.type === 'call') activity = `Requested call · ${s.category}`;
+            return `
+              <tr class="clickable" data-id="${s.id}">
+                <td>
+                  <div class="avatar-row">
+                    <div class="avatar" style="background:${avatarColor(c.name)};color:${avatarFg(c.name)}">${initials(c.name)}</div>
+                    <div>
+                      <div class="cell-name">${c.name}</div>
+                      <div class="cell-sub">${c.business}</div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  ${getTypeTag(s.type)}
+                  <span style="margin-left:8px;color:var(--ink-soft);">${activity}</span>
+                </td>
+                <td>${getStatusTag(s.status)}</td>
+                <td class="cell-right cell-time">${relativeTime(s.submittedAt)}</td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.id));
+  });
+}
+
+// ============= SUBMISSION TABLE =============
+function renderSubmissionTable() {
+  const content = document.getElementById('content');
+  const q = searchQuery.toLowerCase().trim();
+
+  let list = SUBMISSIONS;
+
+  if (currentView === 'inbox') list = list.filter(s => s.status === 'new');
+  else if (currentView === 'diagnostics') list = list.filter(s => s.type === 'diagnostic');
+  else if (currentView === 'requirements') list = list.filter(s => s.type === 'requirement');
+  else if (currentView === 'payments') list = list.filter(s => s.type === 'payment');
+  else if (currentView === 'calls') list = list.filter(s => s.type === 'call');
+
+  if (currentView !== 'inbox' && currentFilter !== 'all') {
+    list = list.filter(s => s.status === currentFilter);
+  }
+
+  if (q) {
+    list = list.filter(s => {
+      const c = CLIENTS[s.clientId];
+      return (c.name + ' ' + c.business + ' ' + c.email + ' ' + (s.serviceName || '') + ' ' + (s.form || '')).toLowerCase().includes(q);
+    });
+  }
+
+  list = [...list].sort((a, b) => b.submittedAt - a.submittedAt);
+
+  if (list.length === 0) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="big">Nothing here yet</div>
+        <div>Submissions will appear in real time once clients complete forms.</div>
+      </div>
+    `;
+    return;
+  }
+
+  const rows = list.map(s => {
+    const c = CLIENTS[s.clientId];
+    let primary, secondary;
+    if (s.type === 'diagnostic') {
+      primary = getFormLabel(s.form);
+      secondary = Array.isArray(s.answers) ? `${s.answers.filter(a => a != null && a !== '').length} answers` : '';
+    } else if (s.type === 'requirement') {
+      primary = s.serviceName;
+      secondary = `${Object.keys(s.answers || {}).length} fields · ${(s.files || []).length} files`;
+    } else if (s.type === 'payment') {
+      primary = s.serviceName;
+      secondary = s.amount + (s.note ? ` · ${s.note}` : '');
+    } else if (s.type === 'call') {
+      primary = `${s.category} · Call request`;
+      secondary = s.note || '';
+    }
+    return `
+      <tr class="clickable" data-id="${s.id}">
+        <td>
+          <div class="avatar-row">
+            <div class="avatar" style="background:${avatarColor(c.name)};color:${avatarFg(c.name)}">${initials(c.name)}</div>
+            <div>
+              <div class="cell-name">${c.name}</div>
+              <div class="cell-sub">${c.business}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style="font-weight:500;color:var(--ink);">${primary}</div>
+          ${secondary ? `<div class="cell-sub">${escapeHtml(secondary)}</div>` : ''}
+        </td>
+        <td>${getStatusTag(s.status)}</td>
+        <td class="cell-right cell-time">${relativeTime(s.submittedAt)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="section-title">${list.length} ${list.length === 1 ? 'submission' : 'submissions'}</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Submission</th>
+            <th>Status</th>
+            <th class="cell-right">When</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.id));
+  });
+}
+
+// ============= CLIENTS =============
+function renderClients() {
+  const content = document.getElementById('content');
+  const q = searchQuery.toLowerCase().trim();
+
+  const rows = Object.entries(CLIENTS).map(([id, c]) => {
+    const subs = SUBMISSIONS.filter(s => s.clientId === id);
+    const revenue = subs.filter(s => s.type === 'payment').reduce((sum, s) => {
+      const v = parseInt((s.amount || '').replace(/[^\d]/g, ''), 10);
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+    const latest = subs.length ? [...subs].sort((a, b) => b.submittedAt - a.submittedAt)[0] : null;
+    return { id, client: c, subs, revenue, latest };
+  });
+
+  const filtered = q
+    ? rows.filter(r => (r.client.name + ' ' + r.client.business + ' ' + r.client.email).toLowerCase().includes(q))
+    : rows;
+
+  content.innerHTML = `
+    <div class="section-title">${filtered.length} clients</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Client</th>
+            <th>Contact</th>
+            <th class="cell-right">Activity</th>
+            <th class="cell-right">Revenue</th>
+            <th class="cell-right">Last seen</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered.map(r => `
+            <tr class="clickable" data-client="${r.id}">
+              <td>
+                <div class="avatar-row">
+                  <div class="avatar" style="background:${avatarColor(r.client.name)};color:${avatarFg(r.client.name)}">${initials(r.client.name)}</div>
+                  <div>
+                    <div class="cell-name">${r.client.name}</div>
+                    <div class="cell-sub">${r.client.business}</div>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div style="font-size:13px;">${r.client.email}</div>
+                <div class="cell-sub">${r.client.phone}</div>
+              </td>
+              <td class="cell-right">${r.subs.length}</td>
+              <td class="cell-right" style="font-variant-numeric:tabular-nums;font-weight:500;">${r.revenue ? '₦' + (r.revenue/1000).toFixed(0) + 'k' : '—'}</td>
+              <td class="cell-right cell-time">${r.latest ? relativeTime(r.latest.submittedAt) : '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openClientDetail(tr.dataset.client));
+  });
+}
+
+// ============= DRAWER =============
+function openDetail(id) {
+  const sub = SUBMISSIONS.find(s => s.id === id);
+  if (!sub) return;
+  const client = CLIENTS[sub.clientId];
+  openSubmission = sub;
+
+  const header = document.getElementById('drawer-header');
+  const bodyEl = document.getElementById('drawer-body');
+  const footer = document.getElementById('drawer-footer');
+
+  let title, subtitle;
+  if (sub.type === 'diagnostic') {
+    title = getFormLabel(sub.form);
+    subtitle = `${(sub.answers || []).filter(a => a != null && a !== '').length} answers · ${sub.id}`;
+  } else if (sub.type === 'requirement') {
+    title = sub.serviceName;
+    subtitle = `Project requirements · ${sub.id}`;
+  } else if (sub.type === 'payment') {
+    title = `${sub.serviceName} · ${sub.amount}`;
+    subtitle = `Payment received · ${sub.id}`;
+  } else if (sub.type === 'call') {
+    title = `${sub.category} call request`;
+    subtitle = sub.id;
+  }
+
+  header.innerHTML = `
+    <div class="drawer-head-info">
+      <div class="eyebrow">${sub.type.charAt(0).toUpperCase() + sub.type.slice(1)}${getStatusTag(sub.status).replace(/<span class="tag/, '<span style="margin-left:10px" class="tag')}</div>
+      <div class="drawer-title">${escapeHtml(title)}</div>
+      <div class="drawer-meta">${subtitle} · ${absTime(sub.submittedAt)}</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  `;
+
+  let bodyHtml = `
+    <div class="drawer-section">
+      <div class="drawer-section-title">Client</div>
+      <div class="avatar-row" style="margin-bottom:14px;">
+        <div class="avatar" style="width:44px;height:44px;font-size:14px;background:${avatarColor(client.name)};color:${avatarFg(client.name)}">${initials(client.name)}</div>
+        <div>
+          <div class="cell-name">${client.name}</div>
+          <div class="cell-sub">${client.business}</div>
+        </div>
+      </div>
+      <dl class="info-grid">
+        <dt>Email</dt><dd><a href="mailto:${client.email}">${client.email}</a></dd>
+        <dt>Phone</dt><dd><a href="tel:${client.phone}">${client.phone}</a></dd>
+      </dl>
+    </div>
+  `;
+
+  if (sub.type === 'diagnostic') {
+    const qs = DIAGNOSTIC_QUESTIONS[sub.form] || [];
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Responses</div>
+        ${qs.map((q, i) => {
+          const a = sub.answers[i];
+          let aHtml;
+          if (a == null || a === '' || a === undefined) {
+            aHtml = '<div class="qa-a skipped">Skipped</div>';
+          } else if (Array.isArray(a) && a.length === 0) {
+            aHtml = '<div class="qa-a skipped">None selected</div>';
+          } else if (Array.isArray(a)) {
+            aHtml = `<div class="qa-a"><ul>${a.map(x => `<li>${escapeHtml(x)}</li>`).join('')}</ul></div>`;
+          } else if (typeof a === 'number') {
+            aHtml = `<div class="qa-a">Rated ${a} / 5</div>`;
+          } else {
+            aHtml = `<div class="qa-a">${escapeHtml(a)}</div>`;
+          }
+          return `<div class="qa-item"><div class="qa-q">${escapeHtml(q)}</div>${aHtml}</div>`;
+        }).join('')}
+      </div>
+    `;
+  } else if (sub.type === 'requirement') {
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Service details</div>
+        <dl class="info-grid">
+          <dt>Service</dt><dd>${sub.serviceName}</dd>
+          <dt>Amount paid</dt><dd>${sub.amount}</dd>
+          <dt>Submitted</dt><dd>${absTime(sub.submittedAt)}</dd>
+        </dl>
+      </div>
+      <div class="drawer-section">
+        <div class="drawer-section-title">Responses</div>
+        ${Object.entries(sub.answers).map(([k, v]) => `
+          <div class="qa-item">
+            <div class="qa-q">${escapeHtml(k)}</div>
+            <div class="qa-a">${escapeHtml(v)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    if (sub.files && sub.files.length) {
+      bodyHtml += `
+        <div class="drawer-section">
+          <div class="drawer-section-title">Files uploaded (${sub.files.length})</div>
+          ${sub.files.map(f => `
+            <div class="file-row-drawer">
+              <div class="file-ico">
+                <svg viewBox="0 0 24 24"><path d="M14 3v5h5M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-5z"/></svg>
+              </div>
+              <div>
+                <div class="file-n">${escapeHtml(f.name)}</div>
+                <div class="file-s">${f.field} · ${formatBytes(f.size)}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  } else if (sub.type === 'payment') {
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Payment</div>
+        <dl class="info-grid">
+          <dt>Service</dt><dd>${sub.serviceName}</dd>
+          <dt>Amount</dt><dd style="font-weight:500;">${sub.amount}</dd>
+          ${sub.note ? `<dt>Note</dt><dd>${escapeHtml(sub.note)}</dd>` : ''}
+          <dt>Received</dt><dd>${absTime(sub.submittedAt)}</dd>
+          <dt>Reference</dt><dd style="font-family:var(--mono);">${sub.id}</dd>
+        </dl>
+      </div>
+    `;
+  } else if (sub.type === 'call') {
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Request</div>
+        <dl class="info-grid">
+          <dt>Category</dt><dd>${sub.category}</dd>
+          <dt>Received</dt><dd>${absTime(sub.submittedAt)}</dd>
+        </dl>
+        ${sub.note ? `<div style="margin-top:14px;padding:14px 16px;background:var(--line-soft);border-radius:10px;font-size:14px;line-height:1.5;">${escapeHtml(sub.note)}</div>` : ''}
+      </div>
+    `;
+  }
+
+  // === PIPELINE SECTIONS — visible on every submission ===
+  // Progress updates log
+  bodyHtml += `
+    <div class="drawer-section">
+      <div class="drawer-section-title" style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Progress updates</span>
+        <button onclick="openLogUpdate()" style="background:none;border:none;color:var(--accent-warm);font:500 12px var(--sans);cursor:pointer;">+ Log update</button>
+      </div>
+      ${sub.progressLog && sub.progressLog.length ? `
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${sub.progressLog.map(u => `
+            <div style="padding:10px 12px;background:var(--line-soft);border-radius:8px;font-size:13.5px;">
+              <div style="color:var(--ink);">${escapeHtml(u.note)}</div>
+              <div style="font-size:11.5px;color:var(--ink-muted);margin-top:3px;">${u.by} · ${absTime(u.sentAt)}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<div style="font-size:13px;color:var(--ink-muted);font-style:italic;">No updates logged yet.</div>'}
+    </div>
+  `;
+
+  // Delivery
+  if (sub.delivery) {
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Delivery</div>
+        <div style="padding:14px 16px;background:#E3F5E8;border-radius:10px;font-size:13.5px;line-height:1.5;">
+          <div style="font-weight:500;color:#1A6B3C;margin-bottom:4px;">✓ Delivered ${relativeTime(sub.delivery.deliveredAt)}</div>
+          ${sub.delivery.notes ? `<div style="color:var(--ink-soft);">${escapeHtml(sub.delivery.notes)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  // Upsell
+  if (sub.upsell) {
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Upsell tag</div>
+        <div style="padding:14px 16px;background:var(--tag-amber-bg);border-radius:10px;font-size:13.5px;line-height:1.5;">
+          <div style="font-weight:500;color:var(--tag-amber-fg);margin-bottom:4px;">Next service: ${escapeHtml(sub.upsell.suggestion)}</div>
+          ${sub.upsell.notes ? `<div style="color:var(--ink-soft);">${escapeHtml(sub.upsell.notes)}</div>` : ''}
+          <div style="font-size:11.5px;color:var(--ink-muted);margin-top:6px;">Tagged ${relativeTime(sub.upsell.taggedAt)}</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // Follow-up
+  if (sub.followup && !sub.followup.closed) {
+    const overdue = sub.followup.nextDate < now;
+    bodyHtml += `
+      <div class="drawer-section">
+        <div class="drawer-section-title">Follow-up scheduled</div>
+        <div style="padding:14px 16px;background:${overdue ? '#FCE8E4' : 'var(--line-soft)'};border-radius:10px;font-size:13.5px;line-height:1.5;">
+          <div style="font-weight:500;color:${overdue ? '#A3301F' : 'var(--ink)'};margin-bottom:4px;">${overdue ? '⚠ Overdue · ' : ''}Next contact: ${relativeTime(sub.followup.nextDate)}</div>
+          <div style="color:var(--ink-soft);">Reason: ${escapeHtml(sub.followup.reason)}</div>
+          ${sub.followup.notes ? `<div style="color:var(--ink-soft);margin-top:6px;font-style:italic;">${escapeHtml(sub.followup.notes)}</div>` : ''}
+          <div style="margin-top:10px;display:flex;gap:6px;">
+            <button onclick="closeFollowup('won')" style="padding:5px 11px;border-radius:6px;border:none;background:#1A6B3C;color:#fff;font:500 12px var(--sans);cursor:pointer;">Closed — won</button>
+            <button onclick="closeFollowup('lost')" style="padding:5px 11px;border-radius:6px;border:0.5px solid var(--line);background:var(--paper);color:var(--ink-soft);font:500 12px var(--sans);cursor:pointer;">Closed — lost</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  bodyEl.innerHTML = bodyHtml;
+
+  // Build footer buttons — context-aware
+  let footerBtns = '';
+  const isPaidWork = sub.type === 'requirement' || sub.type === 'payment';
+
+  if (sub.status === 'new') {
+    footerBtns += `<button class="btn" onclick="markStatus('reviewing')">Mark reviewing</button>`;
+    footerBtns += `<button class="btn btn-primary" onclick="markStatus('contacted')">Mark contacted</button>`;
+  } else if (sub.status === 'reviewing') {
+    footerBtns += `<button class="btn" onclick="markStatus('contacted')">Mark contacted</button>`;
+  }
+
+  // Pipeline actions — always available
+  if (!sub.followup || sub.followup.closed) {
+    footerBtns += `<button class="btn" onclick="openMarkFollowup()">⏳ Set follow-up</button>`;
+  }
+  if (isPaidWork && !sub.delivery) {
+    footerBtns += `<button class="btn" onclick="openMarkDelivered()">📦 Mark delivered</button>`;
+  }
+  if (sub.delivery && !sub.upsell) {
+    footerBtns += `<button class="btn" onclick="openTagUpsell()">⬆ Tag upsell</button>`;
+  }
+  footerBtns += `<button class="btn btn-primary" onclick="window.open('tel:${client.phone}')">Call ${client.name.split(' ')[0]}</button>`;
+
+  footer.innerHTML = footerBtns;
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+}
+
+function openClientDetail(clientId) {
+  const client = CLIENTS[clientId];
+  const subs = [...SUBMISSIONS.filter(s => s.clientId === clientId)].sort((a, b) => b.submittedAt - a.submittedAt);
+  const revenue = subs.filter(s => s.type === 'payment').reduce((sum, s) => {
+    const v = parseInt((s.amount || '').replace(/[^\d]/g, ''), 10);
+    return sum + (isNaN(v) ? 0 : v);
+  }, 0);
+
+  const header = document.getElementById('drawer-header');
+  const bodyEl = document.getElementById('drawer-body');
+  const footer = document.getElementById('drawer-footer');
+
+  header.innerHTML = `
+    <div class="drawer-head-info">
+      <div class="eyebrow">Client profile</div>
+      <div class="drawer-title">${escapeHtml(client.name)}</div>
+      <div class="drawer-meta">${client.business} · ${subs.length} touchpoints${revenue ? ' · ₦' + (revenue/1000).toFixed(0) + 'k revenue' : ''}</div>
+    </div>
+    <button class="drawer-close" onclick="closeDrawer()">×</button>
+  `;
+
+  const timelineHtml = subs.map(s => {
+    let label, detail, cls;
+    if (s.type === 'diagnostic') {
+      label = `Completed ${getFormLabel(s.form)}`;
+      detail = `${(s.answers || []).filter(a => a != null && a !== '').length} of ${(DIAGNOSTIC_QUESTIONS[s.form] || []).length} answered`;
+      cls = 'event-diag';
+    } else if (s.type === 'requirement') {
+      label = `Submitted ${s.serviceName} requirements`;
+      detail = `${Object.keys(s.answers || {}).length} fields · ${(s.files || []).length} files uploaded`;
+      cls = 'event-form';
+    } else if (s.type === 'payment') {
+      label = `Paid ${s.amount} for ${s.serviceName}`;
+      detail = s.note || '';
+      cls = 'event-pay';
+    } else if (s.type === 'call') {
+      label = `Requested call · ${s.category}`;
+      detail = s.note || '';
+      cls = 'event-call';
+    }
+    return `
+      <div class="tl-item ${cls}" data-id="${s.id}">
+        <div class="tl-label">${label}</div>
+        <div class="tl-time">${absTime(s.submittedAt)} · ${getStatusTag(s.status)}</div>
+        ${detail ? `<div class="tl-detail">${escapeHtml(detail)}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+
+  bodyEl.innerHTML = `
+    <div class="drawer-section">
+      <div class="drawer-section-title">Contact</div>
+      <dl class="info-grid">
+        <dt>Email</dt><dd><a href="mailto:${client.email}">${client.email}</a></dd>
+        <dt>Phone</dt><dd><a href="tel:${client.phone}">${client.phone}</a></dd>
+        <dt>Business</dt><dd>${escapeHtml(client.business)}</dd>
+      </dl>
+    </div>
+    <div class="drawer-section">
+      <div class="drawer-section-title">Timeline</div>
+      ${subs.length ? `<div class="timeline">${timelineHtml}</div>` : '<div style="color:var(--ink-muted);font-size:13.5px;">No activity yet.</div>'}
+    </div>
+  `;
+
+  bodyEl.querySelectorAll('.tl-item').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => openDetail(el.dataset.id));
+  });
+
+  footer.innerHTML = `
+    <button class="btn" onclick="window.open('mailto:${client.email}')">Email</button>
+    <button class="btn btn-primary" onclick="window.open('tel:${client.phone}')">Call ${client.name.split(' ')[0]}</button>
+  `;
+
+  document.getElementById('drawer').classList.add('open');
+  document.getElementById('backdrop').classList.add('open');
+}
+
+window.markStatus = (status) => {
+  if (!openSubmission) return;
+  openSubmission.status = status;
+  updateCounts();
+  openDetail(openSubmission.id); // re-render drawer
+  render(); // re-render table
+};
+
+window.closeDrawer = () => {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('backdrop').classList.remove('open');
+  openSubmission = null;
+};
+
+// ============= NEW PIPELINE VIEWS =============
+function renderFollowups() {
+  const content = document.getElementById('content');
+  const q = searchQuery.toLowerCase().trim();
+
+  let list = SUBMISSIONS.filter(s => s.followup && !s.followup.closed);
+  if (q) {
+    list = list.filter(s => {
+      const c = CLIENTS[s.clientId];
+      return (c.name + ' ' + c.business + ' ' + (s.followup.reason || '')).toLowerCase().includes(q);
+    });
+  }
+  list = [...list].sort((a, b) => (a.followup.nextDate || 0) - (b.followup.nextDate || 0));
+
+  if (!list.length) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="big">No follow-ups yet</div>
+        <div>Mark a submission as "Awaiting follow-up" from its drawer to track it here.</div>
+      </div>`;
+    return;
+  }
+
+  const rows = list.map(s => {
+    const c = CLIENTS[s.clientId];
+    const overdue = s.followup.nextDate && s.followup.nextDate < now;
+    const dateLabel = s.followup.nextDate ? relativeTime(s.followup.nextDate) : '—';
+    let what = '';
+    if (s.type === 'diagnostic') what = getFormLabel(s.form);
+    else if (s.type === 'requirement') what = s.serviceName;
+    else if (s.type === 'call') what = `${s.category} · Call`;
+    else what = s.serviceName || s.type;
+
+    return `
+      <tr class="clickable" data-id="${s.id}">
+        <td>
+          <div class="avatar-row">
+            <div class="avatar" style="background:${avatarColor(c.name)};color:${avatarFg(c.name)}">${initials(c.name)}</div>
+            <div>
+              <div class="cell-name">${c.name}</div>
+              <div class="cell-sub">${c.business}</div>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div style="font-weight:500;">${escapeHtml(what)}</div>
+          <div class="cell-sub">${escapeHtml(s.followup.reason || '—')}</div>
+        </td>
+        <td>${s.followup.notes ? `<div style="font-size:13px;color:var(--ink-soft);max-width:280px;">${escapeHtml(s.followup.notes.slice(0,120))}</div>` : '—'}</td>
+        <td class="cell-right cell-time" style="${overdue ? 'color:#A3301F;font-weight:500;' : ''}">${dateLabel}${overdue ? ' (overdue)' : ''}</td>
+      </tr>
+    `;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="section-title">${list.length} ${list.length === 1 ? 'follow-up' : 'follow-ups'}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>What</th><th>Reason / Notes</th><th class="cell-right">Next contact</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.id));
+  });
+}
+
+function renderDeliveries() {
+  const content = document.getElementById('content');
+  const q = searchQuery.toLowerCase().trim();
+  let list = SUBMISSIONS.filter(s => s.delivery);
+  if (q) {
+    list = list.filter(s => {
+      const c = CLIENTS[s.clientId];
+      return (c.name + ' ' + c.business + ' ' + (s.serviceName || '')).toLowerCase().includes(q);
+    });
+  }
+  list = [...list].sort((a, b) => (b.delivery.deliveredAt || 0) - (a.delivery.deliveredAt || 0));
+
+  if (!list.length) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="big">No deliveries yet</div>
+        <div>Mark a requirement as delivered from its drawer to track it here.</div>
+      </div>`;
+    return;
+  }
+
+  const rows = list.map(s => {
+    const c = CLIENTS[s.clientId];
+    return `
+      <tr class="clickable" data-id="${s.id}">
+        <td>
+          <div class="avatar-row">
+            <div class="avatar" style="background:${avatarColor(c.name)};color:${avatarFg(c.name)}">${initials(c.name)}</div>
+            <div>
+              <div class="cell-name">${c.name}</div>
+              <div class="cell-sub">${c.business}</div>
+            </div>
+          </div>
+        </td>
+        <td><div style="font-weight:500;">${escapeHtml(s.serviceName || '—')}</div></td>
+        <td>${s.delivery.notes ? `<div style="font-size:13px;color:var(--ink-soft);max-width:280px;">${escapeHtml(s.delivery.notes.slice(0,120))}</div>` : '—'}</td>
+        <td class="cell-right cell-time">${s.delivery.deliveredAt ? relativeTime(s.delivery.deliveredAt) : '—'}</td>
+      </tr>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="section-title">${list.length} ${list.length === 1 ? 'delivery' : 'deliveries'}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Service</th><th>Notes</th><th class="cell-right">Delivered</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.id));
+  });
+}
+
+function renderUpsells() {
+  const content = document.getElementById('content');
+  const q = searchQuery.toLowerCase().trim();
+  let list = SUBMISSIONS.filter(s => s.upsell);
+  if (q) {
+    list = list.filter(s => {
+      const c = CLIENTS[s.clientId];
+      return (c.name + ' ' + c.business + ' ' + (s.upsell.suggestion || '')).toLowerCase().includes(q);
+    });
+  }
+
+  if (!list.length) {
+    content.innerHTML = `
+      <div class="empty-state">
+        <div class="big">No upsell tags yet</div>
+        <div>After a delivery, tag clients with their next-step service from the drawer.</div>
+      </div>`;
+    return;
+  }
+
+  const rows = list.map(s => {
+    const c = CLIENTS[s.clientId];
+    return `
+      <tr class="clickable" data-id="${s.id}">
+        <td>
+          <div class="avatar-row">
+            <div class="avatar" style="background:${avatarColor(c.name)};color:${avatarFg(c.name)}">${initials(c.name)}</div>
+            <div>
+              <div class="cell-name">${c.name}</div>
+              <div class="cell-sub">${c.business}</div>
+            </div>
+          </div>
+        </td>
+        <td><div style="font-weight:500;color:var(--ink);">${escapeHtml(s.serviceName || '—')}</div><div class="cell-sub">already delivered</div></td>
+        <td><span class="tag tag-amber">${escapeHtml(s.upsell.suggestion)}</span></td>
+        <td><div style="font-size:13px;color:var(--ink-soft);max-width:240px;">${escapeHtml((s.upsell.notes || '').slice(0,120))}</div></td>
+        <td class="cell-right cell-time">${s.upsell.taggedAt ? relativeTime(s.upsell.taggedAt) : '—'}</td>
+      </tr>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="section-title">${list.length} upsell ${list.length === 1 ? 'opportunity' : 'opportunities'}</div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Client</th><th>Currently delivered</th><th>Next service</th><th>Notes</th><th class="cell-right">Tagged</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+  content.querySelectorAll('tr.clickable').forEach(tr => {
+    tr.addEventListener('click', () => openDetail(tr.dataset.id));
+  });
+}
+
+// ============= PIPELINE ACTIONS =============
+window.openLogUpdate = () => {
+  if (!openSubmission) return;
+  const text = prompt('What update did you send to the client?\n(e.g. "Sent draft proposal via WhatsApp", "Reminded about outstanding documents")');
+  if (!text || !text.trim()) return;
+  if (!openSubmission.progressLog) openSubmission.progressLog = [];
+  openSubmission.progressLog.push({
+    sentAt: Date.now(),
+    by: 'Hamzury Team',
+    note: text.trim()
+  });
+  openDetail(openSubmission.id);
+  render();
+};
+
+window.openMarkDelivered = () => {
+  if (!openSubmission) return;
+  const notes = prompt('Delivery notes (what was handed over, any follow-up needed?)');
+  if (notes === null) return;
+  openSubmission.delivery = {
+    deliveredAt: Date.now(),
+    notes: (notes || '').trim()
+  };
+  openSubmission.status = 'completed';
+  openDetail(openSubmission.id);
+  updateCounts();
+  render();
+};
+
+window.openTagUpsell = () => {
+  if (!openSubmission) return;
+  const suggestion = prompt('Suggested next service for this client:\n(e.g. "Social Media Management", "Compliance Management", "Brand Identity")');
+  if (!suggestion || !suggestion.trim()) return;
+  const notes = prompt('Why this service? (Optional context for whoever pitches it)') || '';
+  openSubmission.upsell = {
+    suggestion: suggestion.trim(),
+    notes: notes.trim(),
+    taggedAt: Date.now()
+  };
+  openDetail(openSubmission.id);
+  updateCounts();
+  render();
+};
+
+window.openMarkFollowup = () => {
+  if (!openSubmission) return;
+  const reason = prompt('Why is this lead unclosed? Pick or type a reason:\n• Awaiting decision\n• Considering price\n• Awaiting documents from client\n• Timing not right\n• Comparing alternatives\n• Other');
+  if (!reason || !reason.trim()) return;
+  const days = parseInt(prompt('Follow up in how many days? (e.g. 3, 7, 14)') || '7', 10);
+  const notes = prompt('Notes for the next contact (optional)') || '';
+  const nextDate = Date.now() + (isNaN(days) ? 7 : days) * 24 * 60 * 60 * 1000;
+  openSubmission.followup = {
+    reason: reason.trim(),
+    nextDate: nextDate,
+    notes: notes.trim(),
+    closed: false
+  };
+  openDetail(openSubmission.id);
+  updateCounts();
+  render();
+};
+
+window.closeFollowup = (outcome) => {
+  if (!openSubmission || !openSubmission.followup) return;
+  openSubmission.followup.closed = true;
+  openSubmission.followup.outcome = outcome;
+  openSubmission.followup.closedAt = Date.now();
+  openSubmission.status = outcome === 'won' ? 'completed' : 'completed';
+  openDetail(openSubmission.id);
+  updateCounts();
+  render();
+};
+
+// ============= EVENTS =============
+document.querySelectorAll('.nav-item').forEach(n => {
+  n.addEventListener('click', () => {
+    currentView = n.dataset.view;
+    currentFilter = 'all';
+    searchQuery = '';
+    document.getElementById('search').value = '';
+    render();
+  });
+});
+
+document.getElementById('search').addEventListener('input', (e) => {
+  searchQuery = e.target.value;
+  render();
+});
+
+document.getElementById('backdrop').addEventListener('click', closeDrawer);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeDrawer();
+});
+
+window.clearSampleData = () => {
+  if (!confirm('This will remove all sample submissions and clients. Your real dashboard will then only show submissions once a backend is connected. Continue?')) return;
+  SUBMISSIONS.length = 0;
+  Object.keys(CLIENTS).forEach(k => delete CLIENTS[k]);
+  document.getElementById('preview-banner').innerHTML = '<div><strong>Empty state:</strong> sample data cleared. This dashboard will fill up once your backend is wired to the forms.</div>';
+  updateCounts();
+  render();
+};
+
+// Init
+updateCounts();
+render();
+</script>
+
+</body>
+</html>

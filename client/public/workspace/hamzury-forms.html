@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hamzury — Diagnostic Forms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F4EEE2;
+    --paper: #FBF7EE;
+    --ink: #1F1710;
+    --ink-soft: #574A3C;
+    --ink-muted: #8A7B6B;
+    --ink-faint: #B8AD9B;
+    --line: #E4DCCE;
+    --line-soft: #EFE7D8;
+    --accent: #B8731F;
+    --accent-deep: #7A4A12;
+    --accent-soft: #F3E4CE;
+    --success: #1E7A48;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    min-height: 100vh;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.005em;
+    background-image:
+      radial-gradient(circle at 15% 12%, rgba(184,115,31,0.05), transparent 45%),
+      radial-gradient(circle at 88% 92%, rgba(30,122,72,0.035), transparent 45%);
+  }
+
+  /* ============ DEMO SWITCHER ============ */
+  .demo-bar {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 100;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 8px 8px 16px;
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    box-shadow: 0 8px 24px rgba(31,23,16,0.16);
+  }
+  .demo-bar .label { opacity: 0.7; }
+  .demo-bar select {
+    background: var(--paper);
+    color: var(--ink);
+    border: none;
+    padding: 6px 28px 6px 12px;
+    border-radius: 999px;
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%231F1710' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    letter-spacing: 0.01em;
+  }
+
+  /* ============ FORM SHELL ============ */
+  .form-stage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-header {
+    padding: 32px 40px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) {
+    .form-header { padding: 24px 20px 0; }
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--serif);
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .brand-dot {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--ink-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .progress-track {
+    width: 120px;
+    height: 2px;
+    background: var(--line);
+    border-radius: 1px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--ink);
+    width: 0%;
+    transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* ============ BODY ============ */
+  .form-body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 40px 40px;
+  }
+  @media (max-width: 600px) {
+    .form-body { padding: 40px 20px 20px; }
+  }
+
+  .form-card {
+    width: 100%;
+    max-width: 680px;
+    animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+  }
+
+  .question {
+    font-family: var(--serif);
+    font-size: 38px;
+    line-height: 1.18;
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+  .question em { font-style: italic; color: var(--accent-deep); }
+
+  @media (max-width: 600px) {
+    .question { font-size: 28px; }
+  }
+
+  .helper {
+    font-size: 15px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+    margin-bottom: 36px;
+    max-width: 560px;
+  }
+
+  /* ============ INPUTS ============ */
+  .input-text, .input-textarea {
+    width: 100%;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 18px 20px;
+    font-family: var(--sans);
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.5;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .input-text:focus, .input-textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .input-text::placeholder, .input-textarea::placeholder {
+    color: var(--ink-faint);
+  }
+  .input-textarea {
+    resize: vertical;
+    min-height: 140px;
+    font-family: var(--sans);
+  }
+
+  .options-grid {
+    display: grid;
+    gap: 10px;
+  }
+
+  .option {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 20px;
+    font-family: var(--sans);
+    font-size: 16px;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+  }
+  .option:hover {
+    border-color: var(--ink-soft);
+    background: #fff;
+  }
+  .option.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-deep);
+    font-weight: 500;
+  }
+  .option-marker {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--ink-faint);
+    flex-shrink: 0;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .option.multi .option-marker {
+    border-radius: 5px;
+  }
+  .option.selected .option-marker {
+    border-color: var(--accent);
+    background: var(--accent);
+  }
+  .option.selected .option-marker::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    background: var(--paper);
+    border-radius: 50%;
+  }
+  .option.multi.selected .option-marker::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 5px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--paper);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    background: none;
+    border-radius: 0;
+    inset: auto;
+  }
+
+  .scale-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  @media (max-width: 600px) {
+    .scale-row { gap: 6px; }
+  }
+
+  .scale-btn {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 20px 0;
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--ink-soft);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .scale-btn:hover { border-color: var(--ink-soft); color: var(--ink); }
+  .scale-btn.selected {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12.5px;
+    color: var(--ink-muted);
+    padding: 0 4px;
+    margin-top: 4px;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  @media (max-width: 600px) { .contact-grid { grid-template-columns: 1fr; } }
+
+  .contact-grid .full { grid-column: 1 / -1; }
+
+  .input-group label {
+    display: block;
+    font-size: 13px;
+    color: var(--ink-muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+
+  /* ============ FOOTER ============ */
+  .form-footer {
+    padding: 32px 40px 40px;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-top: 1px solid var(--line);
+  }
+  @media (max-width: 600px) {
+    .form-footer { padding: 24px 20px 32px; flex-direction: column-reverse; align-items: stretch; }
+  }
+
+  .btn {
+    font-family: var(--sans);
+    font-size: 14.5px;
+    font-weight: 500;
+    padding: 14px 28px;
+    border-radius: 999px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.01em;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: var(--ink);
+    color: var(--paper);
+  }
+  .btn-primary:hover {
+    background: var(--accent-deep);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled {
+    background: var(--ink-faint);
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid transparent;
+  }
+  .btn-ghost:hover {
+    color: var(--ink);
+  }
+
+  .btn-skip {
+    background: transparent;
+    color: var(--ink-muted);
+    border: 1px solid var(--line);
+  }
+  .btn-skip:hover {
+    color: var(--ink);
+    border-color: var(--ink-soft);
+  }
+
+  .footer-left, .footer-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  @media (max-width: 600px) {
+    .footer-left, .footer-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* ============ INTRO / OUTRO ============ */
+  .intro-card, .outro-card {
+    max-width: 620px;
+    text-align: left;
+    animation: fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .intro-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  .intro-title {
+    font-family: var(--serif);
+    font-size: 54px;
+    line-height: 1.05;
+    font-weight: 400;
+    letter-spacing: -0.025em;
+    margin-bottom: 20px;
+  }
+  .intro-title em { font-style: italic; color: var(--accent); }
+
+  @media (max-width: 600px) {
+    .intro-title { font-size: 38px; }
+  }
+
+  .intro-body {
+    font-size: 17px;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    margin-bottom: 36px;
+    max-width: 520px;
+  }
+
+  .intro-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    margin-bottom: 40px;
+    padding: 22px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  .intro-meta-item .k {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin-bottom: 4px;
+  }
+  .intro-meta-item .v {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 400;
+  }
+
+  .outro-checkmark {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .outro-checkmark svg { width: 26px; height: 26px; }
+
+  /* ============ NO FORM NOTICE ============ */
+  .skipped-note {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: var(--line-soft);
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-bar" id="demo-bar">
+  <span class="label">Preview · switch form</span>
+  <select id="form-selector">
+    <option value="clarity">Clarity Session — full business</option>
+    <option value="business">Diagnose my Business</option>
+    <option value="software">Diagnose my Software</option>
+    <option value="media">Diagnose my Media</option>
+    <option value="skills">Diagnose my Skills</option>
+  </select>
+</div>
+
+<div class="form-stage">
+  <div class="form-header">
+    <div class="brand">
+      <div class="brand-dot">H</div>
+      <span>Hamzury</span>
+    </div>
+    <div class="progress-wrap" id="progress-wrap" style="display:none;">
+      <span id="progress-count">1 of 8</span>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+  </div>
+
+  <div class="form-body" id="form-body"></div>
+
+  <div class="form-footer" id="form-footer" style="display:none;">
+    <div class="footer-left">
+      <button class="btn btn-ghost" id="back-btn">← Back</button>
+    </div>
+    <div class="footer-right">
+      <button class="btn btn-skip" id="skip-btn">Skip</button>
+      <button class="btn btn-primary" id="next-btn">Continue</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============= FORM DEFINITIONS =============
+
+const CONTACT_QUESTION = {
+  type: 'contact',
+  id: 'contact',
+  section: 'One last thing',
+  question: 'Where should we send your plan?',
+  helper: 'We\'ll review your responses and reach out within 24 hours with a personalised breakdown.'
+};
+
+const FORMS = {
+  business: {
+    title: 'Diagnose my Business',
+    subtitle: 'Compliance & Growth',
+    intro: {
+      eyebrow: 'Department diagnostic',
+      title: 'Let\'s look at your <em>foundation</em>.',
+      body: 'A focused diagnostic for the compliance, legal, and structural side of your business. No pressure, no judgment — just a calm conversation with yourself about where things stand.',
+      duration: '6–8 minutes',
+      questions: '7 questions',
+      privacy: 'Skippable · private'
+    },
+    questions: [
+      {
+        type: 'textarea',
+        section: 'The quiet worry',
+        question: 'When you think about your business right now, what\'s the one thing that quietly worries you?',
+        helper: 'The thing that comes to mind at 2am. Be honest — nothing here leaves our team.',
+        placeholder: 'It could be anything — a feeling, a specific task you\'ve been avoiding, a letter you haven\'t opened…'
+      },
+      {
+        type: 'single',
+        section: 'Registration',
+        question: 'Is your business formally registered with the Corporate Affairs Commission?',
+        helper: 'There\'s no wrong answer — many businesses operate for years before formalising.',
+        options: [
+          'Yes, fully registered with CAC',
+          'Registered but I\'m not sure what\'s up to date',
+          'Started the process, never finished',
+          'No, not yet',
+          'Honestly, I\'m not sure'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Tax',
+        question: 'When was the last time you filed your taxes?',
+        helper: 'This tells us a lot about where to start.',
+        options: [
+          'Within the past year',
+          '1–2 years ago',
+          'More than 2 years ago',
+          'I\'ve never filed',
+          'I\'m not sure'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Tax',
+        question: 'Do you know exactly how much tax you paid last year?',
+        helper: 'Most business owners overpay because they don\'t track this closely.',
+        options: [
+          'Yes, exactly',
+          'A rough idea',
+          'Not really',
+          'I\'d rather not say'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Finances',
+        question: 'How do you currently track your business income and expenses?',
+        helper: 'The honest answer is often the most useful one.',
+        options: [
+          'Dedicated accounting software',
+          'Spreadsheets',
+          'A notebook',
+          'My bank statements — that\'s it',
+          'I don\'t really track it'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Readiness',
+        question: 'If a client asked you for a Tax Clearance Certificate today, could you provide one within 48 hours?',
+        helper: 'TCCs have become routine requests — especially for contracts.',
+        options: [
+          'Yes, no problem',
+          'I\'d have to scramble',
+          'No, I couldn\'t',
+          'What\'s a TCC?'
+        ]
+      },
+      {
+        type: 'textarea',
+        section: 'The vision',
+        question: 'When you imagine your business one year from now, what does <em>"handled"</em> look like to you?',
+        helper: 'Describe the feeling, not just the milestones.',
+        placeholder: 'Maybe it\'s never worrying about tax. Maybe it\'s sleeping through an audit. Maybe it\'s something else entirely…'
+      },
+      CONTACT_QUESTION
+    ]
+  },
+
+  software: {
+    title: 'Diagnose my Software',
+    subtitle: 'Digital Systems',
+    intro: {
+      eyebrow: 'Department diagnostic',
+      title: 'Let\'s look at your <em>systems</em>.',
+      body: 'A focused diagnostic for your digital tools, workflows, and online presence. The goal isn\'t to catch you out — it\'s to see where systems could be doing more of the work.',
+      duration: '6–8 minutes',
+      questions: '7 questions',
+      privacy: 'Skippable · private'
+    },
+    questions: [
+      {
+        type: 'single',
+        section: 'Digital presence',
+        question: 'When someone searches your business online right now, what do they find?',
+        helper: 'Be honest with yourself — what\'s actually there today?',
+        options: [
+          'A professional website I\'m proud of',
+          'A basic website that needs work',
+          'Just my social media',
+          'Almost nothing',
+          'I haven\'t checked in a while'
+        ]
+      },
+      {
+        type: 'multi',
+        section: 'Lead flow',
+        question: 'How do leads currently reach you?',
+        helper: 'Select all that apply.',
+        options: [
+          'WhatsApp',
+          'Instagram / Facebook DMs',
+          'Email',
+          'Phone calls',
+          'Walk-ins',
+          'Website enquiries',
+          'Referrals',
+          'Other'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Tracking',
+        question: 'Where do you keep track of leads and conversations?',
+        helper: 'If a lead came in three weeks ago, could you find the conversation?',
+        options: [
+          'A proper CRM',
+          'Spreadsheets',
+          'My memory',
+          'WhatsApp chat history',
+          'A mix of everything'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Manual work',
+        question: 'How many times a week does your team do the same task by hand?',
+        helper: 'Sending the same email, updating the same sheet, replying to the same question…',
+        options: [
+          '1–5 times',
+          '6–15 times',
+          '16–30 times',
+          'More than 30 times',
+          'I\'ve never counted — but a lot'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'AI readiness',
+        question: 'Have you tried using AI in your business yet?',
+        helper: 'Not just playing with ChatGPT — actually using it to do work.',
+        options: [
+          'Yes, it\'s working for me',
+          'Tried it, didn\'t stick',
+          'Want to, but don\'t know where to start',
+          'Not sure if it applies to my business',
+          'I haven\'t thought about it'
+        ]
+      },
+      {
+        type: 'scale',
+        section: 'Digital maturity',
+        question: 'If your website went offline today, how much would it actually affect sales?',
+        helper: 'Drag to rate — 1 means no impact, 5 means devastating.',
+        min: 1,
+        max: 5,
+        minLabel: 'No impact',
+        maxLabel: 'Devastating'
+      },
+      {
+        type: 'textarea',
+        section: 'The vision',
+        question: 'What\'s one task that, if it <em>ran itself</em>, would give you your Sunday back?',
+        helper: 'The specific thing you keep doing and keep resenting.',
+        placeholder: 'Maybe it\'s invoicing. Maybe it\'s chasing up leads. Maybe it\'s scheduling posts…'
+      },
+      CONTACT_QUESTION
+    ]
+  },
+
+  media: {
+    title: 'Diagnose my Media',
+    subtitle: 'Content & Presence',
+    intro: {
+      eyebrow: 'Department diagnostic',
+      title: 'Let\'s look at your <em>presence</em>.',
+      body: 'A focused diagnostic for your brand, content, and social presence. Most businesses know something is off here — this is how we find what.',
+      duration: '6–8 minutes',
+      questions: '7 questions',
+      privacy: 'Skippable · private'
+    },
+    questions: [
+      {
+        type: 'single',
+        section: 'Activity',
+        question: 'When was the last time you posted on your main social channel?',
+        helper: 'The channel your audience actually spends time on.',
+        options: [
+          'Today',
+          'This week',
+          'This month',
+          'Longer than a month',
+          'I don\'t really remember'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Clarity',
+        question: 'If someone new finds your Instagram today, would they immediately know what your business does?',
+        helper: 'Think about it from a stranger\'s eyes.',
+        options: [
+          'Yes, totally clear',
+          'Somewhat clear',
+          'Probably confusing',
+          'I\'d rather not think about it'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Capacity',
+        question: 'Who creates your content right now?',
+        helper: 'The real answer — not the one you wish were true.',
+        options: [
+          'Me personally, when I can',
+          'A team member doing it on the side',
+          'An agency or freelancer',
+          'No one consistently',
+          'Honestly, nobody right now'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Strategy',
+        question: 'What\'s your content plan for next month?',
+        helper: 'Not what you\'d like it to be — what it actually is.',
+        options: [
+          'A full content calendar',
+          'Rough ideas written down',
+          'I\'ll figure it out as I go',
+          'There is no plan'
+        ]
+      },
+      {
+        type: 'multi',
+        section: 'Frustrations',
+        question: 'Which of these have you felt recently?',
+        helper: 'Select all that apply. No one is watching.',
+        options: [
+          'I post but nothing grows',
+          'I don\'t know what to say',
+          'I run out of ideas',
+          'My content looks inconsistent',
+          'I wish someone else could just handle it',
+          'I\'m embarrassed to check my analytics'
+        ]
+      },
+      {
+        type: 'textarea',
+        section: 'The message',
+        question: 'If one piece of content could <em>go viral</em> this month, what would you want it to be about?',
+        helper: 'What\'s the one thing you wish the world understood about your business?',
+        placeholder: 'It could be a story, a transformation, a message, a product…'
+      },
+      {
+        type: 'textarea',
+        section: 'The vision',
+        question: 'What would a <em>strong media presence</em> actually look like for your business in six months?',
+        helper: 'Paint the picture.',
+        placeholder: 'How many followers? What kind of engagement? What would people be saying?'
+      },
+      CONTACT_QUESTION
+    ]
+  },
+
+  skills: {
+    title: 'Diagnose my Skills',
+    subtitle: 'Training & Development',
+    intro: {
+      eyebrow: 'Department diagnostic',
+      title: 'Let\'s look at your <em>people</em>.',
+      body: 'A focused diagnostic for your team\'s capability and growth. Your business can only grow as far as your people can carry it.',
+      duration: '6–8 minutes',
+      questions: '7 questions',
+      privacy: 'Skippable · private'
+    },
+    questions: [
+      {
+        type: 'textarea',
+        section: 'Observation',
+        question: 'When you think about your team, who\'s <em>quietly outgrowing</em> their role?',
+        helper: 'The one you can already see needs more — more challenge, more training, more growth.',
+        placeholder: 'Just a name or a role is fine. Or tell us the story.'
+      },
+      {
+        type: 'single',
+        section: 'Training history',
+        question: 'When was the last time your team did formal training?',
+        helper: 'YouTube videos don\'t count.',
+        options: [
+          'Within the past 3 months',
+          'Within the past year',
+          'More than a year ago',
+          'We\'ve never done formal training'
+        ]
+      },
+      {
+        type: 'textarea',
+        section: 'The gap',
+        question: 'Is there a specific skill gap right now that\'s <em>costing you money</em>?',
+        helper: 'A capability you\'re paying consultants for, or losing deals over, or just working around.',
+        placeholder: 'Write it plainly. Naming it is half the work.'
+      },
+      {
+        type: 'single',
+        section: 'Your growth',
+        question: 'How do you currently keep your own skills sharp?',
+        helper: 'You\'re a leader — this matters.',
+        options: [
+          'I take courses regularly',
+          'I learn from mentors',
+          'YouTube and Google when I need to',
+          'I don\'t really have time for this',
+          'Honestly, I feel stuck'
+        ]
+      },
+      {
+        type: 'textarea',
+        section: 'Priority',
+        question: 'If you could add <em>one new capability</em> to your team in the next six months, what would it be?',
+        helper: 'Not a dream list — the one that would move the needle.',
+        placeholder: 'It could be a technical skill, a soft skill, a whole new discipline…'
+      },
+      {
+        type: 'single',
+        section: 'Investment',
+        question: 'How much do you currently budget for team development?',
+        helper: 'Training, courses, coaching, conferences — all of it.',
+        options: [
+          'None',
+          'Under ₦50,000 per year',
+          '₦50,000 – ₦200,000 per year',
+          '₦200,000 – ₦500,000 per year',
+          'More than ₦500,000 per year',
+          'I\'ve never thought about it as a line item'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'Retention',
+        question: 'When your team thinks about their future at your company, do they see growth?',
+        helper: 'This one is hard. Answer honestly.',
+        options: [
+          'Yes, clearly',
+          'Somewhat',
+          'Honestly, probably not',
+          'I don\'t know'
+        ]
+      },
+      CONTACT_QUESTION
+    ]
+  },
+
+  clarity: {
+    title: 'Clarity Session',
+    subtitle: 'We find the gaps, you get the plan',
+    intro: {
+      eyebrow: 'Full business diagnostic',
+      title: 'Let\'s find the <em>gaps</em>.',
+      body: 'A comprehensive diagnostic across every part of your business — compliance, systems, presence, people, and vision. Most founders finish this feeling calmer than when they started. You might name the thing you\'ve been avoiding for a year.',
+      duration: '12–15 minutes',
+      questions: '14 questions',
+      privacy: 'Skippable · private'
+    },
+    questions: [
+      // The Big Picture
+      {
+        type: 'textarea',
+        section: 'The big picture',
+        question: 'When you think about your business, what\'s the <em>feeling</em> you want to have in 12 months?',
+        helper: 'Not the revenue number. The feeling. Peace? Pride? Freedom? Something else?',
+        placeholder: 'Describe it as if the future has already happened.'
+      },
+      {
+        type: 'textarea',
+        section: 'The big picture',
+        question: 'What\'s the one thing you\'d love someone else to <em>take off your plate</em>?',
+        helper: 'The task, role, or responsibility you\'ve been carrying too long.',
+        placeholder: 'Be specific. The more specific, the more actionable.'
+      },
+      {
+        type: 'textarea',
+        section: 'The big picture',
+        question: 'On a calm Sunday, what\'s the business thought that <em>still keeps you up</em>?',
+        helper: 'The one that doesn\'t go away even when the business is going well.',
+        placeholder: 'Nothing leaves our team. This is just for us to help you.'
+      },
+      // Foundation
+      {
+        type: 'single',
+        section: 'The foundation',
+        question: 'Is your business formally registered with CAC?',
+        options: [
+          'Yes, fully',
+          'Started but not finished',
+          'No, not yet',
+          'I\'m not sure what\'s current'
+        ]
+      },
+      {
+        type: 'single',
+        section: 'The foundation',
+        question: 'When was the last time you filed your taxes?',
+        options: [
+          'Within the past year',
+          '1–2 years ago',
+          'More than 2 years ago',
+          'I\'ve never filed',
+          'I\'m not sure'
+        ]
+      },
+      {
+        type: 'scale',
+        section: 'The foundation',
+        question: 'If you were audited tomorrow, how ready would you feel?',
+        helper: '1 means "not at all", 5 means "completely ready".',
+        min: 1,
+        max: 5,
+        minLabel: 'Not at all',
+        maxLabel: 'Fully ready'
+      },
+      // Systems
+      {
+        type: 'single',
+        section: 'The systems',
+        question: 'Where do leads and customer conversations actually live?',
+        options: [
+          'A proper CRM',
+          'Spreadsheets',
+          'WhatsApp and my memory',
+          'All over the place',
+          'We don\'t really track this'
+        ]
+      },
+      {
+        type: 'textarea',
+        section: 'The systems',
+        question: 'What\'s the <em>most repetitive task</em> your team does each week?',
+        helper: 'The one everyone grumbles about.',
+        placeholder: 'Describe the task and roughly how often it happens.'
+      },
+      // Presence
+      {
+        type: 'single',
+        section: 'The presence',
+        question: 'If a stranger found your business online today, what would they think?',
+        options: [
+          'Impressed — we look sharp',
+          'Neutral — it\'s fine',
+          'Unsure what we actually do',
+          'Honestly, I don\'t want to check',
+          'Nothing — we\'re barely online'
+        ]
+      },
+      {
+        type: 'multi',
+        section: 'The presence',
+        question: 'Which of these sound like you?',
+        helper: 'Select all that apply.',
+        options: [
+          'I post but nothing grows',
+          'We have no consistent content',
+          'Our brand looks inconsistent',
+          'I wish someone would just handle media for us',
+          'We\'re happy with where we are'
+        ]
+      },
+      // People
+      {
+        type: 'textarea',
+        section: 'The people',
+        question: 'What\'s one <em>skill gap</em> on your team that\'s costing you this year?',
+        helper: 'The capability you keep paying around instead of building.',
+        placeholder: 'Could be technical, operational, creative, leadership…'
+      },
+      {
+        type: 'single',
+        section: 'The people',
+        question: 'How does your team currently keep growing their skills?',
+        options: [
+          'Structured training and learning paths',
+          'Occasional courses when needed',
+          'Self-directed — they figure it out',
+          'Honestly, they don\'t',
+          'I\'ve never thought about this'
+        ]
+      },
+      // Vision
+      {
+        type: 'textarea',
+        section: 'The vision',
+        question: 'What does a <em>thriving version</em> of your business look like?',
+        helper: 'Not the pitch-deck version. The real one.',
+        placeholder: 'What does a Monday look like? A Friday? What are you doing, and not doing?'
+      },
+      {
+        type: 'textarea',
+        section: 'The vision',
+        question: 'What\'s the one change, in the next 90 days, that would <em>matter most</em>?',
+        helper: 'If only one thing got fixed, what would you want it to be?',
+        placeholder: 'The change whose absence you feel every day.'
+      },
+      CONTACT_QUESTION
+    ]
+  }
+};
+
+// ============= STATE =============
+// Detect form from URL path (?form=business, /diagnose-business, etc.)
+const urlParams = new URLSearchParams(window.location.search);
+const isProdMode = urlParams.get('prod') === '1';
+let formFromUrl = urlParams.get('form');
+if (!formFromUrl) {
+  const path = window.location.pathname.toLowerCase();
+  if (path.includes('clarity')) formFromUrl = 'clarity';
+  else if (path.includes('business')) formFromUrl = 'business';
+  else if (path.includes('software')) formFromUrl = 'software';
+  else if (path.includes('media')) formFromUrl = 'media';
+  else if (path.includes('skills')) formFromUrl = 'skills';
+}
+
+let currentForm = (formFromUrl && FORMS[formFromUrl]) ? formFromUrl : 'clarity';
+let currentIndex = -1; // -1 = intro, length = outro
+let answers = {};
+
+// Hide switcher only when explicitly in production mode (?prod=1)
+if (isProdMode) {
+  document.getElementById('demo-bar').style.display = 'none';
+}
+
+// Configure webhook endpoint here when backend is ready.
+// Leave as empty string to use the "we'll reach out" fallback.
+const WEBHOOK_URL = ''; // e.g. 'https://script.google.com/macros/s/XXXXX/exec'
+
+const body = document.getElementById('form-body');
+const footer = document.getElementById('form-footer');
+const progressWrap = document.getElementById('progress-wrap');
+const progressFill = document.getElementById('progress-fill');
+const progressCount = document.getElementById('progress-count');
+const nextBtn = document.getElementById('next-btn');
+const skipBtn = document.getElementById('skip-btn');
+const backBtn = document.getElementById('back-btn');
+const selector = document.getElementById('form-selector');
+
+// ============= RENDER =============
+function render() {
+  const form = FORMS[currentForm];
+  const total = form.questions.length;
+
+  if (currentIndex === -1) {
+    renderIntro(form);
+    return;
+  }
+  if (currentIndex >= total) {
+    renderOutro(form);
+    return;
+  }
+
+  renderQuestion(form, currentIndex);
+}
+
+function renderIntro(form) {
+  footer.style.display = 'none';
+  progressWrap.style.display = 'none';
+
+  body.innerHTML = `
+    <div class="intro-card">
+      <div class="intro-eyebrow">${form.intro.eyebrow}</div>
+      <h1 class="intro-title">${form.intro.title}</h1>
+      <p class="intro-body">${form.intro.body}</p>
+      <div class="intro-meta">
+        <div class="intro-meta-item">
+          <div class="k">Duration</div>
+          <div class="v">${form.intro.duration}</div>
+        </div>
+        <div class="intro-meta-item">
+          <div class="k">Questions</div>
+          <div class="v">${form.intro.questions}</div>
+        </div>
+        <div class="intro-meta-item">
+          <div class="k">Privacy</div>
+          <div class="v">${form.intro.privacy}</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="start-btn">Begin when ready →</button>
+    </div>
+  `;
+  document.getElementById('start-btn').onclick = () => {
+    currentIndex = 0;
+    render();
+  };
+}
+
+function renderQuestion(form, i) {
+  const q = form.questions[i];
+  const total = form.questions.length;
+
+  progressWrap.style.display = 'flex';
+  progressCount.textContent = `${i + 1} of ${total}`;
+  progressFill.style.width = `${((i + 1) / total) * 100}%`;
+
+  footer.style.display = 'flex';
+  backBtn.style.visibility = i === 0 ? 'hidden' : 'visible';
+  skipBtn.style.display = q.type === 'contact' ? 'none' : 'inline-flex';
+  nextBtn.textContent = (i === total - 1) ? 'Submit' : 'Continue';
+
+  let inputHtml = '';
+
+  if (q.type === 'text') {
+    inputHtml = `<input type="text" class="input-text" id="q-input" placeholder="${q.placeholder || ''}" value="${answers[q.id] || ''}">`;
+  }
+  else if (q.type === 'textarea') {
+    inputHtml = `<textarea class="input-textarea" id="q-input" placeholder="${q.placeholder || ''}">${answers[q.id] || ''}</textarea>`;
+  }
+  else if (q.type === 'single') {
+    const selected = answers[q.id];
+    inputHtml = `
+      <div class="options-grid">
+        ${q.options.map((opt, idx) => `
+          <button class="option ${selected === idx ? 'selected' : ''}" data-idx="${idx}" onclick="selectSingle(${idx})">
+            <div class="option-marker"></div>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+  else if (q.type === 'multi') {
+    const selected = answers[q.id] || [];
+    inputHtml = `
+      <div class="options-grid">
+        ${q.options.map((opt, idx) => `
+          <button class="option multi ${selected.includes(idx) ? 'selected' : ''}" data-idx="${idx}" onclick="selectMulti(${idx})">
+            <div class="option-marker"></div>
+            <span>${opt}</span>
+          </button>
+        `).join('')}
+      </div>
+    `;
+  }
+  else if (q.type === 'scale') {
+    const selected = answers[q.id];
+    const buttons = [];
+    for (let n = q.min; n <= q.max; n++) {
+      buttons.push(`<button class="scale-btn ${selected === n ? 'selected' : ''}" onclick="selectScale(${n})">${n}</button>`);
+    }
+    inputHtml = `
+      <div class="scale-row">${buttons.join('')}</div>
+      <div class="scale-labels">
+        <span>${q.minLabel}</span>
+        <span>${q.maxLabel}</span>
+      </div>
+    `;
+  }
+  else if (q.type === 'contact') {
+    const c = answers[q.id] || {};
+    inputHtml = `
+      <div class="contact-grid">
+        <div class="input-group">
+          <label>Your name <span style="color:#B8731F">*</span></label>
+          <input type="text" class="input-text" id="c-name" placeholder="Full name" value="${c.name || ''}" required>
+        </div>
+        <div class="input-group">
+          <label>Business name</label>
+          <input type="text" class="input-text" id="c-business" placeholder="Business or brand" value="${c.business || ''}">
+        </div>
+        <div class="input-group">
+          <label>Email <span style="color:#B8731F">*</span></label>
+          <input type="email" class="input-text" id="c-email" placeholder="you@example.com" value="${c.email || ''}" required>
+        </div>
+        <div class="input-group">
+          <label>WhatsApp number <span style="color:#B8731F">*</span></label>
+          <input type="tel" class="input-text" id="c-phone" placeholder="+234 ..." value="${c.phone || ''}" required>
+        </div>
+      </div>
+      <div id="contact-error" style="display:none;margin-top:14px;padding:10px 14px;background:#FCE8E4;color:#A3301F;border-radius:8px;font-size:13.5px;"></div>
+      <label style="display:flex;gap:10px;align-items:flex-start;margin-top:24px;cursor:pointer;font-size:13.5px;line-height:1.5;color:var(--ink-soft);">
+        <input type="checkbox" id="consent" style="margin-top:3px;flex-shrink:0;" ${c.consent ? 'checked' : ''}>
+        <span>I agree that Hamzury may contact me about this submission. My information will be kept private and not shared with third parties, in line with the Nigeria Data Protection Regulation (NDPR).</span>
+      </label>
+    `;
+  }
+
+  const skipped = answers[q.id + '__skipped'] ? '<div class="skipped-note">skipped — you can still answer</div>' : '';
+
+  body.innerHTML = `
+    <div class="form-card">
+      <div class="section-label">${q.section}</div>
+      <h2 class="question">${q.question}</h2>
+      ${q.helper ? `<p class="helper">${q.helper}</p>` : ''}
+      ${inputHtml}
+      ${skipped}
+    </div>
+  `;
+
+  // Auto-focus text inputs
+  setTimeout(() => {
+    const inp = document.getElementById('q-input') || document.getElementById('c-name');
+    if (inp) inp.focus();
+  }, 50);
+}
+
+function renderOutro(form) {
+  footer.style.display = 'none';
+  progressWrap.style.display = 'none';
+
+  const answered = Object.keys(answers).filter(k => !k.endsWith('__skipped')).length;
+  const total = form.questions.length;
+
+  body.innerHTML = `
+    <div class="outro-card">
+      <div class="outro-checkmark">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 12L10 17L19 7" stroke="#FBF7EE" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="intro-eyebrow">Submitted</div>
+      <h1 class="intro-title">Thank you for <em>sharing</em>.</h1>
+      <p class="intro-body">You just did more reflection on your business than most founders manage in a month. Our team is reviewing your responses now.</p>
+      <div class="intro-meta">
+        <div class="intro-meta-item">
+          <div class="k">Next step</div>
+          <div class="v">We reach out within 24 hours</div>
+        </div>
+        <div class="intro-meta-item">
+          <div class="k">Responses</div>
+          <div class="v">${answered} of ${total}</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="restart-btn">Start over</button>
+    </div>
+  `;
+  document.getElementById('restart-btn').onclick = () => {
+    answers = {};
+    currentIndex = -1;
+    render();
+  };
+}
+
+// ============= ACTIONS =============
+function getCurrentQuestion() {
+  return FORMS[currentForm].questions[currentIndex];
+}
+
+function captureAnswer() {
+  const q = getCurrentQuestion();
+  if (!q) return;
+
+  if (q.type === 'text' || q.type === 'textarea') {
+    const inp = document.getElementById('q-input');
+    if (inp && inp.value.trim()) {
+      answers[q.id] = inp.value.trim();
+      delete answers[q.id + '__skipped'];
+    }
+  }
+  else if (q.type === 'contact') {
+    const c = {
+      name: document.getElementById('c-name')?.value.trim() || '',
+      business: document.getElementById('c-business')?.value.trim() || '',
+      email: document.getElementById('c-email')?.value.trim() || '',
+      phone: document.getElementById('c-phone')?.value.trim() || '',
+      consent: document.getElementById('consent')?.checked || false
+    };
+    answers[q.id] = c;
+  }
+  // single/multi/scale are captured on click
+}
+
+function validateContact() {
+  const errBox = document.getElementById('contact-error');
+  const c = answers['contact'] || {};
+  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRe = /^[\d+\s()-]{7,}$/;
+
+  if (!c.name) { showErr('Please enter your name.'); return false; }
+  if (!c.email || !emailRe.test(c.email)) { showErr('Please enter a valid email address.'); return false; }
+  if (!c.phone || !phoneRe.test(c.phone)) { showErr('Please enter a valid WhatsApp number.'); return false; }
+  if (!c.consent) { showErr('Please confirm you agree to be contacted.'); return false; }
+  if (errBox) errBox.style.display = 'none';
+  return true;
+
+  function showErr(msg) {
+    if (errBox) { errBox.textContent = msg; errBox.style.display = 'block'; }
+  }
+}
+
+async function submitToBackend() {
+  if (!WEBHOOK_URL) return true; // No backend configured — skip silently
+  try {
+    const payload = {
+      formType: 'diagnostic',
+      form: currentForm,
+      formTitle: FORMS[currentForm].title,
+      ref: 'HAM-' + Date.now().toString(36).toUpperCase().slice(-6),
+      submittedAt: new Date().toISOString(),
+      answers: answers
+    };
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Google Apps Script compatibility
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+    return true;
+  } catch (e) {
+    console.error('Submit failed:', e);
+    return false;
+  }
+}
+
+window.selectSingle = function(idx) {
+  const q = getCurrentQuestion();
+  answers[q.id] = idx;
+  delete answers[q.id + '__skipped'];
+  // Re-render the options without moving the screen
+  document.querySelectorAll('.option').forEach((el, i) => {
+    el.classList.toggle('selected', i === idx);
+  });
+  // Small delight — auto-advance on single choice after a beat
+  setTimeout(() => {
+    if (answers[q.id] === idx) next();
+  }, 320);
+};
+
+window.selectMulti = function(idx) {
+  const q = getCurrentQuestion();
+  if (!Array.isArray(answers[q.id])) answers[q.id] = [];
+  const arr = answers[q.id];
+  const pos = arr.indexOf(idx);
+  if (pos >= 0) arr.splice(pos, 1);
+  else arr.push(idx);
+  delete answers[q.id + '__skipped'];
+  document.querySelectorAll('.option').forEach((el, i) => {
+    el.classList.toggle('selected', arr.includes(i));
+  });
+};
+
+window.selectScale = function(n) {
+  const q = getCurrentQuestion();
+  answers[q.id] = n;
+  delete answers[q.id + '__skipped'];
+  document.querySelectorAll('.scale-btn').forEach((el) => {
+    el.classList.toggle('selected', parseInt(el.textContent, 10) === n);
+  });
+  setTimeout(() => {
+    if (answers[q.id] === n) next();
+  }, 320);
+};
+
+function next() {
+  captureAnswer();
+  // If on contact step (last one), validate before proceeding
+  const q = getCurrentQuestion();
+  if (q && q.type === 'contact') {
+    if (!validateContact()) return;
+    submitToBackend(); // fire-and-forget
+  }
+  currentIndex++;
+  render();
+}
+
+function skip() {
+  const q = getCurrentQuestion();
+  if (q) {
+    answers[q.id + '__skipped'] = true;
+    delete answers[q.id];
+  }
+  currentIndex++;
+  render();
+}
+
+function back() {
+  captureAnswer();
+  if (currentIndex > 0) {
+    currentIndex--;
+    render();
+  }
+}
+
+nextBtn.addEventListener('click', next);
+skipBtn.addEventListener('click', skip);
+backBtn.addEventListener('click', back);
+
+// Populate demo selector
+const demoSelect = document.getElementById('form-selector');
+Object.keys(FORMS).forEach(k => {
+  const opt = document.createElement('option');
+  opt.value = k;
+  opt.textContent = FORMS[k].title;
+  if (k === currentForm) opt.selected = true;
+  demoSelect.appendChild(opt);
+});
+
+selector.addEventListener('change', (e) => {
+  currentForm = e.target.value;
+  answers = {};
+  currentIndex = -1;
+  render();
+});
+
+// Enter key advances on text inputs
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'email' && e.target.type !== 'tel') {
+    e.preventDefault();
+    next();
+  }
+  if (e.key === 'Enter' && e.ctrlKey && e.target.tagName === 'TEXTAREA') {
+    e.preventDefault();
+    next();
+  }
+});
+
+// init
+render();
+</script>
+
+</body>
+</html>
