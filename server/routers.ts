@@ -609,6 +609,26 @@ export const appRouter = router({
         return { success: true };
       }),
 
+    /* Public: client uploads a payment-receipt image before submitting the
+     * enrolment form. Returns a permanent URL the form then attaches to
+     * meta.receiptUrl so the CSO can verify the seat-hold payment.
+     * Rate-limited (no auth — visitor isn't logged in). */
+    uploadReceipt: rateLimitedProcedure
+      .input(z.object({
+        fileName: z.string().min(1).max(255),
+        fileData: z.string().min(1),                       // base64
+        mimeType: z.string().regex(/^image\/(png|jpe?g|webp|heic|heif)$/i)
+                            .or(z.literal("application/pdf")),
+        fileSize: z.number().int().positive().max(8 * 1024 * 1024), // 8 MB cap
+      }))
+      .mutation(async ({ input }) => {
+        const buffer = Buffer.from(input.fileData, "base64");
+        const safeName = input.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+        const fileKey = `payment-receipts/${nanoid()}-${safeName}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+        return { url, fileKey };
+      }),
+
     list: protectedProcedure
       .input(z.object({
         department: z.string().optional(),

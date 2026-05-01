@@ -22,12 +22,25 @@ export type AssessmentQuestion = {
   prompt: string;
   /** Radio-style single select, or text area if no options. */
   options?: string[];
-  /** "text" = short input, "textarea" = paragraph, undefined = single-select. */
-  kind?: "text" | "textarea";
+  /** "text" = short input, "textarea" = paragraph, "file" = image/pdf upload, undefined = single-select. */
+  kind?: "text" | "textarea" | "file";
   /** If true, must be answered before "Next". */
   required?: boolean;
   /** Hide this question if the predicate returns false against current answers. */
   showWhen?: (answers: Record<string, string>) => boolean;
+};
+
+export type AccountInfo = {
+  /** Bank name (e.g. "MoniePoint") */
+  bank: string;
+  /** Account name (e.g. "Hamzury Ltd.") */
+  name: string;
+  /** Account number */
+  number: string;
+  /** Amount label (e.g. "₦10,000 — Seat Hold") */
+  amount: string;
+  /** Optional reference / instruction line */
+  note?: string;
 };
 
 export type AssessmentStep = {
@@ -36,6 +49,9 @@ export type AssessmentStep = {
   questions: AssessmentQuestion[];
   /** Hide the entire step if predicate returns false against current answers. */
   showWhen?: (answers: Record<string, string>) => boolean;
+  /** Optional bank-account card rendered above the questions. Useful for a
+   *  payment / seat-hold step where the user pays before submitting. */
+  accountInfo?: AccountInfo;
 };
 
 export type AssessmentConfig = {
@@ -273,7 +289,10 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
               {currentStep.title}
             </h2>
             {currentStep.sub && (
-              <p className="text-[14px] mb-8" style={{ color: MUTED }}>{currentStep.sub}</p>
+              <p className="text-[14px] mb-6" style={{ color: MUTED }}>{currentStep.sub}</p>
+            )}
+            {currentStep.accountInfo && (
+              <AccountInfoCard info={currentStep.accountInfo} G={G} Au={Au} W={W} />
             )}
             <div className="flex flex-col gap-8 mb-10">
               {currentVisibleQs.map(q => (
@@ -360,6 +379,8 @@ function QuestionBlock({
           className="w-full px-4 py-3 rounded-xl text-[14px] outline-none transition-all focus:shadow-sm resize-none"
           style={{ backgroundColor: W, color: G, border: `1px solid ${G}15` }}
         />
+      ) : q.kind === "file" ? (
+        <ReceiptUpload value={value} onChange={onChange} G={G} Au={Au} W={W} />
       ) : (
         <div className="flex flex-col gap-2">
           {(q.options || []).map(opt => {
@@ -409,5 +430,153 @@ function FormInput({ label, value, onChange, G, W, type = "text" }: {
         style={{ backgroundColor: W, color: G, border: `1px solid ${G}15` }}
       />
     </label>
+  );
+}
+
+/* ─── AccountInfoCard ────────────────────────────────────────────────────────
+ * Renders the bank-account card on a payment / seat-hold step. Includes a
+ * one-click "copy account number" button.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function AccountInfoCard({ info, G, Au, W }: { info: AccountInfo; G: string; Au: string; W: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(info.number.replace(/\s+/g, ""));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard blocked — silent */
+    }
+  };
+  return (
+    <div
+      className="rounded-2xl p-5 mb-7"
+      style={{ backgroundColor: `${Au}08`, border: `1px solid ${Au}30` }}
+    >
+      <p className="text-[10px] font-bold tracking-[0.2em] uppercase mb-3" style={{ color: Au }}>
+        Pay this account · {info.amount}
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: G, opacity: 0.55 }}>Bank</p>
+          <p className="text-[14px] font-semibold" style={{ color: G }}>{info.bank}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: G, opacity: 0.55 }}>Account name</p>
+          <p className="text-[14px] font-semibold" style={{ color: G }}>{info.name}</p>
+        </div>
+        <div>
+          <p className="text-[10px] font-semibold tracking-[0.12em] uppercase mb-1" style={{ color: G, opacity: 0.55 }}>Account number</p>
+          <button
+            type="button"
+            onClick={copy}
+            className="text-[14px] font-mono font-semibold inline-flex items-center gap-2 hover:opacity-80"
+            style={{ color: G }}
+          >
+            {info.number}
+            <span className="text-[9px] font-sans font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                  style={{ backgroundColor: copied ? "#16A34A20" : `${Au}18`, color: copied ? "#15803D" : Au }}>
+              {copied ? "✓ Copied" : "Copy"}
+            </span>
+          </button>
+        </div>
+      </div>
+      {info.note && (
+        <p className="text-[12px] leading-relaxed" style={{ color: G, opacity: 0.7 }}>
+          {info.note}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/* ─── ReceiptUpload ──────────────────────────────────────────────────────────
+ * Image / PDF picker that base64-uploads to leads.uploadReceipt and stores the
+ * returned URL as the question's answer. The CSO sees the URL in the lead
+ * context blob and can click through to verify the seat-hold payment.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function ReceiptUpload({
+  value, onChange, G, Au, W,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  G: string; Au: string; W: string;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string | null>(null);
+  const uploadMut = trpc.leads.uploadReceipt.useMutation();
+
+  const handleFile = async (file: File) => {
+    setError(null);
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Receipt is too large — please keep under 8 MB.");
+      return;
+    }
+    setUploading(true);
+    setPreviewName(file.name);
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+      const res = await uploadMut.mutateAsync({
+        fileName: file.name,
+        fileData: base64,
+        mimeType: file.type || "image/jpeg",
+        fileSize: file.size,
+      });
+      onChange(res.url);
+    } catch (e: any) {
+      setError(e?.message || "Upload failed — please try again.");
+      setPreviewName(null);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <label
+        className="flex items-center justify-center gap-2 w-full px-4 py-4 rounded-xl text-[13px] font-medium cursor-pointer transition-all hover:opacity-90"
+        style={{
+          backgroundColor: value ? `#16A34A12` : W,
+          border: `1px dashed ${value ? "#16A34A" : `${G}30`}`,
+          color: value ? "#15803D" : G,
+        }}
+      >
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+          className="hidden"
+        />
+        {uploading ? (
+          <>
+            <Loader2 size={14} className="animate-spin" />
+            Uploading…
+          </>
+        ) : value ? (
+          <>
+            <CheckCircle2 size={14} />
+            Receipt uploaded ({previewName || "image"}) — tap to replace
+          </>
+        ) : (
+          <>📎 Tap to upload your receipt (image or PDF)</>
+        )}
+      </label>
+      {error && (
+        <p className="text-[12px] mt-2" style={{ color: "#A3301F" }}>{error}</p>
+      )}
+      {value && (
+        <p className="text-[11px] mt-2 break-all" style={{ color: G, opacity: 0.55 }}>
+          {value}
+        </p>
+      )}
+    </div>
   );
 }

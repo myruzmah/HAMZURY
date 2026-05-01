@@ -339,6 +339,50 @@ const cfg: AssessmentConfig = {
         { id: "notes", prompt: "Notes / questions for our team", kind: "textarea" },
       ],
     },
+
+    /* ─── 7. Seat-hold payment ─── (only for cash payers — skip scholarship apply / sponsor) */
+    {
+      title: "Pay your seat hold",
+      sub: "Send ₦10,000 to the account below, then upload your receipt. Without this we can't lock your seat. Scholarship-code, scholarship-application, and sponsor payers can skip — we'll arrange this with you separately.",
+      accountInfo: {
+        bank: "MoniePoint",
+        name: "Hamzury Ltd.",
+        number: "8034620520",
+        amount: "₦10,000 — Seat Hold",
+        note: "After paying, take a clear screenshot of the success page and upload it below. Use your full name as the transfer narration if your app allows.",
+      },
+      showWhen: (a) => {
+        // Only for paths that involve cash up-front
+        const cat = categoryFor(a.program);
+        if (cat === "kids" || cat === "core" || cat === "online" || cat === "placement" || cat === "siwes") {
+          // Hide if user picked scholarship-apply / scholarship-code / sponsor
+          const p = (a.payment || "").toLowerCase();
+          if (p.includes("scholarship") || p.includes("sponsor") || p.includes("company")) return false;
+          return true;
+        }
+        // Corporate is invoiced separately; unsure skips entirely
+        return false;
+      },
+      questions: [
+        { id: "paidConfirm", prompt: "Have you sent ₦10,000?", required: true, options: [
+          "Yes — I've sent it",
+          "Not yet — I'll send it after this form (we won't lock the seat until we see the receipt)",
+        ]},
+        {
+          id: "receiptUrl",
+          kind: "file",
+          prompt: "Upload your payment receipt (screenshot or PDF)",
+          required: true,
+          showWhen: (a) => (a.paidConfirm || "").startsWith("Yes"),
+        },
+        {
+          id: "transferNarration",
+          kind: "text",
+          prompt: "Transfer narration / sender name on the receipt (so we can match it to you):",
+          showWhen: (a) => (a.paidConfirm || "").startsWith("Yes"),
+        },
+      ],
+    },
   ],
   thankYou: {
     title: "Welcome to HUB.",
