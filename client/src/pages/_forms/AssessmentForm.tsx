@@ -26,12 +26,16 @@ export type AssessmentQuestion = {
   kind?: "text" | "textarea";
   /** If true, must be answered before "Next". */
   required?: boolean;
+  /** Hide this question if the predicate returns false against current answers. */
+  showWhen?: (answers: Record<string, string>) => boolean;
 };
 
 export type AssessmentStep = {
   title: string;
   sub?: string;
   questions: AssessmentQuestion[];
+  /** Hide the entire step if predicate returns false against current answers. */
+  showWhen?: (answers: Record<string, string>) => boolean;
 };
 
 export type AssessmentConfig = {
@@ -73,17 +77,28 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
   const TEXT = "#1A1A1A";
   const MUTED = "#6B7280";
 
+  // Visible questions on a step, after applying showWhen.
+  const visibleQuestions = (step: AssessmentStep) =>
+    step.questions.filter(q => !q.showWhen || q.showWhen(answers));
+
+  // Is the step itself visible (step.showWhen passes AND it has at least one visible question)?
+  const isStepVisible = (step: AssessmentStep) => {
+    if (step.showWhen && !step.showWhen(answers)) return false;
+    return visibleQuestions(step).length > 0;
+  };
+
   const totalSteps = cfg.steps.length + 1; // +1 contact step at the end
   const progress = stepIndex < 0 ? 0 : Math.round(((stepIndex + 1) / (totalSteps + 1)) * 100);
 
   const isContactStep = stepIndex === cfg.steps.length;
   const currentStep = stepIndex >= 0 && stepIndex < cfg.steps.length ? cfg.steps[stepIndex] : null;
+  const currentVisibleQs = currentStep ? visibleQuestions(currentStep) : [];
 
   const canAdvance = (() => {
     if (stepIndex < 0) return true;
     if (isContactStep) return contact.name.trim().length > 0 && contact.phone.trim().length > 0;
     if (!currentStep) return false;
-    return currentStep.questions.every(q => !q.required || (answers[q.id] && answers[q.id].trim().length > 0));
+    return currentVisibleQs.every(q => !q.required || (answers[q.id] && answers[q.id].trim().length > 0));
   })();
 
   const submit = () => {
@@ -91,12 +106,13 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
       toast.error("Name and phone required.");
       return;
     }
-    // Build a structured context string the CSO can read at a glance
+    // Build a structured context string the CSO can read at a glance.
+    // Only include steps + questions that were actually shown to the user.
     const block: string[] = [
       `━━━ ${cfg.brand.toUpperCase()} ━━━`,
-      ...cfg.steps.flatMap(step => [
+      ...cfg.steps.filter(isStepVisible).flatMap(step => [
         `[${step.title}]`,
-        ...step.questions.map(q => `  Q: ${q.prompt}\n  A: ${answers[q.id] || "—"}`),
+        ...visibleQuestions(step).map(q => `  Q: ${q.prompt}\n  A: ${answers[q.id] || "—"}`),
       ]),
     ];
     submitMut.mutate({
@@ -113,11 +129,18 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
     });
   };
 
+  // Walk forward over hidden steps so the user only ever sees relevant ones.
   const next = () => {
-    if (stepIndex < cfg.steps.length) setStepIndex(stepIndex + 1);
+    let i = stepIndex + 1;
+    while (i < cfg.steps.length && !isStepVisible(cfg.steps[i])) i++;
+    if (i <= cfg.steps.length) setStepIndex(i);
     else submit();
   };
-  const back = () => setStepIndex(Math.max(-1, stepIndex - 1));
+  const back = () => {
+    let i = stepIndex - 1;
+    while (i >= 0 && !isStepVisible(cfg.steps[i])) i--;
+    setStepIndex(Math.max(-1, i));
+  };
 
   /* ─── Per-division back-link target (logo) ─── */
   const divisionBack: Record<string, { href: string; label: string }> = {
@@ -253,7 +276,7 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
               <p className="text-[14px] mb-8" style={{ color: MUTED }}>{currentStep.sub}</p>
             )}
             <div className="flex flex-col gap-8 mb-10">
-              {currentStep.questions.map(q => (
+              {currentVisibleQs.map(q => (
                 <QuestionBlock
                   key={q.id}
                   q={q}

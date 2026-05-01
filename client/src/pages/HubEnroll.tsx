@@ -1,5 +1,44 @@
 import AssessmentForm, { type AssessmentConfig } from "./_forms/AssessmentForm";
 
+/* ─── Programme category detector ───────────────────────────────────────────
+ * Branches the form by the programme the user picks in step 2. Each branch
+ * shows ONLY the questions that matter for that path, so an 8-year-old joining
+ * the kids programme isn't asked about AI familiarity, and a SIWES intern
+ * isn't asked about cohort batch.
+ *
+ * Categories:
+ *   - core      : 7 main physical/online cohort programmes for adults
+ *   - kids      : 8–15 Saturday-morning club programmes
+ *   - placement : HUB Internship (placement-track for HUB graduates)
+ *   - siwes     : Higher-Institution Internship (SIWES / IT for uni / poly students)
+ *   - online    : Online Academy (self-paced AI-for-business)
+ *   - corporate : Corporate Workshop (team training, max 1 week)
+ *   - unsure    : "Not sure — help me choose"
+ * ────────────────────────────────────────────────────────────────────────── */
+type ProgrammeCategory = "core" | "kids" | "placement" | "siwes" | "online" | "corporate" | "unsure";
+
+function categoryFor(programAnswer: string | undefined): ProgrammeCategory | null {
+  if (!programAnswer) return null;
+  const p = programAnswer.toLowerCase();
+  if (p.includes("not sure")) return "unsure";
+  if (p.startsWith("kids") || p.includes("(kids 8") || p.includes("(10–15")) return "kids";
+  if (p.startsWith("hub internship")) return "placement";
+  if (p.startsWith("higher-institution") || p.includes("siwes")) return "siwes";
+  if (p.startsWith("online academy")) return "online";
+  if (p.startsWith("corporate workshop")) return "corporate";
+  return "core";
+}
+
+const isCore       = (a: Record<string, string>) => categoryFor(a.program) === "core";
+const isKids       = (a: Record<string, string>) => categoryFor(a.program) === "kids";
+const isPlacement  = (a: Record<string, string>) => categoryFor(a.program) === "placement";
+const isSiwes      = (a: Record<string, string>) => categoryFor(a.program) === "siwes";
+const isOnline     = (a: Record<string, string>) => categoryFor(a.program) === "online";
+const isCorporate  = (a: Record<string, string>) => categoryFor(a.program) === "corporate";
+const isUnsure     = (a: Record<string, string>) => categoryFor(a.program) === "unsure";
+const isAdultLearner = (a: Record<string, string>) =>
+  ["core", "online", "placement", "siwes"].includes(categoryFor(a.program) || "");
+
 const cfg: AssessmentConfig = {
   division: "hub",
   pageTitle: "HUB Enrollment | HAMZURY",
@@ -13,10 +52,11 @@ const cfg: AssessmentConfig = {
     bullets: [
       "20 students max per class — every student gets a 1-on-1 mentor.",
       "₦10,000 secures your seat. Balance paid on orientation day. Or apply with a scholarship code.",
-      "Takes about 3 minutes. You'll get a reference number to track your application.",
+      "Takes about 3 minutes. Questions adapt to the programme you pick.",
     ],
   },
   steps: [
+    /* ─── 1. Who + age ─── (always shown) */
     {
       title: "Who are you enrolling for?",
       questions: [
@@ -35,9 +75,11 @@ const cfg: AssessmentConfig = {
         ]},
       ],
     },
+
+    /* ─── 2. Programme picker ─── (always shown — this is the branch point) */
     {
       title: "Which programme interests you?",
-      sub: "Pick the one closest to your goal. We'll confirm fit.",
+      sub: "Pick the one closest to your goal. We'll confirm fit and the questions after this will adapt.",
       questions: [
         { id: "program", prompt: "Programme:", required: true, options: [
           "Not sure — help me choose (clarity session)",
@@ -55,11 +97,18 @@ const cfg: AssessmentConfig = {
           "Online Academy — AI-for-business (self-paced, ₦15k–₦35k)",
           "Corporate Workshop (AI solves my business segment, max 1 wk)",
         ]},
+      ],
+    },
+
+    /* ─── 3a. CORE — mode + batch ─── */
+    {
+      title: "How would you like to attend?",
+      showWhen: isCore,
+      questions: [
         { id: "mode", prompt: "Preferred learning mode:", required: true, options: [
           "Physical at Jos (Mon–Wed advanced, or Thu–Sat basics)",
           "Fully online",
           "Hybrid (mostly online, some in-person at Jos)",
-          "Corporate / on-site at our office",
         ]},
         { id: "batch", prompt: "Which batch suits you (physical only)?", options: [
           "Advanced — Mon–Wed, 8am–2pm",
@@ -70,9 +119,149 @@ const cfg: AssessmentConfig = {
         ]},
       ],
     },
+
+    /* ─── 3b. KIDS — parent + child context ─── */
+    {
+      title: "About your child",
+      sub: "A few things so the trainer knows where to start.",
+      showWhen: isKids,
+      questions: [
+        { id: "parentName", kind: "text", prompt: "Parent / guardian name", required: true },
+        { id: "kidExperience", prompt: "How much have they used a computer or tablet?", required: true, options: [
+          "Almost never — they'll learn from scratch",
+          "A little — games, watching videos",
+          "Comfortable — uses it for school work",
+          "Already curious about coding / building",
+        ]},
+        { id: "kidGoal", prompt: "What would make this worth it for you?", required: true, options: [
+          "They get hands-on with real tech, not just screens",
+          "They build something they're proud of",
+          "They make friends who like the same thing",
+          "They start considering tech as a future career",
+        ]},
+        { id: "kidNotes", kind: "textarea", prompt: "Anything we should know? (allergies, behaviour, special needs)" },
+      ],
+    },
+
+    /* ─── 3c. PLACEMENT — HUB grad placement track ─── */
+    {
+      title: "About your HUB graduation",
+      showWhen: isPlacement,
+      questions: [
+        { id: "completedProgramme", prompt: "Which HUB programme did you complete?", required: true, options: [
+          "Business Builders Academy",
+          "Digital Dominance",
+          "Code Craft Bootcamp",
+          "Compliance Mastery",
+          "Data Analytics",
+          "MetFix Hardware & Robotics",
+          "Other (mention in notes)",
+        ]},
+        { id: "graduationYear", prompt: "When did you graduate?", required: true, options: [
+          "Within the last 3 months",
+          "3–6 months ago",
+          "6–12 months ago",
+          "Over a year ago",
+        ]},
+        { id: "placementDept", prompt: "Which Hamzury team are you hoping to join?", required: true, options: [
+          "Bizdoc (tax / compliance)",
+          "Scalar (websites / software / automation)",
+          "Medialy (branding / content / social)",
+          "HUB (training delivery)",
+          "Studio (podcast / video)",
+          "Open — place me where I'd grow most",
+        ]},
+        { id: "internMonths", prompt: "How many months can you commit?", required: true, options: [
+          "1 month", "2 months", "3 months",
+          "4–6 months", "6–9 months", "10–12 months",
+        ]},
+        { id: "portfolio", kind: "text", prompt: "Portfolio / GitHub / IG link (optional)" },
+      ],
+    },
+
+    /* ─── 3d. SIWES — uni / poly intern track ─── */
+    {
+      title: "About your SIWES placement",
+      sub: "We accept your school's logbook + send back signed evaluation forms at the end.",
+      showWhen: isSiwes,
+      questions: [
+        { id: "schoolName", kind: "text", prompt: "School / University / Polytechnic name", required: true },
+        { id: "courseOfStudy", kind: "text", prompt: "Course of study", required: true },
+        { id: "currentLevel", prompt: "Current level / year", required: true, options: [
+          "100 / Year 1", "200 / Year 2", "300 / Year 3", "400 / Year 4", "500 / Year 5", "ND / HND",
+        ]},
+        { id: "siwesMonths", prompt: "Required duration", required: true, options: [
+          "1 month — ₦45,000",
+          "2 months — ₦80,000",
+          "3 months — ₦100,000",
+          "4 months — ₦120,000",
+          "5 months — ₦140,000",
+          "6 months — ₦160,000",
+          "9 months — ₦220,000",
+          "12 months — ₦280,000",
+        ]},
+        { id: "siwesStart", kind: "text", prompt: "Earliest start date (DD/MM/YYYY)", required: true },
+        { id: "schoolLetter", prompt: "Do you have your school's introduction letter?", required: true, options: [
+          "Yes — I have it ready",
+          "Not yet — getting it this week",
+          "Need help — what should I tell my school?",
+        ]},
+      ],
+    },
+
+    /* ─── 3e. ONLINE — self-paced ─── */
+    {
+      title: "Your online learning",
+      showWhen: isOnline,
+      questions: [
+        { id: "currentRole", kind: "text", prompt: "What do you do day-to-day? (job title or 'student')", required: true },
+        { id: "weeklyHours", prompt: "How many hours a week can you study?", required: true, options: [
+          "1–3 hours", "4–7 hours", "8+ hours",
+        ]},
+        { id: "mentorAddon", prompt: "Add a 1-on-1 mentor for ₦10,000 extra?", required: true, options: [
+          "Yes — match me with a mentor",
+          "No — I'll go self-paced",
+          "Maybe later — send me details",
+        ]},
+      ],
+    },
+
+    /* ─── 3f. CORPORATE — team training ─── */
+    {
+      title: "About your team",
+      showWhen: isCorporate,
+      questions: [
+        { id: "companyName", kind: "text", prompt: "Company name", required: true },
+        { id: "teamSize", prompt: "How many people are joining?", required: true, options: [
+          "1–5", "6–10", "11–20", "21–50", "50+",
+        ]},
+        { id: "businessSegment", prompt: "Which segment should AI solve for you?", required: true, options: [
+          "Operations / admin",
+          "Sales / business development",
+          "Marketing / content",
+          "Finance / bookkeeping",
+          "HR / people ops",
+          "Product / strategy",
+          "Multiple — let's discuss",
+        ]},
+        { id: "corpLocation", prompt: "Where should we run it?", required: true, options: [
+          "At our office (Jos / Abuja / Lagos)",
+          "At HAMZURY HUB Jos",
+          "Fully online",
+        ]},
+        { id: "corpDates", kind: "text", prompt: "Preferred dates (any flexibility helps)", required: true },
+        { id: "decisionMaker", prompt: "Are you the decision-maker?", required: true, options: [
+          "Yes",
+          "No — I'm scoping for the decision-maker",
+        ]},
+      ],
+    },
+
+    /* ─── 4. AI starting point ─── (adult learners only — core/online/placement/siwes) */
     {
       title: "Your AI starting point",
       sub: "We teach you the basics, then how to use AI (Claude, Gemini, ChatGPT — directly or through connectors) to multiply the outcome.",
+      showWhen: isAdultLearner,
       questions: [
         { id: "ai_level", prompt: "How comfortable are you with AI tools today?", required: true, options: [
           "Never used an AI tool",
@@ -94,6 +283,14 @@ const cfg: AssessmentConfig = {
           "I'd like to use the HUB lab in Jos",
           "Not sure — please advise",
         ]},
+      ],
+    },
+
+    /* ─── 5. Goal + commitment ─── (core / placement only — online has its own hours Q, kids/corporate/siwes don't need) */
+    {
+      title: "Your goal",
+      showWhen: (a) => ["core", "placement"].includes(categoryFor(a.program) || ""),
+      questions: [
         { id: "commitment", prompt: "How many hours a week can you commit?", required: true, options: [
           "5–8 hours",
           "9–15 hours",
@@ -109,8 +306,11 @@ const cfg: AssessmentConfig = {
         ]},
       ],
     },
+
+    /* ─── 6a. Payment & cohort ─── (core only) */
     {
       title: "Payment & cohort",
+      showWhen: isCore,
       questions: [
         { id: "payment", prompt: "Payment plan:", required: true, options: [
           "₦10,000 seat hold now, balance on orientation day (default)",
@@ -128,6 +328,15 @@ const cfg: AssessmentConfig = {
           "I'm flexible — whatever fits best",
         ]},
         { id: "notes", prompt: "Anything else we should know?", kind: "textarea" },
+      ],
+    },
+
+    /* ─── 6b. Kids / SIWES / Online / Placement / Corporate — light closing ─── */
+    {
+      title: "Anything else?",
+      showWhen: (a) => ["kids", "placement", "siwes", "online", "corporate", "unsure"].includes(categoryFor(a.program) || ""),
+      questions: [
+        { id: "notes", prompt: "Notes / questions for our team", kind: "textarea" },
       ],
     },
   ],
