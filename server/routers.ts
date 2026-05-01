@@ -126,8 +126,8 @@ import {
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
-import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users, reportRequests } from "../drizzle/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users, reportRequests, clients as clientsTable, invoices as invoicesTable } from "../drizzle/schema";
+import { eq, desc, and, or, isNull, lte } from "drizzle-orm";
 import { ENV } from "./_core/env";
 import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
 import { invokeLLM } from "./_core/llm";
@@ -963,6 +963,27 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const { id, status, expectedDelivery, actualDelivery, estimatedHours, actualHours, priority, category } = input;
+        // Feature 1 — Block delivery while balance > 0.
+        // The schema has no explicit "delivered" status; "Completed" is the
+        // terminal/delivered state for this codebase. Guard the transition by
+        // refusing to mark Completed when any linked invoice has outstanding
+        // balance. Tasks with no invoice at all are allowed (some services
+        // bill outside the system).
+        if (status === "Completed") {
+          const taskInvoices = await getInvoicesByTaskId(id);
+          if (taskInvoices.length > 0) {
+            const outstanding = taskInvoices.reduce(
+              (s, inv) => s + (inv.total - (inv.amountPaid ?? 0)),
+              0,
+            );
+            if (outstanding > 0) {
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Cannot mark delivered — outstanding balance ₦${outstanding.toLocaleString("en-NG")}. Settle invoice first.`,
+              });
+            }
+          }
+        }
         const updateData: Record<string, unknown> = { status };
         if (status === "Completed") updateData.completedAt = new Date();
         if (expectedDelivery !== undefined) updateData.expectedDelivery = expectedDelivery;
@@ -1322,14 +1343,24 @@ export const appRouter = router({
         if (!task) {
           const sysLead = await getSystemiseLeadByRef(refTrimmed);
           if (sysLead) {
-            const sysStatus = sysLead.status === "completed" ? "Completed" : sysLead.status === "in_progress" ? "In Progress" : "Not Started";
+            // 2026-04-30 — sysLeadStatus enum is [new, contacted, converted, archived].
+            // Map to client-portal display labels accordingly.
+            const sysStatus =
+              sysLead.status === "converted" ? "Completed" :
+              sysLead.status === "contacted" ? "In Progress" :
+              "Not Started";
             const sysIdx = STATUS_ORDER.indexOf(sysStatus);
             return {
               found: true as const,
               ref: sysLead.ref,
-              clientName: sysLead.contactName || sysLead.businessName,
+              // 2026-04-30 — schema fields: name (contact), businessName,
+              // serviceInterest (json array), freeTextNotes. The previously-used
+              // contactName/package/service columns don't exist.
+              clientName: sysLead.name || sysLead.businessName,
               businessName: sysLead.businessName,
-              service: sysLead.package || sysLead.service || "Systemise",
+              service: (Array.isArray(sysLead.serviceInterest) && sysLead.serviceInterest.length
+                ? String(sysLead.serviceInterest[0])
+                : sysLead.businessType) || "Systemise",
               department: "systemise",
               status: sysStatus,
               statusIndex: sysIdx >= 0 ? sysIdx : 0,
@@ -1347,7 +1378,10 @@ export const appRouter = router({
         if (!task) {
           const app = await getSkillsApplicationByRef(refTrimmed);
           if (app) {
-            const sklStatus = app.status === "accepted" ? "In Progress" : app.status === "completed" ? "Completed" : "Not Started";
+            // 2026-04-30 — skillsApplications status enum is
+            // [submitted, under_review, accepted, waitlisted, rejected].
+            // No "completed" exists — kept "Not Started" as the catch-all.
+            const sklStatus = app.status === "accepted" ? "In Progress" : "Not Started";
             const sklIdx = STATUS_ORDER.indexOf(sklStatus);
             return {
               found: true as const,
@@ -1463,21 +1497,28 @@ export const appRouter = router({
         if (!task) {
           const sysLead = await getSystemiseLeadByRef(refTrimmed);
           if (sysLead) {
-            const sysStatus = sysLead.status === "completed" ? "Completed" : sysLead.status === "in_progress" ? "In Progress" : "Not Started";
+            // 2026-04-30 — sysLeadStatus enum is [new, contacted, converted, archived].
+            // Map to client-portal display labels accordingly.
+            const sysStatus =
+              sysLead.status === "converted" ? "Completed" :
+              sysLead.status === "contacted" ? "In Progress" :
+              "Not Started";
             const sysIdx = STATUS_ORDER.indexOf(sysStatus);
             return {
               found: true as const,
               task: {
                 id: 0, ref: sysLead.ref,
-                clientName: sysLead.contactName || sysLead.businessName,
+                clientName: sysLead.name || sysLead.businessName,
                 businessName: sysLead.businessName,
                 phone: sysLead.phone ? `***${sysLead.phone.slice(-4)}` : null,
-                service: sysLead.package || sysLead.service || "Systemise",
+                service: (Array.isArray(sysLead.serviceInterest) && sysLead.serviceInterest.length
+                  ? String(sysLead.serviceInterest[0])
+                  : sysLead.businessType) || "Systemise",
                 department: "systemise",
                 status: sysStatus, statusIndex: sysIdx >= 0 ? sysIdx : 0, statusTotal: STATUS_ORDER.length,
                 statusSteps: STATUS_ORDER,
                 progress: Math.round(((Math.max(sysIdx, 0) + 1) / STATUS_ORDER.length) * 100),
-                deadline: null, notes: sysLead.notes || null,
+                deadline: null, notes: sysLead.freeTextNotes || null,
                 createdAt: sysLead.createdAt, updatedAt: sysLead.updatedAt,
               },
               checklist: [], invoiceSummary: null, activity: [],
@@ -1489,7 +1530,10 @@ export const appRouter = router({
         if (!task) {
           const app = await getSkillsApplicationByRef(refTrimmed);
           if (app) {
-            const sklStatus = app.status === "accepted" ? "In Progress" : app.status === "completed" ? "Completed" : "Not Started";
+            // 2026-04-30 — skillsApplications status enum is
+            // [submitted, under_review, accepted, waitlisted, rejected].
+            // No "completed" exists — kept "Not Started" as the catch-all.
+            const sklStatus = app.status === "accepted" ? "In Progress" : "Not Started";
             const sklIdx = STATUS_ORDER.indexOf(sklStatus);
             return {
               found: true as const,
@@ -1610,7 +1654,7 @@ export const appRouter = router({
     submit: rateLimitedProcedure
       .input(z.object({
         ref: z.string().min(1),
-        data: z.record(z.string()),
+        data: z.record(z.string(), z.string()),
       }))
       .mutation(async ({ input }) => {
         const refTrimmed = input.ref.trim().toUpperCase();
@@ -4792,6 +4836,115 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
         await updateClient(id, data);
         return { success: true };
       }),
+
+    // ─── Feature 2 — Active Clients payment chip ───────────────────────────
+    /** List all clients + aggregated invoice summary (one round-trip). */
+    listWithPaymentSummary: csoProcedure.query(async () => {
+      const allClients = await getAllClients();
+      const db = await getDb();
+      if (!db) return allClients.map(c => ({ ...c, paymentSummary: null as null | { totalContract: number; totalPaid: number; totalBalance: number } }));
+      // Aggregate invoices by phone (matches getInvoicesForClient join key).
+      // Phones can be null — skip those when joining.
+      const allInvoices = await db.select().from(invoicesTable);
+      const byPhone: Record<string, { totalContract: number; totalPaid: number; totalBalance: number }> = {};
+      for (const inv of allInvoices) {
+        const k = (inv.clientPhone || "").trim();
+        if (!k) continue;
+        const total = inv.total ?? 0;
+        const paid = inv.amountPaid ?? 0;
+        const agg = (byPhone[k] ||= { totalContract: 0, totalPaid: 0, totalBalance: 0 });
+        agg.totalContract += total;
+        agg.totalPaid += paid;
+        agg.totalBalance += Math.max(0, total - paid);
+      }
+      return allClients.map(c => ({
+        ...c,
+        paymentSummary: c.phone && byPhone[c.phone] ? byPhone[c.phone] : null,
+      }));
+    }),
+
+    // ─── Feature 3 — Notify-client outreach activity log ───────────────────
+    /** Log a "send update" outreach as a client_note (internal kind). */
+    logOutreach: csoProcedure
+      .input(z.object({
+        clientId: z.number(),
+        channel: z.enum(["whatsapp", "manual"]),
+        message: z.string().min(1),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const channelLabel = input.channel === "whatsapp" ? "WhatsApp" : "manual channel";
+        const row = await createClientNote({
+          clientId: input.clientId,
+          authorId: ctx.user.openId,
+          authorName: ctx.user.name || ctx.user.email || "CSO",
+          kind: "client_update",
+          body: `Sent update via ${channelLabel}:\n\n${input.message}`,
+        });
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "CSO",
+          action: "client_outreach_sent",
+          resource: "clients",
+          resourceId: input.clientId,
+          details: `Outreach via ${channelLabel} — ${input.message.slice(0, 80)}${input.message.length > 80 ? "…" : ""}`,
+        });
+        return row;
+      }),
+
+    // ─── Feature 4 — Upsell Queue ──────────────────────────────────────────
+    /** Set / update the upsell plan for a client. */
+    setUpsellPlan: csoProcedure
+      .input(z.object({
+        clientId: z.number(),
+        nextActionDate: z.string().optional(),
+        upsellNote: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const data: any = {};
+        if (input.nextActionDate !== undefined) {
+          data.nextActionDate = input.nextActionDate ? new Date(input.nextActionDate) : null;
+        }
+        if (input.upsellNote !== undefined) data.upsellNote = input.upsellNote;
+        await updateClient(input.clientId, data);
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || "CSO",
+          action: "client_upsell_plan_set",
+          resource: "clients",
+          resourceId: input.clientId,
+          details: `Next action ${input.nextActionDate || "—"}${input.upsellNote ? `: ${input.upsellNote.slice(0, 80)}` : ""}`,
+        });
+        return { success: true };
+      }),
+
+    /** List the upsell queue:
+     *   - clients with nextActionDate <= now() + 14 days, OR
+     *   - clients where nextActionDate IS NULL AND status = 'converted'
+     *     AND createdAt < now() - 90 days (auto-surface dormant converts).
+     *   Order: nextActionDate ASC, NULLS LAST. */
+    listUpsellQueue: csoProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) return [];
+      const now = new Date();
+      const in14 = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+      const ago90 = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      const rows = await db.select().from(clientsTable).where(
+        or(
+          lte(clientsTable.nextActionDate, in14),
+          and(
+            isNull(clientsTable.nextActionDate),
+            eq(clientsTable.status, "converted"),
+            lte(clientsTable.createdAt, ago90),
+          ),
+        ),
+      );
+      // ASC NULLS LAST — sort in JS to keep portability across MySQL versions.
+      return rows.sort((a, b) => {
+        const ax = a.nextActionDate ? a.nextActionDate.getTime() : Number.POSITIVE_INFINITY;
+        const bx = b.nextActionDate ? b.nextActionDate.getTime() : Number.POSITIVE_INFINITY;
+        return ax - bx;
+      });
+    }),
   }),
 
   // ═══════════════════════════════════════════════════════════════════════════

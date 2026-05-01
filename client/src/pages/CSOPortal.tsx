@@ -2088,10 +2088,21 @@ function ClientsSection() {
   const [detailClient, setDetailClient] = useState<any | null>(null);
   const [assignTarget, setAssignTarget] = useState<{ clientId?: number; leadId?: number } | null>(null);
   const [notifyCeoOpen, setNotifyCeoOpen] = useState<{ clientId?: number; subject?: string } | null>(null);
-  const clientsQuery = trpc.clientTruth.list.useQuery();
+  const [outreachClient, setOutreachClient] = useState<any | null>(null);
+  const [upsellTarget, setUpsellTarget] = useState<any | null>(null);
+  // Feature 2 — single round-trip: clients + aggregated payment summary.
+  const clientsQuery = trpc.clientTruth.listWithPaymentSummary.useQuery();
   const clients = (clientsQuery.data || []) as any[];
+  // Feature 4 — Upsell Queue
+  const upsellQuery = trpc.clientTruth.listUpsellQueue.useQuery();
+  const upsellList = (upsellQuery.data || []) as any[];
 
-  const filtered = statusFilter === "all" ? clients : clients.filter((c: any) => c.status === statusFilter);
+  const filtered =
+    statusFilter === "upsell"
+      ? upsellList
+      : statusFilter === "all"
+        ? clients
+        : clients.filter((c: any) => c.status === statusFilter);
 
   return (
     <div>
@@ -2115,7 +2126,7 @@ function ClientsSection() {
       </div>
 
       <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        {["all", "active", "converted", "unverified", "dormant"].map(s => (
+        {["all", "active", "converted", "unverified", "dormant", "upsell"].map(s => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
@@ -2127,7 +2138,9 @@ function ClientsSection() {
               color: statusFilter === s ? GOLD : MUTED,
             }}
           >
-            {s} {s !== "all" && `(${clients.filter((c: any) => c.status === s).length})`}
+            {s === "upsell"
+              ? `Upsell Queue (${upsellList.length})`
+              : `${s} ${s !== "all" ? `(${clients.filter((c: any) => c.status === s).length})` : ""}`}
           </button>
         ))}
       </div>
@@ -2135,7 +2148,18 @@ function ClientsSection() {
       {clientsQuery.isLoading ? (
         <Card><EmptyState icon={Loader2} title="Loading clients..." /></Card>
       ) : filtered.length === 0 ? (
-        <Card><EmptyState icon={Building2} title={`No ${statusFilter === "all" ? "" : statusFilter} clients`} /></Card>
+        <Card><EmptyState icon={Building2} title={statusFilter === "upsell" ? "Upsell queue is empty" : `No ${statusFilter === "all" ? "" : statusFilter} clients`} /></Card>
+      ) : statusFilter === "upsell" ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {filtered.map((c: any) => (
+            <UpsellRow
+              key={c.id}
+              client={c}
+              onSetPlan={() => setUpsellTarget(c)}
+              onNotify={() => setOutreachClient(c)}
+            />
+          ))}
+        </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((c: any) => (
@@ -2145,6 +2169,7 @@ function ClientsSection() {
               onOpen={() => setDetailClient(c)}
               onAssignTask={() => setAssignTarget({ clientId: c.id })}
               onNotifyCeo={() => setNotifyCeoOpen({ clientId: c.id, subject: `Client: ${c.businessName || c.name}` })}
+              onNotifyClient={() => setOutreachClient(c)}
             />
           ))}
         </div>
@@ -2185,7 +2210,255 @@ function ClientsSection() {
           onClose={() => setNotifyCeoOpen(null)}
         />
       )}
+
+      {outreachClient && (
+        <NotifyClientModal
+          client={outreachClient}
+          onClose={() => setOutreachClient(null)}
+        />
+      )}
+
+      {upsellTarget && (
+        <SetUpsellPlanModal
+          client={upsellTarget}
+          onClose={() => setUpsellTarget(null)}
+          onSaved={() => {
+            setUpsellTarget(null);
+            upsellQuery.refetch();
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/* ─── Feature 3 — Notify-client modal ────────────────────────────────────
+ * STAFF-ONLY surface (CSO portal) — wa.me deep links are intentional here.
+ * They were removed from PUBLIC pages but staff use them every day to send
+ * progress updates. */
+function NotifyClientModal({ client, onClose }: { client: any; onClose: () => void }) {
+  const service = client.department || "your project";
+  const name = client.name || "there";
+  const ref = client.ref || "";
+  const defaultMsg = `Hi ${name}, quick update on ${service}: [edit me]. Track progress at https://hamzury.com/client/dashboard?ref=${ref}`;
+  const [msg, setMsg] = useState(defaultMsg);
+  const log = trpc.clientTruth.logOutreach.useMutation();
+
+  // Phone normalization: strip leading 0, strip non-digits, prepend 234.
+  const phone = (client.phone || "").replace(/\D/g, "");
+  const waPhone = phone.startsWith("234") ? phone : phone.replace(/^0/, "");
+  const waUrl = waPhone ? `https://wa.me/234${waPhone}?text=${encodeURIComponent(msg)}` : null;
+
+  const sendWhatsApp = () => {
+    if (!waUrl) {
+      toast.error("No phone number on file for this client.");
+      return;
+    }
+    log.mutate({ clientId: client.id, channel: "whatsapp", message: msg }, {
+      onSuccess: () => toast.success("WhatsApp opened — outreach logged."),
+      onError: () => toast.error("Logged failed but link opened."),
+    });
+    window.open(waUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const copyManual = async () => {
+    try {
+      await navigator.clipboard.writeText(`${msg}\n\n— Send via your preferred channel (email / SMS / WhatsApp).`);
+      log.mutate({ clientId: client.id, channel: "manual", message: msg }, {
+        onSuccess: () => toast.success("Copied — outreach logged."),
+      });
+    } catch {
+      toast.error("Copy failed.");
+    }
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        backgroundColor: WHITE, borderRadius: 12, padding: 22, maxWidth: 520, width: "100%",
+        maxHeight: "90vh", overflowY: "auto",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: DARK, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            Send update — {client.businessName || client.name}
+          </h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: MUTED }}><X size={16} /></button>
+        </div>
+        <p style={{ fontSize: 11, color: MUTED, marginBottom: 6 }}>
+          Phone on file: <span style={{ fontFamily: "monospace", color: DARK }}>{client.phone || "— none —"}</span>
+        </p>
+        <textarea
+          value={msg}
+          onChange={e => setMsg(e.target.value)}
+          rows={5}
+          style={{
+            width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${DARK}15`,
+            fontSize: 12, color: DARK, fontFamily: "inherit", resize: "vertical", marginBottom: 12,
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <button onClick={copyManual} style={{
+            padding: "8px 14px", borderRadius: 8, border: `1px solid ${DARK}15`,
+            backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}>
+            Copy + manual
+          </button>
+          <button onClick={sendWhatsApp} disabled={!waUrl} style={{
+            padding: "8px 14px", borderRadius: 8, border: "none",
+            backgroundColor: waUrl ? GREEN : `${MUTED}40`,
+            color: GOLD, fontSize: 12, fontWeight: 600, cursor: waUrl ? "pointer" : "not-allowed",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <MessageCircle size={12} /> Send WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Feature 4 — Set Upsell Plan modal ──────────────────────────────── */
+function SetUpsellPlanModal({ client, onClose, onSaved }: { client: any; onClose: () => void; onSaved: () => void }) {
+  const todayPlus = (days: number) => {
+    const d = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    return d.toISOString().slice(0, 10);
+  };
+  const initialDate = client.nextActionDate
+    ? new Date(client.nextActionDate).toISOString().slice(0, 10)
+    : todayPlus(14);
+  const [date, setDate] = useState<string>(initialDate);
+  const [note, setNote] = useState<string>(client.upsellNote || "");
+  const setPlan = trpc.clientTruth.setUpsellPlan.useMutation();
+
+  const save = () => {
+    setPlan.mutate(
+      { clientId: client.id, nextActionDate: date ? new Date(date).toISOString() : undefined, upsellNote: note },
+      {
+        onSuccess: () => { toast.success("Upsell plan saved."); onSaved(); },
+        onError: e => toast.error(e.message || "Save failed."),
+      },
+    );
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)",
+      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, padding: 20,
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        backgroundColor: WHITE, borderRadius: 12, padding: 22, maxWidth: 480, width: "100%",
+      }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: DARK, letterSpacing: "0.04em", textTransform: "uppercase" }}>
+            Set next action — {client.businessName || client.name}
+          </h3>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: MUTED }}><X size={16} /></button>
+        </div>
+        <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>Next action date</label>
+        <input
+          type="date"
+          value={date}
+          onChange={e => setDate(e.target.value)}
+          style={{
+            width: "100%", padding: 9, borderRadius: 8, border: `1px solid ${DARK}15`,
+            fontSize: 12, color: DARK, marginBottom: 12,
+          }}
+        />
+        <label style={{ display: "block", fontSize: 10, fontWeight: 700, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 4 }}>Upsell note / pitch</label>
+        <textarea
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          rows={4}
+          placeholder="e.g. Renew brand audit · Upsell Scalar SOP package · ₦250k target"
+          style={{
+            width: "100%", padding: 10, borderRadius: 8, border: `1px solid ${DARK}15`,
+            fontSize: 12, color: DARK, fontFamily: "inherit", resize: "vertical", marginBottom: 14,
+          }}
+        />
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{
+            padding: "8px 14px", borderRadius: 8, border: `1px solid ${DARK}15`,
+            backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}>Cancel</button>
+          <button onClick={save} disabled={setPlan.isPending} style={{
+            padding: "8px 14px", borderRadius: 8, border: "none",
+            backgroundColor: GREEN, color: GOLD, fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}>{setPlan.isPending ? "Saving…" : "Save plan"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Feature 4 — Upsell queue row ──────────────────────────────────── */
+function UpsellRow({ client: c, onSetPlan, onNotify }: { client: any; onSetPlan: () => void; onNotify: () => void }) {
+  const tasksQuery = trpc.tasks.list.useQuery();
+  const clientTasks = ((tasksQuery.data || []) as any[]).filter((t: any) =>
+    (c.phone && t.phone === c.phone) || (c.name && t.clientName === c.name)
+  );
+  // Service history = unique services across linked tasks
+  const services = Array.from(new Set(clientTasks.map((t: any) => t.service).filter(Boolean))).slice(0, 3);
+  // Last invoice (paid) date proxy: most recent task updatedAt for now —
+  // staff care about "when did we last bill them"; full invoice history is one
+  // click away in the detail slide-over.
+  const lastInvoiceTs = clientTasks
+    .map((t: any) => t.updatedAt || t.createdAt)
+    .filter(Boolean)
+    .map((s: any) => new Date(s).getTime())
+    .sort((a: number, b: number) => b - a)[0];
+  const daysSince = lastInvoiceTs ? Math.floor((Date.now() - lastInvoiceTs) / (24 * 60 * 60 * 1000)) : null;
+
+  return (
+    <Card>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{c.businessName || c.name}</p>
+            <Pill status={c.status} />
+            {c.nextActionDate && (
+              <span style={{
+                fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 10,
+                backgroundColor: `${GOLD}18`, color: "#8B6914",
+                textTransform: "uppercase", letterSpacing: "0.04em",
+              }}>
+                Next {fmtDate(c.nextActionDate)}
+              </span>
+            )}
+          </div>
+          <p style={{ fontSize: 11, fontFamily: "monospace", color: GOLD, marginBottom: 8 }}>{c.ref}</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10, marginBottom: 8 }}>
+            <MetaCell label="Services" value={services.length ? services.join(" · ") : "—"} />
+            <MetaCell label="Last invoice" value={lastInvoiceTs ? fmtDate(new Date(lastInvoiceTs).toISOString()) : "—"} />
+            <MetaCell label="Days since" value={daysSince !== null ? `${daysSince}d` : "—"} warn={daysSince !== null && daysSince > 60} />
+          </div>
+          {c.upsellNote && (
+            <div style={{ marginTop: 6, padding: "8px 12px", borderRadius: 8, backgroundColor: `${GOLD}10`, border: `1px solid ${GOLD}25` }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#8B6914", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 3 }}>Upsell note</p>
+              <p style={{ fontSize: 11, color: DARK, whiteSpace: "pre-wrap" }}>{c.upsellNote}</p>
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, flexShrink: 0 }}>
+          <button onClick={onSetPlan} style={{
+            fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 8,
+            border: "none", backgroundColor: GREEN, color: GOLD, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <Calendar size={12} /> Set next action
+          </button>
+          <button onClick={onNotify} style={{
+            fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 8,
+            border: `1px solid ${GREEN}40`, backgroundColor: `${GREEN}08`, color: GREEN, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}>
+            <MessageCircle size={12} /> Send update
+          </button>
+        </div>
+      </div>
+    </Card>
   );
 }
 
@@ -2326,16 +2599,43 @@ function DeliveredPerMonth() {
   );
 }
 
+/* ─── Feature 2 — Payment chip ──────────────────────────────────────── */
+function PaymentChip({ summary }: { summary: { totalContract: number; totalPaid: number; totalBalance: number } | null | undefined }) {
+  if (!summary) return null; // No invoice — hide
+  const { totalContract, totalPaid, totalBalance } = summary;
+  if (totalContract === 0 && totalPaid === 0) return null;
+  let bg = `${ORANGE}18`, color = ORANGE, label = "No payment yet";
+  if (totalPaid > 0 && totalBalance === 0) {
+    bg = "#16A34A18"; color = "#15803D"; label = "Paid in full";
+  } else if (totalPaid > 0 && totalPaid < totalContract) {
+    const pct = Math.round((totalPaid / totalContract) * 100);
+    bg = `${GOLD}18`; color = "#8B6914"; label = `Paid ${pct}% · ${fmtNaira(totalBalance)} due`;
+  } else if (totalPaid === 0) {
+    bg = `${ORANGE}18`; color = ORANGE; label = "No payment yet";
+  }
+  return (
+    <span style={{
+      fontSize: 9, fontWeight: 700, padding: "2px 8px", borderRadius: 10,
+      backgroundColor: bg, color,
+      textTransform: "uppercase", letterSpacing: "0.04em",
+    }}>
+      {label}
+    </span>
+  );
+}
+
 function ClientCard({
   client: c,
   onOpen,
   onAssignTask,
   onNotifyCeo,
+  onNotifyClient,
 }: {
   client: any;
   onOpen?: () => void;
   onAssignTask?: () => void;
   onNotifyCeo?: () => void;
+  onNotifyClient?: () => void;
 }) {
   const [showHandoff, setShowHandoff] = useState(false);
   const tasksQuery = trpc.tasks.list.useQuery();
@@ -2347,9 +2647,10 @@ function ClientCard({
     <Card>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 14 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, flexWrap: "wrap" }}>
             <p style={{ fontSize: 15, fontWeight: 700, color: DARK }}>{c.businessName || c.name}</p>
             <Pill status={c.status} />
+            <PaymentChip summary={c.paymentSummary} />
             {c.riskFlag && c.riskFlag !== "none" && (
               <span style={{
                 fontSize: 9, fontWeight: 700, color: c.riskFlag === "critical" || c.riskFlag === "high" ? RED : ORANGE,
@@ -2432,6 +2733,18 @@ function ClientCard({
               }}
             >
               <UserPlus size={10} /> Assign Task
+            </button>
+          )}
+          {onNotifyClient && (
+            <button
+              onClick={onNotifyClient}
+              style={{
+                fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                border: `1px solid ${GREEN}30`, color: GREEN, backgroundColor: `${GREEN}06`,
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+              }}
+            >
+              <MessageCircle size={10} /> Send update
             </button>
           )}
           {onNotifyCeo && (

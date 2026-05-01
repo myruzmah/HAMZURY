@@ -145,6 +145,10 @@ export const clients = mysqlTable("clients", {
   location: varchar("location", { length: 255 }),
   /** How the client found HAMZURY */
   source: varchar("source", { length: 50 }),
+  /** Feature 4 — Upsell Queue: when CSO plans to next contact for upsell/renewal */
+  nextActionDate: timestamp("nextActionDate"),
+  /** Feature 4 — Upsell Queue: free-text plan / pitch notes */
+  upsellNote: text("upsellNote"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

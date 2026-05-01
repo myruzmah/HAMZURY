@@ -1068,7 +1068,10 @@ export async function createStaffUser(data: InsertStaffUser): Promise<void> {
 export async function updateStaffUserLogin(id: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  await db.update(staffUsers).set({ lastLogin: new Date(), failedAttempts: 0, lockedUntil: null, firstLogin: false }).where(eq(staffUsers.id, id));
+  // 2026-04-30 — DO NOT clear firstLogin on login. It was being cleared here
+  // which defeated the first-login-must-change-password flow. Only
+  // updateStaffPassword (the actual password-change handler) should clear it.
+  await db.update(staffUsers).set({ lastLogin: new Date(), failedAttempts: 0, lockedUntil: null }).where(eq(staffUsers.id, id));
 }
 
 export async function incrementStaffFailedAttempts(id: number): Promise<number> {
