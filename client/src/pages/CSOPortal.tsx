@@ -2083,7 +2083,9 @@ function escapeHtml(s: string): string {
  * 6. ACTIVE CLIENTS
  * ═══════════════════════════════════════════════════════════════════════ */
 function ClientsSection() {
-  const [statusFilter, setStatusFilter] = useState<string>("active");
+  // 2026-05 — default to "all" so newly-Won clients (status="converted") are
+  // visible immediately. Was "active" which hid converted clients on first load.
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailClient, setDetailClient] = useState<any | null>(null);
   const [assignTarget, setAssignTarget] = useState<{ clientId?: number; leadId?: number } | null>(null);
@@ -2237,7 +2239,23 @@ function ClientsSection() {
  * They were removed from PUBLIC pages but staff use them every day to send
  * progress updates. */
 function NotifyClientModal({ client, onClose }: { client: any; onClose: () => void }) {
-  const service = client.department || "your project";
+  // Prefer the human service label (set by CSO at qualification — e.g. "Bizdoc
+  // Compliant Package") over the bare dept code (e.g. "bizdoc"). Walk: service
+  // → department label → generic.
+  const DEPT_LABEL: Record<string, string> = {
+    bizdoc: "your Bizdoc compliance work",
+    scalar: "your Scalar build",
+    systemise: "your Scalar build",
+    medialy: "your Medialy content",
+    skills: "your HUB programme",
+    hub: "your HUB programme",
+    podcast: "your podcast",
+    video: "your video work",
+    faceless: "your faceless channel",
+  };
+  const service = client.service?.trim()
+    || DEPT_LABEL[(client.department || "").toLowerCase()]
+    || "your project";
   const name = client.name || "there";
   const ref = client.ref || "";
   const defaultMsg = `Hi ${name}, quick update on ${service}: [edit me]. Track progress at https://hamzury.com/client/dashboard?ref=${ref}`;
@@ -2667,7 +2685,10 @@ function ClientCard({
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginBottom: 10 }}>
             <MetaCell label="Department" value={c.department || "—"} />
             <MetaCell label="Contract" value={fmtNaira(c.contractValue)} />
-            <MetaCell label="Balance" value={fmtNaira(c.balance)} warn={c.balance && parseFloat(c.balance) > 0} />
+            {/* 2026-05 — removed legacy `Balance` MetaCell. The PaymentChip in the
+                card header now shows live invoice balance ("Paid X% · ₦Y due"),
+                so this read of client.balance (often stale or 0) was contradicting
+                the chip on the same card. Single source of truth = invoices. */}
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10 }}>
@@ -3993,6 +4014,10 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
       toast.error(e.message || "Couldn't assign. Check Console for details.");
     },
   });
+  const setTaskPrice = trpc.tasks.setPrice.useMutation({
+    onSuccess: () => { toast.success("Quoted price set."); utils.leads.list.invalidate(); },
+    onError: (e) => toast.error(e.message || "Couldn't set price."),
+  });
   const deleteLead = trpc.leads.delete.useMutation({
     onSuccess: () => { toast.success("Lead deleted"); utils.leads.list.invalidate(); },
     onError: (e) => toast.error(e.message),
@@ -4096,6 +4121,30 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
   const handleQualify = (lead: any) => {
     setOpenMenuId(null);
     onQualify(lead.id);
+  };
+  const handleSetPrice = (lead: any) => {
+    setOpenMenuId(null);
+    // Pull existing price from lead.quotedPrice (denormalised on the lead row)
+    // or fall back to "" so the prompt is empty for fresh entries.
+    const existing = lead.quotedPrice ? String(lead.quotedPrice) : "";
+    const raw = window.prompt(
+      `Set quoted price for ${lead.name || lead.ref} (Naira, no commas):`,
+      existing,
+    );
+    if (raw === null) return;                       // cancelled
+    const cleaned = raw.replace(/[^\d.]/g, "");
+    const n = parseFloat(cleaned);
+    if (!Number.isFinite(n) || n <= 0) {
+      toast.error("Enter a positive number — e.g. 150000");
+      return;
+    }
+    // tasks.setPrice expects the linked task id, not the lead id.
+    const taskId = lead.taskId || lead.linkedTaskId;
+    if (!taskId) {
+      toast.error("This lead has no linked task yet — assign it to a division first.");
+      return;
+    }
+    setTaskPrice.mutate({ id: taskId, quotedPrice: String(n) });
   };
   const handleOpenAssign = (lead: any) => {
     setOpenMenuId(null);
@@ -4329,6 +4378,13 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
                               ) : null;
                             })()}
                             <div style={{ height: 1, backgroundColor: HAIRLINE, margin: "3px 6px" }} />
+                            <MenuItem
+                              icon={<DollarSign size={13} />}
+                              label={lead.quotedPrice ? `Update price (₦${parseFloat(lead.quotedPrice).toLocaleString("en-NG")})` : "Set quoted price"}
+                              color={GOLD}
+                              disabled={setTaskPrice.isPending}
+                              onClick={() => handleSetPrice(lead)}
+                            />
                             <MenuItem
                               icon={<CheckCircle2 size={13} />}
                               label="Mark Won"

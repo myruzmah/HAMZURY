@@ -645,7 +645,10 @@ export const appRouter = router({
           all = all.filter(l => (l.assignedDepartment || "").toLowerCase() === input.department!.toLowerCase());
         }
         if (input?.excludeConverted) {
-          all = all.filter(l => l.status !== "converted" && l.status !== "archived");
+          // Exclude any terminal/non-actionable status from the inbox.
+          // Includes legacy ("converted","archived") + new pipeline ("won","lost").
+          const TERMINAL = new Set(["converted", "archived", "won", "lost"]);
+          all = all.filter(l => !TERMINAL.has((l.status || "").toLowerCase()));
         }
         if (input?.groupByStage) {
           const stages = ["new", "qualified", "proposal_sent", "negotiation", "onboarding", "won", "lost", "paused"] as const;
@@ -675,6 +678,24 @@ export const appRouter = router({
         note: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // ─── Pre-Won guard ────────────────────────────────────────────────
+        // Refuse the transition to Won unless the linked task has a
+        // quotedPrice. Without it, the auto-handoff silently skips
+        // commission creation and the CSO has to chase finance later.
+        if (input.stage === "won") {
+          const tasks = await getTasksByLeadId(input.leadId);
+          const hasPrice = tasks.some((t: any) => {
+            const v = t.quotedPrice ? parseFloat(String(t.quotedPrice)) : 0;
+            return Number.isFinite(v) && v > 0;
+          });
+          if (!hasPrice) {
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: "Cannot mark Won — quoted price not set on this lead's task. Set the contract value first (Pipeline card → Set price), then retry.",
+            });
+          }
+        }
+
         const lead = await updateLead(input.leadId, { status: input.stage as any });
         await createActivityLog({
           leadId: input.leadId,
@@ -740,8 +761,24 @@ export const appRouter = router({
               console.log(`[leads.updateStage:won] No task with quotedPrice for lead ${lead.ref} — commission not auto-created`);
             }
           } catch (err) {
-            // Non-fatal — the stage move already succeeded; log so it can be retried manually
+            // Non-fatal for the stage move — but the CSO MUST know so they can
+            // retry the handoff manually. Log + write a CSO notification +
+            // attach the failure to the activity log so it shows on the lead.
+            const msg = err instanceof Error ? err.message : String(err);
             console.error(`[leads.updateStage:won] Auto-handoff partially failed for lead ${lead.ref}:`, err);
+            await createNotification({
+              userId: "cso",
+              type: "alert",
+              title: "Won handoff incomplete",
+              message: `${lead.ref} (${lead.name}) is Won, but creating the client / commission row failed: ${msg.slice(0, 160)}. Open the lead and retry handoff.`,
+              link: "/cso",
+            }).catch((notifyErr) => console.error("[notify] handoff failure notification failed:", notifyErr));
+            await createActivityLog({
+              leadId: input.leadId,
+              userId: ctx.user.id,
+              action: "handoff_failed",
+              details: `Won auto-handoff failed: ${msg.slice(0, 240)}`,
+            }).catch(() => {});
           }
         }
 
