@@ -34,11 +34,23 @@ type Props = {
   children: React.ReactNode;
 };
 
-const BG = "#FFFAF6";
+/* Apple-clean rebrand 2026-04-30 — same treatment as CSO + Hub + Bizdoc.
+ * One change here rebrand-s every portal that uses OpsShell:
+ *   Scalar / Medialy / Podcast / Video / Faceless. */
+const BG = "#FFFBEB";              // Milk
 const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
-const MUTED = "#666666";
+const MUTED = "#6B7280";
 const GOLD = "#B48C4C";
+const HAIRLINE = "#E7E5E4";
+const SURFACE = "#FFFFFF";
+const NAV_HOVER = "#F5F5F4";
+const INK = "#1A1A1A";
+const INK_MUTED = "#6B7280";
+/** Convert any hex (e.g. "#D4A017") to a 12% tint backdrop string. */
+function tint(hex: string, alpha: string = "15"): string {
+  return `${hex}${alpha}`;
+}
 
 export default function OpsShell({
   title,
@@ -96,14 +108,14 @@ export default function OpsShell({
         />
       )}
 
-      {/* Sidebar */}
+      {/* ── Sidebar (Apple-clean rebrand 2026-04-30) ── */}
       <aside
         style={{
           width: 232,
-          backgroundColor: brand.bg,
+          backgroundColor: SURFACE,
           display: "flex",
           flexDirection: "column",
-          borderRight: `1px solid ${brand.accent}20`,
+          borderRight: `1px solid ${HAIRLINE}`,
           ...(isMobile
             ? {
                 position: "fixed",
@@ -113,15 +125,15 @@ export default function OpsShell({
                 zIndex: 50,
                 transform: mobileNavOpen ? "translateX(0)" : "translateX(-100%)",
                 transition: "transform 0.25s ease",
-                boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.2)" : "none",
+                boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.08)" : "none",
               }
             : {}),
         }}
       >
         <div
           style={{
-            padding: "20px 18px",
-            borderBottom: `1px solid ${brand.accent}15`,
+            padding: "22px 20px 18px",
+            borderBottom: `1px solid ${HAIRLINE}`,
             display: "flex",
             alignItems: "flex-start",
             justifyContent: "space-between",
@@ -131,25 +143,28 @@ export default function OpsShell({
           <div>
             <div
               style={{
-                fontSize: 11,
+                fontSize: 10,
                 color: brand.accent,
-                letterSpacing: "0.12em",
+                letterSpacing: "0.16em",
                 fontWeight: 600,
-                marginBottom: 2,
+                marginBottom: 4,
               }}
             >
               {logoSmall}
             </div>
             <div
               style={{
-                fontSize: 15,
-                color: WHITE,
+                fontSize: 17,
+                color: INK,
                 fontWeight: 600,
-                letterSpacing: -0.1,
+                letterSpacing: -0.3,
               }}
             >
               {logoLarge}
             </div>
+            {subtitle && (
+              <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>{subtitle}</div>
+            )}
           </div>
           {isMobile && (
             <button
@@ -159,8 +174,8 @@ export default function OpsShell({
                 width: 30,
                 height: 30,
                 borderRadius: 8,
-                backgroundColor: `${brand.accent}15`,
-                color: brand.accent,
+                backgroundColor: NAV_HOVER,
+                color: INK_MUTED,
                 border: "none",
                 cursor: "pointer",
                 display: "flex",
@@ -173,7 +188,7 @@ export default function OpsShell({
           )}
         </div>
 
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "14px 12px", overflowY: "auto" }}>
           {nav.map(({ key, icon: Icon, label }) => {
             const isActive = active === key;
             return (
@@ -187,28 +202,30 @@ export default function OpsShell({
                   width: "100%",
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  padding: "9px 12px",
+                  gap: 11,
+                  padding: "10px 12px",
                   marginBottom: 2,
-                  borderRadius: 10,
-                  backgroundColor: isActive ? `${brand.accent}20` : "transparent",
-                  color: isActive ? brand.accent : `${brand.accent}70`,
+                  borderRadius: 9,
+                  backgroundColor: isActive ? tint(brand.accent, "12") : "transparent",
+                  color: isActive ? brand.accent : INK_MUTED,
                   border: "none",
                   cursor: "pointer",
                   textAlign: "left",
                   fontSize: 13,
                   fontWeight: isActive ? 600 : 500,
-                  transition: "all 0.15s",
+                  transition: "background-color 0.15s, color 0.15s",
                 }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = NAV_HOVER; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
-                <Icon size={15} />
+                <Icon size={15} strokeWidth={1.75} />
                 <span>{label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div style={{ padding: "12px 10px", borderTop: `1px solid ${brand.accent}15` }}>
+        <div style={{ padding: "12px 12px 16px", borderTop: `1px solid ${HAIRLINE}` }}>
           <Link
             href="/"
             style={{
@@ -216,14 +233,15 @@ export default function OpsShell({
               alignItems: "center",
               gap: 10,
               padding: "8px 12px",
-              borderRadius: 10,
-              color: `${brand.accent}60`,
+              borderRadius: 9,
+              color: INK_MUTED,
               fontSize: 12,
               textDecoration: "none",
               marginBottom: 2,
+              fontWeight: 500,
             }}
           >
-            <ArrowLeft size={13} /> Back to HAMZURY
+            <ArrowLeft size={13} strokeWidth={1.75} /> Back to HAMZURY
           </Link>
           {onLogout && (
             <button
@@ -234,16 +252,17 @@ export default function OpsShell({
                 alignItems: "center",
                 gap: 10,
                 padding: "8px 12px",
-                borderRadius: 10,
-                color: `${brand.accent}60`,
+                borderRadius: 9,
+                color: INK_MUTED,
                 backgroundColor: "transparent",
                 border: "none",
                 fontSize: 12,
                 cursor: "pointer",
                 textAlign: "left",
+                fontWeight: 500,
               }}
             >
-              <LogOut size={13} /> Sign Out
+              <LogOut size={13} strokeWidth={1.75} /> Sign out
             </button>
           )}
         </div>

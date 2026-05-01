@@ -1,5 +1,6 @@
 import { Megaphone, Camera, BarChart3 } from "lucide-react";
 import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
+import { medialyServicesCatalog } from "./_divisions/data/medialy-services";
 
 const cfg: DivisionPortalConfig = {
   name:              "MEDIALY",
@@ -56,6 +57,7 @@ const cfg: DivisionPortalConfig = {
       context: "Medialy Authority Package",
     },
   ],
+  servicesCatalog: medialyServicesCatalog,
   serviceCategories: [
     {
       id: "strategy", title: "Strategy & Content", icon: Megaphone,

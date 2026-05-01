@@ -465,6 +465,8 @@ export default function MedialyOpsPortal() {
   }
   if (!user) return null;
 
+  // 2026-04-30 — "Comms Log" tab removed per Master Ops Manual: only CSO
+  // contacts clients. Medialy delivers content; client comms go through CSO.
   const NAV = [
     { key: "overview", icon: LayoutDashboard, label: "Overview" },
     { key: "clients", icon: Users, label: "Clients" },
@@ -472,7 +474,6 @@ export default function MedialyOpsPortal() {
     { key: "approvals", icon: CheckSquare, label: "Approvals Queue" },
     { key: "tasks", icon: ListTodo, label: "Tasks" },
     { key: "performance", icon: BarChart3, label: "Performance" },
-    { key: "comms", icon: MessageSquare, label: "Comms Log" },
     { key: "reports", icon: FileText, label: "Reports" },
   ];
 
@@ -500,7 +501,6 @@ export default function MedialyOpsPortal() {
       {active === "approvals" && <ApprovalsSection />}
       {active === "tasks" && <TasksSection userName={userName} />}
       {active === "performance" && <PerformanceSection />}
-      {active === "comms" && <CommsSection />}
       {active === "reports" && <ReportsSection />}
     </OpsShell>
   );
@@ -1039,25 +1039,8 @@ function ClientDrillModalInner({ open, onClose, row }: {
           )}
         </OpsCard>
 
-        <OpsCard style={{ padding: 14 }}>
-          <p style={{ fontSize: 11, color: MUTED, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
-            Comms ({comms.length})
-          </p>
-          {comms.length === 0 ? (
-            <p style={{ fontSize: 12, color: MUTED }}>No touchpoints logged.</p>
-          ) : (
-            comms.slice(0, 4).map(c => (
-              <div key={c.id} style={{
-                padding: "6px 0", borderBottom: `1px solid ${DARK}08`,
-              }}>
-                <p style={{ fontSize: 12, color: DARK, fontWeight: 500 }}>{c.summary}</p>
-                <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                  {c.commType} · {fmtDate(c.whenDate)} · {c.owner}
-                </p>
-              </div>
-            ))
-          )}
-        </OpsCard>
+        {/* 2026-04-30 — Client Comms preview removed. Per Master Ops Manual,
+            only CSO maintains client touchpoints. Medialy delivers content. */}
 
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
           <button onClick={del} style={{

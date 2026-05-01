@@ -36,6 +36,8 @@ import {
   hubLmsProgress,
   hubInternDuties,
   hubMetfix,
+  hubTeamCompetitions,
+  hubSocialPosts,
 } from "../../drizzle/schema";
 
 // ─── Local procedure builder (Founder + CEO + Skills Staff) ──────────────────
@@ -340,6 +342,163 @@ const metfixRouter = router({
   }),
 });
 
+// ─── Team Competition router (2026-04-30: replaces localStorage) ──────────────
+const HUB_TEAM_KEYS = ["ai", "cyber", "quantum", "robotics"] as const;
+const HUB_COMP_STATUS = ["active", "judged", "archived"] as const;
+
+const competitionsRouter = router({
+  list: hubAdminProcedure.query(async () => {
+    const conn = await db();
+    return conn.select().from(hubTeamCompetitions).orderBy(desc(hubTeamCompetitions.month));
+  }),
+  create: hubAdminProcedure
+    .input(z.object({
+      title: z.string().min(1),
+      deadline: z.string().min(1),
+      month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const conn = await db();
+      const month = input.month || (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      })();
+      const [r] = await conn.insert(hubTeamCompetitions).values({
+        month,
+        title: input.title,
+        deadline: input.deadline,
+        status: "active",
+        scores: {},
+        createdBy: ctx.user.email || ctx.user.openId,
+      } as any);
+      return { id: (r as any).insertId };
+    }),
+  /** Update scores (judging) and optionally close the competition. */
+  updateScores: hubAdminProcedure
+    .input(z.object({
+      id: z.number(),
+      scores: z.record(z.enum(HUB_TEAM_KEYS), z.number().min(0)),
+      status: z.enum(HUB_COMP_STATUS).optional(),
+      notes: z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      await conn.update(hubTeamCompetitions).set({
+        scores: input.scores,
+        ...(input.status ? { status: input.status } : {}),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      } as any).where(eq(hubTeamCompetitions.id, input.id));
+      return { success: true };
+    }),
+  remove: hubAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      await conn.delete(hubTeamCompetitions).where(eq(hubTeamCompetitions.id, input.id));
+      return { success: true };
+    }),
+  /** Aggregate season-to-date points per team. Useful for the leaderboard. */
+  leaderboard: hubAdminProcedure.query(async () => {
+    const conn = await db();
+    const rows = await conn.select().from(hubTeamCompetitions);
+    const totals: Record<string, number> = { ai: 0, cyber: 0, quantum: 0, robotics: 0 };
+    for (const r of rows) {
+      const s = (r.scores as any) || {};
+      for (const k of HUB_TEAM_KEYS) {
+        totals[k] += Number(s[k] || 0);
+      }
+    }
+    return totals;
+  }),
+});
+
+// ─── Social Posts router (2026-04-30: replaces localStorage) ──────────────────
+const socialPostsRouter = router({
+  list: hubAdminProcedure
+    .input(z.object({
+      studentName: z.string().optional(),
+      verifiedOnly: z.boolean().optional(),
+    }).optional())
+    .query(async ({ input }) => {
+      const conn = await db();
+      let q: any = conn.select().from(hubSocialPosts);
+      if (input?.studentName) q = q.where(eq(hubSocialPosts.studentName, input.studentName));
+      const rows = await q.orderBy(desc(hubSocialPosts.createdAt));
+      return input?.verifiedOnly ? rows.filter((r: any) => r.verified) : rows;
+    }),
+  create: hubAdminProcedure
+    .input(z.object({
+      studentName: z.string().min(1),
+      applicationId: z.number().optional(),
+      weekOf: z.string().min(1),
+      platform: z.string().min(1),
+      postUrl: z.string().min(1),
+    }))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      const [r] = await conn.insert(hubSocialPosts).values({
+        studentName: input.studentName,
+        applicationId: input.applicationId,
+        weekOf: input.weekOf,
+        platform: input.platform,
+        postUrl: input.postUrl,
+        verified: false,
+      } as any);
+      return { id: (r as any).insertId };
+    }),
+  verify: hubAdminProcedure
+    .input(z.object({ id: z.number(), notes: z.string().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const conn = await db();
+      await conn.update(hubSocialPosts).set({
+        verified: true,
+        verifiedBy: ctx.user.name || ctx.user.email || ctx.user.openId,
+        verifiedAt: new Date(),
+        ...(input.notes !== undefined ? { notes: input.notes } : {}),
+      } as any).where(eq(hubSocialPosts.id, input.id));
+      return { success: true };
+    }),
+  unverify: hubAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      await conn.update(hubSocialPosts).set({
+        verified: false,
+        verifiedBy: null,
+        verifiedAt: null,
+      } as any).where(eq(hubSocialPosts.id, input.id));
+      return { success: true };
+    }),
+  remove: hubAdminProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input }) => {
+      const conn = await db();
+      await conn.delete(hubSocialPosts).where(eq(hubSocialPosts.id, input.id));
+      return { success: true };
+    }),
+  /** Compliance summary for the certification gate: per-student weeks-with-verified-post count. */
+  compliance: hubAdminProcedure.query(async () => {
+    const conn = await db();
+    const rows = await conn.select().from(hubSocialPosts);
+    const map: Record<string, { total: number; verified: number; weeks: Set<string> }> = {};
+    for (const r of rows) {
+      const s = r.studentName;
+      if (!map[s]) map[s] = { total: 0, verified: 0, weeks: new Set() };
+      map[s].total += 1;
+      if (r.verified) {
+        map[s].verified += 1;
+        map[s].weeks.add(r.weekOf);
+      }
+    }
+    return Object.entries(map).map(([studentName, v]) => ({
+      studentName,
+      totalPosts: v.total,
+      verifiedPosts: v.verified,
+      verifiedWeeks: v.weeks.size,
+    }));
+  }),
+});
+
 // ─── Top-level HUB Admin router ───────────────────────────────────────────────
 export const hubAdminRouter = router({
   certifications: certificationsRouter,
@@ -347,4 +506,6 @@ export const hubAdminRouter = router({
   lmsProgress: lmsProgressRouter,
   internDuties: internDutiesRouter,
   metfix: metfixRouter,
+  competitions: competitionsRouter,
+  socialPosts: socialPostsRouter,
 });

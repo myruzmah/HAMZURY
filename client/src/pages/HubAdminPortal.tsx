@@ -14,27 +14,55 @@ import {
   LayoutDashboard, Users, UserCheck, Trophy, Share2, Award, CalendarDays,
   LogOut, ArrowLeft, Loader2, CheckCircle2, Clock, AlertCircle,
   Menu, X, Shield, Send, GraduationCap, Plus, Trash2, Eye,
-  BadgeCheck, BookOpen, Briefcase, Wrench,
+  BadgeCheck, BookOpen, Briefcase, Wrench, FolderOpen, Inbox,
+  FileText, Settings as SettingsIcon, Copy, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
+import { HUB_PROGRAMS, HUB_TEAMS, formatProgramPrice } from "@shared/programs";
 
-/* Palette — HUB uses aged navy as accent (Brand Bible) */
-const BG = "#FFFAF6";
+/* Palette — HUB Orange + Apple-clean rebrand 2026-04-30
+ * Spec: PHASE7_HUB → "HUB Orange #F59E0B"
+ * Public Brand Bible: Milk #FFFBEB everywhere, Inter, hairline borders.
+ * Same Apple treatment as CSO: white sidebar, soft active pill, single
+ * accent. Orange leads, Navy is secondary, Gold on highlights. */
+const BG = "#FFFBEB";              // Milk
 const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
-const MUTED = "#666666";
+const MUTED = "#6B7280";
 const GOLD = "#B48C4C";
-const NAVY = "#1E3A5F";       // HUB accent
+const NAVY = "#1E3A5F";            // secondary accent
 const RED = "#EF4444";
-const ORANGE = "#F59E0B";
+const ORANGE = "#F59E0B";          // HUB primary accent (canonical)
 const BLUE = "#3B82F6";
 const PURPLE = "#8B5CF6";
 const GREEN_OK = "#22C55E";
+/* Apple-style additions */
+const HAIRLINE = "#E7E5E4";
+const SURFACE = "#FFFFFF";
+const NAV_HOVER = "#F5F5F4";
+const ACTIVE_PILL = "#FFF1D6";     // soft orange tint for current tab
+const INK = "#1A1A1A";
+const INK_MUTED = "#6B7280";
 
 type Section =
-  | "dashboard" | "enrollments" | "cohorts" | "attendance"
-  | "competition" | "social" | "calendar" | "reports"
-  | "certifications" | "alumni" | "lmsProgress" | "internDuties" | "metfix";
+  | "dashboard"
+  | "applications"     // ⭐ NEW — CSO-assigned only (gates Hub from public form leak)
+  | "cohorts"
+  | "attendance"
+  | "lmsProgress"
+  | "social"
+  | "competition"
+  | "certifications"
+  | "alumni"
+  | "metfix"
+  | "internDuties"
+  | "calendar"
+  | "programs"         // ⭐ NEW — single-source-of-truth catalog (from shared/programs.ts)
+  | "resources"        // ⭐ NEW — Hub → CSO playbook library
+  | "reports"
+  | "settings"
+  // legacy keys kept so any cached state doesn't crash; render falls back
+  | "enrollments";
 
 function useIsMobile(breakpoint = 900) {
   const [mobile, setMobile] = useState<boolean>(
@@ -244,20 +272,26 @@ export default function HubAdminPortal() {
   }
   if (!user) return null;
 
+  // 2026-04-30 — restructured to match Phase 7 + Founder spec.
+  // CSO-gated Applications replaces public Enrollments leak.
+  // Resources tab is the new Hub→CSO playbook delivery surface.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",      icon: LayoutDashboard, label: "Overview" },
-    { key: "enrollments",    icon: Users,           label: "Enrollments" },
-    { key: "cohorts",        icon: GraduationCap,   label: "Active Cohorts" },
+    { key: "applications",   icon: Inbox,           label: "Applications" },
+    { key: "cohorts",        icon: GraduationCap,   label: "Active cohorts" },
     { key: "attendance",     icon: UserCheck,       label: "Attendance" },
-    { key: "competition",    icon: Trophy,          label: "Team Competition" },
-    { key: "social",         icon: Share2,          label: "Social Verification" },
-    { key: "certifications", icon: BadgeCheck,      label: "Certification" },
-    { key: "alumni",         icon: GraduationCap,   label: "Alumni" },
-    { key: "lmsProgress",    icon: BookOpen,        label: "LMS Progress" },
-    { key: "internDuties",   icon: Briefcase,       label: "Intern Coord" },
+    { key: "lmsProgress",    icon: BookOpen,        label: "LMS progress" },
+    { key: "social",         icon: Share2,          label: "Social verification" },
+    { key: "competition",    icon: Trophy,          label: "Team competition" },
+    { key: "certifications", icon: BadgeCheck,      label: "Certifications" },
+    { key: "alumni",         icon: Award,           label: "Alumni" },
     { key: "metfix",         icon: Wrench,          label: "MetFix" },
-    { key: "calendar",       icon: CalendarDays,    label: "Operations Calendar" },
-    { key: "reports",        icon: Award,           label: "Reports" },
+    { key: "internDuties",   icon: Briefcase,       label: "Intern coordination" },
+    { key: "calendar",       icon: CalendarDays,    label: "Class calendar" },
+    { key: "programs",       icon: BookOpen,        label: "Programs" },
+    { key: "resources",      icon: FolderOpen,      label: "Resources for CSO" },
+    { key: "reports",        icon: FileText,        label: "Reports" },
+    { key: "settings",       icon: SettingsIcon,    label: "Settings" },
   ];
 
   return (
@@ -269,67 +303,73 @@ export default function HubAdminPortal() {
           style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.4)", zIndex: 40 }} />
       )}
 
+      {/* ── Sidebar (Apple-clean rebrand 2026-04-30, matches CSO) ── */}
       <aside style={{
-        width: 232, backgroundColor: NAVY, display: "flex", flexDirection: "column",
-        borderRight: `1px solid ${GOLD}20`,
+        width: 232, backgroundColor: SURFACE, display: "flex", flexDirection: "column",
+        borderRight: `1px solid ${HAIRLINE}`,
         ...(isMobile ? {
           position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 50,
           transform: mobileNavOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s ease",
-          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.2)" : "none",
+          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.08)" : "none",
         } : {}),
       }}>
         <div style={{
-          padding: "20px 18px", borderBottom: `1px solid ${GOLD}15`,
+          padding: "22px 20px 18px", borderBottom: `1px solid ${HAIRLINE}`,
           display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8,
         }}>
           <div>
-            <div style={{ fontSize: 11, color: GOLD, letterSpacing: "0.12em", fontWeight: 600, marginBottom: 2 }}>HAMZURY</div>
-            <div style={{ fontSize: 15, color: WHITE, fontWeight: 600, letterSpacing: -0.1 }}>HUB Admin</div>
-            <div style={{ fontSize: 10, color: `${GOLD}99`, marginTop: 4 }}>Cohorts · Teams · Certs</div>
+            <div style={{ fontSize: 10, color: ORANGE, letterSpacing: "0.16em", fontWeight: 600, marginBottom: 4 }}>HAMZURY</div>
+            <div style={{ fontSize: 17, color: INK, fontWeight: 600, letterSpacing: -0.3 }}>HUB</div>
+            <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>Tech Education</div>
           </div>
           {isMobile && (
             <button onClick={() => setMobileNavOpen(false)} aria-label="Close menu"
               style={{
-                width: 30, height: 30, borderRadius: 8, backgroundColor: `${GOLD}15`, color: GOLD,
+                width: 30, height: 30, borderRadius: 8, backgroundColor: NAV_HOVER, color: INK_MUTED,
                 border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}><X size={16} /></button>
           )}
         </div>
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "14px 12px", overflowY: "auto" }}>
           {NAV.map(({ key, icon: Icon, label }) => {
             const isActive = active === key;
             return (
               <button key={key}
                 onClick={() => { setActive(key); if (isMobile) setMobileNavOpen(false); }}
                 style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 10,
-                  padding: "9px 12px", marginBottom: 2, borderRadius: 10,
-                  backgroundColor: isActive ? `${GOLD}20` : "transparent",
-                  color: isActive ? GOLD : `${GOLD}70`,
+                  width: "100%", display: "flex", alignItems: "center", gap: 11,
+                  padding: "10px 12px", marginBottom: 2, borderRadius: 9,
+                  backgroundColor: isActive ? ACTIVE_PILL : "transparent",
+                  color: isActive ? ORANGE : INK_MUTED,
                   border: "none", cursor: "pointer", textAlign: "left",
                   fontSize: 13, fontWeight: isActive ? 600 : 500,
-                }}>
-                <Icon size={15} /> <span>{label}</span>
+                  transition: "background-color 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = NAV_HOVER; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                <Icon size={15} strokeWidth={1.75} /> <span>{label}</span>
               </button>
             );
           })}
         </nav>
-        <div style={{ padding: "12px 10px", borderTop: `1px solid ${GOLD}15` }}>
+        <div style={{ padding: "12px 12px 16px", borderTop: `1px solid ${HAIRLINE}` }}>
           <Link href="/" style={{
             display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
-            borderRadius: 10, color: `${GOLD}60`, fontSize: 12, textDecoration: "none", marginBottom: 2,
+            borderRadius: 9, color: INK_MUTED, fontSize: 12, textDecoration: "none",
+            marginBottom: 2, fontWeight: 500,
           }}>
-            <ArrowLeft size={13} /> Back to HAMZURY
+            <ArrowLeft size={13} strokeWidth={1.75} /> Back to HAMZURY
           </Link>
           <button onClick={logout}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 12px", borderRadius: 10,
-              color: `${GOLD}60`, backgroundColor: "transparent", border: "none",
-              fontSize: 12, cursor: "pointer", textAlign: "left",
+              padding: "8px 12px", borderRadius: 9,
+              color: INK_MUTED, backgroundColor: "transparent", border: "none",
+              fontSize: 12, cursor: "pointer", textAlign: "left", fontWeight: 500,
             }}>
-            <LogOut size={13} /> Sign Out
+            <LogOut size={13} strokeWidth={1.75} /> Sign out
           </button>
         </div>
       </aside>
@@ -374,18 +414,23 @@ export default function HubAdminPortal() {
             maxWidth: 1200, margin: "0 auto",
           }}>
             {active === "dashboard"      && <OverviewSection onGoto={setActive} />}
-            {active === "enrollments"    && <EnrollmentsSection />}
+            {active === "applications"   && <><EnrollmentsSection /><ScholarshipCodesSection /></>}
+            {/* legacy alias — old links to /hub/admin#enrollments still work */}
+            {active === "enrollments"    && <><EnrollmentsSection /><ScholarshipCodesSection /></>}
             {active === "cohorts"        && <CohortsSection />}
             {active === "attendance"     && <AttendanceSection />}
-            {active === "competition"    && <CompetitionSection />}
+            {active === "lmsProgress"    && <LmsProgressSection />}
             {active === "social"         && <SocialSection />}
+            {active === "competition"    && <CompetitionSection />}
             {active === "certifications" && <CertificationsSection />}
             {active === "alumni"         && <AlumniSection />}
-            {active === "lmsProgress"    && <LmsProgressSection />}
-            {active === "internDuties"   && <InternDutiesSection />}
             {active === "metfix"         && <MetfixSection />}
+            {active === "internDuties"   && <InternDutiesSection />}
             {active === "calendar"       && <OpsCalendarSection />}
+            {active === "programs"       && <ProgramsCatalogSection />}
+            {active === "resources"      && <ResourcesForCsoSection />}
             {active === "reports"        && <ReportsSection />}
+            {active === "settings"       && <HubSettingsSection />}
           </div>
         </div>
       </main>
@@ -494,8 +539,15 @@ function EnrollmentsSection() {
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
+  // 2026-04-30 — CSO-gate per founder rule: Hub admin only sees applications
+  // CSO has triaged. "submitted" = raw public form, still in CSO inbox awaiting
+  // qualification. Statuses under_review / accepted / waitlisted / rejected
+  // mean CSO has touched them — only those land here.
   const all = ((appsQ.data || []) as any[]);
-  const filtered = all
+  const csoTriaged = all.filter(a => a.status && a.status !== "submitted");
+  const pendingCsoCount = all.length - csoTriaged.length;
+
+  const filtered = csoTriaged
     .filter(a => filter === "all" || a.status === filter)
     .filter(a => !search ||
       a.fullName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -516,9 +568,28 @@ function EnrollmentsSection() {
 
   return (
     <div>
-      <SectionTitle sub="Every student application. Review, accept, waitlist, or reject.">
-        Enrollments
+      <SectionTitle sub="Applications CSO has triaged and assigned to Hub. New form submissions sit in CSO inbox first.">
+        Applications
       </SectionTitle>
+
+      {/* CSO-gate banner — surfaces upstream queue without exposing it */}
+      {pendingCsoCount > 0 && (
+        <div style={{
+          padding: "12px 14px", borderRadius: 12, marginBottom: 12,
+          backgroundColor: `${ORANGE}10`, border: `1px solid ${ORANGE}25`,
+          display: "flex", alignItems: "center", gap: 10,
+        }}>
+          <AlertCircle size={15} strokeWidth={1.75} style={{ color: ORANGE, flexShrink: 0 }} />
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: INK }}>
+              {pendingCsoCount} application{pendingCsoCount > 1 ? "s" : ""} pending CSO triage
+            </p>
+            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 2, lineHeight: 1.5 }}>
+              New /hub/enroll submissions land in CSO inbox first. CSO qualifies, confirms payment intent, then assigns to Hub. Once CSO marks status "Under review" or beyond, the application appears here.
+            </p>
+          </div>
+        </div>
+      )}
 
       <Card style={{ marginBottom: 12 }}>
         <div style={{
@@ -527,13 +598,14 @@ function EnrollmentsSection() {
           alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {(["all", "submitted", "under_review", "accepted", "waitlisted", "rejected"] as const).map(f => (
+            {/* "submitted" intentionally omitted — those rows are CSO-gated upstream */}
+            {(["all", "under_review", "accepted", "waitlisted", "rejected"] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 style={{
                   padding: "5px 10px", borderRadius: 8,
-                  backgroundColor: filter === f ? NAVY : "transparent",
-                  color: filter === f ? WHITE : MUTED,
-                  border: `1px solid ${filter === f ? NAVY : `${DARK}15`}`,
+                  backgroundColor: filter === f ? ORANGE : "transparent",
+                  color: filter === f ? WHITE : INK_MUTED,
+                  border: `1px solid ${filter === f ? ORANGE : HAIRLINE}`,
                   fontSize: 10, fontWeight: 600, cursor: "pointer",
                   textTransform: "uppercase", letterSpacing: "0.04em",
                 }}>{f.replace("_", " ")}</button>
@@ -586,6 +658,127 @@ function EnrollmentsSection() {
               </div>
             </Card>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════ */
+function ScholarshipCodesSection() {
+  const isMobile = useIsMobile();
+  const utils = trpc.useUtils();
+  const codesQ = (trpc as any).skills.listCodes.useQuery(undefined, { retry: false });
+  const codes = ((codesQ.data || []) as any[]);
+
+  const [code, setCode] = useState("");
+  const [description, setDescription] = useState("");
+  const [maxUses, setMaxUses] = useState("1");
+  const [expiresAt, setExpiresAt] = useState("");
+
+  const createMut = (trpc as any).skills.createCode.useMutation({
+    onSuccess: () => {
+      toast.success("Code created");
+      setCode(""); setDescription(""); setMaxUses("1"); setExpiresAt("");
+      (utils as any).skills.listCodes.invalidate();
+    },
+    onError: (e: any) => toast.error(e.message || "Failed to create code"),
+  });
+  const deactivateMut = (trpc as any).skills.deactivateCode.useMutation({
+    onSuccess: () => {
+      toast.success("Code deactivated");
+      (utils as any).skills.listCodes.invalidate();
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const submitNew = () => {
+    const trimmed = code.trim();
+    if (!trimmed) { toast.error("Code required"); return; }
+    const payload: any = { code: trimmed };
+    if (description.trim()) payload.description = description.trim();
+    const n = parseInt(maxUses, 10);
+    if (Number.isFinite(n) && n > 0) payload.maxUses = n;
+    if (expiresAt) {
+      const d = new Date(expiresAt);
+      if (!isNaN(d.getTime())) payload.expiresAt = d.toISOString();
+    }
+    createMut.mutate(payload);
+  };
+
+  return (
+    <div style={{ marginTop: 28 }}>
+      <SectionTitle sub="Generate codes that waive the seat-hold payment for accepted students.">
+        Scholarship Codes
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, color: DARK, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 10 }}>
+          Generate Code
+        </p>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "1.2fr 1.6fr 0.7fr 1fr auto",
+          gap: 8, alignItems: "center",
+        }}>
+          <input placeholder="Code (e.g. HUB-FOUND-2026)" value={code} onChange={e => setCode(e.target.value)} style={inputBox()} />
+          <input placeholder="Description (optional)" value={description} onChange={e => setDescription(e.target.value)} style={inputBox()} />
+          <input placeholder="Max uses" type="number" min={1} value={maxUses} onChange={e => setMaxUses(e.target.value)} style={inputBox()} />
+          <input placeholder="Expires" type="datetime-local" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} style={inputBox()} />
+          <button onClick={submitNew} disabled={createMut.isPending}
+            style={{
+              padding: "10px 14px", borderRadius: 10, backgroundColor: NAVY, color: WHITE,
+              border: "none", fontSize: 12, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6, justifyContent: "center",
+            }}>
+            <Plus size={14} /> {createMut.isPending ? "Creating…" : "Generate"}
+          </button>
+        </div>
+      </Card>
+
+      {codes.length === 0 ? (
+        <Card><EmptyState icon={Award} title="No scholarship codes yet" hint="Use the form above to generate the first code." /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {codes.map((c: any) => {
+            const exhausted = (c.usedCount ?? 0) >= (c.maxUses ?? 0);
+            const expired = c.expiresAt && new Date(c.expiresAt).getTime() < Date.now();
+            const tone: any = !c.active ? "muted" : (expired || exhausted ? "red" : "green");
+            const label = !c.active ? "inactive" : (expired ? "expired" : (exhausted ? "exhausted" : "active"));
+            return (
+              <Card key={c.id} style={{ padding: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: DARK, fontFamily: "monospace" }}>{c.code}</p>
+                      <StatusPill label={label} tone={tone} />
+                    </div>
+                    {c.description && (
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>{c.description}</p>
+                    )}
+                    <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                      <span>{c.usedCount ?? 0} / {c.maxUses ?? 0} used</span>
+                      {c.expiresAt && <span>expires {fmtDate(c.expiresAt)}</span>}
+                      <span>created {fmtDate(c.createdAt)}</span>
+                      {c.createdBy && <span>by {c.createdBy}</span>}
+                    </div>
+                  </div>
+                  {c.active && (
+                    <button
+                      onClick={() => deactivateMut.mutate({ id: c.id })}
+                      disabled={deactivateMut.isPending}
+                      style={{
+                        padding: "6px 10px", borderRadius: 8, border: `1px solid ${RED}40`,
+                        fontSize: 11, color: RED, backgroundColor: WHITE, cursor: "pointer",
+                      }}
+                    >
+                      Deactivate
+                    </button>
+                  )}
+                </div>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>
@@ -775,21 +968,38 @@ function AttendanceSection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-04-30 — Team Competition now persisted to MySQL via trpc.hubAdmin.
+ * competitions. Replaces the old localStorage prototype which made the
+ * monthly leaderboard reset on every cache clear and made the certification
+ * gate impossible to enforce. */
 type CompetitionEntry = {
-  id: string;
+  id: number;
   month: string; // YYYY-MM
   title: string;
   deadline: string;
-  status: "active" | "judged";
+  status: "active" | "judged" | "archived";
   scores: Record<string, number>; // team key -> points
 };
-const COMP_STORE = "hamzury_hub_competitions_v1";
-function loadComps(): CompetitionEntry[] { try { return JSON.parse(localStorage.getItem(COMP_STORE) || "[]"); } catch { return []; } }
-function saveComps(c: CompetitionEntry[]) { try { localStorage.setItem(COMP_STORE, JSON.stringify(c)); } catch {} }
 
 function CompetitionSection() {
-  const [comps, setComps] = useState<CompetitionEntry[]>(loadComps);
+  const utils = trpc.useUtils();
+  const compsQuery = trpc.hubAdmin.competitions.list.useQuery(undefined, { retry: false });
+  const comps = (compsQuery.data || []) as CompetitionEntry[];
+
+  const createMut = trpc.hubAdmin.competitions.create.useMutation({
+    onSuccess: () => { toast.success("Challenge announced"); utils.hubAdmin.competitions.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMut = trpc.hubAdmin.competitions.updateScores.useMutation({
+    onSuccess: () => utils.hubAdmin.competitions.list.invalidate(),
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.competitions.remove.useMutation({
+    onSuccess: () => { toast.success("Competition removed"); utils.hubAdmin.competitions.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
     title: "",
@@ -798,33 +1008,31 @@ function CompetitionSection() {
 
   const addComp = () => {
     if (!form.title.trim() || !form.deadline) { toast.error("Title + deadline required"); return; }
-    const now = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const next: CompetitionEntry[] = [
-      { id: Math.random().toString(36).slice(2), month, title: form.title.trim(), deadline: form.deadline, status: "active", scores: {} },
-      ...comps,
-    ];
-    setComps(next); saveComps(next);
+    createMut.mutate({ title: form.title.trim(), deadline: form.deadline });
     setForm({ title: "", deadline: "" });
     setCreating(false);
-    toast.success("Challenge announced");
   };
 
-  const setScore = (compId: string, teamKey: string, pts: number) => {
-    const next = comps.map(c => c.id === compId ? { ...c, scores: { ...c.scores, [teamKey]: pts } } : c);
-    setComps(next); saveComps(next);
+  const setScore = (compId: number, teamKey: string, pts: number) => {
+    const c = comps.find(c => c.id === compId);
+    if (!c) return;
+    updateMut.mutate({
+      id: compId,
+      scores: { ...(c.scores || {}), [teamKey]: pts } as any,
+    });
   };
 
-  const markJudged = (id: string) => {
-    const next = comps.map(c => c.id === id ? { ...c, status: "judged" as const } : c);
-    setComps(next); saveComps(next);
-    toast.success("Marked judged");
+  const markJudged = (id: number) => {
+    const c = comps.find(c => c.id === id);
+    if (!c) return;
+    updateMut.mutate({ id, scores: c.scores as any, status: "judged" }, {
+      onSuccess: () => toast.success("Marked judged"),
+    });
   };
 
-  const del = (id: string) => {
+  const del = (id: number) => {
     if (!confirm("Delete this competition?")) return;
-    const next = comps.filter(c => c.id !== id);
-    setComps(next); saveComps(next);
+    removeMut.mutate({ id });
   };
 
   // All-time leaderboard
@@ -1056,23 +1264,42 @@ function CompetitionSection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════
+ * 2026-04-30 — Social posting now persisted to MySQL via
+ * trpc.hubAdmin.socialPosts. Replaces the old localStorage prototype which
+ * meant a wiped browser broke certification gating. */
 type SocialEntry = {
-  id: string;
+  id: number;
   studentName: string;
   weekOf: string;
   platform: string;
   postUrl: string;
   verified: boolean;
-  verifiedBy?: string;
+  verifiedBy?: string | null;
 };
-const SOCIAL_STORE = "hamzury_hub_social_v1";
-function loadSocial(): SocialEntry[] { try { return JSON.parse(localStorage.getItem(SOCIAL_STORE) || "[]"); } catch { return []; } }
-function saveSocial(r: SocialEntry[]) { try { localStorage.setItem(SOCIAL_STORE, JSON.stringify(r)); } catch {} }
 
 function SocialSection() {
-  const { user } = useAuth();
-  const [rows, setRows] = useState<SocialEntry[]>(loadSocial);
+  const utils = trpc.useUtils();
+  const rowsQuery = trpc.hubAdmin.socialPosts.list.useQuery(undefined, { retry: false });
+  const rows = (rowsQuery.data || []) as SocialEntry[];
+
+  const createMut = trpc.hubAdmin.socialPosts.create.useMutation({
+    onSuccess: () => { toast.success("Post logged"); utils.hubAdmin.socialPosts.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const verifyMut = trpc.hubAdmin.socialPosts.verify.useMutation({
+    onSuccess: () => utils.hubAdmin.socialPosts.list.invalidate(),
+    onError: (e) => toast.error(e.message),
+  });
+  const unverifyMut = trpc.hubAdmin.socialPosts.unverify.useMutation({
+    onSuccess: () => utils.hubAdmin.socialPosts.list.invalidate(),
+    onError: (e) => toast.error(e.message),
+  });
+  const removeMut = trpc.hubAdmin.socialPosts.remove.useMutation({
+    onSuccess: () => { toast.success("Entry deleted"); utils.hubAdmin.socialPosts.list.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+
   const [form, setForm] = useState({
     studentName: "", platform: "instagram", postUrl: "",
     weekOf: isoMonday(new Date()),
@@ -1080,26 +1307,25 @@ function SocialSection() {
 
   const add = () => {
     if (!form.studentName.trim() || !form.postUrl.trim()) { toast.error("Student + URL required"); return; }
-    const next: SocialEntry[] = [
-      { id: Math.random().toString(36).slice(2), ...form, verified: false },
-      ...rows,
-    ];
-    setRows(next); saveSocial(next);
+    createMut.mutate({
+      studentName: form.studentName.trim(),
+      platform: form.platform,
+      postUrl: form.postUrl.trim(),
+      weekOf: form.weekOf,
+    });
     setForm({ ...form, studentName: "", postUrl: "" });
-    toast.success("Post logged");
   };
 
-  const toggleVerify = (id: string) => {
-    const next = rows.map(r => r.id === id
-      ? { ...r, verified: !r.verified, verifiedBy: !r.verified ? (user?.name || "Staff") : undefined }
-      : r);
-    setRows(next); saveSocial(next);
+  const toggleVerify = (id: number) => {
+    const r = rows.find(r => r.id === id);
+    if (!r) return;
+    if (r.verified) unverifyMut.mutate({ id });
+    else verifyMut.mutate({ id });
   };
 
-  const del = (id: string) => {
+  const del = (id: number) => {
     if (!confirm("Delete this entry?")) return;
-    const next = rows.filter(r => r.id !== id);
-    setRows(next); saveSocial(next);
+    removeMut.mutate({ id });
   };
 
   const thisWeek = rows.filter(r => r.weekOf === isoMonday(new Date()));
@@ -1305,34 +1531,66 @@ function OpsCalendarSection() {
       </SectionTitle>
 
       <Card style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 11, color: NAVY, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
-          Weekly Cadence
+        <p style={{ fontSize: 11, color: ORANGE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
+          Weekly cadence
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <WeeklyBlock
-            name="Teaching Session (Main Programs)"
+            name="Idris + Dajot — weekly planning"
+            days="Mon"
+            time="7:30 – 8:00 am"
+            detail="Active cohorts review · Student escalations · Resource needs · Program improvements (per Phase 7 SOP)"
+          />
+          <WeeklyBlock
+            name="Teaching session (main programs)"
             days="Mon – Wed"
             time="8:00 – 10:30 am"
             detail="Business Builders · Digital Dominance · Code Craft · Compliance · Money · MetFix"
           />
           <WeeklyBlock
-            name="Hall Gathering (Main)"
+            name="Hall gathering (main)"
             days="Mon – Wed"
             time="11:00 am – 2:00 pm"
-            detail="Entrepreneurship · Social media & content · AI prompt training"
+            detail="11:00 Entrepreneurship · 11:45 Social/AI · 12:30 Team time · 1:15 Wrap"
           />
           <WeeklyBlock
-            name="Basic Computer Skills (Kids Programme)"
+            name="Basic Computer Skills (Kids programme)"
             days="Thu – Sat"
             time="8:00 – 10:30 am"
-            detail="Ages 8–15 · Computer basics"
+            detail="Ages 8–15 · Computer basics, typing, MS Office"
           />
           <WeeklyBlock
-            name="Hall Gathering (Kids)"
+            name="Hall gathering (kids)"
             days="Thu – Sat"
             time="11:00 am – 2:00 pm"
-            detail="Age-appropriate entrepreneurship · Creative projects"
+            detail="Same 4-block format · age-appropriate content · creative projects"
           />
+        </div>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 11, color: ORANGE, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 10 }}>
+          Hall gathering — 4-block structure
+        </p>
+        <p style={{ fontSize: 11, color: INK_MUTED, marginBottom: 10, lineHeight: 1.55 }}>
+          The 11am–2pm hall gathering follows this fixed format every day, main programs and kids alike.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
+          {[
+            { time: "11:00 – 11:45", label: "Entrepreneurship", detail: "Mindset · Opportunity · Real-world examples" },
+            { time: "11:45 – 12:30", label: "Social media & AI", detail: "Weekly content theme · AI prompt training · Student practice" },
+            { time: "12:30 – 1:15",  label: "Team time",        detail: "Team projects · Competition planning · Peer collaboration" },
+            { time: "1:15 – 2:00",   label: "Wrap",             detail: "Weekly assignment · Posting requirement · Next preview" },
+          ].map((b, i) => (
+            <div key={i} style={{
+              padding: 12, borderRadius: 10, border: `1px solid ${HAIRLINE}`,
+              backgroundColor: WHITE, display: "flex", flexDirection: "column", gap: 4,
+            }}>
+              <p style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em" }}>{b.time}</p>
+              <p style={{ fontSize: 13, color: INK, fontWeight: 600 }}>{b.label}</p>
+              <p style={{ fontSize: 10, color: INK_MUTED, lineHeight: 1.5 }}>{b.detail}</p>
+            </div>
+          ))}
         </div>
       </Card>
 
@@ -1395,8 +1653,12 @@ function ReportsSection() {
   const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
   const apps = ((appsQ.data || []) as any[]);
 
-  const comps = loadComps();
-  const social = loadSocial();
+  // 2026-04-30 — pulls comps + social from DB instead of localStorage so the
+  // weekly report accurately reflects what was logged across all admin sessions.
+  const compsQ = trpc.hubAdmin.competitions.list.useQuery(undefined, { retry: false });
+  const socialQ = trpc.hubAdmin.socialPosts.list.useQuery(undefined, { retry: false });
+  const comps = (compsQ.data || []) as any[];
+  const social = (socialQ.data || []) as any[];
 
   const enrolled = apps.filter(a => a.status === "accepted").length;
   const pending  = apps.filter(a => a.status === "submitted" || a.status === "under_review").length;
@@ -1407,12 +1669,12 @@ function ReportsSection() {
 
   const leaderboard = TEAMS.map(t => ({
     ...t,
-    total: comps.reduce((s, c) => s + (c.scores[t.key] || 0), 0),
+    total: comps.reduce((s: number, c: any) => s + (c.scores?.[t.key] || 0), 0),
   })).sort((a, b) => b.total - a.total);
 
   const thisWeek = isoMonday(new Date());
-  const postsThisWeek = social.filter(r => r.weekOf === thisWeek).length;
-  const verifiedThisWeek = social.filter(r => r.weekOf === thisWeek && r.verified).length;
+  const postsThisWeek = social.filter((r: any) => r.weekOf === thisWeek).length;
+  const verifiedThisWeek = social.filter((r: any) => r.weekOf === thisWeek && r.verified).length;
 
   const report = `HAMZURY HUB · Weekly Report
 ${new Date().toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
@@ -2437,6 +2699,264 @@ function MetfixSection() {
             ))}
           </div>
         )}
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * RESOURCES FOR CSO — Hub publishes the playbooks CSO uses to handle
+ * Hub-bound leads. Per founder rule: only CSO contacts clients, but Hub
+ * is responsible for giving CSO the tools to do the job well.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function ResourcesForCsoSection() {
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`${label} copied`),
+      () => toast.error("Copy failed — select and copy manually."),
+    );
+  };
+
+  const pricingSheet = HUB_PROGRAMS.map(p =>
+    `${p.name} — ${formatProgramPrice(p)} — ${p.weeks ? `${p.weeks} wks` : "Self-paced"} — ${p.scheduleLabel}`
+  ).join("\n");
+
+  const welcomeKit = [
+    "Branded shirt (size confirmed at intake)",
+    "Hamzury HUB pen",
+    "Notebook + branded folder",
+    "ID lanyard with student ref",
+    "Cohort welcome letter (printed)",
+    "Wi-Fi password card",
+    "Class schedule card (Mon–Wed or Thu–Sat)",
+    "Team assignment card (AI / Cyber / Quantum / Robotics)",
+  ];
+
+  const M_INTAKE = `Hi {name}, welcome to Hamzury HUB.
+
+You're enrolling in {program} ({duration}, {price}).
+Class runs: {schedule}.
+
+To confirm your seat, please complete the form below within 24 hours and pay the deposit (₦10,000):
+{intake_link}
+
+Reply here if you have any questions before you start. — CSO`;
+
+  const M_PAYMENT_CONFIRMED = `Hi {name}, payment received — you're officially in the {month} cohort.
+
+Orientation: {orientation_date} · 8:00am · Hamzury HUB.
+Bring: a laptop (we have rentals if needed), your ID.
+You'll be assigned to a team (AI / Cyber / Quantum / Robotics) on day one.
+
+Welcome aboard. Built to Last. — CSO`;
+
+  const M_ORIENTATION_REMINDER = `Hi {name}, quick reminder — orientation is tomorrow at 8:00am.
+
+Address: Hamzury HUB, {address}.
+Bring: laptop, charger, water, ID.
+
+You'll meet Idris (HUB lead), receive your welcome kit, get your team assignment, and start at 8:30am sharp.
+
+See you there. — CSO`;
+
+  const FAQS = [
+    { q: "Can a student switch programs?", a: "Yes within the first week. After that, they pay the difference and slot into the next cohort. Send us a note." },
+    { q: "Is there a payment plan?", a: "Yes — 50% deposit + 50% by week 2 of cohort. Code Craft Bootcamp can be split into 3 payments." },
+    { q: "Do students need a laptop?", a: "Yes. Hub has loaner laptops at ₦5,000/wk if they need one. MetFix can also sell them a starter laptop ₦150k+." },
+    { q: "What's the certification gate?", a: "All 7 must pass: complete LMS, all assignments, Google/Coursera cert, weekly social posts, team competition, final project, 80%+ attendance." },
+    { q: "When do new cohorts start?", a: "1st of every month. Late enrollments roll into the next month — keeps cohort cohesion." },
+    { q: "Online vs physical?", a: "Both for most programs. MetFix has both (₦180k physical, ₦80k online). Online Academy is online only." },
+  ];
+
+  return (
+    <div>
+      <SectionTitle sub="Everything CSO needs to handle Hub leads — copy, share, send.">
+        Resources for CSO
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: INK }}>Pricing sheet</p>
+            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 2 }}>Live from shared/programs.ts — always in sync with the landing page.</p>
+          </div>
+          <button onClick={() => copy(pricingSheet, "Pricing sheet")} style={{
+            padding: "8px 14px", borderRadius: 9, border: `1px solid ${HAIRLINE}`,
+            backgroundColor: WHITE, color: INK, fontSize: 11, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}><Copy size={12} strokeWidth={1.75} /> Copy all</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {HUB_PROGRAMS.map(p => (
+            <div key={p.key} style={{
+              padding: "10px 12px", borderRadius: 9,
+              border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE,
+              display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap",
+            }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: INK }}>{p.name}</p>
+                <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 2 }}>
+                  {p.weeks ? `${p.weeks} weeks` : "Self-paced"} · {p.scheduleLabel} · {p.certificate}
+                </p>
+              </div>
+              <span style={{
+                padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700,
+                backgroundColor: `${ORANGE}15`, color: ORANGE, whiteSpace: "nowrap",
+              }}>{formatProgramPrice(p)}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 12 }}>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 700, color: INK }}>Welcome-kit checklist</p>
+            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 2 }}>CSO hands this to every student at orientation.</p>
+          </div>
+          <button onClick={() => copy(welcomeKit.map((x, i) => `${i + 1}. ${x}`).join("\n"), "Welcome kit")} style={{
+            padding: "8px 14px", borderRadius: 9, border: `1px solid ${HAIRLINE}`,
+            backgroundColor: WHITE, color: INK, fontSize: 11, fontWeight: 600, cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+          }}><Copy size={12} strokeWidth={1.75} /> Copy</button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
+          {welcomeKit.map((item, i) => (
+            <div key={i} style={{
+              padding: "9px 11px", borderRadius: 9, backgroundColor: WHITE,
+              border: `1px solid ${HAIRLINE}`,
+              display: "flex", alignItems: "center", gap: 8,
+              fontSize: 12, color: INK,
+            }}>
+              <CheckCircle2 size={13} strokeWidth={1.75} style={{ color: ORANGE, flexShrink: 0 }} />
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: INK, marginBottom: 4 }}>WhatsApp message templates</p>
+        <p style={{ fontSize: 11, color: INK_MUTED, marginBottom: 14 }}>Three core messages CSO sends. Replace the placeholders per lead.</p>
+        {[
+          { title: "M1 · Intake (after first contact)",       body: M_INTAKE },
+          { title: "M2 · Payment confirmed",                  body: M_PAYMENT_CONFIRMED },
+          { title: "M3 · Orientation reminder (1 day prior)", body: M_ORIENTATION_REMINDER },
+        ].map((m, i) => (
+          <div key={i} style={{
+            padding: 12, borderRadius: 10, border: `1px solid ${HAIRLINE}`,
+            backgroundColor: WHITE, marginBottom: 8,
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, gap: 8 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: INK }}>{m.title}</p>
+              <button onClick={() => copy(m.body, m.title)} style={{
+                padding: "5px 10px", borderRadius: 7, border: `1px solid ${HAIRLINE}`,
+                backgroundColor: WHITE, color: INK_MUTED, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 4,
+              }}><Copy size={10} strokeWidth={1.75} /> Copy</button>
+            </div>
+            <pre style={{
+              fontSize: 11, color: INK, fontFamily: "inherit",
+              whiteSpace: "pre-wrap", lineHeight: 1.55, margin: 0,
+            }}>{m.body}</pre>
+          </div>
+        ))}
+      </Card>
+
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: INK, marginBottom: 4 }}>Program summaries</p>
+        <p style={{ fontSize: 11, color: INK_MUTED, marginBottom: 14 }}>One-tap summaries to share with leads exploring a program.</p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 8 }}>
+          {HUB_PROGRAMS.map(p => (
+            <div key={p.key} style={{
+              padding: 12, borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE,
+              display: "flex", flexDirection: "column", gap: 4,
+            }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: INK }}>{p.name}</p>
+              <p style={{ fontSize: 10, color: INK_MUTED, lineHeight: 1.5 }}>{p.pitch}</p>
+              <button
+                onClick={() => copy(`${p.name}\n${p.pitch}\n\nWhat you get:\n${p.whatYouGet.map(x => `• ${x}`).join("\n")}\n\nDuration: ${p.weeks ? `${p.weeks} weeks` : "Self-paced"}\nPrice: ${formatProgramPrice(p)}\nSchedule: ${p.scheduleLabel}\nCertificate: ${p.certificate}`, p.name)}
+                style={{
+                  alignSelf: "flex-start", marginTop: 4,
+                  padding: "5px 10px", borderRadius: 7, border: "none",
+                  backgroundColor: `${ORANGE}15`, color: ORANGE, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 4,
+                }}><Copy size={10} strokeWidth={1.75} /> Copy summary</button>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      <Card>
+        <p style={{ fontSize: 14, fontWeight: 700, color: INK, marginBottom: 4 }}>Frequently-asked questions (CSO answers)</p>
+        <p style={{ fontSize: 11, color: INK_MUTED, marginBottom: 14 }}>Use these verbatim — Hub team has approved.</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {FAQS.map((f, i) => (
+            <div key={i} style={{
+              padding: 12, borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE,
+            }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: INK }}>{f.q}</p>
+              <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 6, lineHeight: 1.55 }}>{f.a}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * PROGRAMS — single-source-of-truth catalog from shared/programs.ts.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function ProgramsCatalogSection() {
+  return (
+    <div>
+      <SectionTitle sub="Eight programs from PHASE7_HUB. Edit shared/programs.ts to add, rename, or reprice.">
+        Programs catalog
+      </SectionTitle>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        {HUB_PROGRAMS.map(p => (
+          <div key={p.key} style={{
+            backgroundColor: WHITE, borderRadius: 14, padding: 16,
+            border: `1px solid ${HAIRLINE}`, borderLeft: `3px solid ${p.accent}`,
+          }}>
+            <p style={{ fontSize: 10, color: p.accent, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
+              {p.weeks ? `${p.weeks} weeks` : "Self-paced"} · {p.ageRange ?? "Adult"}
+            </p>
+            <p style={{ fontSize: 16, fontWeight: 700, color: INK, letterSpacing: -0.2 }}>{p.name}</p>
+            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 6, lineHeight: 1.55 }}>{p.pitch}</p>
+            <p style={{ fontSize: 12, fontWeight: 700, color: p.accent, marginTop: 10 }}>{formatProgramPrice(p)}</p>
+            <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 6 }}>{p.scheduleLabel}</p>
+            <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>Certificate: {p.certificate}</p>
+            <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "flex", flexDirection: "column", gap: 4 }}>
+              {p.whatYouGet.slice(0, 3).map((w, i) => (
+                <li key={i} style={{ fontSize: 11, color: INK, display: "flex", alignItems: "center", gap: 6 }}>
+                  <CheckCircle2 size={11} strokeWidth={1.75} style={{ color: p.accent, flexShrink: 0 }} /> {w}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * SETTINGS — placeholder. Full settings join the auth refactor pass.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function HubSettingsSection() {
+  return (
+    <div>
+      <SectionTitle sub="Hub admin settings — profile, password, notifications.">
+        Settings
+      </SectionTitle>
+      <Card>
+        <EmptyState
+          icon={SettingsIcon}
+          title="Settings live here"
+          hint="Profile editing and password change come in the auth refactor pass."
+        />
       </Card>
     </div>
   );

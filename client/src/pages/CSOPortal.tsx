@@ -11,6 +11,7 @@ import {
   Menu, X, Plus, Settings as SettingsIcon, ChevronLeft, ChevronRight,
   MessageSquare, Trash2, Lock, Briefcase, BookOpen, UserCheck,
   DollarSign, Wallet, PieChart as PieChartIcon,
+  Inbox, BarChart3, MessageCircle, Phone, Bell, ArrowRightCircle,
 } from "lucide-react";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
@@ -27,37 +28,61 @@ import { FORMS as REQUIREMENT_FORMS, type RequirementFormId } from "@/lib/requir
  * Built against the CSO source-of-truth in /Users/MAC/Documents/HAMZURY/03-CSO.
  * ══════════════════════════════════════════════════════════════════════ */
 
-/* Brand */
-const BG = "#FFFAF6";
+/* Brand — 2026-04-30 Apple-clean rebrand of CSO portal.
+ * Public site uses Milk #FFFBEB + Inter + restraint.
+ * Staff CSO now matches that aesthetic: white surfaces, hairline borders,
+ * a single navy/gold accent, generous whitespace. GREEN kept as a deep
+ * accent for active states + key actions only — never as full-area fills. */
+const BG = "#FFFBEB";              // Milk — Brand Bible canonical bg
 const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
-const MUTED = "#666666";
+const MUTED = "#6B7280";           // Slate-500 — softer than 666
 const GOLD = "#B48C4C";
-const GREEN = "#1B4D3E";
+const GREEN = "#1B4D3E";           // legacy heritage green (deep accent)
 const RED = "#EF4444";
 const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
+/* Apple-style additions */
+const HAIRLINE = "#E7E5E4";        // bone — every divider/border
+const SURFACE = "#FFFFFF";          // pure white card surface
+const SURFACE_RAISED = "#FAFAF9";   // off-white for hover/raise
+const SIDEBAR_BG = "#FFFFFF";       // sidebar = white, not dark green
+const NAV_HOVER = "#F5F5F4";        // subtle hover
+const ACTIVE_PILL = "#FFF8E7";      // milk-yellow tint for current tab
+const INK = "#1A1A1A";              // primary text
+const INK_MUTED = "#6B7280";        // secondary text
 
-// 2026-04-25 — Section list aligned to Phase 4 CSO Sales Dashboard 6-tab
-// spec (Overview, Lead Pipeline, Closed Deals, Commission Tracker, Lead
-// Sources, Calendar). Cut: flow_system (off-spec process doc),
-// subscriptions, tasks. Lead Sources + Calendar remain accessible inside
-// back_office tabs as the spec implies. Data tables retained.
+// 2026-04-30 — Section list aligned to Phase 4 CSO Sales Dashboard
+// blueprint (6 tabs: Overview, Lead Pipeline, Closed Deals, Commission
+// Tracker, Lead Sources, Calendar) plus founder spec for Inbox-as-
+// workspace: every lead from every channel + Command Center push lands
+// in CSO inbox, with manual-add for walk-ins/phone/referrals. CSO assigns
+// to division here. Active Clients = post-handoff workspace. Forms &
+// Templates promoted from back_office to top-level per blueprint.
 type Section =
-  | "dashboard" | "pipeline" | "revenue" | "active_clients"
-  | "back_office";
+  | "overview"
+  | "inbox"
+  | "pipeline"
+  | "active_clients"
+  | "revenue"
+  | "lead_sources"
+  | "calendar"
+  | "templates"
+  | "playbook"
+  | "settings";
 
 /* Internal qualification panel shown inside pipeline column detail */
 type PipelineView = "kanban" | "qualification";
-type BackOfficeTab =
-  | "services" | "sources" | "cohorts" | "calendar" | "targets"
-  | "templates" | "forms" | "settings";
 
 /* Shared dept leads — used by AssignTaskModal + dashboard surfaces */
 const DEPT_LEADS: Record<string, { name: string; dept: string }[]> = {
-  bizdoc: [{ name: "Abdullahi Musa", dept: "bizdoc" }],
+  bizdoc:    [{ name: "Abdullahi Musa", dept: "bizdoc" }],
   systemise: [{ name: "Dajot", dept: "systemise" }, { name: "Lalo", dept: "systemise" }],
-  skills: [{ name: "Abdulmalik Musa", dept: "skills" }],
+  skills:    [{ name: "Abdulmalik Musa", dept: "skills" }],
+  medialy:   [],
+  podcast:   [],
+  video:     [],
+  faceless:  [],
 };
 
 /* Utilities */
@@ -182,7 +207,7 @@ function EmptyState({ icon: Icon, title, hint }: { icon: React.ElementType; titl
  * ═══════════════════════════════════════════════════════════════════════ */
 export default function CSOPortal() {
   const { user, loading, logout } = useAuth({ redirectOnUnauthenticated: true });
-  const [active, setActive] = useState<Section>("dashboard");
+  const [active, setActive] = useState<Section>("overview");
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [pipelineView, setPipelineView] = useState<PipelineView>("kanban");
   const isCsoStaff = (user as any)?.hamzuryRole === "cso_staff";
@@ -214,11 +239,16 @@ export default function CSOPortal() {
   // 2026-04-25 — NAV reduced to Phase 4 CSO 6-tab spec.
   // Lead Sources + Calendar live as sub-tabs inside Back Office.
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
-    { key: "dashboard",      icon: LayoutDashboard, label: "Dashboard" },
+    { key: "overview",       icon: LayoutDashboard, label: "Overview" },
+    { key: "inbox",          icon: Inbox,           label: "Inbox" },
     { key: "pipeline",       icon: Target,          label: "Pipeline" },
-    { key: "revenue",        icon: DollarSign,      label: "Revenue & Commissions" },
     { key: "active_clients", icon: Building2,       label: "Active Clients" },
-    { key: "back_office",    icon: SettingsIcon,    label: "Back Office" },
+    { key: "revenue",        icon: DollarSign,      label: "Deals & Revenue" },
+    { key: "lead_sources",   icon: BarChart3,       label: "Lead Sources" },
+    { key: "calendar",       icon: Calendar,        label: "Calendar" },
+    { key: "templates",      icon: FileText,        label: "Forms & Templates" },
+    { key: "playbook",       icon: BookOpen,        label: "Playbook" },
+    { key: "settings",       icon: SettingsIcon,    label: "Settings" },
   ];
 
   return (
@@ -236,25 +266,25 @@ export default function CSOPortal() {
         />
       )}
 
-      {/* ── Sidebar ── */}
+      {/* ── Sidebar (Apple-clean rebrand 2026-04-30) ── */}
       <aside style={{
-        width: 232, backgroundColor: GREEN, display: "flex", flexDirection: "column",
-        borderRight: `1px solid ${GOLD}20`,
+        width: 232, backgroundColor: SIDEBAR_BG, display: "flex", flexDirection: "column",
+        borderRight: `1px solid ${HAIRLINE}`,
         ...(isMobile ? {
           position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 50,
           transform: mobileNavOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s ease",
-          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.2)" : "none",
+          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.08)" : "none",
         } : {}),
       }}>
         <div style={{
-          padding: "20px 18px", borderBottom: `1px solid ${GOLD}15`,
+          padding: "22px 20px 18px", borderBottom: `1px solid ${HAIRLINE}`,
           display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8,
         }}>
           <div>
-            <div style={{ fontSize: 11, color: GOLD, letterSpacing: "0.12em", fontWeight: 600, marginBottom: 2 }}>HAMZURY</div>
-            <div style={{ fontSize: 15, color: WHITE, fontWeight: 600, letterSpacing: -0.1 }}>CSO Portal</div>
-            <div style={{ fontSize: 10, color: `${GOLD}99`, marginTop: 4 }}>csoportal.hamzury.com</div>
+            <div style={{ fontSize: 10, color: GOLD, letterSpacing: "0.16em", fontWeight: 600, marginBottom: 4 }}>HAMZURY</div>
+            <div style={{ fontSize: 17, color: INK, fontWeight: 600, letterSpacing: -0.3 }}>CSO</div>
+            <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>Client Services Office</div>
           </div>
           {isMobile && (
             <button
@@ -262,7 +292,7 @@ export default function CSOPortal() {
               aria-label="Close menu"
               style={{
                 width: 30, height: 30, borderRadius: 8,
-                backgroundColor: `${GOLD}15`, color: GOLD, border: "none", cursor: "pointer",
+                backgroundColor: NAV_HOVER, color: INK_MUTED, border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}
             >
@@ -271,7 +301,7 @@ export default function CSOPortal() {
           )}
         </div>
 
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "14px 12px", overflowY: "auto" }}>
           {NAV.map(({ key, icon: Icon, label }) => {
             const isActive = active === key;
             return (
@@ -283,40 +313,42 @@ export default function CSOPortal() {
                   if (isMobile) setMobileNavOpen(false);
                 }}
                 style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 10,
-                  padding: "9px 12px", marginBottom: 2, borderRadius: 10,
-                  backgroundColor: isActive ? `${GOLD}20` : "transparent",
-                  color: isActive ? GOLD : `${GOLD}70`,
+                  width: "100%", display: "flex", alignItems: "center", gap: 11,
+                  padding: "10px 12px", marginBottom: 2, borderRadius: 9,
+                  backgroundColor: isActive ? ACTIVE_PILL : "transparent",
+                  color: isActive ? GREEN : INK_MUTED,
                   border: "none", cursor: "pointer", textAlign: "left",
                   fontSize: 13, fontWeight: isActive ? 600 : 500,
-                  transition: "all 0.15s",
+                  transition: "background-color 0.15s, color 0.15s",
                 }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = NAV_HOVER; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "transparent"; }}
               >
-                <Icon size={15} />
+                <Icon size={15} strokeWidth={1.75} />
                 <span>{label}</span>
               </button>
             );
           })}
         </nav>
 
-        <div style={{ padding: "12px 10px", borderTop: `1px solid ${GOLD}15` }}>
+        <div style={{ padding: "12px 12px 16px", borderTop: `1px solid ${HAIRLINE}` }}>
           <Link href="/" style={{
             display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
-            borderRadius: 10, color: `${GOLD}60`, fontSize: 12, textDecoration: "none",
-            marginBottom: 2,
+            borderRadius: 9, color: INK_MUTED, fontSize: 12, textDecoration: "none",
+            marginBottom: 2, fontWeight: 500,
           }}>
-            <ArrowLeft size={13} /> Back to HAMZURY
+            <ArrowLeft size={13} strokeWidth={1.75} /> Back to HAMZURY
           </Link>
           <button
             onClick={logout}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 12px", borderRadius: 10,
-              color: `${GOLD}60`, backgroundColor: "transparent", border: "none",
-              fontSize: 12, cursor: "pointer", textAlign: "left",
+              padding: "8px 12px", borderRadius: 9,
+              color: INK_MUTED, backgroundColor: "transparent", border: "none",
+              fontSize: 12, cursor: "pointer", textAlign: "left", fontWeight: 500,
             }}
           >
-            <LogOut size={13} /> Sign Out
+            <LogOut size={13} strokeWidth={1.75} /> Sign out
           </button>
         </div>
       </aside>
@@ -375,8 +407,14 @@ export default function CSOPortal() {
             padding: isMobile ? "16px 14px 60px" : "24px 28px 60px",
             maxWidth: 1200, margin: "0 auto",
           }}>
-            {/* 2026-04-25 — Dispatcher reduced to Phase 4 CSO 6-tab spec. */}
-            {active === "dashboard"      && <HomeSection onGoto={setActive} />}
+            {/* 2026-04-30 — Phase 4 CSO blueprint + Founder Inbox-as-workspace spec. */}
+            {active === "overview"       && <HomeSection onGoto={setActive} />}
+            {active === "inbox"          && (
+              <InboxSection
+                onQualify={(id) => { setActive("pipeline"); setSelectedLeadId(id); setPipelineView("qualification"); }}
+                onGoto={setActive}
+              />
+            )}
             {active === "pipeline" && pipelineView === "kanban" && (
               <PipelineSection
                 onQualify={(id) => { setSelectedLeadId(id); setPipelineView("qualification"); }}
@@ -388,9 +426,19 @@ export default function CSOPortal() {
                 onBack={() => { setPipelineView("kanban"); setSelectedLeadId(null); }}
               />
             )}
-            {active === "revenue"        && <RevenueCommissionsSection />}
             {active === "active_clients" && <ClientsSection />}
-            {active === "back_office"    && <BackOfficeSection currentUser={user} isCsoStaff={isCsoStaff} />}
+            {active === "revenue"        && <RevenueCommissionsSection />}
+            {active === "lead_sources"   && <SourceTracker />}
+            {active === "calendar"       && <CalendarSection />}
+            {active === "templates"      && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <ClientFormsHub />
+                <RequirementFormsHub />
+                <RhythmSection />
+              </div>
+            )}
+            {active === "playbook"       && <PlaybookSection />}
+            {active === "settings"       && <SettingsSection currentUser={user} />}
           </div>
         </div>
       </main>
@@ -662,7 +710,7 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
             </p>
           </div>
           <button
-            onClick={() => onGoto("back_office")}
+            onClick={() => onGoto("revenue")}
             style={{
               fontSize: 10, fontWeight: 600, color: GREEN, background: "none",
               border: "none", cursor: "pointer",
@@ -674,7 +722,7 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
         {targetsQuery.isLoading ? (
           <EmptyState icon={Loader2} title="Loading targets..." />
         ) : activeTargets.length === 0 ? (
-          <EmptyState icon={Target} title="No targets set for this period" hint="CEO assigns targets from CEO Dashboard → Set Target (Phase 2)." />
+          <EmptyState icon={Target} title="No targets set for this period" hint="CEO assigns targets from the CEO Dashboard." />
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {activeTargets.map((t: any) => {
@@ -766,142 +814,613 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * 2. LEADS REGISTER
+ * 1.5 INBOX — cross-division lead feed + Command Center push + manual add
+ * Founder spec 2026-04-30: every lead from every channel lands here.
+ * Forms (Bizdoc/Scalar/Medialy/Hub assessments + diagnostics + contact),
+ * BizDev handoffs, CEO Command Center pushes, and manual entries (walk-in,
+ * phone, referral, in-person). CSO triages here → assigns to division.
  * ═══════════════════════════════════════════════════════════════════════ */
-function LeadsSection({ onQualify }: { onQualify: (id: number) => void }) {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showConverted, setShowConverted] = useState<boolean>(false);
-  const leadsQuery = trpc.leads.list.useQuery({ excludeConverted: !showConverted });
-  const leads = (leadsQuery.data || []) as any[];
-  const deleteLead = trpc.leads.delete.useMutation({
-    onSuccess: () => { toast.success("Lead deleted"); leadsQuery.refetch(); },
-    onError: (e) => toast.error(e.message),
-  });
+const DIV_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  bizdoc:    { bg: "#1B4D3E15", text: "#1B4D3E", label: "Bizdoc" },
+  systemise: { bg: "#D4A01715", text: "#A07A0E", label: "Scalar" },
+  scalar:    { bg: "#D4A01715", text: "#A07A0E", label: "Scalar" },
+  medialy:   { bg: "#1D4ED815", text: "#1D4ED8", label: "Medialy" },
+  skills:    { bg: "#1E3A5F15", text: "#1E3A5F", label: "Hub" },
+  hub:       { bg: "#1E3A5F15", text: "#1E3A5F", label: "Hub" },
+  podcast:   { bg: "#7C3AED15", text: "#7C3AED", label: "Podcast" },
+  video:     { bg: "#DB277715", text: "#DB2777", label: "Video" },
+  faceless:  { bg: "#0891B215", text: "#0891B2", label: "Faceless" },
+  cso:       { bg: `${GOLD}15`,  text: GOLD,     label: "Direct" },
+  unassigned:{ bg: `${ORANGE}15`,text: ORANGE,   label: "Unassigned" },
+};
 
-  const filtered = statusFilter === "all"
-    ? leads
-    : leads.filter((l: any) => l.status === statusFilter);
+/** Map technical source codes to human-readable labels for the inbox / cards. */
+function friendlySource(source: string | null | undefined): string {
+  if (!source) return "Direct";
+  const s = source.toLowerCase();
+  const MAP: Record<string, string> = {
+    chat_bizdoc:        "Bizdoc chat",
+    chat_scalar:        "Scalar chat",
+    chat_medialy:       "Medialy chat",
+    chat_hamzury:       "Hamzury chat",
+    chat_callback:      "Chat — callback",
+    chat_freetext:      "Chat — free text",
+    assessment_bizdoc:  "Bizdoc assessment",
+    assessment_scalar:  "Scalar assessment",
+    assessment_medialy: "Medialy assessment",
+    assessment_hub:     "Hub enrolment",
+    diagnostic_clarity: "Clarity Session",
+    diagnostic_business:"Business diagnostic",
+    diagnostic_software:"Software diagnostic",
+    diagnostic_media:   "Media diagnostic",
+    diagnostic_skills:  "Skills diagnostic",
+    diagnostic_bizdoc:  "Bizdoc diagnostic",
+    diagnostic_scalar:  "Scalar audit",
+    diagnostic_medialy: "Medialy diagnostic",
+    diagnostic_hub:     "Hub diagnostic",
+    diagnostic_clarity_routed: "Clarity → routed",
+    cso:                "Walk-in (CSO)",
+    cso_manual:         "Walk-in (CSO)",
+    bizdev:             "BizDev hand-off",
+    referral:           "Referral",
+    walk_in:            "Walk-in",
+    phone_call:         "Phone call",
+    whatsapp:           "WhatsApp",
+    instagram_dm:       "Instagram DM",
+    email:              "Email",
+    event:              "Event",
+    direct:             "Direct",
+  };
+  return MAP[s] || source;
+}
+
+function DivisionBadge({ dept }: { dept: string | null | undefined }) {
+  const key = (dept || "unassigned").toLowerCase();
+  const b = DIV_BADGE[key] || DIV_BADGE.unassigned;
+  return (
+    <span style={{
+      padding: "3px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700,
+      backgroundColor: b.bg, color: b.text, letterSpacing: "0.04em",
+    }}>{b.label}</span>
+  );
+}
+
+function InboxSection({
+  onQualify,
+  onGoto,
+}: {
+  onQualify: (id: number) => void;
+  onGoto: (s: Section) => void;
+}) {
+  const [filter, setFilter] = useState<"all" | "unassigned" | "new" | "command_center">("all");
+  const [showManualAdd, setShowManualAdd] = useState(false);
+
+  const utils = trpc.useUtils();
+  const leadsQuery = trpc.leads.list.useQuery({ excludeConverted: true });
+  const notificationsQuery = trpc.notifications.list.useQuery(undefined, { retry: false });
+  const leads = (Array.isArray(leadsQuery.data) ? leadsQuery.data : []) as any[];
+  const notifications = (Array.isArray(notificationsQuery.data) ? notificationsQuery.data : []) as any[];
+
+  // 2026-04-30 — search across name / business / phone / ref / service
+  const [search, setSearch] = useState("");
+
+  // Command Center pushes = notifications targeted at CSO from CEO/system
+  const ccPushes = notifications.filter((n: any) =>
+    !n.read && (n.type === "assignment" || n.type === "escalation" || n.type === "command_center")
+  );
+
+  const filteredLeads = useMemo(() => {
+    let list = [...leads];
+    if (filter === "unassigned") list = list.filter(l => !l.assignedDepartment);
+    if (filter === "new") list = list.filter(l => l.status === "new");
+    const q = search.trim().toLowerCase();
+    if (q) {
+      list = list.filter(l =>
+        (l.name || "").toLowerCase().includes(q) ||
+        (l.businessName || "").toLowerCase().includes(q) ||
+        (l.phone || "").toLowerCase().includes(q) ||
+        (l.ref || "").toLowerCase().includes(q) ||
+        (l.service || "").toLowerCase().includes(q)
+      );
+    }
+    return list.sort((a, b) =>
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }, [leads, filter, search]);
+
+  const newCount = leads.filter(l => l.status === "new").length;
+  const unassignedCount = leads.filter(l => !l.assignedDepartment).length;
 
   return (
     <div>
-      <SectionTitle sub="Every inbound enquiry — direct, referral, returning, or outreach.">
-        Lead Register
-      </SectionTitle>
-
-      {/* Show converted toggle */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, flexWrap: "wrap", gap: 8 }}>
-        <label style={{
-          display: "flex", alignItems: "center", gap: 8, cursor: "pointer",
-          fontSize: 12, color: MUTED,
-        }}>
-          <input
-            type="checkbox"
-            checked={showConverted}
-            onChange={(e) => setShowConverted(e.target.checked)}
-            style={{ cursor: "pointer" }}
-          />
-          Show converted / archived leads
-        </label>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+        gap: 12, marginBottom: 16, flexWrap: "wrap",
+      }}>
+        <SectionTitle sub="Every lead from every channel lands here. Triage, assign, or escalate.">
+          Inbox
+        </SectionTitle>
+        <button
+          onClick={() => setShowManualAdd(true)}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            padding: "10px 16px", borderRadius: 10, border: "none",
+            backgroundColor: GREEN, color: GOLD, fontSize: 12, fontWeight: 700,
+            cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >
+          <Plus size={14} /> Manual Add
+        </button>
       </div>
 
-      {/* Filter */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        {(showConverted ? ["all", "new", "contacted", "converted", "archived"] : ["all", "new", "contacted"]).map(s => (
+      {/* ─── Search ─── */}
+      <div style={{ marginBottom: 12 }}>
+        <input
+          type="search"
+          placeholder="Search by name, business, phone, ref, or service…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{
+            width: "100%", padding: "10px 14px", borderRadius: 10,
+            border: `1px solid ${HAIRLINE}`, fontSize: 13, color: INK,
+            backgroundColor: WHITE, fontFamily: "inherit",
+          }}
+        />
+      </div>
+
+      {/* ─── Counters / filter pills ─── */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        {[
+          { k: "all" as const,             label: "All",            count: leads.length,  color: DARK },
+          { k: "new" as const,             label: "New",            count: newCount,      color: BLUE },
+          { k: "unassigned" as const,      label: "Unassigned",     count: unassignedCount, color: ORANGE },
+          { k: "command_center" as const,  label: "Command Center", count: ccPushes.length, color: GREEN },
+        ].map(b => (
           <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
+            key={b.k}
+            onClick={() => setFilter(b.k)}
             style={{
-              padding: "6px 12px", borderRadius: 10, border: `1px solid ${DARK}10`,
-              fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              backgroundColor: statusFilter === s ? GREEN : WHITE,
-              color: statusFilter === s ? GOLD : MUTED,
+              padding: "8px 14px", borderRadius: 10, border: "none",
+              backgroundColor: filter === b.k ? GREEN : `${DARK}06`,
+              color: filter === b.k ? GOLD : DARK,
+              fontSize: 12, fontWeight: 600, cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 6,
             }}
           >
-            {s} {s !== "all" && `(${leads.filter((l: any) => l.status === s).length})`}
+            {b.label}
+            <span style={{
+              fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999,
+              backgroundColor: filter === b.k ? `${GOLD}25` : b.color + "15",
+              color: filter === b.k ? GOLD : b.color,
+            }}>{b.count}</span>
           </button>
         ))}
       </div>
 
-      {leadsQuery.isLoading ? (
-        <Card><EmptyState icon={Loader2} title="Loading leads..." /></Card>
-      ) : filtered.length === 0 ? (
-        <Card><EmptyState icon={Users} title={`No ${statusFilter === "all" ? "" : statusFilter} leads`} hint="New enquiries will appear here as they arrive." /></Card>
-      ) : (
+      {/* ─── Command Center push panel (CEO → CSO) ─── */}
+      {filter === "command_center" && (
         <Card>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {filtered.map((lead: any) => {
-              const age = lead.createdAt ? Math.floor((Date.now() - new Date(lead.createdAt).getTime()) / 86400000) : null;
-              return (
-                <div key={lead.id} style={{
-                  padding: "12px 14px", borderRadius: 10, border: `1px solid ${DARK}08`,
-                  backgroundColor: `${DARK}02`,
-                }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                        <p style={{ fontSize: 14, fontWeight: 600, color: DARK }}>{lead.businessName || lead.name}</p>
-                        <Pill status={lead.status} />
-                        <SourceBadge code={lead.referralCode} source={lead.source} referrerName={lead.referrerName} />
-                      </div>
-                      <p style={{ fontSize: 11, fontFamily: "monospace", color: GOLD, marginBottom: 4 }}>{lead.ref}</p>
-                      <p style={{ fontSize: 12, color: DARK, fontWeight: 500, marginBottom: 2 }}>{lead.service}</p>
-                      <p style={{ fontSize: 11, color: MUTED }}>
-                        {lead.source || "direct"} · {lead.name}
-                        {lead.phone && ` · ${lead.phone}`}
-                        {lead.email && ` · ${lead.email}`}
-                      </p>
-                      {lead.referrerName && (
-                        <p style={{ fontSize: 10, color: GOLD, marginTop: 4 }}>
-                          Referred by: {lead.referrerName} ({lead.referralSourceType || "affiliate"})
-                        </p>
-                      )}
-                    </div>
-                    <div style={{ textAlign: "right", flexShrink: 0, display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-                      {age !== null && (
-                        <p style={{ fontSize: 10, color: age > 2 ? RED : MUTED }}>
-                          {age === 0 ? "today" : `${age}d ago`}
-                        </p>
-                      )}
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <button
-                          onClick={() => onQualify(lead.id)}
-                          style={{
-                            fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 8,
-                            border: `1px solid ${GREEN}40`, color: GREEN, backgroundColor: `${GREEN}06`,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Qualify →
-                        </button>
-                        <button
-                          title="Delete lead"
-                          onClick={() => {
-                            if (deleteLead.isPending) return;
-                            if (!window.confirm(`Delete lead ${lead.ref} — ${lead.name}? This cannot be undone.`)) return;
-                            deleteLead.mutate({ id: lead.id });
-                          }}
-                          style={{
-                            fontSize: 11, fontWeight: 600, padding: "5px 8px", borderRadius: 8,
-                            border: `1px solid ${RED}30`, color: RED, backgroundColor: `${RED}06`,
-                            cursor: "pointer", display: "flex", alignItems: "center",
-                          }}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Bell size={14} style={{ color: GREEN }} />
+            <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+              From Command Center ({ccPushes.length})
+            </p>
           </div>
+          {ccPushes.length === 0 ? (
+            <EmptyState icon={Bell} title="Nothing pushed from Command Center" hint="When the CEO pushes a follow-up or escalation to you, it lands here." />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {ccPushes.map((n: any) => (
+                <div key={n.id} style={{
+                  padding: "12px 14px", borderRadius: 10,
+                  border: `1px solid ${GREEN}20`, backgroundColor: `${GREEN}05`,
+                }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: DARK }}>{n.title}</p>
+                    <span style={{ fontSize: 10, color: MUTED }}>{fmtDate(n.createdAt)}</span>
+                  </div>
+                  <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{n.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
+      )}
+
+      {/* ─── Lead feed ─── */}
+      {filter !== "command_center" && (
+        <Card>
+          {leadsQuery.isLoading ? (
+            <EmptyState icon={Loader2} title="Loading inbox..." />
+          ) : filteredLeads.length === 0 ? (
+            <EmptyState
+              icon={Inbox}
+              title={filter === "unassigned" ? "Nothing unassigned" : filter === "new" ? "No new leads" : "Inbox empty"}
+              hint="When a lead submits any form, comes in via WhatsApp, or you add one manually, it shows here."
+            />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {filteredLeads.map((l: any) => (
+                <div key={l.id} style={{
+                  padding: "12px 14px", borderRadius: 10,
+                  border: `1px solid ${DARK}08`, backgroundColor: WHITE,
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  gap: 12, flexWrap: "wrap",
+                }}>
+                  <div style={{ flex: 1, minWidth: 220 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{l.name || "—"}</p>
+                      <DivisionBadge dept={l.assignedDepartment} />
+                      <Pill status={l.status || "new"} />
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {l.businessName ? `${l.businessName} · ` : ""}
+                      {l.service || "—"}
+                      {l.phone ? ` · ${l.phone}` : ""}
+                    </p>
+                    <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+                      Ref {l.ref} · {fmtDate(l.createdAt)} · {friendlySource(l.source)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => onQualify(l.id)}
+                    style={{
+                      padding: "8px 14px", borderRadius: 8, border: "none",
+                      backgroundColor: GOLD, color: WHITE, fontSize: 11, fontWeight: 700,
+                      cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+                    }}
+                  >
+                    Qualify <ArrowRightCircle size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {showManualAdd && (
+        <ManualLeadModal
+          onClose={() => setShowManualAdd(false)}
+          onCreated={() => { setShowManualAdd(false); utils.leads.list.invalidate(); }}
+        />
       )}
     </div>
   );
 }
 
+/* ─── Manual lead entry — for walk-ins, phone calls, referrals, etc. ───
+   Per CSO Flow Diagram, Stage 3 splits into Path A (Direct) vs Path B
+   (Diagnosis form). When CSO picks Path A here, we ask the qualifying
+   questions inline (from First_Contact_Script.txt) so the delivery team
+   has full context on handoff — no second discovery call needed. */
+function ManualLeadModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [step, setStep] = useState<"path" | "intake" | "questions">("path");
+  const [path, setPath] = useState<"A" | "B">("A");
+
+  // Intake fields
+  const [name, setName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [service, setService] = useState("");
+  const [department, setDepartment] = useState<string>("bizdoc");
+  const [source, setSource] = useState<string>("walk_in");
+
+  // Path A qualification (CSO Flow Diagram + First_Contact_Script.txt + CLIENT_INTAKE_FORM.txt)
+  const [challenge, setChallenge] = useState("");           // Q1
+  const [usedBefore, setUsedBefore] = useState<"yes" | "no" | "">("");  // Q2
+  const [previousExperience, setPreviousExperience] = useState("");
+  const [timeline, setTimeline] = useState<string>("");     // Q3
+  const [budget, setBudget] = useState<string>("");         // Q4
+  const [decisionMaker, setDecisionMaker] = useState<"yes" | "no" | "">("");  // BANT — Authority
+  const [extraNotes, setExtraNotes] = useState("");
+
+  const create = trpc.leads.createManual.useMutation({
+    onSuccess: () => { toast.success("Lead added to inbox"); onCreated(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const buildContextPayload = () => {
+    if (path === "B") {
+      return extraNotes.trim() || undefined;
+    }
+    // Path A — pack the answers as structured notes the division can read
+    const lines: string[] = [
+      "[ROUTE A — DIRECT CLOSE — CSO QUALIFIED]",
+      "",
+      `Q1. Challenge / problem to solve:`,
+      `→ ${challenge || "—"}`,
+      "",
+      `Q2. Used similar services before? ${usedBefore || "—"}`,
+      ...(usedBefore === "yes" ? [`→ ${previousExperience || "—"}`] : []),
+      "",
+      `Q3. Timeline: ${timeline || "—"}`,
+      `Q4. Budget range: ${budget || "—"}`,
+      `Q5. Decision maker / authority: ${decisionMaker || "—"}`,
+      `Source: ${source}`,
+    ];
+    if (extraNotes.trim()) {
+      lines.push("", "Additional notes:", extraNotes.trim());
+    }
+    return lines.join("\n");
+  };
+
+  const submit = () => {
+    if (!name.trim() || !service.trim()) {
+      toast.error("Name and service are required");
+      return;
+    }
+    create.mutate({
+      name: name.trim(),
+      businessName: businessName.trim() || undefined,
+      phone: phone.trim() || undefined,
+      email: email.trim() || undefined,
+      service: service.trim(),
+      department,
+      notes: buildContextPayload(),
+    });
+  };
+
+  /* ─── Step 1: Path picker ─── */
+  if (step === "path") {
+    return (
+      <ModalShell title="Add Lead Manually" onClose={onClose} width={540}>
+        <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.6, marginBottom: 14 }}>
+          From the CSO Flow Diagram. Pick the path that matches the lead's needs.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <button
+            type="button"
+            onClick={() => { setPath("A"); setStep("intake"); }}
+            style={{
+              textAlign: "left", padding: "16px 18px", borderRadius: 12,
+              border: `1px solid ${DARK}10`, backgroundColor: WHITE, cursor: "pointer",
+              display: "flex", flexDirection: "column", gap: 4,
+            }}
+          >
+            <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>Route A — Direct close</p>
+            <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.5 }}>
+              Clear, simple need. They know what they want. CSO asks the qualifying
+              questions now so the division can start delivery without a second call.
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setPath("B"); setStep("intake"); }}
+            style={{
+              textAlign: "left", padding: "16px 18px", borderRadius: 12,
+              border: `1px solid ${DARK}10`, backgroundColor: WHITE, cursor: "pointer",
+              display: "flex", flexDirection: "column", gap: 4,
+            }}
+          >
+            <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>Route B — Send diagnosis form</p>
+            <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.5 }}>
+              Complex need. CSO captures contact only and shares the right
+              assessment / diagnostic link so the lead self-qualifies in detail.
+            </p>
+          </button>
+        </div>
+      </ModalShell>
+    );
+  }
+
+  /* ─── Step 2: Intake (always shown) ─── */
+  if (step === "intake") {
+    return (
+      <ModalShell title={`Route ${path} · Contact info`} onClose={onClose} width={540}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <button
+            type="button"
+            onClick={() => setStep("path")}
+            style={{
+              alignSelf: "flex-start", padding: "4px 0", border: "none",
+              background: "transparent", color: GREEN, fontSize: 11, fontWeight: 600, cursor: "pointer",
+            }}
+          >‹ Change route</button>
+          <Field label="Name *" value={name} onChange={setName} />
+          <Field label="Business name" value={businessName} onChange={setBusinessName} />
+          <Field label="Phone" value={phone} onChange={setPhone} />
+          <Field label="Email" value={email} onChange={setEmail} type="email" />
+          <Field label="Service of interest *" value={service} onChange={setService} />
+          <div>
+            <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Division
+            </label>
+            <select
+              value={department}
+              onChange={e => setDepartment(e.target.value)}
+              style={{
+                width: "100%", marginTop: 4, padding: "10px 12px",
+                borderRadius: 8, border: `1px solid ${DARK}15`,
+                fontSize: 13, color: DARK, backgroundColor: WHITE,
+              }}
+            >
+              <option value="bizdoc">Bizdoc — Tax & Compliance</option>
+              <option value="systemise">Scalar — Web & Automation</option>
+              <option value="medialy">Medialy — Social Media</option>
+              <option value="skills">Hub — Tech Training</option>
+              <option value="podcast">Podcast Unit</option>
+              <option value="video">Video Unit</option>
+              <option value="faceless">Faceless Content</option>
+            </select>
+          </div>
+          <div>
+            <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              How did they reach you?
+            </label>
+            <select
+              value={source}
+              onChange={e => setSource(e.target.value)}
+              style={{
+                width: "100%", marginTop: 4, padding: "10px 12px",
+                borderRadius: 8, border: `1px solid ${DARK}15`,
+                fontSize: 13, color: DARK, backgroundColor: WHITE,
+              }}
+            >
+              <option value="walk_in">Walk-in</option>
+              <option value="phone_call">Phone call</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="referral">Referral</option>
+              <option value="event">Event / in-person</option>
+              <option value="instagram_dm">Instagram DM</option>
+              <option value="email">Email</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 4 }}>
+            <button type="button" onClick={onClose} style={{
+              padding: "10px 16px", borderRadius: 8, border: `1px solid ${DARK}15`,
+              backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+            }}>Cancel</button>
+            <button
+              type="button"
+              onClick={() => path === "A" ? setStep("questions") : submit()}
+              disabled={create.isPending}
+              style={{
+                padding: "10px 18px", borderRadius: 8, border: "none",
+                backgroundColor: GREEN, color: GOLD, fontSize: 12, fontWeight: 700,
+                cursor: create.isPending ? "wait" : "pointer", opacity: create.isPending ? 0.7 : 1,
+              }}
+            >{path === "A" ? "Continue → Qualifying questions" : create.isPending ? "Adding..." : "Add to Inbox"}</button>
+          </div>
+        </div>
+      </ModalShell>
+    );
+  }
+
+  /* ─── Step 3: Path A qualification questions ─── */
+  return (
+    <ModalShell title="Route A · Qualification questions" onClose={onClose} width={560}>
+      <p style={{ fontSize: 11, color: MUTED, lineHeight: 1.6, marginBottom: 14 }}>
+        Ask each question. The answers are saved to the lead record so the
+        delivery team has everything they need on handoff.
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div>
+          <label style={{ fontSize: 12, color: DARK, fontWeight: 700 }}>1. What specific challenge are you trying to solve?</label>
+          <textarea
+            value={challenge}
+            onChange={e => setChallenge(e.target.value)}
+            rows={2}
+            style={{
+              width: "100%", marginTop: 6, padding: "10px 12px",
+              borderRadius: 8, border: `1px solid ${DARK}15`, resize: "vertical",
+              fontSize: 13, color: DARK, backgroundColor: WHITE, fontFamily: "inherit",
+            }}
+            placeholder="What outcome are they after?"
+          />
+        </div>
+
+        <div>
+          <label style={{ fontSize: 12, color: DARK, fontWeight: 700 }}>2. Have they used similar services before?</label>
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            {(["yes", "no"] as const).map(v => (
+              <button key={v} type="button" onClick={() => setUsedBefore(v)} style={{
+                padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${usedBefore === v ? GREEN : DARK + "15"}`,
+                backgroundColor: usedBefore === v ? GREEN : WHITE,
+                color: usedBefore === v ? GOLD : DARK,
+                cursor: "pointer", textTransform: "capitalize",
+              }}>{v}</button>
+            ))}
+          </div>
+          {usedBefore === "yes" && (
+            <textarea
+              value={previousExperience}
+              onChange={e => setPreviousExperience(e.target.value)}
+              rows={2}
+              placeholder="What was the experience? Any pain points?"
+              style={{
+                width: "100%", marginTop: 8, padding: "10px 12px",
+                borderRadius: 8, border: `1px solid ${DARK}15`, resize: "vertical",
+                fontSize: 13, color: DARK, backgroundColor: WHITE, fontFamily: "inherit",
+              }}
+            />
+          )}
+        </div>
+
+        <div>
+          <label style={{ fontSize: 12, color: DARK, fontWeight: 700 }}>3. Ideal timeline to start?</label>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+            {["Immediately", "Within 1 month", "1–3 months", "3+ months"].map(v => (
+              <button key={v} type="button" onClick={() => setTimeline(v)} style={{
+                padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${timeline === v ? GREEN : DARK + "15"}`,
+                backgroundColor: timeline === v ? GREEN : WHITE,
+                color: timeline === v ? GOLD : DARK, cursor: "pointer",
+              }}>{v}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: 12, color: DARK, fontWeight: 700 }}>4. Budget range?</label>
+          <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+            {["Under ₦100k", "₦100k–500k", "₦500k–1M", "Over ₦1M", "Not sure yet"].map(v => (
+              <button key={v} type="button" onClick={() => setBudget(v)} style={{
+                padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${budget === v ? GREEN : DARK + "15"}`,
+                backgroundColor: budget === v ? GREEN : WHITE,
+                color: budget === v ? GOLD : DARK, cursor: "pointer",
+              }}>{v}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: 12, color: DARK, fontWeight: 700 }}>5. Are they the decision-maker?</label>
+          <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+            {(["yes", "no"] as const).map(v => (
+              <button key={v} type="button" onClick={() => setDecisionMaker(v)} style={{
+                padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                border: `1px solid ${decisionMaker === v ? GREEN : DARK + "15"}`,
+                backgroundColor: decisionMaker === v ? GREEN : WHITE,
+                color: decisionMaker === v ? GOLD : DARK, cursor: "pointer", textTransform: "capitalize",
+              }}>{v}</button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+            Anything else for the delivery team
+          </label>
+          <textarea
+            value={extraNotes}
+            onChange={e => setExtraNotes(e.target.value)}
+            rows={2}
+            placeholder="Special requirements, urgency, references they mentioned, etc."
+            style={{
+              width: "100%", marginTop: 4, padding: "10px 12px",
+              borderRadius: 8, border: `1px solid ${DARK}15`, resize: "vertical",
+              fontSize: 13, color: DARK, backgroundColor: WHITE, fontFamily: "inherit",
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "space-between", marginTop: 4 }}>
+          <button type="button" onClick={() => setStep("intake")} style={{
+            padding: "10px 16px", borderRadius: 8, border: `1px solid ${DARK}15`,
+            backgroundColor: WHITE, color: DARK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}>‹ Back</button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={create.isPending}
+            style={{
+              padding: "10px 22px", borderRadius: 8, border: "none",
+              backgroundColor: GREEN, color: GOLD, fontSize: 12, fontWeight: 700,
+              cursor: create.isPending ? "wait" : "pointer", opacity: create.isPending ? 0.7 : 1,
+            }}
+          >{create.isPending ? "Adding..." : "Add qualified lead"}</button>
+        </div>
+      </div>
+    </ModalShell>
+  );
+}
+
+// 2026-04-30 — removed: LeadsSection (replaced by inbox/pipeline pattern)
 /* ═══════════════════════════════════════════════════════════════════════
  * 3. QUALIFICATION WORKSPACE
  * ═══════════════════════════════════════════════════════════════════════ */
@@ -953,52 +1472,245 @@ function QualificationSection({ selectedId, onBack }: { selectedId: number | nul
           <InfoRow label="Age" value={`${ageDays} day${ageDays === 1 ? "" : "s"} old`} />
         </Card>
 
-        <Card>
-          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>Qualification Decision</p>
-          <div style={{ fontSize: 12, color: DARK, lineHeight: 1.7 }}>
-            <QualStep n={1} title="Discovery conversation" detail="Within 3 business days of routing. Document client situation, objectives, constraints, decision-maker, urgency." />
-            <QualStep n={2} title="Classify engagement" detail="Project · Subscription · Project-first-then-subscription · Unsure (CSO recommends)" />
-            <QualStep n={3} title="Map department" detail="BizDoc · Systemise · Skills · Multi-department (CEO coordinates)" />
-            <QualStep n={4} title="Budget + urgency check" detail="Budget below minimum → disqualify. Urgency unrealistic → propose adjusted timeline." />
-            <QualStep n={5} title="Feasibility check" detail="Dept lead responds within 48h: Can we deliver? Timeframe? Constraints?" />
-            <QualStep n={6} title="Qualify / Disqualify / Pause" detail="Disqualification requires CSO lead review before decline sent." />
-          </div>
-          <div style={{ marginTop: 14, padding: "10px 12px", borderRadius: 8, backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20` }}>
-            <p style={{ fontSize: 11, color: DARK, lineHeight: 1.6 }}>
-              <strong>Phase 1 note:</strong> Qualification outcomes are recorded via tRPC <code>leads.updateScore</code> and <code>leads.update</code>. A dedicated qualification write-form will be added in Phase 2.
-            </p>
-          </div>
-        </Card>
+        <QualificationCaptureCard lead={lead} onSaved={() => leadsQuery.refetch()} />
       </div>
-
-      <Card>
-        <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-          Current Lead Score
-        </p>
-        <div style={{ fontSize: 36, fontWeight: 700, color: GOLD, marginBottom: 4 }}>
-          {lead.leadScore ?? 0} <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}>/ 10</span>
-        </div>
-        <p style={{ fontSize: 11, color: MUTED }}>Assessed by: {lead.leadOwner || "Unassigned"}</p>
-      </Card>
     </div>
   );
 }
 
-function QualStep({ n, title, detail }: { n: number; title: string; detail: string }) {
+/* ─── Qualification capture form ─────────────────────────────────────────
+ * Replaces the old "Phase 1 note" placeholder with a real BANT capture
+ * form. CSO inputs go straight into leads.update + leads.updateScore via
+ * trpc, with verbose console logging so any failure is visible.
+ */
+function QualificationCaptureCard({ lead, onSaved }: { lead: any; onSaved: () => void }) {
+  const utils = trpc.useUtils();
+  const [score, setScore] = useState<number>(lead.leadScore ?? 5);
+  const [decisionMaker, setDecisionMaker] = useState<"yes" | "no" | "unknown">("unknown");
+  const [engagement, setEngagement] = useState<"project" | "subscription" | "project_then_sub" | "unsure">("project");
+  const [department, setDepartment] = useState<string>(lead.assignedDepartment || "");
+  const [decision, setDecision] = useState<"qualify" | "disqualify" | "pause" | "">("");
+  const [notes, setNotes] = useState("");
+
+  const updateLead = trpc.leads.update.useMutation({
+    onMutate: (vars) => { console.log("[CSO] qualify.update →", vars); },
+    onError: (e, vars) => { console.error("[CSO] qualify.update FAILED", vars, e); },
+  });
+  const updateScore = trpc.leads.updateScore.useMutation({
+    onMutate: (vars) => { console.log("[CSO] qualify.score →", vars); },
+    onError: (e, vars) => { console.error("[CSO] qualify.score FAILED", vars, e); },
+  });
+  const updateStage = trpc.leads.updateStage.useMutation({
+    onMutate: (vars) => { console.log("[CSO] qualify.stage →", vars); },
+    onError: (e, vars) => { console.error("[CSO] qualify.stage FAILED", vars, e); },
+  });
+
+  const isPending = updateLead.isPending || updateScore.isPending || updateStage.isPending;
+
+  const decisionToStage: Record<string, "qualified" | "lost" | "paused"> = {
+    qualify: "qualified", disqualify: "lost", pause: "paused",
+  };
+
+  const submit = async () => {
+    if (!decision) {
+      // P1 fix — surface why Save is disabled and scroll to the Decision row.
+      toast.error("Pick Qualify, Pause, or Disqualify first — then Save.");
+      const el = document.getElementById("qualify-decision-row");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    try {
+      // Pack discovery notes + structured answers into the context field so
+      // division ops sees them on handoff.
+      const composedNotes = [
+        `[CSO QUALIFICATION — ${new Date().toISOString().slice(0, 10)}]`,
+        `Decision: ${decision.toUpperCase()}`,
+        `Decision-maker: ${decisionMaker}`,
+        `Engagement: ${engagement}`,
+        `Department: ${department || "—"}`,
+        `Score: ${score}/10`,
+        notes ? `\nDiscovery notes:\n${notes}` : "",
+        lead.context ? `\n──── Prior context ────\n${lead.context}` : "",
+      ].filter(Boolean).join("\n");
+
+      await updateLead.mutateAsync({
+        id: lead.id,
+        context: composedNotes,
+        ...(department ? { assignedDepartment: department } : {}),
+      });
+      await updateScore.mutateAsync({ leadId: lead.id, score });
+      await updateStage.mutateAsync({ leadId: lead.id, stage: decisionToStage[decision] });
+
+      toast.success(`Qualification saved · ${decision} · score ${score}/10`, { duration: 2800 });
+      utils.leads.list.invalidate();
+      onSaved();
+    } catch (err: any) {
+      console.error("[CSO] qualify FAILED", err);
+      toast.error(err?.message || "Couldn't save. Check Console for details.");
+    }
+  };
+
+  const PILL_GROUP = (label: string, options: { v: string; label: string }[], value: string, onChange: (v: any) => void) => (
+    <div style={{ marginBottom: 12 }}>
+      <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>{label}</label>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {options.map(o => (
+          <button
+            key={o.v}
+            type="button"
+            onClick={() => onChange(o.v)}
+            style={{
+              padding: "7px 12px", borderRadius: 8,
+              border: `1px solid ${value === o.v ? GREEN : HAIRLINE}`,
+              backgroundColor: value === o.v ? GREEN : WHITE,
+              color: value === o.v ? GOLD : INK,
+              fontSize: 11, fontWeight: 600, cursor: "pointer",
+            }}
+          >{o.label}</button>
+        ))}
+      </div>
+    </div>
+  );
+
   return (
-    <div style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" }}>
-      <span style={{
-        width: 20, height: 20, borderRadius: 10, backgroundColor: `${GREEN}10`,
-        color: GREEN, fontSize: 11, fontWeight: 700, display: "flex",
-        alignItems: "center", justifyContent: "center", flexShrink: 0,
-      }}>{n}</span>
-      <div style={{ flex: 1 }}>
-        <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{title}</p>
-        <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{detail}</p>
+    <Card>
+      <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 14 }}>
+        Qualification capture
+      </p>
+
+      {/* Score slider */}
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>
+          Lead score (BANT-weighted, 0–10)
+        </label>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={score}
+            onChange={(e) => setScore(Number(e.target.value))}
+            style={{ flex: 1, accentColor: GREEN }}
+          />
+          <div style={{ minWidth: 56, textAlign: "right" }}>
+            <span style={{ fontSize: 24, fontWeight: 700, color: GREEN }}>{score}</span>
+            <span style={{ fontSize: 12, color: MUTED, fontWeight: 500 }}> / 10</span>
+          </div>
+        </div>
+        <p style={{ fontSize: 10, color: MUTED, marginTop: 4, lineHeight: 1.45 }}>
+          0–3 cold · 4–6 warm · 7–10 hot. Hot = ready to close this week.
+        </p>
       </div>
-    </div>
+
+      {PILL_GROUP("Decision-maker?", [
+        { v: "yes", label: "Yes" },
+        { v: "no", label: "No" },
+        { v: "unknown", label: "Unknown" },
+      ], decisionMaker, setDecisionMaker)}
+
+      {PILL_GROUP("Engagement type", [
+        { v: "project", label: "Project" },
+        { v: "subscription", label: "Subscription" },
+        { v: "project_then_sub", label: "Project → Sub" },
+        { v: "unsure", label: "Unsure" },
+      ], engagement, setEngagement)}
+
+      {PILL_GROUP("Department", [
+        { v: "bizdoc", label: "Bizdoc" },
+        { v: "systemise", label: "Scalar" },
+        { v: "medialy", label: "Medialy" },
+        { v: "skills", label: "Hub" },
+        { v: "podcast", label: "Podcast" },
+        { v: "video", label: "Video" },
+        { v: "faceless", label: "Faceless" },
+        { v: "", label: "Multi / unclear" },
+      ], department, setDepartment)}
+
+      <div style={{ marginBottom: 12 }}>
+        <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>
+          Discovery notes (saved on the lead's context for handoff)
+        </label>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={4}
+          placeholder="Situation · Objectives · Constraints · Urgency · Anything division ops needs to know"
+          style={{
+            width: "100%", padding: "10px 12px", borderRadius: 8,
+            border: `1px solid ${HAIRLINE}`, resize: "vertical",
+            fontSize: 12, color: INK, backgroundColor: WHITE, fontFamily: "inherit",
+          }}
+        />
+      </div>
+
+      {/* Decision pills */}
+      <div id="qualify-decision-row" />
+      <div style={{ marginBottom: 14 }}>
+        <label style={{ fontSize: 11, color: MUTED, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", display: "block", marginBottom: 6 }}>
+          Decision
+        </label>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => setDecision("qualify")}
+            style={{
+              flex: 1, padding: "10px 12px", borderRadius: 8,
+              border: `1px solid ${decision === "qualify" ? GREEN : HAIRLINE}`,
+              backgroundColor: decision === "qualify" ? GREEN : WHITE,
+              color: decision === "qualify" ? GOLD : GREEN,
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+            }}
+          >✓ Qualify</button>
+          <button
+            type="button"
+            onClick={() => setDecision("pause")}
+            style={{
+              flex: 1, padding: "10px 12px", borderRadius: 8,
+              border: `1px solid ${decision === "pause" ? GOLD : HAIRLINE}`,
+              backgroundColor: decision === "pause" ? GOLD : WHITE,
+              color: decision === "pause" ? WHITE : GOLD,
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+            }}
+          >⏸ Pause / Nurture</button>
+          <button
+            type="button"
+            onClick={() => setDecision("disqualify")}
+            style={{
+              flex: 1, padding: "10px 12px", borderRadius: 8,
+              border: `1px solid ${decision === "disqualify" ? RED : HAIRLINE}`,
+              backgroundColor: decision === "disqualify" ? RED : WHITE,
+              color: decision === "disqualify" ? WHITE : RED,
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+            }}
+          >✕ Disqualify</button>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!decision || isPending}
+        style={{
+          width: "100%", padding: "12px 16px", borderRadius: 10, border: "none",
+          backgroundColor: decision && !isPending ? GREEN : `${INK_MUTED}30`,
+          color: decision && !isPending ? GOLD : INK_MUTED,
+          fontSize: 13, fontWeight: 700,
+          cursor: decision && !isPending ? "pointer" : "not-allowed",
+          opacity: isPending ? 0.7 : 1,
+        }}
+      >
+        {isPending ? "Saving qualification…" :
+         decision === "qualify"    ? "Save & move to Qualified" :
+         decision === "pause"      ? "Save & move to Nurture" :
+         decision === "disqualify" ? "Save & mark Lost" :
+         "Pick a decision to enable Save"}
+      </button>
+    </Card>
   );
 }
+
+// 2026-04-30 — QualStep removed: the read-only walkthrough was replaced
+// by QualificationCaptureCard (live BANT form). Removed to kill confusion.
 
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -1365,146 +2077,8 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * 4. PROPOSALS REGISTER
- * ═══════════════════════════════════════════════════════════════════════ */
-function ProposalsSection() {
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const proposalsQuery = trpc.proposals.list.useQuery({ status: undefined });
-  const proposals = (proposalsQuery.data || []) as any[];
-
-  const filtered = statusFilter === "all" ? proposals : proposals.filter((p: any) => p.status === statusFilter);
-
-  return (
-    <div>
-      <SectionTitle sub="No proposal leaves CSO without CEO approval. CEO review SLA: 48 hours.">
-        Proposal Register
-      </SectionTitle>
-
-      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        {["all", "draft", "sent", "accepted", "rejected", "expired"].map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            style={{
-              padding: "6px 12px", borderRadius: 10, border: `1px solid ${DARK}10`,
-              fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              backgroundColor: statusFilter === s ? GREEN : WHITE,
-              color: statusFilter === s ? GOLD : MUTED,
-            }}
-          >
-            {s} {s !== "all" && `(${proposals.filter((p: any) => p.status === s).length})`}
-          </button>
-        ))}
-      </div>
-
-      {proposalsQuery.isLoading ? (
-        <Card><EmptyState icon={Loader2} title="Loading proposals..." /></Card>
-      ) : filtered.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={FileText}
-            title={`No ${statusFilter === "all" ? "" : statusFilter} proposals`}
-            hint="Proposals are drafted from qualified leads and sent after CEO approval."
-          />
-        </Card>
-      ) : (
-        <Card>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {filtered.map((p: any) => (
-              <div key={p.id} style={{
-                padding: "12px 14px", borderRadius: 10, border: `1px solid ${DARK}08`,
-                backgroundColor: `${DARK}02`,
-              }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <p style={{ fontSize: 14, fontWeight: 600, color: DARK }}>{p.businessName || p.clientName}</p>
-                      <Pill status={p.status} />
-                    </div>
-                    <p style={{ fontSize: 11, fontFamily: "monospace", color: GOLD }}>{p.proposalNumber}</p>
-                    <p style={{ fontSize: 12, color: DARK, marginTop: 4 }}>{fmtNaira(p.totalAmount)}</p>
-                    <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
-                      Created by {p.createdBy || "—"} · {fmtDate(p.createdAt)}
-                      {p.validUntil && ` · Valid until ${fmtDate(p.validUntil)}`}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
- * 5. ONBOARDING
- * ═══════════════════════════════════════════════════════════════════════ */
-function OnboardingSection() {
-  const proposalsQuery = trpc.proposals.list.useQuery();
-  const clientsQuery = trpc.clientTruth.list.useQuery();
-  const accepted = ((proposalsQuery.data || []) as any[]).filter((p: any) => p.status === "accepted");
-  const converted = ((clientsQuery.data || []) as any[]).filter((c: any) => c.status === "converted");
-
-  return (
-    <div>
-      <SectionTitle sub="On proposal acceptance: assign engagement ref, notify Finance, brief CEO, send client onboarding comm.">
-        Onboarding Queue
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14, marginBottom: 14 }}>
-        <Card>
-          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-            Accepted Proposals Awaiting Onboarding
-          </p>
-          {accepted.length === 0 ? (
-            <EmptyState icon={UserPlus} title="No accepted proposals in queue" />
-          ) : accepted.map((p: any) => (
-            <div key={p.id} style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: `${GOLD}08`, marginBottom: 6 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{p.businessName || p.clientName}</p>
-              <p style={{ fontSize: 11, color: MUTED }}>{p.proposalNumber} · {fmtNaira(p.totalAmount)}</p>
-            </div>
-          ))}
-        </Card>
-
-        <Card>
-          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-            Converted — Not Yet Active
-          </p>
-          {converted.length === 0 ? (
-            <EmptyState icon={UserPlus} title="No converted clients awaiting activation" />
-          ) : converted.map((c: any) => (
-            <div key={c.id} style={{ padding: "10px 12px", borderRadius: 8, backgroundColor: `${GOLD}08`, marginBottom: 6 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{c.businessName || c.name}</p>
-              <p style={{ fontSize: 11, color: MUTED }}>
-                {c.ref} · {c.nextAction || "No next action recorded"}
-              </p>
-            </div>
-          ))}
-        </Card>
-      </div>
-
-      <Card>
-        <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-          Onboarding Checklist (per Proposal_Process.md step 7)
-        </p>
-        <ul style={{ fontSize: 12, color: DARK, lineHeight: 1.9, paddingLeft: 18 }}>
-          <li>Accepted proposal becomes the engagement agreement</li>
-          <li>Both parties confirm in writing (email or signature)</li>
-          <li>Assign engagement reference (inherits from lead reference)</li>
-          <li>File signed agreement in 10-CLIENTS</li>
-          <li>Notify Finance: engagement ref, agreed amount, payment terms, billing schedule</li>
-          <li>Hand brief to CEO for department assignment</li>
-          <li>Send client onboarding communication (11-TEMPLATES/Client_Onboarding_Template.md)</li>
-        </ul>
-      </Card>
-    </div>
-  );
-}
-
+// 2026-04-30 — removed: ProposalsSection (replaced by inbox/pipeline pattern)
+// 2026-04-30 — removed: OnboardingSection (replaced by inbox/pipeline pattern)
 /* ═══════════════════════════════════════════════════════════════════════
  * 6. ACTIVE CLIENTS
  * ═══════════════════════════════════════════════════════════════════════ */
@@ -1521,9 +2095,12 @@ function ClientsSection() {
 
   return (
     <div>
+      {/* 2026-04-30 — Delivered-per-month strip */}
+      <DeliveredPerMonth />
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-        <SectionTitle sub="Only clients with all minimum required facts confirmed are Active. Any missing fact = Unverified.">
-          Client Register
+        <SectionTitle sub="Post-handoff workspace. Pipeline = acquisition; here is delivery, payment, and risk for paid clients only.">
+          Active clients
         </SectionTitle>
         <button
           onClick={() => setShowAddModal(true)}
@@ -1609,6 +2186,143 @@ function ClientsSection() {
         />
       )}
     </div>
+  );
+}
+
+/* ─── Delivered-per-month strip ─────────────────────────────────────────
+ * Shows what's actually shipping. CSO sees: completed tasks this month,
+ * last month, 3-month trend, and per-division breakdown. Pulls from
+ * tasks.list (any task with status="completed" counts).
+ */
+function DeliveredPerMonth() {
+  const tasksQuery = trpc.tasks.list.useQuery();
+  const tasks = (tasksQuery.data || []) as any[];
+
+  const stats = useMemo(() => {
+    const now = new Date();
+    const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const thisMo = monthKey(now);
+    const lastMoDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMo = monthKey(lastMoDate);
+
+    const completed = tasks.filter(t => t.status === "completed" || t.status === "done");
+    const byMonth: Record<string, any[]> = {};
+    completed.forEach(t => {
+      const ts = t.completedAt || t.updatedAt || t.createdAt;
+      if (!ts) return;
+      const k = monthKey(new Date(ts));
+      (byMonth[k] ||= []).push(t);
+    });
+
+    const byDiv: Record<string, number> = {};
+    (byMonth[thisMo] || []).forEach(t => {
+      const d = (t.department || t.assignedDepartment || "—").toLowerCase();
+      byDiv[d] = (byDiv[d] || 0) + 1;
+    });
+
+    // 3-month trend (oldest → newest)
+    const trend: { label: string; count: number }[] = [];
+    for (let i = 2; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      trend.push({
+        label: d.toLocaleString("en", { month: "short" }),
+        count: (byMonth[monthKey(d)] || []).length,
+      });
+    }
+
+    return {
+      thisMonth: (byMonth[thisMo] || []).length,
+      lastMonth: (byMonth[lastMo] || []).length,
+      byDiv,
+      trend,
+      totalCompleted: completed.length,
+    };
+  }, [tasks]);
+
+  const DIV_COLORS: Record<string, string> = {
+    bizdoc: "#1B4D3E", systemise: "#A07A0E", scalar: "#A07A0E",
+    medialy: "#1D4ED8", skills: "#1E3A5F", hub: "#1E3A5F",
+    podcast: "#7C3AED", video: "#DB2777", faceless: "#0891B2",
+  };
+  const DIV_LABEL: Record<string, string> = {
+    bizdoc: "Bizdoc", systemise: "Scalar", scalar: "Scalar",
+    medialy: "Medialy", skills: "Hub", hub: "Hub",
+    podcast: "Podcast", video: "Video", faceless: "Faceless",
+  };
+
+  const trendMax = Math.max(1, ...stats.trend.map(t => t.count));
+  const monthDelta = stats.thisMonth - stats.lastMonth;
+
+  return (
+    <Card style={{ marginBottom: 16, padding: 18 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
+        <div>
+          <p style={{ fontSize: 11, color: GREEN, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+            Delivered per month
+          </p>
+          <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 4 }}>
+            Tasks marked completed across every division. Live from the tasks table.
+          </p>
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
+        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
+          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>This month</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: GREEN, marginTop: 4 }}>{stats.thisMonth}</p>
+          {monthDelta !== 0 && (
+            <p style={{ fontSize: 10, color: monthDelta > 0 ? GREEN : RED, fontWeight: 600, marginTop: 2 }}>
+              {monthDelta > 0 ? "▲" : "▼"} {Math.abs(monthDelta)} vs last
+            </p>
+          )}
+        </div>
+        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
+          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Last month</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: INK, marginTop: 4 }}>{stats.lastMonth}</p>
+        </div>
+        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
+          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>All-time completed</p>
+          <p style={{ fontSize: 24, fontWeight: 700, color: INK, marginTop: 4 }}>{stats.totalCompleted}</p>
+        </div>
+        {/* 3-month bar trend */}
+        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
+          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>3-month trend</p>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginTop: 6, height: 36 }}>
+            {stats.trend.map((t, i) => (
+              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                <div style={{
+                  width: "100%", borderRadius: 3,
+                  backgroundColor: i === stats.trend.length - 1 ? GREEN : `${GREEN}40`,
+                  height: `${Math.max(4, (t.count / trendMax) * 28)}px`,
+                }} />
+                <span style={{ fontSize: 8, color: INK_MUTED, fontWeight: 600 }}>{t.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Per-division breakdown for THIS month */}
+      <div>
+        <p style={{ fontSize: 10, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
+          Delivered this month — by division
+        </p>
+        {Object.keys(stats.byDiv).length === 0 ? (
+          <p style={{ fontSize: 11, color: INK_MUTED, fontStyle: "italic" }}>Nothing completed yet this month.</p>
+        ) : (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {Object.entries(stats.byDiv).map(([k, n]) => (
+              <span key={k} style={{
+                padding: "5px 10px", borderRadius: 999,
+                backgroundColor: `${DIV_COLORS[k] || INK_MUTED}15`,
+                color: DIV_COLORS[k] || INK_MUTED,
+                fontSize: 11, fontWeight: 700,
+              }}>{DIV_LABEL[k] || k} · {n}</span>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
@@ -1765,84 +2479,7 @@ function MetaCell({ label, value, warn }: { label: string; value: string; warn?:
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * 7. RENEWALS
- * ═══════════════════════════════════════════════════════════════════════ */
-function RenewalsSection() {
-  const subsQuery = trpc.subscriptions.list.useQuery();
-  const subs = (subsQuery.data || []) as any[];
-
-  const flagged = subs.map((s: any) => {
-    // Renewal flag triggers: 45 / 30 / 14 / 7 days before term end.
-    // Subscription table stores `billingDay` (monthly) — approximate next cycle end.
-    const days = s.endDate ? daysUntil(s.endDate) : null;
-    let stage: string | null = null;
-    if (days !== null) {
-      if (days <= 0) stage = "term-ended";
-      else if (days <= 7) stage = "finalise";
-      else if (days <= 14) stage = "decide";
-      else if (days <= 30) stage = "engage";
-      else if (days <= 45) stage = "flag";
-    }
-    return { ...s, daysUntil: days, stage };
-  }).filter((s: any) => s.stage);
-
-  return (
-    <div>
-      <SectionTitle sub="45 → 30 → 14 → 7 → 0. No subscription lapses by accident.">
-        Renewal Pipeline
-      </SectionTitle>
-
-      {subsQuery.isLoading ? (
-        <Card><EmptyState icon={Loader2} title="Loading subscriptions..." /></Card>
-      ) : flagged.length === 0 ? (
-        <Card><EmptyState icon={RefreshCw} title="No renewals in the next 45 days" hint="Subscriptions with end dates will appear here as the renewal window approaches." /></Card>
-      ) : (
-        <Card>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {flagged.map((s: any) => (
-              <div key={s.id} style={{
-                padding: "12px 14px", borderRadius: 10, border: `1px solid ${DARK}08`,
-                backgroundColor: `${DARK}02`, display: "flex", gap: 14, alignItems: "center",
-              }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: 24, flexShrink: 0,
-                  backgroundColor: s.stage === "term-ended" ? `${RED}15` :
-                                   s.stage === "finalise" ? `${RED}10` :
-                                   s.stage === "decide" ? `${ORANGE}15` :
-                                   `${GOLD}12`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  color: s.stage === "term-ended" || s.stage === "finalise" ? RED :
-                         s.stage === "decide" ? ORANGE : GOLD,
-                  fontWeight: 700, fontSize: 13,
-                }}>
-                  {s.daysUntil !== null ? `${s.daysUntil}d` : "—"}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{s.clientName}</p>
-                  <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
-                    {s.service} · {fmtNaira(s.monthlyFee)}/mo · ends {fmtDate(s.endDate)}
-                  </p>
-                </div>
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: "3px 10px", borderRadius: 10,
-                  textTransform: "uppercase", letterSpacing: "0.04em",
-                  backgroundColor: s.stage === "flag" ? `${GOLD}15` : s.stage === "engage" ? `${BLUE}15` :
-                                   s.stage === "decide" ? `${ORANGE}15` : `${RED}15`,
-                  color: s.stage === "flag" ? GOLD : s.stage === "engage" ? BLUE :
-                         s.stage === "decide" ? ORANGE : RED,
-                }}>
-                  {s.stage}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
+// 2026-04-30 — removed: RenewalsSection (replaced by inbox/pipeline pattern)
 /* ═══════════════════════════════════════════════════════════════════════
  * 8. REFERRAL SOURCES
  * ═══════════════════════════════════════════════════════════════════════ */
@@ -1999,92 +2636,7 @@ function RhythmSection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * PHASE 2 — TARGETS SECTION
- * ═══════════════════════════════════════════════════════════════════════ */
-function TargetsSection() {
-  const targetsQuery = trpc.targets.listForRole.useQuery({ role: "cso", period: "all" });
-  const list = (targetsQuery.data || []) as any[];
-  const today = new Date().toISOString().slice(0, 10);
-  const current = list.filter(t => t.status === "active" && t.periodStart <= today && t.periodEnd >= today);
-  const history = list.filter(t => !(t.status === "active" && t.periodStart <= today && t.periodEnd >= today));
-
-  return (
-    <div>
-      <SectionTitle sub="CEO-assigned targets for the CSO role — live progress against verified activity.">
-        Targets
-      </SectionTitle>
-
-      {targetsQuery.isLoading ? (
-        <Card><EmptyState icon={Loader2} title="Loading targets…" /></Card>
-      ) : list.length === 0 ? (
-        <Card>
-          <EmptyState icon={Target} title="No targets set yet" hint="CEO can assign targets from CEO Dashboard → Set Target." />
-        </Card>
-      ) : (
-        <>
-          <Card style={{ marginBottom: 14 }}>
-            <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-              Current Period
-            </p>
-            {current.length === 0 ? (
-              <EmptyState icon={Target} title="No active targets for this period" />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {current.map(t => <TargetRow key={t.id} t={t} />)}
-              </div>
-            )}
-          </Card>
-
-          {history.length > 0 && (
-            <Card>
-              <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-                History
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {history.map(t => <TargetRow key={t.id} t={t} compact />)}
-              </div>
-            </Card>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-function TargetRow({ t, compact }: { t: any; compact?: boolean }) {
-  const target = parseFloat(t.targetValue || "0");
-  const actual = Number(t.actualValue || 0);
-  const pct = target > 0 ? Math.min(100, (actual / target) * 100) : 0;
-  const label = (t.metric || "custom").replace(/_/g, " ");
-  return (
-    <div style={{
-      padding: compact ? "8px 10px" : "12px 14px", borderRadius: 10,
-      backgroundColor: compact ? `${DARK}02` : `${GREEN}04`,
-      border: `1px solid ${DARK}08`,
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6, gap: 10, flexWrap: "wrap" }}>
-        <div>
-          <p style={{ fontSize: 12, fontWeight: 600, color: DARK, textTransform: "capitalize" }}>{label}</p>
-          <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-            {t.period} · {t.periodStart} → {t.periodEnd} · status: {t.status}
-          </p>
-        </div>
-        <div style={{ fontSize: 12, color: DARK, fontWeight: 600 }}>
-          {actual} <span style={{ color: MUTED, fontWeight: 400 }}>/ {target}</span>
-        </div>
-      </div>
-      <div style={{ height: 6, backgroundColor: `${DARK}08`, borderRadius: 3, overflow: "hidden" }}>
-        <div style={{
-          width: `${pct}%`, height: "100%",
-          backgroundColor: pct >= 100 ? "#22C55E" : pct >= 60 ? GOLD : ORANGE,
-          borderRadius: 3, transition: "width 0.3s",
-        }} />
-      </div>
-      {t.notes && <p style={{ fontSize: 11, color: MUTED, marginTop: 6 }}>{t.notes}</p>}
-    </div>
-  );
-}
+// 2026-04-30 — TargetsSection + TargetRow removed: targets UI moved to CEO Dashboard.
 
 /* ═══════════════════════════════════════════════════════════════════════
  * PHASE 2 — CALENDAR SECTION
@@ -2096,7 +2648,73 @@ const EVENT_COLORS: Record<string, string> = {
   renewal: "#22C55E",
   internal: "#8B5CF6",
   other: "#9CA3AF",
+  // 2026-04-30 — distinct accent per rhythm type so the Mon view (5 events
+  // stacked) stays readable. Outreach = deep green (the heart of the day),
+  // Planning = blue, Dashboard = warm grey (admin), Commission = gold.
+  outreach: "#1B4D3E",
+  planning: "#3B82F6",
+  dashboard: "#9CA3AF",
+  rhythm: "#B48C4C",       // legacy fallback
+  commission: "#B48C4C",   // gold for celebration day
 };
+
+/* 2026-04-30 — Built-in CSO weekly rhythm from
+   original files/PHASE4_CSO_BIZDEV/CSO/CALENDAR/CSO_Calendar.ics. These
+   show every week without needing manual entry. Custom events from
+   trpc.calendar.list overlay on top. */
+type RhythmEvent = {
+  title: string;
+  description: string;
+  type: string;
+  weekday?: number;        // 0=Sun .. 6=Sat (undefined for monthly)
+  monthDay?: number;       // 1=1st of month
+  startHHMM: string;       // "09:00"
+  endHHMM: string;
+};
+const CSO_RHYTHM: RhythmEvent[] = [
+  { title: "Outreach Block",          description: "Calls · LinkedIn · Email follow-ups · 10–15 connects target", type: "outreach",   weekday: 1, startHHMM: "09:00", endHHMM: "11:00" },
+  { title: "Outreach Block",          description: "Calls · LinkedIn · Email follow-ups · 10–15 connects target", type: "outreach",   weekday: 2, startHHMM: "09:00", endHHMM: "11:00" },
+  { title: "Outreach Block",          description: "Calls · LinkedIn · Email follow-ups · 10–15 connects target", type: "outreach",   weekday: 3, startHHMM: "09:00", endHHMM: "11:00" },
+  { title: "Outreach Block",          description: "Calls · LinkedIn · Email follow-ups · 10–15 connects target", type: "outreach",   weekday: 4, startHHMM: "09:00", endHHMM: "11:00" },
+  { title: "Outreach Block",          description: "Calls · LinkedIn · Email follow-ups · 10–15 connects target", type: "outreach",   weekday: 5, startHHMM: "09:00", endHHMM: "11:00" },
+  { title: "Week Planning",           description: "Plan week's sales targets — deals, calls, proposals.",        type: "planning",   weekday: 1, startHHMM: "08:30", endHHMM: "09:00" },
+  { title: "Pipeline Review with CEO",description: "Status updates · Deals moving forward · Support needed.",     type: "meeting",    weekday: 3, startHHMM: "10:00", endHHMM: "11:00" },
+  { title: "Dashboard Update",        description: "End of day — log activities, update pipeline, plan tomorrow.",type: "dashboard",  weekday: 1, startHHMM: "15:00", endHHMM: "15:30" },
+  { title: "Dashboard Update",        description: "End of day — log activities, update pipeline, plan tomorrow.",type: "dashboard",  weekday: 2, startHHMM: "15:00", endHHMM: "15:30" },
+  { title: "Dashboard Update",        description: "End of day — log activities, update pipeline, plan tomorrow.",type: "dashboard",  weekday: 3, startHHMM: "15:00", endHHMM: "15:30" },
+  { title: "Dashboard Update",        description: "End of day — log activities, update pipeline, plan tomorrow.",type: "dashboard",  weekday: 4, startHHMM: "15:00", endHHMM: "15:30" },
+  { title: "Dashboard Update",        description: "End of day — log activities, update pipeline, plan tomorrow.",type: "dashboard",  weekday: 5, startHHMM: "15:00", endHHMM: "15:30" },
+  { title: "Commission Day",          description: "Finance pays commission · Review tracker · Celebrate wins.",  type: "commission", monthDay: 1, startHHMM: "10:00", endHHMM: "10:30" },
+];
+
+function expandRhythm(monthCursor: Date): any[] {
+  const out: any[] = [];
+  const year = monthCursor.getFullYear();
+  const month = monthCursor.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month, d);
+    for (const r of CSO_RHYTHM) {
+      const matchWeek = r.weekday !== undefined && date.getDay() === r.weekday;
+      const matchMonth = r.monthDay !== undefined && date.getDate() === r.monthDay;
+      if (!matchWeek && !matchMonth) continue;
+      const [sh, sm] = r.startHHMM.split(":").map(Number);
+      const [eh, em] = r.endHHMM.split(":").map(Number);
+      const start = new Date(year, month, d, sh, sm);
+      const end = new Date(year, month, d, eh, em);
+      out.push({
+        id: `rhythm-${r.title.replace(/\s+/g, "-")}-${date.toISOString().slice(0, 10)}`,
+        title: r.title,
+        description: r.description,
+        eventType: r.type,
+        startAt: start.toISOString(),
+        endAt: end.toISOString(),
+        isRhythm: true,
+      });
+    }
+  }
+  return out;
+}
 
 function CalendarSection() {
   const [cursor, setCursor] = useState<Date>(() => {
@@ -2113,7 +2731,10 @@ function CalendarSection() {
   const to = monthEnd.toISOString();
 
   const eventsQuery = trpc.calendar.list.useQuery({ from, to });
-  const events = (eventsQuery.data || []) as any[];
+  // Built-in CSO rhythm (always visible) + user-added events
+  const rhythmEvents = useMemo(() => expandRhythm(cursor), [cursor]);
+  const customEvents = (eventsQuery.data || []) as any[];
+  const events = [...rhythmEvents, ...customEvents];
 
   const byDate: Record<string, any[]> = {};
   events.forEach(e => {
@@ -2123,7 +2744,8 @@ function CalendarSection() {
   });
 
   // Build month grid
-  const firstWeekday = new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay(); // 0=Sun
+  // Week starts Monday: shift Sunday (0) to the end so 0=Mon, 6=Sun.
+  const firstWeekday = (new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay() + 6) % 7;
   const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
   const cells: { date: string | null; day: number | null }[] = [];
   for (let i = 0; i < firstWeekday; i++) cells.push({ date: null, day: null });
@@ -2140,7 +2762,7 @@ function CalendarSection() {
 
   return (
     <div>
-      <SectionTitle sub="Shared calendar — meetings, follow-ups, deadlines and renewals across CSO operations.">
+      <SectionTitle sub="Shared calendar — meetings, follow-ups, deadlines and renewals across CSO operations. Tap a date to see what's on that day.">
         Calendar
       </SectionTitle>
 
@@ -2164,7 +2786,7 @@ function CalendarSection() {
 
         {/* Weekday header */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 6 }}>
-          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+          {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
             <div key={i} style={{ textAlign: "center", fontSize: 10, color: MUTED, fontWeight: 600, padding: 4 }}>{d}</div>
           ))}
         </div>
@@ -2419,6 +3041,10 @@ function AddClientModal({ onClose, onCreated, currentUser: _cu }: { onClose: () 
     bizdocOwner: "",
     systemiseOwner: "",
     skillsOwner: "",
+    medialyOwner: "",
+    podcastOwner: "",
+    videoOwner: "",
+    facelessOwner: "",
     notes: "",
     source: "cso_manual",
   });
@@ -2438,9 +3064,13 @@ function AddClientModal({ onClose, onCreated, currentUser: _cu }: { onClose: () 
       return;
     }
     const deptOwners: Record<string, string> = {};
-    if (form.bizdocOwner) deptOwners.bizdoc = form.bizdocOwner;
+    if (form.bizdocOwner)   deptOwners.bizdoc    = form.bizdocOwner;
     if (form.systemiseOwner) deptOwners.systemise = form.systemiseOwner;
-    if (form.skillsOwner) deptOwners.skills = form.skillsOwner;
+    if (form.skillsOwner)   deptOwners.skills    = form.skillsOwner;
+    if (form.medialyOwner)  deptOwners.medialy   = form.medialyOwner;
+    if (form.podcastOwner)  deptOwners.podcast   = form.podcastOwner;
+    if (form.videoOwner)    deptOwners.video     = form.videoOwner;
+    if (form.facelessOwner) deptOwners.faceless  = form.facelessOwner;
     create.mutate({
       businessName: form.businessName,
       contactName: form.contactName,
@@ -2497,22 +3127,46 @@ function AddClientModal({ onClose, onCreated, currentUser: _cu }: { onClose: () 
       <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em", marginTop: 12, marginBottom: 4 }}>Department owners (leave blank to skip)</p>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         <SelectField
-          label="BizDoc owner"
+          label="Bizdoc owner"
           value={form.bizdocOwner}
           onChange={(v) => setForm({ ...form, bizdocOwner: v })}
           options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.bizdoc || []).map(l => ({ value: l.name, label: l.name }))]}
         />
         <SelectField
-          label="Systemise owner"
+          label="Scalar owner"
           value={form.systemiseOwner}
           onChange={(v) => setForm({ ...form, systemiseOwner: v })}
           options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.systemise || []).map(l => ({ value: l.name, label: l.name }))]}
         />
         <SelectField
-          label="Skills owner"
+          label="Medialy owner"
+          value={form.medialyOwner}
+          onChange={(v) => setForm({ ...form, medialyOwner: v })}
+          options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.medialy || []).map(l => ({ value: l.name, label: l.name }))]}
+        />
+        <SelectField
+          label="Hub owner"
           value={form.skillsOwner}
           onChange={(v) => setForm({ ...form, skillsOwner: v })}
           options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.skills || []).map(l => ({ value: l.name, label: l.name }))]}
+        />
+        <SelectField
+          label="Podcast owner"
+          value={form.podcastOwner}
+          onChange={(v) => setForm({ ...form, podcastOwner: v })}
+          options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.podcast || []).map(l => ({ value: l.name, label: l.name }))]}
+        />
+        <SelectField
+          label="Video owner"
+          value={form.videoOwner}
+          onChange={(v) => setForm({ ...form, videoOwner: v })}
+          options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.video || []).map(l => ({ value: l.name, label: l.name }))]}
+        />
+        <SelectField
+          label="Faceless owner"
+          value={form.facelessOwner}
+          onChange={(v) => setForm({ ...form, facelessOwner: v })}
+          options={[{ value: "", label: "— none —" }, ...(DEPT_LEADS.faceless || []).map(l => ({ value: l.name, label: l.name }))]}
         />
       </div>
       <Field label="Notes" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
@@ -2846,16 +3500,8 @@ function ClientDetailSlideOver({
             }}>
               <AlertCircle size={12} /> Escalate to CEO
             </button>
-            <button
-              onClick={() => toast("Client-safe update publishing — Phase 2+: will push to client dashboard once dept confirms")}
-              style={{
-                fontSize: 11, fontWeight: 600, padding: "6px 12px", borderRadius: 8,
-                border: `1px solid ${GREEN}30`, color: GREEN, backgroundColor: `${GREEN}08`,
-                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
-              }}
-            >
-              <Send size={12} /> Publish update
-            </button>
+            {/* 2026-04-30 — "Publish update" Phase 2 placeholder removed.
+                Will return when client-dashboard publishing is wired. */}
           </div>
 
           <Card style={{ marginBottom: 12 }}>
@@ -2971,23 +3617,68 @@ function ClientDetailSlideOver({
 /* ═══════════════════════════════════════════════════════════════════════
  * PIPELINE (v1 restructure — 8-column Kanban)
  * ═══════════════════════════════════════════════════════════════════════ */
-const PIPELINE_STAGES: { key: string; label: string; color: string }[] = [
-  { key: "new",           label: "New",            color: BLUE },
-  { key: "qualified",     label: "Qualified",      color: "#6366F1" },
-  { key: "proposal_sent", label: "Proposal Sent",  color: GOLD },
-  { key: "negotiation",   label: "Negotiation",    color: "#8B5CF6" },
-  { key: "onboarding",    label: "Onboarding",     color: ORANGE },
-  { key: "won",           label: "Won",            color: "#22C55E" },
-  { key: "lost",          label: "Lost",           color: RED },
-  { key: "paused",        label: "Paused",         color: MUTED },
+/* 2026-04-30 — Pipeline rebuilt to match the 11-stage CSO Flow Diagram.
+ * The 8 backend statuses map onto the diagram's stages — each carries:
+ *   owner: who runs the stage (Lead Handler / Closer / Coordinator)
+ *   sla:   the time limit from the diagram
+ *   path:  "shared" (both paths use it), "A" (Direct), "B" (Diagnosis)
+ *   blurb: one line describing what happens in this stage */
+const PIPELINE_STAGES: {
+  key: string; label: string; color: string;
+  owner: string; sla: string; path: "shared" | "A" | "B" | "end";
+  blurb: string;
+}[] = [
+  { key: "new",           label: "New",           color: BLUE,       owner: "Lead Handler", sla: "Add to sheet within 30 min", path: "shared", blurb: "Lead just arrived. Send M1 (Welcome + 3 Qs) within 2 hrs." },
+  { key: "qualified",     label: "Qualified",     color: "#6366F1",  owner: "Lead Handler", sla: "BANT done within 24h",       path: "shared", blurb: "Answers received. Pick Path A (direct close) or Path B (diagnosis form)." },
+  { key: "proposal_sent", label: "Proposal sent", color: GOLD,       owner: "Coordinator",  sla: "PDF within 24h of form",     path: "B",      blurb: "Path B — diagnosis form returned, custom PDF + M4 sent." },
+  { key: "negotiation",   label: "Closer call",   color: "#8B5CF6",  owner: "Closer",       sla: "Within 24h of stage entry",  path: "shared", blurb: "Closer is on the call — discussing solution, handling objections, asking for the close." },
+  { key: "onboarding",    label: "Onboarding",    color: ORANGE,     owner: "Coordinator",  sla: "Invoice within 1 hr of yes", path: "shared", blurb: "Verbal yes. Send invoice + agreement, await payment." },
+  { key: "won",           label: "Won",           color: "#22C55E",  owner: "Coordinator",  sla: "Hand off to division same day", path: "end", blurb: "Paid. Hand off to the division ops team and start delivery." },
+  { key: "paused",        label: "Nurture",       color: GOLD,       owner: "Closer",       sla: "Follow up in 3–7 days",      path: "end",    blurb: "Maybe / not now. Schedule a follow-up reminder; don't lose them." },
+  { key: "lost",          label: "Lost",          color: RED,        owner: "Lead Handler", sla: "—",                          path: "end",    blurb: "Said no. Log reason; archive." },
 ];
 
+/* 2026-04-30 v2 — Pipeline rebuilt for less friction:
+ *   · Default view shows ONLY active flow stages (5 columns, not 8).
+ *   · End states (Won, Nurture, Lost) are collapsed into one toggle counter
+ *     at the top — click to reveal those columns when needed.
+ *   · One card-action menu (⋯) replaces the bristle of buttons. Cleaner and
+ *     keeps Won/Nurture/Lost/Back/Delete reliably callable.
+ *   · No more "Open" button — clicking the card opens it.
+ *   · No always-visible trash icon.
+ *   · Pending-state UI on the menu items so it's obvious when a mutation
+ *     is in flight (the user said Won/Nurture aren't working — usually
+ *     this is a feedback issue, not a wire issue).
+ */
 function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
   const groupedQuery = trpc.leads.list.useQuery({ groupByStage: true } as any);
   const utils = trpc.useUtils();
+
+  // Mutations — verbose logging so any failure is visible in DevTools.
   const updateStage = trpc.leads.updateStage.useMutation({
-    onSuccess: () => { toast.success("Stage updated"); utils.leads.list.invalidate(); },
-    onError: (e) => toast.error(e.message),
+    onMutate: (vars) => { console.log("[CSO] updateStage →", vars); },
+    onSuccess: (data, vars) => {
+      console.log("[CSO] updateStage ok ←", vars, data);
+      toast.success(`Stage → ${vars.stage.replace("_", " ")}`, { duration: 2200 });
+      utils.leads.list.invalidate();
+    },
+    onError: (e, vars) => {
+      console.error("[CSO] updateStage FAILED", vars, e);
+      toast.error(e.message || "Couldn't update stage. Check Console for details.");
+    },
+  });
+  const assignDivision = trpc.leads.assign.useMutation({
+    onMutate: (vars) => { console.log("[CSO] assignDivision →", vars); },
+    onSuccess: (data, vars) => {
+      console.log("[CSO] assignDivision ok ←", vars, data);
+      toast.success(`Assigned to ${vars.department}. Division ops can now see the task.`, { duration: 2800 });
+      utils.leads.list.invalidate();
+      utils.tasks?.list?.invalidate?.();
+    },
+    onError: (e, vars) => {
+      console.error("[CSO] assignDivision FAILED", vars, e);
+      toast.error(e.message || "Couldn't assign. Check Console for details.");
+    },
   });
   const deleteLead = trpc.leads.delete.useMutation({
     onSuccess: () => { toast.success("Lead deleted"); utils.leads.list.invalidate(); },
@@ -2995,99 +3686,555 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
   });
 
   const grouped = (groupedQuery.data || {}) as Record<string, any[]>;
+  const allLeads = useMemo(() => Object.values(grouped).flat() as any[], [grouped]);
+  const activeCount = allLeads.filter(l => !["won", "lost", "paused", "converted", "archived"].includes(l.status)).length;
+  const wonThisMonth = (grouped.won || []).filter((l: any) => {
+    const d = l.updatedAt ? new Date(l.updatedAt) : null;
+    if (!d) return false;
+    const now = new Date();
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+  const endStateTotal = (grouped.won?.length || 0) + (grouped.paused?.length || 0) + (grouped.lost?.length || 0);
 
-  const handleMove = (leadId: number, newStage: string) => {
-    updateStage.mutate({ leadId, stage: newStage as any });
+  const [showEndStates, setShowEndStates] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [assignTarget, setAssignTarget] = useState<any | null>(null);
+
+  // 2026-04-30 v3 — Connected, path-aware Advance/Move-back across every stage.
+  //
+  //   FLOW_ORDER     = the 5 stages that show by default (visible without
+  //                    "Show end states"). Used for column visibility only.
+  //   ADVANCE_PATH_A = direct close: New → Qualified → Closer call →
+  //                    Onboarding → Won  (skips proposal_sent)
+  //   ADVANCE_PATH_B = with diagnosis form: New → Qualified → Proposal sent →
+  //                    Closer call → Onboarding → Won
+  //
+  // We pick Path A by default. At the Qualified stage the menu offers BOTH
+  // a direct "Advance to Closer call" AND a "Send proposal first (Path B)"
+  // action so the user sees their choice. At every OTHER stage there's one
+  // canonical next stage so Advance always works the same way.
+  const FLOW_ORDER = ["new", "qualified", "proposal_sent", "negotiation", "onboarding"] as const;
+  const ADVANCE_PATH_A = ["new", "qualified", "negotiation", "onboarding", "won"] as const;
+  const ADVANCE_PATH_B = ["new", "qualified", "proposal_sent", "negotiation", "onboarding", "won"] as const;
+  const visibleStages = showEndStates
+    ? PIPELINE_STAGES
+    : PIPELINE_STAGES.filter(s => FLOW_ORDER.includes(s.key as any));
+
+  const ageDays = (l: any): number => {
+    const ts = l.updatedAt ? new Date(l.updatedAt).getTime() : (l.createdAt ? new Date(l.createdAt).getTime() : Date.now());
+    return Math.max(0, Math.floor((Date.now() - ts) / 86_400_000));
   };
 
+  /** Returns the next stage on Path A (direct close) for the given current stage. */
+  const nextStagePathA = (current: string): string | null => {
+    const order = ADVANCE_PATH_A as readonly string[];
+    const i = order.indexOf(current);
+    if (i === -1 || i === order.length - 1) return null;
+    return order[i + 1];
+  };
+
+  /** Returns the next stage on Path B (diagnosis form). */
+  const nextStagePathB = (current: string): string | null => {
+    const order = ADVANCE_PATH_B as readonly string[];
+    const i = order.indexOf(current);
+    if (i === -1 || i === order.length - 1) return null;
+    return order[i + 1];
+  };
+
+  /** Returns the previous stage on whichever path the lead is on. */
+  const prevStage = (current: string): string | null => {
+    // Try Path B first (longer); fall back to A.
+    const orderB = ADVANCE_PATH_B as readonly string[];
+    const orderA = ADVANCE_PATH_A as readonly string[];
+    const order = orderB.includes(current) ? orderB : orderA;
+    const i = order.indexOf(current);
+    if (i <= 0) return null;
+    return order[i - 1];
+  };
+
+  /** Look up the friendly label for a stage key. */
+  const labelFor = (key: string): string => {
+    return PIPELINE_STAGES.find(s => s.key === key)?.label || key;
+  };
+
+  const handleAdvance = (lead: any, currentStage: string) => {
+    // Default to Path A (direct close — most common). Path B is selected
+    // explicitly via "Send proposal first" at the Qualified stage.
+    const next = nextStagePathA(currentStage);
+    if (!next) return;
+    updateStage.mutate({ leadId: lead.id, stage: next as any });
+    setOpenMenuId(null);
+  };
+  const handleRetreat = (lead: any, currentStage: string) => {
+    const prev = prevStage(currentStage);
+    if (!prev) return;
+    updateStage.mutate({ leadId: lead.id, stage: prev as any });
+    setOpenMenuId(null);
+  };
+  /** Path B branch — explicitly send to proposal_sent stage. */
+  const handleSendProposal = (lead: any) => {
+    updateStage.mutate({ leadId: lead.id, stage: "proposal_sent" as any });
+    setOpenMenuId(null);
+  };
+  const markStage = (lead: any, stage: string) => {
+    updateStage.mutate({ leadId: lead.id, stage: stage as any });
+    setOpenMenuId(null);
+  };
+  const handleQualify = (lead: any) => {
+    setOpenMenuId(null);
+    onQualify(lead.id);
+  };
+  const handleOpenAssign = (lead: any) => {
+    setOpenMenuId(null);
+    setAssignTarget(lead);
+  };
   const handleDelete = (lead: any) => {
     if (deleteLead.isPending) return;
     if (!window.confirm(`Delete lead ${lead.ref || "#" + lead.id} — ${lead.name || lead.businessName || ""}? This cannot be undone.`)) return;
     deleteLead.mutate({ id: lead.id });
+    setOpenMenuId(null);
   };
+
+  // Close any open card-menu when clicking outside
+  useEffect(() => {
+    if (openMenuId === null) return;
+    const close = () => setOpenMenuId(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [openMenuId]);
 
   return (
     <div>
-      <SectionTitle sub="Drag leads across stages. Every stage change is audit-logged.">
-        Pipeline
-      </SectionTitle>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "flex-start",
+        gap: 12, marginBottom: 14, flexWrap: "wrap",
+      }}>
+        <SectionTitle sub="Five flow stages on by default. Use the ⋯ menu on any card for Won, Nurture, Lost, or step back.">
+          Pipeline
+        </SectionTitle>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <div style={{
+            padding: "8px 14px", borderRadius: 10, backgroundColor: WHITE,
+            border: `1px solid ${HAIRLINE}`, fontSize: 11, color: INK,
+          }}>
+            <p style={{ fontSize: 9, fontWeight: 700, color: INK_MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>Active</p>
+            <p style={{ fontSize: 16, fontWeight: 700, marginTop: 2 }}>{activeCount}</p>
+          </div>
+          <div style={{
+            padding: "8px 14px", borderRadius: 10, backgroundColor: WHITE,
+            border: `1px solid ${HAIRLINE}`, fontSize: 11, color: INK,
+          }}>
+            <p style={{ fontSize: 9, fontWeight: 700, color: INK_MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>Won this month</p>
+            <p style={{ fontSize: 16, fontWeight: 700, marginTop: 2, color: GREEN }}>{wonThisMonth}</p>
+          </div>
+          <button
+            onClick={() => setShowEndStates(s => !s)}
+            style={{
+              padding: "8px 14px", borderRadius: 10,
+              backgroundColor: showEndStates ? GREEN : WHITE,
+              color: showEndStates ? GOLD : INK,
+              border: `1px solid ${showEndStates ? GREEN : HAIRLINE}`,
+              fontSize: 11, fontWeight: 700, cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {showEndStates ? "Hide" : "Show"} end states ({endStateTotal})
+          </button>
+        </div>
+      </div>
 
       {groupedQuery.isLoading ? (
         <Card><EmptyState icon={Loader2} title="Loading pipeline..." /></Card>
       ) : (
         <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 10 }}>
-          {PIPELINE_STAGES.map(stage => {
+          {visibleStages.map(stage => {
             const items = (grouped[stage.key] || []) as any[];
+            const orderIdx = FLOW_ORDER.indexOf(stage.key as any);
+            const isFlow = orderIdx !== -1;
             return (
               <div key={stage.key} style={{
-                minWidth: 240, maxWidth: 260, flex: "0 0 auto",
+                minWidth: 280, maxWidth: 300, flex: "0 0 auto",
                 backgroundColor: `${stage.color}06`, borderRadius: 12,
-                border: `1px solid ${stage.color}20`, padding: 10,
+                border: `1px solid ${stage.color}20`, padding: 12,
+                display: "flex", flexDirection: "column", gap: 10,
               }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, padding: "0 4px" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: stage.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                    {stage.label}
-                  </span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: MUTED }}>{items.length}</span>
+                {/* Stage header */}
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: stage.color, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                      {stage.label}
+                    </span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 999,
+                      backgroundColor: WHITE, color: stage.color, border: `1px solid ${stage.color}30`,
+                    }}>{items.length}</span>
+                  </div>
+                  <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 4, lineHeight: 1.45 }}>
+                    {stage.blurb}
+                  </p>
+                  <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>
+                    <span style={{
+                      fontSize: 9, padding: "2px 6px", borderRadius: 999,
+                      backgroundColor: `${stage.color}15`, color: stage.color, fontWeight: 700,
+                    }}>{stage.owner}</span>
+                    <span style={{
+                      fontSize: 9, padding: "2px 6px", borderRadius: 999,
+                      backgroundColor: `${INK_MUTED}15`, color: INK_MUTED, fontWeight: 600,
+                    }}>{stage.sla}</span>
+                  </div>
                 </div>
+
+                {/* Cards */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, minHeight: 60 }}>
                   {items.length === 0 ? (
-                    <p style={{ fontSize: 10, color: `${MUTED}80`, textAlign: "center", padding: "12px 0" }}>Empty</p>
-                  ) : items.map((lead: any) => (
-                    <div key={lead.id}
-                      style={{
-                        backgroundColor: WHITE, borderRadius: 10, padding: "10px 12px",
-                        border: `1px solid ${DARK}08`, boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => onQualify(lead.id)}
-                    >
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6, marginBottom: 4 }}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: DARK, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
-                          {lead.name || lead.businessName || "Unnamed"}
-                        </p>
-                        <button
-                          title="Delete lead"
-                          onClick={(e) => { e.stopPropagation(); handleDelete(lead); }}
-                          style={{
-                            background: "none", border: "none", cursor: "pointer",
-                            color: RED, padding: 2, opacity: 0.7,
-                          }}
-                        >
-                          <Trash2 size={11} />
-                        </button>
-                      </div>
-                      <p style={{ fontSize: 10, color: MUTED, marginBottom: 6 }}>
-                        {lead.phone || lead.email || "—"}
-                      </p>
-                      {(lead.referralCode || lead.source) && (
-                        <div style={{ marginBottom: 6, display: "flex", flexWrap: "wrap", gap: 4 }}>
-                          <SourceBadge code={lead.referralCode} source={lead.source} referrerName={lead.referrerName} />
-                        </div>
-                      )}
-                      <select
-                        value={stage.key}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => handleMove(lead.id, e.target.value)}
+                    <p style={{ fontSize: 10, color: `${INK_MUTED}80`, textAlign: "center", padding: "16px 0" }}>—</p>
+                  ) : items.map((lead: any) => {
+                    const age = ageDays(lead);
+                    const stale = age >= 3 && stage.path !== "end";
+                    const menuOpen = openMenuId === lead.id;
+                    return (
+                      <div
+                        key={lead.id}
+                        onClick={() => onQualify(lead.id)}
                         style={{
-                          width: "100%", padding: "4px 6px", borderRadius: 6,
-                          border: `1px solid ${DARK}15`, fontSize: 10, color: DARK,
-                          backgroundColor: `${stage.color}08`,
+                          backgroundColor: WHITE, borderRadius: 10, padding: "11px 12px",
+                          border: `1px solid ${stale ? RED + "40" : DARK + "08"}`,
+                          boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+                          display: "flex", flexDirection: "column", gap: 6,
+                          cursor: "pointer", position: "relative",
                         }}
                       >
-                        {PIPELINE_STAGES.map(s => (
-                          <option key={s.key} value={s.key}>{s.label}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
+                        {/* Header row */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: INK, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {lead.name || lead.businessName || "Unnamed"}
+                          </p>
+                          {/* Single ⋯ menu button */}
+                          <button
+                            title="More actions"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setOpenMenuId(menuOpen ? null : lead.id);
+                            }}
+                            style={{
+                              width: 26, height: 26, borderRadius: 6,
+                              border: "none", backgroundColor: menuOpen ? `${stage.color}15` : "transparent",
+                              color: INK_MUTED, cursor: "pointer", flexShrink: 0,
+                              display: "flex", alignItems: "center", justifyContent: "center",
+                              fontWeight: 700, fontSize: 16, lineHeight: 1,
+                            }}
+                          >⋯</button>
+                        </div>
+
+                        {/* Service line */}
+                        {lead.service && (
+                          <p style={{ fontSize: 11, color: INK_MUTED, lineHeight: 1.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {lead.service}
+                          </p>
+                        )}
+
+                        {/* Source + age in one compact row */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6, marginTop: 2 }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {(lead.referralCode || lead.source) && (
+                              <SourceBadge code={lead.referralCode} source={lead.source} referrerName={lead.referrerName} />
+                            )}
+                          </div>
+                          <span style={{
+                            fontSize: 9, fontWeight: 700, color: stale ? RED : INK_MUTED,
+                            padding: "1px 6px", borderRadius: 999,
+                            backgroundColor: stale ? `${RED}15` : "transparent",
+                            whiteSpace: "nowrap", flexShrink: 0,
+                          }}>
+                            {age === 0 ? "today" : `${age}d`}
+                          </span>
+                        </div>
+
+                        {/* Action menu — appears below card when ⋯ is clicked */}
+                        {menuOpen && (
+                          <div
+                            onClick={(e) => e.stopPropagation()}
+                            style={{
+                              position: "absolute", top: "100%", right: 0, marginTop: 4,
+                              minWidth: 180, zIndex: 20,
+                              backgroundColor: WHITE, borderRadius: 10,
+                              border: `1px solid ${HAIRLINE}`,
+                              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                              padding: 4,
+                              display: "flex", flexDirection: "column", gap: 1,
+                            }}
+                          >
+                            <MenuItem
+                              icon={<Eye size={13} />}
+                              label="Open & qualify (BANT)"
+                              color={GREEN}
+                              onClick={() => handleQualify(lead)}
+                            />
+                            <MenuItem
+                              icon={<ArrowRightCircle size={13} />}
+                              label="Assign to division…"
+                              color={BLUE}
+                              disabled={assignDivision.isPending}
+                              onClick={() => handleOpenAssign(lead)}
+                            />
+                            <div style={{ height: 1, backgroundColor: HAIRLINE, margin: "3px 6px" }} />
+                            {/* 2026-04-30 — Connected Advance/Move-back across every stage.
+                                Each item shows where it's going. Path B branch appears
+                                only at Qualified — otherwise Advance follows Path A
+                                (direct close, the common case). */}
+                            {(() => {
+                              const nextA = nextStagePathA(stage.key);
+                              return nextA ? (
+                                <MenuItem
+                                  icon={<ChevronRight size={13} />}
+                                  label={`Advance → ${labelFor(nextA)}`}
+                                  color={stage.color}
+                                  disabled={updateStage.isPending}
+                                  onClick={() => handleAdvance(lead, stage.key)}
+                                />
+                              ) : null;
+                            })()}
+                            {stage.key === "qualified" && (
+                              <MenuItem
+                                icon={<FileText size={13} />}
+                                label="Send proposal first (Path B)"
+                                color={GOLD}
+                                disabled={updateStage.isPending}
+                                onClick={() => handleSendProposal(lead)}
+                              />
+                            )}
+                            {(() => {
+                              const prev = prevStage(stage.key);
+                              return prev ? (
+                                <MenuItem
+                                  icon={<ChevronLeft size={13} />}
+                                  label={`Move back → ${labelFor(prev)}`}
+                                  color={INK_MUTED}
+                                  disabled={updateStage.isPending}
+                                  onClick={() => handleRetreat(lead, stage.key)}
+                                />
+                              ) : null;
+                            })()}
+                            <div style={{ height: 1, backgroundColor: HAIRLINE, margin: "3px 6px" }} />
+                            <MenuItem
+                              icon={<CheckCircle2 size={13} />}
+                              label="Mark Won"
+                              color={GREEN}
+                              disabled={updateStage.isPending || stage.key === "won"}
+                              onClick={() => markStage(lead, "won")}
+                            />
+                            <MenuItem
+                              icon={<Clock size={13} />}
+                              label="Move to Nurture"
+                              color={GOLD}
+                              disabled={updateStage.isPending || stage.key === "paused"}
+                              onClick={() => markStage(lead, "paused")}
+                            />
+                            <MenuItem
+                              icon={<X size={13} />}
+                              label="Mark Lost"
+                              color={RED}
+                              disabled={updateStage.isPending || stage.key === "lost"}
+                              onClick={() => markStage(lead, "lost")}
+                            />
+                            <div style={{ height: 1, backgroundColor: HAIRLINE, margin: "3px 6px" }} />
+                            <MenuItem
+                              icon={<Trash2 size={13} />}
+                              label="Delete"
+                              color={RED}
+                              disabled={deleteLead.isPending}
+                              onClick={() => handleDelete(lead)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Assign-to-division modal — opens when CSO picks "Assign to division…" */}
+      {assignTarget && (
+        <AssignDivisionModal
+          lead={assignTarget}
+          isPending={assignDivision.isPending}
+          onClose={() => setAssignTarget(null)}
+          onAssign={(department, alsoAdvance) => {
+            assignDivision.mutate(
+              { leadId: assignTarget.id, department },
+              {
+                onSuccess: () => {
+                  setAssignTarget(null);
+                  // If CSO ticked "also move to Closer call" advance the stage too
+                  if (alsoAdvance && assignTarget.status !== "negotiation") {
+                    updateStage.mutate({ leadId: assignTarget.id, stage: "negotiation" });
+                  }
+                },
+              },
+            );
+          }}
+        />
+      )}
     </div>
+  );
+}
+
+/* ─── Assign-to-division modal ─────────────────────────────────────────
+ * Shown from the pipeline card ⋯ menu. CSO picks the division (Bizdoc /
+ * Scalar / Medialy / Hub / Podcast / Video / Faceless), the lead's
+ * assignedDepartment is set, the linked task moves to that department,
+ * and an audit log + notification fire on the server side. */
+function AssignDivisionModal({
+  lead, isPending, onClose, onAssign,
+}: {
+  lead: any;
+  isPending: boolean;
+  onClose: () => void;
+  onAssign: (department: string, alsoAdvance: boolean) => void;
+}) {
+  const [picked, setPicked] = useState<string | null>(null);
+  const [alsoAdvance, setAlsoAdvance] = useState(true);
+
+  const DIVISIONS = [
+    { key: "bizdoc",    label: "Bizdoc",   sub: "Tax · Compliance · CAC · Licences",        accent: "#1B4D3E" },
+    { key: "systemise", label: "Scalar",   sub: "Web · App · CRM · Automation · AI",        accent: "#A07A0E" },
+    { key: "medialy",   label: "Medialy",  sub: "Brand · Social · Content · Reels",         accent: "#1D4ED8" },
+    { key: "skills",    label: "Hub",      sub: "Tech training · Cohort · Certification",   accent: "#1E3A5F" },
+    { key: "podcast",   label: "Podcast",  sub: "Episode planning · Recording · Editing",   accent: "#7C3AED" },
+    { key: "video",     label: "Video",    sub: "Video projects · Editing · Color grading", accent: "#DB2777" },
+    { key: "faceless",  label: "Faceless", sub: "AI content · Bulk video · Distribution",   accent: "#0891B2" },
+  ];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.45)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: 20, zIndex: 100,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          backgroundColor: WHITE, borderRadius: 16, padding: 22,
+          maxWidth: 600, width: "100%", maxHeight: "90vh", overflowY: "auto",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 11, color: GOLD, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 4 }}>
+              Assign to division
+            </p>
+            <h3 style={{ fontSize: 18, fontWeight: 600, color: INK, letterSpacing: -0.3 }}>
+              {lead.name || lead.businessName || "Unnamed lead"}
+            </h3>
+            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 4 }}>
+              {lead.service || "—"} · {lead.ref || `#${lead.id}`}
+            </p>
+            {lead.assignedDepartment && (
+              <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 4, fontStyle: "italic" }}>
+                Currently assigned: {lead.assignedDepartment}
+              </p>
+            )}
+          </div>
+          <button onClick={onClose} aria-label="Close" style={{
+            width: 30, height: 30, borderRadius: 8,
+            backgroundColor: NAV_HOVER, color: INK_MUTED, border: "none", cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}><X size={16} strokeWidth={1.75} /></button>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 8, marginBottom: 14 }}>
+          {DIVISIONS.map(d => {
+            const selected = picked === d.key;
+            return (
+              <button
+                key={d.key}
+                onClick={() => setPicked(d.key)}
+                style={{
+                  textAlign: "left", padding: 14, borderRadius: 12,
+                  border: `${selected ? 2 : 1}px solid ${selected ? d.accent : HAIRLINE}`,
+                  backgroundColor: selected ? `${d.accent}08` : WHITE,
+                  cursor: "pointer", display: "flex", flexDirection: "column", gap: 4,
+                  transition: "border-color 0.15s, background-color 0.15s",
+                }}
+              >
+                <p style={{ fontSize: 14, fontWeight: 700, color: selected ? d.accent : INK }}>{d.label}</p>
+                <p style={{ fontSize: 11, color: INK_MUTED, lineHeight: 1.4 }}>{d.sub}</p>
+              </button>
+            );
+          })}
+        </div>
+
+        <label style={{
+          display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
+          borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE,
+          fontSize: 12, color: INK, cursor: "pointer", marginBottom: 14,
+        }}>
+          <input
+            type="checkbox"
+            checked={alsoAdvance}
+            onChange={(e) => setAlsoAdvance(e.target.checked)}
+            style={{ width: 16, height: 16, accentColor: GREEN }}
+          />
+          <span>
+            Also move pipeline stage to <strong>Closer call</strong>
+            <span style={{ color: INK_MUTED }}> · use this when the close is imminent and you want the division to start preparing</span>
+          </span>
+        </label>
+
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+          <button onClick={onClose} style={{
+            padding: "10px 16px", borderRadius: 8, border: `1px solid ${HAIRLINE}`,
+            backgroundColor: WHITE, color: INK, fontSize: 12, fontWeight: 600, cursor: "pointer",
+          }}>Cancel</button>
+          <button
+            onClick={() => picked && onAssign(picked, alsoAdvance)}
+            disabled={!picked || isPending}
+            style={{
+              padding: "10px 22px", borderRadius: 8, border: "none",
+              backgroundColor: picked ? GREEN : `${INK_MUTED}30`,
+              color: picked ? GOLD : INK_MUTED,
+              fontSize: 12, fontWeight: 700,
+              cursor: picked && !isPending ? "pointer" : "not-allowed",
+              opacity: isPending ? 0.7 : 1,
+            }}
+          >{isPending ? "Assigning…" : picked ? `Assign to ${DIVISIONS.find(d => d.key === picked)?.label}` : "Pick a division"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Single menu item used by the pipeline card ⋯ menu. */
+function MenuItem({ icon, label, color, onClick, disabled }: {
+  icon: React.ReactNode; label: string; color: string;
+  onClick: () => void; disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "flex", alignItems: "center", gap: 8,
+        padding: "8px 10px", borderRadius: 7,
+        border: "none", backgroundColor: "transparent",
+        color: disabled ? `${color}55` : color,
+        fontSize: 12, fontWeight: 600, cursor: disabled ? "not-allowed" : "pointer",
+        textAlign: "left",
+      }}
+      onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.backgroundColor = `${color}10`; }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = "transparent"; }}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   );
 }
 
@@ -3095,63 +4242,7 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
 
 /* ── CUT 2026-04-25 — Tasks section (not in CSO 6-tab spec) removed (Phase 4 CSO Sales Dashboard 6-tab spec: Overview, Lead Pipeline, Closed Deals, Commission Tracker, Lead Sources, Calendar). ── */
 
-/* ═══════════════════════════════════════════════════════════════════════
- * BACK OFFICE (v1 restructure — Services Library, Sources, Cohorts, etc.)
- * ═══════════════════════════════════════════════════════════════════════ */
-function BackOfficeSection({ currentUser, isCsoStaff }: { currentUser: any; isCsoStaff: boolean }) {
-  const [tab, setTab] = useState<BackOfficeTab>("services");
-
-  const TABS: { k: BackOfficeTab; label: string; staffVisible: boolean }[] = [
-    { k: "services",  label: "Services Library", staffVisible: true },
-    { k: "forms",     label: "Client Forms",     staffVisible: true },
-    { k: "sources",   label: "Source Tracker",   staffVisible: false },
-    { k: "cohorts",   label: "Cohorts",          staffVisible: true },
-    { k: "calendar",  label: "Calendar",         staffVisible: true },
-    { k: "targets",   label: "Targets",          staffVisible: false },
-    { k: "templates", label: "Templates",        staffVisible: true },
-    { k: "settings",  label: "Settings",         staffVisible: true },
-  ];
-
-  const visibleTabs = isCsoStaff ? TABS.filter(t => t.staffVisible) : TABS;
-
-  useEffect(() => {
-    if (isCsoStaff && !visibleTabs.find(t => t.k === tab)) setTab("services");
-  }, [isCsoStaff]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <div>
-      <SectionTitle sub="Everything CSO needs but doesn't act on every day.">
-        Back Office
-      </SectionTitle>
-
-      <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        {visibleTabs.map(t => (
-          <button
-            key={t.k}
-            onClick={() => setTab(t.k)}
-            style={{
-              padding: "7px 12px", borderRadius: 10, border: "none",
-              backgroundColor: tab === t.k ? GREEN : `${DARK}06`,
-              color: tab === t.k ? GOLD : DARK,
-              fontSize: 12, fontWeight: 600, cursor: "pointer",
-            }}
-          >{t.label}</button>
-        ))}
-      </div>
-
-      {tab === "services"  && <ServicesLibrary />}
-      {tab === "forms"     && <ClientFormsHub />}
-      {tab === "sources"   && !isCsoStaff && <SourceTracker />}
-      {tab === "cohorts"   && <BoCohorts />}
-      {tab === "calendar"  && <CalendarSection />}
-      {tab === "targets"   && !isCsoStaff && <TargetsSection />}
-      {tab === "templates" && <RhythmSection />}
-      {tab === "settings"  && <SettingsSection currentUser={currentUser} />}
-    </div>
-  );
-}
-
-/* Services Library (from @shared/services — single source of truth) */
+// 2026-04-30 — removed: _RemovedBackOffice (replaced by inbox/pipeline pattern)
 function ServicesLibrary() {
   const byDept = useMemo(() => servicesByDept(), []);
   const DEPT_ORDER: [string, string, React.ElementType][] = [
@@ -3525,6 +4616,152 @@ function ClientFormsHub() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+ * REQUIREMENT FORMS HUB — the 24 post-payment intake forms.
+ * 2026-04-30. CSO sends these AFTER payment is confirmed so the division
+ * delivery team gets every detail they need to start work (CAC IDs, brand
+ * assets, content briefs, etc.). Routes are wired in App.tsx and the
+ * forms themselves live in client/src/lib/requirement-forms.ts.
+ *
+ * The link supports a ?ref= query so the form is pre-tied to the lead.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function RequirementFormsHub() {
+  const origin = typeof window !== "undefined" ? window.location.origin : "https://hamzury.com";
+
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`${label} copied`),
+      () => toast.error("Couldn't copy — select and copy manually"),
+    );
+  };
+
+  type ReqForm = { id: RequirementFormId; name: string; division: "Bizdoc" | "Scalar" | "Medialy" | "Hub"; accent: string };
+
+  const FORMS: ReqForm[] = [
+    // Bizdoc (6)
+    { id: "cac",              name: "CAC Business Registration", division: "Bizdoc",  accent: "#1B4D3E" },
+    { id: "tin",              name: "Tax (TIN + FIRS)",          division: "Bizdoc",  accent: "#1B4D3E" },
+    { id: "licences",         name: "Sector Licences",           division: "Bizdoc",  accent: "#1B4D3E" },
+    { id: "plan",             name: "Business Plan",             division: "Bizdoc",  accent: "#1B4D3E" },
+    { id: "trademark",        name: "Trademark Registration",    division: "Bizdoc",  accent: "#1B4D3E" },
+    { id: "compliance",       name: "Ongoing Compliance",        division: "Bizdoc",  accent: "#1B4D3E" },
+    // Scalar (6)
+    { id: "website",          name: "Website / Web App",         division: "Scalar",  accent: "#D4A017" },
+    { id: "crm",              name: "CRM Setup",                 division: "Scalar",  accent: "#D4A017" },
+    { id: "ai_integration",   name: "AI Integration",            division: "Scalar",  accent: "#D4A017" },
+    { id: "automation",       name: "Workflow Automation",       division: "Scalar",  accent: "#D4A017" },
+    { id: "ecommerce",        name: "E-commerce",                division: "Scalar",  accent: "#D4A017" },
+    { id: "software_mgmt",    name: "Software Management",       division: "Scalar",  accent: "#D4A017" },
+    // Medialy (6)
+    { id: "brand",            name: "Brand Identity",            division: "Medialy", accent: "#1D4ED8" },
+    { id: "social",           name: "Social Media Management",   division: "Medialy", accent: "#1D4ED8" },
+    { id: "podcast",          name: "Podcast Production",        division: "Medialy", accent: "#1D4ED8" },
+    { id: "content_strategy", name: "Content Strategy",          division: "Medialy", accent: "#1D4ED8" },
+    { id: "video",            name: "Video Production",          division: "Medialy", accent: "#1D4ED8" },
+    { id: "media_mgmt",       name: "Media Management",          division: "Medialy", accent: "#1D4ED8" },
+    // Hub (6)
+    { id: "tech_training",    name: "Tech Skills Training",      division: "Hub",     accent: "#1E3A5F" },
+    { id: "ai_business",      name: "AI for Business",           division: "Hub",     accent: "#1E3A5F" },
+    { id: "entrepreneurship", name: "Entrepreneurship",          division: "Hub",     accent: "#1E3A5F" },
+    { id: "team_training",    name: "Team Training",             division: "Hub",     accent: "#1E3A5F" },
+    { id: "certification",    name: "Certification Programs",    division: "Hub",     accent: "#1E3A5F" },
+    { id: "skills_mgmt",      name: "Skills Management",         division: "Hub",     accent: "#1E3A5F" },
+  ];
+
+  // Group by division for cleaner display
+  const byDivision = FORMS.reduce((acc, f) => {
+    (acc[f.division] ||= []).push(f);
+    return acc;
+  }, {} as Record<string, ReqForm[]>);
+
+  const divisionOrder: Array<keyof typeof byDivision> = ["Bizdoc", "Scalar", "Medialy", "Hub"];
+
+  const buildMessage = (f: ReqForm, link: string) =>
+    `Hi {name}, payment received — thank you. Please complete this short ${f.division} requirements form so our delivery team has everything to start work right away (~5 mins): ${link}\n\nYour reference: {HMZ-REF}`;
+
+  return (
+    <Card>
+      <SectionTitle sub="Send AFTER payment is confirmed. Each form collects the details the division team needs to start delivery — IDs for CAC, brand assets for Medialy, content briefs for Hub, etc.">
+        Requirement Forms (post-payment)
+      </SectionTitle>
+
+      {divisionOrder.map(division => {
+        const list = byDivision[division] || [];
+        if (list.length === 0) return null;
+        const accent = list[0].accent;
+        return (
+          <div key={division} style={{ marginBottom: 18 }}>
+            <p style={{
+              fontSize: 11, color: accent, fontWeight: 700,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              marginBottom: 10, paddingBottom: 6,
+              borderBottom: `1px solid ${accent}25`,
+            }}>{division} ({list.length})</p>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 8 }}>
+              {list.map(f => {
+                const link = `${origin}/requirements/${f.id}`;
+                return (
+                  <div key={f.id} style={{
+                    padding: 12, borderRadius: 10,
+                    backgroundColor: WHITE,
+                    border: `1px solid ${DARK}08`, borderLeft: `3px solid ${accent}`,
+                    display: "flex", flexDirection: "column", gap: 6,
+                  }}>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: DARK }}>{f.name}</p>
+                    <p style={{
+                      fontSize: 10, fontFamily: "monospace", color: MUTED,
+                      backgroundColor: `${DARK}05`, padding: "4px 6px", borderRadius: 5,
+                      wordBreak: "break-all",
+                    }}>/requirements/{f.id}</p>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 2 }}>
+                      <button
+                        onClick={() => copy(link, `${f.name} link`)}
+                        style={{
+                          flex: 1, padding: "6px 10px", borderRadius: 6, border: "none",
+                          backgroundColor: accent, color: WHITE, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                          display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 4,
+                        }}
+                      >Copy link</button>
+                      <button
+                        onClick={() => copy(buildMessage(f, link), `${f.name} message`)}
+                        style={{
+                          flex: 1, padding: "6px 10px", borderRadius: 6, border: `1px solid ${HAIRLINE}`,
+                          backgroundColor: WHITE, color: INK, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                        }}
+                      >WhatsApp</button>
+                      <a
+                        href={link}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Preview"
+                        style={{
+                          width: 28, height: 26, borderRadius: 6,
+                          border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE, color: INK_MUTED,
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          textDecoration: "none",
+                        }}
+                      ><ExternalLink size={11} /></a>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      <p style={{
+        fontSize: 11, color: MUTED, marginTop: 6, lineHeight: 1.6,
+        padding: "10px 12px", backgroundColor: `${GOLD}08`, borderRadius: 8, borderLeft: `3px solid ${GOLD}`,
+      }}>
+        <strong style={{ color: DARK }}>Workflow:</strong> Client pays → CSO sends the relevant requirement form
+        link with the lead's <code style={{ fontFamily: "monospace", color: GOLD }}>?ref=HMZ-XX/X-XXXX</code> appended →
+        client fills it → answers + uploads attach to the task → division ops sees everything before starting work.
+      </p>
+    </Card>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
  * REVENUE & COMMISSIONS — new tab, pulls from tRPC commissions + leads
  * 1) Closed Deals ledger (every won deal, row-by-row with 18% split)
  * 2) Monthly Earnings rollup (commission earned/paid/pending)
@@ -3702,6 +4939,201 @@ function RevenueCommissionsSection() {
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * PLAYBOOK — CSO Operations Guide content (Phase 4 source-of-truth).
+ * 2026-04-30. Direct port of PHASE4_CSO_BIZDEV/CSO/OPERATIONS_GUIDE/
+ * CSO_Operations_Guide.txt + the CSO Flow Diagram + the daily routine.
+ *
+ * Surfaced as readable cards so CSO can refer mid-conversation. Click
+ * any block heading to copy the content.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function PlaybookSection() {
+  const copy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`${label} copied`),
+      () => toast.error("Couldn't copy — select and copy manually"),
+    );
+  };
+
+  type PlayBlock = { title: string; body: string };
+  type PlaySection = { id: string; title: string; intro: string; blocks: PlayBlock[] };
+
+  const SECTIONS: PlaySection[] = [
+    {
+      id: "mission",
+      title: "Mission & ownership",
+      intro: "Who CSO is and why CSO exists. This is the constitutional layer.",
+      blocks: [
+        { title: "CSO Mission",
+          body: "CSO is the only client-facing role at Hamzury. Every lead enters through CSO; every closed client is brought by CSO; every commission is earned by CSO. Divisions deliver — CSO sells, qualifies, closes, and maintains the relationship for upsells and renewals." },
+        { title: "Three CSO roles inside the team",
+          body: "Lead Handler — adds leads to the sheet within 30 min, sends M1 within 2 hrs.\nCloser — qualifies, calls, handles objections, asks for the close.\nCoordinator — sends forms, PDFs, invoices; tracks payments; hands off to division." },
+        { title: "Founder rule",
+          body: "Only CSO contacts clients. Bizdoc, Scalar, Medialy, Hub ops portals do not message clients — ever. They deliver, update task status, and CSO communicates the update outward." },
+      ],
+    },
+    {
+      id: "bant",
+      title: "BANT qualification",
+      intro: "Use this on every lead before moving past Qualification stage.",
+      blocks: [
+        { title: "B — Budget",
+          body: "Question: \"Do you have a rough budget range in mind?\"\nFloor by service: Bizdoc CAC ₦25k+ · Scalar website ₦300k+ · Medialy package A ₦50k+ · Hub Code Craft ₦300k.\nIf budget is below floor: route to a smaller package or to Hub Online Academy. Don't undercut floor pricing." },
+        { title: "A — Authority",
+          body: "Question: \"Are you the decision-maker, or do you speak to someone else first?\"\nIf NOT decision-maker: ask who is, get their contact, send proposal to both." },
+        { title: "N — Need",
+          body: "Question: \"What specific challenge are you trying to solve?\"\nFollow-up: \"What happens if it stays unsolved for 6 months?\"\nGenuine pain → fast close. Vague aspirations → push to diagnostic form (Path B)." },
+        { title: "T — Timeline",
+          body: "Question: \"Ideal timeline to start?\"\nImmediately / 1 month: Path A (direct close).\n1–3 months / 3+: Path B (diagnostic form, nurture in calendar)." },
+      ],
+    },
+    {
+      id: "flow",
+      title: "11-stage CSO Flow",
+      intro: "Every lead moves through these stages. Pipeline cards mirror this.",
+      blocks: [
+        { title: "Stage 1–3 · Triage",
+          body: "1. Lead enters — Lead Handler adds to sheet within 30 min.\n2. First response — M1 (Welcome + 3 Qs) sent within 2 hrs.\n3. Qualification — answers reviewed; pick Path A or Path B." },
+        { title: "Path A · Direct close",
+          body: "Path A is for clear, simple needs. Skip the diagnosis form.\n4A. Assigned to Closer.\n5A. Closer calls within 24h, presents solution.\n7. Closer call → Won / Nurture / Lost." },
+        { title: "Path B · Diagnosis",
+          body: "Path B is for complex needs that require a custom solution.\n4B. Coordinator sends Message 3 (form link) within 4 hrs.\n5B. Wait for form. If no response in 24h, follow up.\n6B. Coordinator builds custom PDF + sends Message 4 within 24h of form return.\n7B. Coordinator schedules call (Message 5) → moves to Stage 7." },
+        { title: "Stage 8 · Closer call outcome",
+          body: "Closer asks: \"Ready to move forward?\"\nYES → Coordinator sends invoice + agreement (Message 6A) within 1 hour. Status = Onboarding.\nNO/MAYBE → Closer schedules follow-up in 3–7 days. Status = Nurture." },
+        { title: "Stage 9–10 · Close + handoff",
+          body: "9. Payment received → Coordinator notifies division + creates HMZ-C client file.\n10. Division begins delivery. CSO maintains relationship for upsells + renewals." },
+      ],
+    },
+    {
+      id: "messages",
+      title: "Message templates (M1–M6)",
+      intro: "Six canonical messages. Replace the placeholders. Don't improvise the structure.",
+      blocks: [
+        { title: "M1 · Welcome + 3 questions",
+          body: "Hi {name}, thanks for reaching out to Hamzury — I'm here to help.\n\nThree quick questions so I can recommend the right thing:\n1. What specific outcome are you looking for?\n2. Ideal timeline to start?\n3. Rough budget range you're working with?\n\nReply when you have a moment. — CSO" },
+        { title: "M2A · Path A — assigned to Closer",
+          body: "Hi {name}, thank you. {closer_name} from our team will call you within 24 hrs to walk through the right package.\n\nMeanwhile, here's a quick overview of what we'd recommend: {service_summary}.\n\nLooking forward to the conversation. — CSO" },
+        { title: "M3 · Path B — diagnostic form link",
+          body: "Hi {name}, thanks for the answers. Your situation needs a tailored plan, so we use a short diagnostic so we can scope it properly.\n\nIt takes 5 minutes: {diagnostic_link}\n\nOnce we have your answers we'll build a custom proposal within 24 hrs. — CSO" },
+        { title: "M4 · Path B — PDF follow-up",
+          body: "Hi {name}, your custom plan is attached.\n\nKey points:\n• {point_1}\n• {point_2}\n• {point_3}\n\nPrice: {amount}.\n\nWhen you've had a chance to review, can we schedule a 20-minute call to walk through it? — CSO" },
+        { title: "M5 · Call booking",
+          body: "Hi {name}, here are three slots that work this week:\n• {slot_1}\n• {slot_2}\n• {slot_3}\n\nReply with your pick, or send a time that suits you better. — CSO" },
+        { title: "M6A · Won — invoice & agreement",
+          body: "Hi {name}, brilliant — let's get started.\n\n• Invoice: {invoice_link}\n• Service Agreement: {agreement_link}\n\nOnce payment clears we'll send your reference number and assign your delivery team. Welcome to Hamzury. — CSO" },
+        { title: "M6B · Nurture — soft follow-up",
+          body: "Hi {name}, no rush — wanted to keep the door open.\n\nIf timing or budget changes in the next month or two, we're here. In the meantime here's a useful read: {resource_link}.\n\n— CSO" },
+      ],
+    },
+    {
+      id: "objections",
+      title: "Objection handling (top 5)",
+      intro: "Every objection has a script. Don't argue — acknowledge, reframe, redirect.",
+      blocks: [
+        { title: "\"It's too expensive\"",
+          body: "Acknowledge: \"That's a real concern — let me show you the breakdown.\"\nReframe: Cost vs cost-of-inaction. \"What does it cost you NOT to have this for the next 12 months?\"\nRedirect: Offer the next package down (Bizdoc B → A; Medialy C → B), OR offer the payment plan." },
+        { title: "\"We need to think about it\"",
+          body: "Acknowledge: \"Of course — totally understand.\"\nProbe: \"What specifically are you weighing? Is it the price, the timeline, or whether we're the right partner?\"\nRedirect: Address the specific concern. Set a follow-up time + day." },
+        { title: "\"We already work with someone\"",
+          body: "Acknowledge: \"Smart — you've done the homework.\"\nReframe: \"Many of our clients had a previous provider. Two questions: what's working with them, and what's not?\"\nRedirect: If gaps exist, offer to plug ONE gap as a trial (small package). Don't try to displace the whole relationship up front." },
+        { title: "\"I'll do it myself\"",
+          body: "Acknowledge: \"You absolutely could.\"\nReframe: \"What's your hourly rate? At {rate}/hr the {service} takes about {hours} hours of your time, vs ₦{price} for us to handle it.\"\nRedirect: Offer a hybrid — we do the heavy lifting, they review. Frame as augmentation, not replacement." },
+        { title: "\"Send me an email and I'll review\"",
+          body: "Acknowledge: \"Sure thing — what email is best?\"\nReframe: \"I'll send the proposal now. To make sure I tailor it correctly, can I ask you ONE question first?\" (use BANT)\nRedirect: Get one piece of qualification info before they go quiet, then send the proposal AND book the follow-up call in the same message." },
+      ],
+    },
+    {
+      id: "routine",
+      title: "Daily routine (Mon–Fri)",
+      intro: "Same rhythm every day. Boring is good — boring is repeatable.",
+      blocks: [
+        { title: "8:30 · Check pipeline + plan day",
+          body: "Open the pipeline. Sort by stage age. Anything in New, Qualified, or Negotiation older than 3 days = red, action today. Note the top 3 priorities for the morning." },
+        { title: "9:00 – 11:00 · Outreach block",
+          body: "Hard block. No meetings. No admin. Calls + LinkedIn DMs + email follow-ups. Goal: 10–15 connects per day. This is where revenue is born." },
+        { title: "11:00 · Inbox triage",
+          body: "Process every reply that came in during the outreach block. Send M1 to anything new. Move qualified leads to Closer." },
+        { title: "12:00 – 1:00 · Lunch + email batch",
+          body: "Eat. Then a 20-minute email batch — never throughout the day. Email is async; treat it like one." },
+        { title: "1:00 – 3:00 · Calls + proposals",
+          body: "Closer call slots. Discovery, follow-up, closing. Coordinator builds proposals based on morning's qualified leads." },
+        { title: "3:00 · Dashboard update",
+          body: "Mandatory. Every lead's stage, every commission row, every targets row updated by 3:30pm. End-of-day handoff to Coordinator." },
+      ],
+    },
+    {
+      id: "metrics",
+      title: "Targets & metrics",
+      intro: "What CSO is measured on. The 18% commission depends on these.",
+      blocks: [
+        { title: "Monthly targets",
+          body: "New leads: 20+\nQualified: 15+\nClosed deals: 5+\nRevenue brought: ₦2M+\nConversion rate (qualified → won): 25%+\nPipeline value at any time: ₦5M+" },
+        { title: "Commission structure",
+          body: "18% of every Naira CSO brings in. Calculated by Finance. Paid 1st of every month.\nRevenue from auto-renewals doesn't count — only NEW deals or NEW upsells.\nLost deals get zero. Nurtured deals that close later still earn the 18%." },
+        { title: "Escalation triggers",
+          body: "Escalate to CEO if: budget > ₦500k, scope is cross-division, legal threat from client, payment overdue > 14 days.\nEscalate to Founder if: brand/reputation issue, ethical question, or any decision affecting strategy." },
+      ],
+    },
+  ];
+
+  return (
+    <div>
+      <SectionTitle sub="The CSO Operations Guide. Every script, every metric, every escalation rule. From PHASE4_CSO_BIZDEV/CSO.">
+        Playbook
+      </SectionTitle>
+
+      {/* Quick navigation */}
+      <Card style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 11, color: GOLD, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
+          Quick jump
+        </p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+          {SECTIONS.map(s => (
+            <a key={s.id} href={`#playbook-${s.id}`} style={{
+              padding: "6px 12px", borderRadius: 8,
+              backgroundColor: `${GREEN}10`, color: GREEN, fontSize: 11, fontWeight: 600,
+              textDecoration: "none", border: `1px solid ${GREEN}20`,
+            }}>{s.title}</a>
+          ))}
+        </div>
+      </Card>
+
+      {SECTIONS.map(section => (
+        <Card key={section.id} style={{ marginBottom: 16 }}>
+          <div id={`playbook-${section.id}`} style={{ scrollMarginTop: 24 }}>
+            <p style={{ fontSize: 16, fontWeight: 700, color: INK, letterSpacing: -0.2 }}>{section.title}</p>
+            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 4, marginBottom: 14, lineHeight: 1.55 }}>{section.intro}</p>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {section.blocks.map((b, i) => (
+              <div key={i} style={{
+                padding: 12, borderRadius: 10,
+                backgroundColor: WHITE, border: `1px solid ${HAIRLINE}`,
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: INK }}>{b.title}</p>
+                  <button
+                    onClick={() => copy(b.body, b.title)}
+                    style={{
+                      padding: "4px 8px", borderRadius: 6, border: `1px solid ${HAIRLINE}`,
+                      backgroundColor: WHITE, color: INK_MUTED, fontSize: 10, fontWeight: 600, cursor: "pointer",
+                      display: "flex", alignItems: "center", gap: 4,
+                    }}
+                  ><MessageSquare size={10} /> Copy</button>
+                </div>
+                <pre style={{
+                  fontSize: 11, color: INK, fontFamily: "inherit",
+                  whiteSpace: "pre-wrap", lineHeight: 1.6, margin: 0,
+                }}>{b.body}</pre>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ))}
     </div>
   );
 }

@@ -107,7 +107,10 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
       service: `${cfg.brand} Assessment`,
       context: block.join("\n"),
       source: `assessment_${cfg.division}`,
-    } as any);
+      meta: Object.fromEntries(
+        Object.entries(answers).map(([k, v]) => [k, String(v ?? "")])
+      ),
+    });
   };
 
   const next = () => {
@@ -116,10 +119,19 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
   };
   const back = () => setStepIndex(Math.max(-1, stepIndex - 1));
 
+  /* ─── Per-division back-link target (logo) ─── */
+  const divisionBack: Record<string, { href: string; label: string }> = {
+    hub:     { href: "/hub",     label: "HAMZURY HUB" },
+    bizdoc:  { href: "/bizdoc",  label: "BIZDOC" },
+    scalar:  { href: "/scalar",  label: "SCALAR" },
+    medialy: { href: "/medialy", label: "MEDIALY" },
+  };
+  const { href: backHref, label: backLabel } = divisionBack[cfg.division] ?? { href: "/", label: "HAMZURY" };
+
   /* ─── Thank you ─── */
   if (submittedRef !== null) {
     return (
-      <Shell G={G} Au={Au} BG={BG} W={W}>
+      <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel}>
         <PageMeta title={`${cfg.pageTitle} — Received`} description="We've received your submission." />
         <div className="max-w-xl mx-auto px-6 py-24 md:py-32 text-center">
           <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: `${G}10` }}>
@@ -157,7 +169,7 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
   /* ─── Welcome screen (stepIndex === -1) ─── */
   if (stepIndex < 0) {
     return (
-      <Shell G={G} Au={Au} BG={BG} W={W}>
+      <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel}>
         <PageMeta title={cfg.pageTitle} description={cfg.pageDescription} />
         <div className="max-w-xl mx-auto px-6 py-20 md:py-28">
           <p className="text-[10px] font-semibold tracking-[0.3em] uppercase mb-4" style={{ color: Au }}>
@@ -193,7 +205,7 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
 
   /* ─── Step view ─── */
   return (
-    <Shell G={G} Au={Au} BG={BG} W={W}>
+    <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel}>
       <PageMeta title={cfg.pageTitle} description={cfg.pageDescription} />
 
       {/* Progress bar */}
@@ -276,13 +288,13 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
 }
 
 /* ─── Shell ─── */
-function Shell({ G, Au, BG, W, children }: { G: string; Au: string; BG: string; W: string; children: React.ReactNode }) {
+function Shell({ G, Au, BG, W, children, backHref = "/", backLabel = "HAMZURY" }: { G: string; Au: string; BG: string; W: string; children: React.ReactNode; backHref?: string; backLabel?: string; }) {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: BG, fontFamily: "Inter, -apple-system, sans-serif" }}>
       <nav className="py-5 px-6 border-b" style={{ backgroundColor: W, borderColor: `${G}08` }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <Link href="/" className="text-[12px] tracking-[0.3em] font-medium uppercase" style={{ color: G }}>
-            HAMZURY
+          <Link href={backHref} className="text-[12px] tracking-[0.3em] font-medium uppercase" style={{ color: G }}>
+            {backLabel}
           </Link>
           <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: Au }}>
             Built to Last

@@ -52,18 +52,31 @@ import {
  * ══════════════════════════════════════════════════════════════════════ */
 
 // ─── Brand tokens ───────────────────────────────────────────────────────
-const ACCENT = "#D4A017";      // Scalar golden yellow
-const SIDEBAR_BG = "#D4A017";  // Sidebar background
-const SIDEBAR_FG = "#1A1A1A";  // Text on sidebar (dark charcoal because yellow is light)
-const BG = "#FFFAF6";          // Milk atmosphere
+/* Apple-clean rebrand 2026-04-30 (matches CSO + Hub + Bizdoc treatment).
+ * Scalar primary accent = golden yellow (#D4A017) per Phase 5 + Brand Bible.
+ * White sidebar, hairline borders, soft yellow active pill — kept yellow as
+ * the heritage accent but no longer used as a heavy full-area sidebar fill. */
+const ACCENT = "#D4A017";          // Scalar primary accent (kept)
+const ACCENT_DARK = "#A07A0E";     // Yellow-on-text use
+const BG = "#FFFBEB";              // Milk
 const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
-const MUTED = "#666666";
+const MUTED = "#6B7280";
 const GREEN = "#22C55E";
 const RED = "#EF4444";
 const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
 const PURPLE = "#8B5CF6";
+/* Apple-style additions */
+const HAIRLINE = "#E7E5E4";
+const SURFACE = "#FFFFFF";
+const NAV_HOVER = "#F5F5F4";
+const ACTIVE_PILL = "#FAF1D9";     // soft yellow tint
+const INK = "#1A1A1A";
+const INK_MUTED = "#6B7280";
+/* Legacy aliases kept so existing references don't need every line touched */
+const SIDEBAR_BG = SURFACE;
+const SIDEBAR_FG = INK;
 
 // Allowed roles for this portal
 const ALLOWED_ROLES = new Set([
@@ -1355,11 +1368,12 @@ function NewProjectForm({
 /* ═══════════════════════════════════════════════════════════════════════
  * 3 · PROJECT WORKSPACE (8 sub-tabs)
  * ═══════════════════════════════════════════════════════════════════════ */
+// 2026-04-30 — "Comms" sub-tab removed. Per Master Ops Manual, client
+// communications are CSO-only. Scalar tracks delivery, not client comms.
 type SubTab =
   | "info"
   | "timeline"
   | "deliverables"
-  | "comms"
   | "blockers"
   | "qa"
   | "files"
@@ -1369,7 +1383,6 @@ const SUB_TABS: Array<{ key: SubTab; label: string; icon: React.ElementType }> =
   { key: "info", label: "Info", icon: Info },
   { key: "timeline", label: "Timeline", icon: ListChecks },
   { key: "deliverables", label: "Deliverables", icon: CheckCircle2 },
-  { key: "comms", label: "Comms", icon: MessageSquare },
   { key: "blockers", label: "Blockers", icon: Bug },
   { key: "qa", label: "QA", icon: Bug },
   { key: "files", label: "Files", icon: FolderOpen },
@@ -1496,7 +1509,6 @@ function WorkspaceSection({
       {sub === "info" && <InfoTab project={project} onDeleted={onBack} />}
       {sub === "timeline" && <TimelineTab project={project} />}
       {sub === "deliverables" && <DeliverablesTab project={project} />}
-      {sub === "comms" && <CommsTab project={project} />}
       {sub === "blockers" && <BlockersTab project={project} />}
       {sub === "qa" && <QaTab project={project} />}
       {sub === "files" && <FilesTab project={project} />}

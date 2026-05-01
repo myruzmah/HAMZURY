@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
-  MessageCircle, X, Phone, HelpCircle, Send, ChevronLeft,
+  MessageCircle, X, HelpCircle, Send, ChevronLeft,
   Building2, CreditCard, Rocket, ShieldCheck, Clock, Users, BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ import {
   type PriceQuote,
 } from "@/lib/bizdoc-prepayment";
 import { postToAppsScript } from "@/lib/apps-script";
+import { trpc } from "@/lib/trpc";
 
 /* ══════════════════════════════════════════════════════════════════════════
    HAMZURY Chat — v12: TRUE WhatsApp-style chat interface
@@ -53,7 +54,10 @@ import { postToAppsScript } from "@/lib/apps-script";
      - FAQ content (7 categories, ~35 Q&A pairs)
    ══════════════════════════════════════════════════════════════════════════ */
 
-type Department = "general" | "bizdoc" | "systemise" | "skills";
+// 2026-04-30 — "skills" removed. Hub already excluded from FloatingChat
+// (App.tsx). Founder rule: Hub clients reach team via WhatsApp/phone, not
+// via chat widget. Removing the in-chat Skills branch keeps it consistent.
+type Department = "general" | "bizdoc" | "systemise";
 type CompanyKey = "hamzury" | "bizdoc" | "scalar" | "medialy";
 
 type Props = {
@@ -63,19 +67,22 @@ type Props = {
   isDashboard?: boolean;
 };
 
-/* ── Brand constants (UI palette) ──────────────────────────────────────── */
+/* ── Brand constants (Hamzury palette — Apple-minimalist) ─────────────── */
 const CHARCOAL = "#2D2D2D";
-const GOLD     = "#B48C4C";
-const DARK     = "#1A1A1A";
+const GOLD     = "#B48C4C"; // muted gold accent
+const DARK     = "#1E3A5F"; // navy primary (was near-black)
+const TEXT     = "#1A1A1A"; // near-black for body copy
+const BG       = "#FFFAF6"; // warm cream background
+const W        = "#FFFFFF";
 
-/* ── WhatsApp-style palette ────────────────────────────────────────────── */
-const WA_HEADER   = "#075E54"; // dark green WhatsApp header
-const WA_BUBBLE   = "#25D366"; // bright green floating-bubble + send icon
-const WA_USER_BG  = "#DCF8C6"; // light green outgoing bubble
-const WA_BOT_BG   = "#FFFFFF"; // white incoming bubble
-const WA_BOT_BORDER = "#E5E7EB";
-const WA_CHAT_BG  = "#ECE5DD"; // WhatsApp's classic beige chat backdrop
-const WA_INPUT_BG = "#F0F2F5";
+/* ── Chat palette (re-pointed from WhatsApp greens to brand) ──────────── */
+const WA_HEADER     = "#1E3A5F"; // navy (was dark green)
+const WA_BUBBLE     = "#1E3A5F"; // navy primary action (was bright green)
+const WA_USER_BG    = "#1E3A5F"; // navy outgoing bubble (was light green)
+const WA_BOT_BG     = "#FFFFFF"; // white incoming bubble
+const WA_BOT_BORDER = "rgba(26,26,26,0.08)"; // hairline (TEXT08)
+const WA_CHAT_BG    = "#FFFAF6"; // cream chat backdrop (was beige WA)
+const WA_INPUT_BG   = "#FFFFFF"; // input bar surface
 
 /* ── Contact (single CSO line — Brand Bible) ───────────────────────────── */
 const CSO_PHONE = "2349130700056";
@@ -83,7 +90,7 @@ const CSO_PHONE = "2349130700056";
 /* ══════════════════════════════════════════════════════════════════════════
    COMPANY CONFIGURATION (preserved verbatim from v11 Command Centre spec)
    ══════════════════════════════════════════════════════════════════════════ */
-type Department2 = "business" | "software" | "media" | "skills";
+type Department2 = "business" | "software" | "media";
 
 type RequirementId =
   | "cac" | "tin" | "licences" | "plan" | "trademark" | "compliance"
@@ -124,7 +131,7 @@ const COMPANIES: Record<CompanyKey, CompanyConfig> = {
     accentColor: "#1B4D3E",
     services: ["cac", "tin", "licences", "plan", "trademark", "compliance"],
     crossSellOffer: true,
-    sisterCompanies: { software: "scalar", media: "medialy", skills: "hamzury" },
+    sisterCompanies: { software: "scalar", media: "medialy" },
     diagnosticRoute: "/diagnose-business",
     diagnosticTitle: "Business Checkup",
     diagnosticBlurb:
@@ -137,7 +144,7 @@ const COMPANIES: Record<CompanyKey, CompanyConfig> = {
     accentColor: "#1F6B5C",
     services: ["website", "crm", "ai_integration", "automation", "ecommerce", "software_mgmt"],
     crossSellOffer: true,
-    sisterCompanies: { business: "bizdoc", media: "medialy", skills: "hamzury" },
+    sisterCompanies: { business: "bizdoc", media: "medialy" },
     diagnosticRoute: "/diagnose-software",
     diagnosticTitle: "Software Checkup",
     diagnosticBlurb:
@@ -150,7 +157,7 @@ const COMPANIES: Record<CompanyKey, CompanyConfig> = {
     accentColor: "#B8731F",
     services: ["brand", "social", "podcast", "content_strategy", "video", "media_mgmt"],
     crossSellOffer: true,
-    sisterCompanies: { business: "bizdoc", software: "scalar", skills: "hamzury" },
+    sisterCompanies: { business: "bizdoc", software: "scalar" },
     diagnosticRoute: "/diagnose-media",
     diagnosticTitle: "Media Checkup",
     diagnosticBlurb:
@@ -218,20 +225,15 @@ const SERVICE_CATALOG: Service[] = [
   { id: "video", name: "Video Production", blurb: "Concept, pre-production, shoot, edit, delivery.", department: "media", diagnosticRoute: "/diagnose-media" },
   { id: "media_mgmt", name: "Media Management", blurb: "Brand, voice, and content across every channel — handled.", department: "media", diagnosticRoute: "/diagnose-media" },
 
-  // Skills (6) — HUB
-  { id: "tech_training", name: "Tech Skills Training", blurb: "Structured learning with accountability — not a YouTube playlist.", department: "skills", diagnosticRoute: "/diagnose-skills" },
-  { id: "ai_business", name: "AI for Business", blurb: "Practical AI skills for you and your team.", department: "skills", diagnosticRoute: "/diagnose-skills" },
-  { id: "entrepreneurship", name: "Entrepreneurship Program", blurb: "A structured programme for serious founders.", department: "skills", diagnosticRoute: "/diagnose-skills" },
-  { id: "team_training", name: "Team Training Workshop", blurb: "A focused workshop for your team — designed to your brief.", department: "skills", diagnosticRoute: "/diagnose-skills" },
-  { id: "certification", name: "Certification Programs", blurb: "Structured prep for recognised industry certifications.", department: "skills", diagnosticRoute: "/diagnose-skills" },
-  { id: "skills_mgmt", name: "Skills Management", blurb: "Ongoing skill development — audits, learning paths, progress tracking.", department: "skills", diagnosticRoute: "/diagnose-skills" },
+  // 2026-04-30 — Skills services removed from chat. Hub uses WhatsApp-only
+  // outreach per founder rule; chat-based service flows live for Bizdoc /
+  // Scalar / Medialy only.
 ];
 
 const DEPT_LABEL: Record<Department2, string> = {
   business: "Business",
   software: "Software",
   media:    "Media",
-  skills:   "Skills",
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -487,22 +489,14 @@ const MEDIALY_TREE: MenuNode[] = [
   { kind: "callback", label: "Request a call" },
 ];
 
-/* ── HUB / Skills tree (flat — already clean from requirement-forms.ts) ─ */
-const HUB_TREE: MenuNode[] = [
-  { kind: "service", label: "Tech Skills Training", serviceId: "tech_training" },
-  { kind: "service", label: "AI for Business", serviceId: "ai_business" },
-  { kind: "service", label: "Entrepreneurship Program", serviceId: "entrepreneurship" },
-  { kind: "service", label: "Team Training Workshop", serviceId: "team_training" },
-  { kind: "service", label: "Certification Programs", serviceId: "certification" },
-  { kind: "service", label: "Skills Management", serviceId: "skills_mgmt" },
-];
-
-/* ── HAMZURY tree (parent — reuses division trees instead of duplicating) ─ */
+/* ── HAMZURY tree (parent — reuses division trees instead of duplicating) ─
+ * 2026-04-30 — Skills branch removed. Hub clients reach team via WhatsApp
+ * (CSO_PHONE) per founder rule; the chat surface is Bizdoc / Scalar /
+ * Medialy only. */
 const HAMZURY_TREE: MenuNode[] = [
   { kind: "group", label: "Business · Compliance & Growth", children: BIZDOC_TREE },
   { kind: "group", label: "Software · Digital Systems", children: SCALAR_TREE },
   { kind: "group", label: "Media · Content & Presence", children: MEDIALY_TREE },
-  { kind: "group", label: "Skills · Training & Development", children: HUB_TREE },
   {
     kind: "diagnostic",
     label: "Clarity Session · Full Business Checkup",
@@ -542,7 +536,6 @@ const FAQ_CATEGORIES: FAQCategory[] = [
       { q: "What does Bizdoc handle?", a: "Bizdoc is our tax & compliance division. We register companies with CAC, file annual returns, obtain TIN/TCC, SCUML, industry licences, and manage ongoing FIRS filings. If it's legal paperwork for your business, Bizdoc handles it." },
       { q: "What does Scalar build?", a: "Scalar is our web + automation division. We build professional websites, client dashboards, CRMs, integrations, and AI agents. Simply: websites that work, systems that scale." },
       { q: "What does Medialy manage?", a: "Medialy is our social media division. We run Instagram, TikTok, Facebook, LinkedIn — content calendars, posting, growth, and ads. Social media that actually brings clients." },
-      { q: "What does HUB teach?", a: "HUB is our tech-skills training wing. We teach Code Craft, Digital Literacy, AI for Founders, Basic Computer Skills (for kids and adults), and RIDI sponsored cohorts." },
       { q: "Do you work with businesses outside Nigeria?", a: "Yes. Bizdoc handles foreign business setup and Nigerian-registration for diaspora founders. Scalar and Medialy serve clients in any timezone. Reply here and the CSO team will tell you how we'd structure it." },
     ],
   },
@@ -804,6 +797,134 @@ function WhatsAppChatPanel({
    *  closing flow can stamp the ref + Apps Script payload with it. */
   const phoneRef = useRef<string>("");
 
+  /* ── Visitor name + lead ref tracker (2026-04-30) ──────────────────────
+   *  When the chat saves a lead to CSO inbox, we cache the returned
+   *  HMZ-XX/X-XXXX ref so the WhatsApp handoff can include it and the
+   *  visitor sees a continuity cue ("we have ref XXX for you"). */
+  const nameRef = useRef<string>("");
+  const leadRefRef = useRef<string>("");
+
+  /* ── Chat → CSO inbox: tRPC mutation. Source-of-truth bridge.
+   *  Founder rule: every conversation that captures a phone number must
+   *  land in CSO inbox with the full transcript so CSO has context. */
+  const submitToInbox = trpc.leads.submit.useMutation();
+
+  /* ── Resume-later magic code (2026-04-30). Persist chat state to
+   *  localStorage so a visitor can pick up where they left off. The code
+   *  format HMZ-RESUME-XXXX is short and human-readable. We auto-save on
+   *  every message change so reload / browser-close doesn't lose context.
+   *  No PII in localStorage — just session state and the lead ref. */
+  const RESUME_KEY = `hmz-chat-resume-${companyKey}`;
+
+  const saveResumeState = useCallback(() => {
+    if (typeof window === "undefined" || messages.length < 2) return;
+    try {
+      const code = leadRefRef.current
+        ? `HMZ-RESUME-${leadRefRef.current.slice(-4).toUpperCase()}`
+        : `HMZ-RESUME-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+      const snapshot = {
+        code,
+        company: companyKey,
+        name: nameRef.current,
+        phone: phoneRef.current,
+        leadRef: leadRefRef.current,
+        lastInterest: lastInterestRef.current,
+        messages: messages.slice(-30),  // last 30 turns
+        savedAt: new Date().toISOString(),
+      };
+      window.localStorage.setItem(RESUME_KEY, JSON.stringify(snapshot));
+      window.localStorage.setItem(`hmz-chat-resume-code-${code}`, JSON.stringify(snapshot));
+      return code;
+    } catch { return null; }
+  }, [companyKey, messages, RESUME_KEY]);
+
+  const tryRestore = useCallback((code?: string): boolean => {
+    if (typeof window === "undefined") return false;
+    try {
+      const raw = code
+        ? window.localStorage.getItem(`hmz-chat-resume-code-${code.toUpperCase().trim()}`)
+        : window.localStorage.getItem(RESUME_KEY);
+      if (!raw) return false;
+      const snap = JSON.parse(raw);
+      if (snap.company !== companyKey && code === undefined) return false; // only auto-restore same company
+      nameRef.current = snap.name || "";
+      phoneRef.current = snap.phone || "";
+      leadRefRef.current = snap.leadRef || "";
+      lastInterestRef.current = snap.lastInterest || "";
+      // Re-hydrate the visible thread
+      const restored = (snap.messages || []).map((m: any, i: number) => ({
+        id: i + 1, role: m.role, text: m.text, timestamp: new Date(m.timestamp || snap.savedAt),
+      }));
+      setMessages(restored);
+      messageIdRef.current = restored.length + 1;
+      return true;
+    } catch { return false; }
+  }, [companyKey, RESUME_KEY, setMessages]);
+
+  // Auto-save on every message change (debounced via React batching).
+  useEffect(() => {
+    if (messages.length >= 2) saveResumeState();
+  }, [messages, saveResumeState]);
+
+  /* ── WhatsApp handoff helper (2026-04-30). Generates a wa.me URL with
+   *  the visitor's name, phone, lead ref, last interest, and the most
+   *  recent chat answers pre-filled in the message body. CSO opens
+   *  WhatsApp already knowing who they're talking to. */
+  const buildWhatsAppHandoff = useCallback((): string => {
+    const lines: string[] = [
+      `Hi ${COMPANIES[companyKey].name} CSO — chat handoff.`,
+      "",
+    ];
+    if (nameRef.current.trim()) lines.push(`Name: ${nameRef.current.trim()}`);
+    if (phoneRef.current.trim()) lines.push(`Phone: ${phoneRef.current.trim()}`);
+    if (leadRefRef.current) lines.push(`Lead ref: ${leadRefRef.current}`);
+    if (lastInterestRef.current) lines.push(`Looking for: ${lastInterestRef.current}`);
+
+    // Last 6 visitor messages so CSO sees what they answered/asked
+    const lastVisitor = messages
+      .filter(m => m.role === "user" && m.text && m.text.trim().length > 0)
+      .slice(-6);
+    if (lastVisitor.length > 0) {
+      lines.push("", "Recent chat answers:");
+      lastVisitor.forEach(m => lines.push(`• ${m.text}`));
+    }
+    lines.push("", "Can you confirm next steps?");
+    const text = encodeURIComponent(lines.join("\n"));
+    return `https://wa.me/${CSO_PHONE}?text=${text}`;
+  }, [companyKey, messages]);
+
+  const saveToCsoInbox = useCallback((kind: "callback" | "free_text" | "prepayment_quote") => {
+    // Build a transcript snapshot from messages so CSO sees the conversation.
+    const transcript = messages
+      .filter(m => m.text && m.text.trim().length > 0)
+      .slice(-30) // last 30 turns is plenty
+      .map(m => `${m.role === "bot" ? "Bot" : "Visitor"}: ${m.text}`)
+      .join("\n");
+
+    const lines: string[] = [
+      `[CHAT — ${companyKey.toUpperCase()} — ${kind.toUpperCase()}]`,
+      `Last interest: ${lastInterestRef.current || "(general inquiry)"}`,
+      "",
+      "── Transcript ──",
+      transcript || "(empty)",
+    ];
+
+    submitToInbox.mutate({
+      name: nameRef.current.trim() || "(from chat)",
+      phone: phoneRef.current.trim() || undefined,
+      service: lastInterestRef.current || `${COMPANIES[companyKey].name} chat enquiry`,
+      context: lines.join("\n"),
+      source: `chat_${companyKey}`,
+    }, {
+      onSuccess: (data: any) => {
+        if (data?.ref) leadRefRef.current = data.ref;
+      },
+      onError: () => {
+        // Non-blocking — chat continues, Apps Script dual-write still fires.
+      },
+    });
+  }, [companyKey, messages, submitToInbox]);
+
   /* ── Menu navigation stack (Phase 1 grouped menus) ──────────────────────
    *  Each entry is the GROUP NODE the visitor drilled into, in order. The
    *  current visible level is the children of the last entry (or the
@@ -864,14 +985,15 @@ function WhatsAppChatPanel({
    *  is preserved so a tRPC mirror can be wired up in a later phase
    *  without losing the dev-friendly log line.
    *
-   *  TODO: wire to `trpc.leads.create` once that endpoint lands. */
+   *  2026-04-30 — DONE: now writes to CSO inbox via trpc.leads.submit (see
+   *  saveToCsoInbox above). Apps Script dual-write retained as backup. */
   const captureLead = useCallback(
     (kind: CapturedLead["kind"], payload: string) => {
       const lead: CapturedLead = { kind, company: companyKey, payload, at: new Date() };
       setLeads((prev) => [...prev, lead]);
-      // eslint-disable-next-line no-console
-      console.log("[ChatWidget] lead captured (v1 — replace with tRPC):", lead);
-      // Dual-write to Apps Script (fire-and-forget, errors swallowed).
+      // 1) Source-of-truth: write to MySQL via tRPC so CSO inbox sees it.
+      saveToCsoInbox(kind);
+      // 2) Backup: dual-write to Apps Script (fire-and-forget, errors swallowed).
       postToAppsScript({
         formType: "leadCapture",
         site: companyKey,
@@ -882,7 +1004,7 @@ function WhatsAppChatPanel({
         },
       });
     },
-    [companyKey]
+    [companyKey, saveToCsoInbox]
   );
 
   /* ── Flow handlers (declared as plain functions; they use the addBot
@@ -893,10 +1015,8 @@ function WhatsAppChatPanel({
     addBotMessage(
       "What can I help you with today?",
       [
-        { label: "Browse our services", onClick: () => onPickServicesIntro() },
-        { label: "I'm not sure what I need", onClick: () => onPickClarity() },
-        { label: "Browse FAQ", onClick: () => onPickFaqIntro() },
-        { label: "Request a call back", onClick: () => onPickCallback() },
+        { label: "See services", onClick: () => onPickServicesIntro() },
+        { label: "Request a call", onClick: () => onPickCallback() },
       ],
       600
     );
@@ -932,27 +1052,11 @@ function WhatsAppChatPanel({
       onClick: () => onPickNode(node),
     }));
 
-    // Cross-sell appears once at the ROOT of a division-site tree only.
-    if (
-      menuPathRef.current.length === 0 &&
-      company.crossSellOffer &&
-      company.sisterCompanies
-    ) {
-      for (const [dept, target] of Object.entries(company.sisterCompanies) as [
-        Department2,
-        CompanyKey
-      ][]) {
-        replies.push({
-          label: `Need ${DEPT_LABEL[dept]}? (${COMPANIES[target].name})`,
-          onClick: () => onCrossSell(dept, target),
-        });
-      }
-    }
+    // Cross-division sister-company chips removed — each department stays
+    // in-lane. Hamzury parent site still shows its full tree (no cross-sell).
 
     if (menuPathRef.current.length > 0) {
-      replies.push({ label: "← Back", onClick: () => onMenuBack() });
-    } else {
-      replies.push({ label: "Back to main menu", onClick: () => showMainMenu() });
+      replies.push({ label: "Back", onClick: () => onMenuBack() });
     }
 
     addBotMessage(promptForLevel(), replies);
@@ -982,12 +1086,20 @@ function WhatsAppChatPanel({
         // Re-use existing callback flow but skip the duplicate user-message
         // (we already added one above).
         setAwaitingCallback(true);
-        addBotMessage("Sure — what's the best number to reach you on?", [
+        addBotMessage("What's the best number to reach you on?", [
           {
-            label: `Or call us now: +${CSO_PHONE}`,
+            label: `Call us now: +${CSO_PHONE}`,
             onClick: () => {
               if (typeof window !== "undefined") {
                 window.location.href = `tel:+${CSO_PHONE}`;
+              }
+            },
+          },
+          {
+            label: "Continue on WhatsApp",
+            onClick: () => {
+              if (typeof window !== "undefined") {
+                window.open(buildWhatsAppHandoff(), "_blank");
               }
             },
           },
@@ -995,10 +1107,10 @@ function WhatsAppChatPanel({
         return;
       case "placeholder":
         addBotMessage(
-          "Coming soon — we're finalising this section. In the meantime, our team can walk you through it on a call.",
+          "We're finalising this section. Our team can walk you through it on a call.",
           [
             { label: "Request a call", onClick: () => onPickCallback() },
-            { label: "← Back", onClick: () => onMenuBack() },
+            { label: "Back", onClick: () => onMenuBack() },
           ]
         );
         return;
@@ -1039,12 +1151,12 @@ function WhatsAppChatPanel({
         onClick: () => onCommitNonBizdocService(leaf),
       },
       {
-        label: "Take the free diagnosis",
-        onClick: () => onLaunchDiagnosis(meta),
+        label: "Request a call",
+        onClick: () => onPickCallback(),
       },
-      { label: "Request a call back", onClick: () => onPickCallback() },
-      { label: "← Back", onClick: () => renderCurrentLevel() },
+      { label: "Back", onClick: () => renderCurrentLevel() },
     ]);
+    void meta;
   };
 
   /** Phase 5: visitor committed to a non-Bizdoc service from the
@@ -1056,7 +1168,7 @@ function WhatsAppChatPanel({
   ) => {
     addUserMessage("Pay & start");
     addBotMessage(
-      `Great — ${leaf.label}.\n\n` +
+      `${leaf.label}.\n\n` +
         `₦XXX,XXX (we'll confirm exact pricing on a quick call once we ` +
         `understand your specific brief).`,
       undefined,
@@ -1120,7 +1232,7 @@ function WhatsAppChatPanel({
 
     if (missingIdx.length === 0) {
       addBotMessage(
-        `Great — you already have the full ${biz.label} compliance pack. ` +
+        `You have the full ${biz.label} compliance pack. ` +
           `Three quick questions before we finalise the price.`
       );
     } else {
@@ -1210,12 +1322,11 @@ function WhatsAppChatPanel({
     if (!state) return;
     prepaymentRef.current = { ...state, step: "q1", pausedForTooltip: undefined };
     addBotMessage(
-      "Are any of the directors or shareholders foreign nationals (non-Nigerian citizens)?",
+      "Are any directors or shareholders foreign nationals?",
       [
-        { label: "Yes — at least one foreigner on board", onClick: () => answerQ1(true) },
-        { label: "No — all Nigerian citizens",            onClick: () => answerQ1(false) },
-        { label: "❓ What's the difference / why does this matter?",
-          onClick: () => showTooltip("q1") },
+        { label: "Yes", onClick: () => answerQ1(true) },
+        { label: "No",  onClick: () => answerQ1(false) },
+        { label: "Why does this matter?", onClick: () => showTooltip("q1") },
       ],
       900
     );
@@ -1237,11 +1348,11 @@ function WhatsAppChatPanel({
     addBotMessage(
       "What entity type do you want to register?",
       [
-        { label: "Limited Liability Company (Ltd) — most common",   onClick: () => answerQ2("ltd") },
-        { label: "Business Name (BN) — sole trader / simple partnership", onClick: () => answerQ2("bn") },
-        { label: "Public Limited Company (PLC) — for raising public capital", onClick: () => answerQ2("plc") },
-        { label: "Incorporated Trustee — NGO, religious org, foundation", onClick: () => answerQ2("trustee") },
-        { label: "❓ Help me decide — what's the difference?", onClick: () => showTooltip("q2") },
+        { label: "Limited Liability Company (Ltd)", onClick: () => answerQ2("ltd") },
+        { label: "Business Name (BN)", onClick: () => answerQ2("bn") },
+        { label: "Public Limited Company (PLC)", onClick: () => answerQ2("plc") },
+        { label: "Incorporated Trustee", onClick: () => answerQ2("trustee") },
+        { label: "Help me decide", onClick: () => showTooltip("q2") },
       ],
       900
     );
@@ -1329,7 +1440,7 @@ function WhatsAppChatPanel({
 
     // Tooltip
     replies.push({
-      label: "❓ What is share capital and how do I choose?",
+      label: "What is share capital?",
       onClick: () => showTooltip("q3"),
     });
 
@@ -1366,10 +1477,10 @@ function WhatsAppChatPanel({
     if (!state) return;
     addUserMessage(
       which === "q1"
-        ? "❓ What's the difference / why does this matter?"
+        ? "Why does this matter?"
         : which === "q2"
-          ? "❓ Help me decide — what's the difference?"
-          : "❓ What is share capital and how do I choose?"
+          ? "Help me decide"
+          : "What is share capital?"
     );
     prepaymentRef.current = { ...state, pausedForTooltip: which };
     const text =
@@ -1377,14 +1488,14 @@ function WhatsAppChatPanel({
         : which === "q2" ? TOOLTIP_ENTITY
           : TOOLTIP_SHARE_CAPITAL;
     addBotMessage(text, [
-      { label: "Got it — back to questions", onClick: () => resumeFromTooltip() },
+      { label: "Back to questions", onClick: () => resumeFromTooltip() },
     ], 800);
   };
 
   const resumeFromTooltip = () => {
     const state = prepaymentRef.current;
     if (!state || !state.pausedForTooltip) return;
-    addUserMessage("Got it — back to questions");
+    addUserMessage("Back to questions");
     const which = state.pausedForTooltip;
     if (which === "q1") askQ1();
     else if (which === "q2") askQ2();
@@ -1436,9 +1547,9 @@ function WhatsAppChatPanel({
 
     const deposit = Math.round(quote.total / 2);
     addBotMessage(summary, [
-      { label: "Proceed — full payment",                 onClick: () => onPaymentChoice("full", quote.total) },
-      { label: `Pay 50% deposit (${formatNaira(deposit)}) to start`, onClick: () => onPaymentChoice("deposit", deposit) },
-      { label: "I have more questions",                  onClick: () => onPaymentChoice("more_questions", 0) },
+      { label: "Proceed — full payment", onClick: () => onPaymentChoice("full", quote.total) },
+      { label: `Pay 50% deposit (${formatNaira(deposit)})`, onClick: () => onPaymentChoice("deposit", deposit) },
+      { label: "I have questions", onClick: () => onPaymentChoice("more_questions", 0) },
     ], 1100);
 
     captureLead(
@@ -1458,13 +1569,12 @@ function WhatsAppChatPanel({
     amount: number
   ) => {
     if (choice === "more_questions") {
-      addUserMessage("I have more questions");
+      addUserMessage("I have questions");
       addBotMessage(
-        "No problem — Maryam will reach out with answers and walk you through " +
-          "the next steps. What's the best number to reach you on?",
+        "What's the best number to reach you on?",
         [
           {
-            label: `Or call us now: +${CSO_PHONE}`,
+            label: `Call us now: +${CSO_PHONE}`,
             onClick: () => {
               if (typeof window !== "undefined") window.location.href = `tel:+${CSO_PHONE}`;
             },
@@ -1540,9 +1650,9 @@ function WhatsAppChatPanel({
         `Account Number: ${BANK_DETAILS.accountNumber}\n\n` +
         `Once you've sent the transfer, tap below.`,
       [
-        { label: "✓ I've paid in full",       onClick: () => onIvePaid("full") },
-        { label: "✓ I've paid 50% deposit",   onClick: () => onIvePaid("deposit") },
-        { label: "Question first",            onClick: () => onClosingQuestion() },
+        { label: "I've paid in full", onClick: () => onIvePaid("full") },
+        { label: "I've paid 50% deposit", onClick: () => onIvePaid("deposit") },
+        { label: "Question first", onClick: () => onClosingQuestion() },
       ],
       900,
     );
@@ -1552,10 +1662,10 @@ function WhatsAppChatPanel({
   const onClosingQuestion = () => {
     addUserMessage("Question first");
     addBotMessage(
-      "No problem — Maryam will pick this up. What's the best number to reach you on?",
+      "What's the best number to reach you on?",
       [
         {
-          label: `Or call us now: +${CSO_PHONE}`,
+          label: `Call us now: +${CSO_PHONE}`,
           onClick: () => {
             if (typeof window !== "undefined") window.location.href = `tel:+${CSO_PHONE}`;
           },
@@ -1569,7 +1679,7 @@ function WhatsAppChatPanel({
   const onIvePaid = (choice: "full" | "deposit") => {
     const state = closingRef.current;
     if (!state) return;
-    addUserMessage(choice === "full" ? "✓ I've paid in full" : "✓ I've paid 50% deposit");
+    addUserMessage(choice === "full" ? "I've paid in full" : "I've paid 50% deposit");
     const ref = generateClientRef(phoneRef.current || undefined);
     closingRef.current = {
       ...state,
@@ -1578,14 +1688,11 @@ function WhatsAppChatPanel({
       ref,
     };
     addBotMessage(
-      "Thanks! Quick question — how did you hear about us?",
+      "How did you hear about us?",
       [
-        { label: "A friend",                onClick: () => onAffiliatePick("A friend") },
-        { label: "Instagram",               onClick: () => onAffiliatePick("Instagram") },
-        { label: "Google search",           onClick: () => onAffiliatePick("Google search") },
-        { label: "I have an affiliate code", onClick: () => onAffiliatePick("affiliate code") },
-        { label: "A piece of content",      onClick: () => onAffiliatePick("content") },
-        { label: "Other",                   onClick: () => onAffiliatePick("Other") },
+        { label: "Referral",       onClick: () => onAffiliatePick("A friend") },
+        { label: "Search / social", onClick: () => onAffiliatePick("Google search") },
+        { label: "Other",          onClick: () => onAffiliatePick("Other") },
       ],
       800,
     );
@@ -1625,19 +1732,18 @@ function WhatsAppChatPanel({
     const formUrl = requirementFormUrl(state.serviceId, ref);
 
     addBotMessage(
-      `Welcome to ${company.name} 🎉\n` +
+      `Welcome to ${company.name}.\n` +
         `Reference: ${ref}\n\n` +
         `Please fill out this short form so we can begin work.`,
       [
         {
-          label: "Open requirement form →",
+          label: "Open requirement form",
           onClick: () => {
             if (typeof window !== "undefined") {
               window.open(formUrl, "_blank", "noopener,noreferrer");
             }
           },
         },
-        { label: "Back to main menu", onClick: () => showMainMenu() },
       ],
       900,
     );
@@ -1696,44 +1802,49 @@ function WhatsAppChatPanel({
     }
   };
 
-  const onPickClarity = () => {
-    addUserMessage("I'm not sure what I need");
-    addBotMessage(
-      `No problem. We do a free ${company.diagnosticTitle} — ${company.diagnosticBlurb}`,
-      [
-        { label: "Start the checkup", onClick: () => onLaunchDiagnosis() },
-        { label: "Maybe later", onClick: () => showMainMenu() },
-      ]
-    );
+  /** Strip cross-division FAQ items so each department stays in-lane.
+   *  We keep only items whose text doesn't mention other divisions. */
+  const filterFaqInLane = (items: FAQ[]): FAQ[] => {
+    if (companyKey === "hamzury") return items;
+    const banned: Record<Exclude<CompanyKey, "hamzury">, RegExp> = {
+      bizdoc:  /(scalar|medialy|hub|skills|website|branding|content|social|training)/i,
+      scalar:  /(bizdoc|medialy|hub|skills|tax|cac|brand(ing)?|content|social|training|nafdac)/i,
+      medialy: /(bizdoc|scalar|hub|skills|tax|cac|website|software|automation|training|nafdac)/i,
+    };
+    const re = banned[companyKey as Exclude<CompanyKey, "hamzury">];
+    return items.filter((it) => !re.test(it.q) && !re.test(it.a));
   };
 
   const onPickFaqIntro = () => {
-    addUserMessage("Browse FAQ");
+    addUserMessage("FAQ");
+    const cats = FAQ_CATEGORIES
+      .map((c) => ({ ...c, items: filterFaqInLane(c.items) }))
+      .filter((c) => c.items.length > 0);
     addBotMessage("Pick a topic:", [
-      ...FAQ_CATEGORIES.map((c) => ({
+      ...cats.slice(0, 3).map((c) => ({
         label: c.title,
         onClick: () => onPickFaqCategory(c),
       })),
-      { label: "Back to main menu", onClick: () => showMainMenu() },
+      { label: "Back", onClick: () => showMainMenu() },
     ]);
   };
 
   const onPickFaqCategory = (c: FAQCategory) => {
     addUserMessage(c.title);
-    addBotMessage(c.summary + " — pick a question:", [
-      ...c.items.map((q) => ({
+    const items = filterFaqInLane(c.items);
+    addBotMessage(c.summary, [
+      ...items.slice(0, 3).map((q) => ({
         label: q.q,
         onClick: () => onPickFaqAnswer(c, q),
       })),
-      { label: "Back to FAQ topics", onClick: () => onPickFaqIntro() },
+      { label: "Back", onClick: () => onPickFaqIntro() },
     ]);
   };
 
   const onPickFaqAnswer = (c: FAQCategory, q: FAQ) => {
     addUserMessage(q.q);
     addBotMessage(q.a, [
-      { label: "More questions?", onClick: () => onPickFaqCategory(c) },
-      { label: "Back to main menu", onClick: () => showMainMenu() },
+      { label: "More questions", onClick: () => onPickFaqCategory(c) },
     ]);
   };
 
@@ -1743,16 +1854,24 @@ function WhatsAppChatPanel({
   const [awaitingAffiliateText, setAwaitingAffiliateText] = useState(false);
 
   const onPickCallback = () => {
-    addUserMessage("Request a call back");
+    addUserMessage("Request a call");
     setAwaitingCallback(true);
     addBotMessage(
-      "Sure — what's the best number to reach you on?",
+      "What's the best number to reach you on?",
       [
         {
-          label: `Or call us now: +${CSO_PHONE}`,
+          label: `Call us now: +${CSO_PHONE}`,
           onClick: () => {
             if (typeof window !== "undefined") {
               window.location.href = `tel:+${CSO_PHONE}`;
+            }
+          },
+        },
+        {
+          label: "Continue on WhatsApp",
+          onClick: () => {
+            if (typeof window !== "undefined") {
+              window.open(buildWhatsAppHandoff(), "_blank");
             }
           },
         },
@@ -1777,49 +1896,19 @@ function WhatsAppChatPanel({
       },
     });
     addBotMessage(
-      "Got it. Maryam will call you within 1 hour during business hours (Mon-Fri 9am-5pm WAT). Anything else?",
+      "Noted. We'll call within 1 hour during business hours (Mon-Fri 9am-5pm WAT).",
       [
-        { label: "Browse services", onClick: () => onPickServicesIntro() },
-        { label: "I'm done", onClick: () => onFinish() },
+        { label: "See services", onClick: () => onPickServicesIntro() },
+        { label: "Done", onClick: () => onFinish() },
       ]
     );
   };
 
   const onFinish = () => {
-    addUserMessage("I'm done");
-    addBotMessage("Thanks for visiting — we'll be in touch.", [
+    addUserMessage("Done");
+    addBotMessage("Thank you. We'll be in touch.", [
       { label: "Start over", onClick: () => showMainMenu() },
     ]);
-  };
-
-  /* ── Cross-sell handler (division sites only) ──────────────────────── */
-  const onCrossSell = (dept: Department2, target: CompanyKey) => {
-    addUserMessage(`I need ${DEPT_LABEL[dept]}`);
-    addBotMessage(
-      `We're ${company.name} — ${DEPT_LABEL[dept].toLowerCase()} is ${COMPANIES[target].name}'s area. Want me to send you over?`,
-      [
-        {
-          label: `Yes, take me to ${COMPANIES[target].name}`,
-          onClick: () => {
-            addUserMessage(`Yes, take me to ${COMPANIES[target].name}`);
-            if (typeof window !== "undefined") {
-              window.open(CROSS_SELL_LINK[target], "_blank", "noopener,noreferrer");
-            }
-            addBotMessage(
-              `Opening ${COMPANIES[target].name} in a new tab. Anything else I can help with?`,
-              [{ label: "Back to main menu", onClick: () => showMainMenu() }]
-            );
-          },
-        },
-        {
-          label: "No, stay here",
-          onClick: () => {
-            addUserMessage("No, stay here");
-            showMainMenu();
-          },
-        },
-      ]
-    );
   };
 
   /* ── Free-text handler ──────────────────────────────────────────────── */
@@ -1853,26 +1942,52 @@ function WhatsAppChatPanel({
 
     captureLead("free_text", text);
     addBotMessage(
-      "Got it — Maryam will follow up shortly. Anything else I can help with?",
+      "Noted. Our team will follow up shortly.",
       [
-        { label: "Browse services", onClick: () => onPickServicesIntro() },
-        { label: "Browse FAQ", onClick: () => onPickFaqIntro() },
-        { label: "I'm done", onClick: () => onFinish() },
+        { label: "See services", onClick: () => onPickServicesIntro() },
+        { label: "Done", onClick: () => onFinish() },
       ]
     );
   };
 
-  /* ── First-open welcome flow (paced — feels human) ─────────────────── */
+  /* ── First-open welcome flow ───────────────────────────────────────── */
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    addBotMessage(
-      `Hi, welcome to ${company.name}. I'm Mary, your assistant.`,
-      undefined,
-      400
-    );
+    const greet =
+      companyKey === "bizdoc"
+        ? "Hello. I can help with Bizdoc — tax, registrations, licences."
+        : companyKey === "scalar"
+          ? "Hello. I can help with Scalar — websites, software, automation."
+          : companyKey === "medialy"
+            ? "Hello. I can help with Medialy — branding, content, social."
+            : `Hello. Welcome to ${company.name}.`;
+    addBotMessage(greet, undefined, 400);
+
+    // Read service-cart prefill if the user came from "Send selection".
+    // Stored by DivisionServices as { savedAt, department, prefill }.
+    let prefill: string | null = null;
+    try {
+      const raw = localStorage.getItem("hamzury:chat-prefill");
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.prefill === "string" &&
+            (!parsed.department || parsed.department === companyKey)) {
+          prefill = parsed.prefill;
+          localStorage.removeItem("hamzury:chat-prefill");
+        }
+      }
+    } catch { /* ignore parse errors */ }
+
     window.setTimeout(() => showMainMenu(), 1400);
-  }, [addBotMessage, company.name, showMainMenu]);
+
+    if (prefill) {
+      window.setTimeout(() => {
+        addUserMessage(prefill);
+        addBotMessage("Got it — I'll route this to the team and come back with what we need from you.", undefined, 1200);
+      }, 1800);
+    }
+  }, [addBotMessage, addUserMessage, company.name, companyKey, showMainMenu]);
 
   /* ── Header FAQ shortcut — opens FAQ from any view ─────────────────── */
   const headerFaqShortcut = () => {
@@ -1888,33 +2003,35 @@ function WhatsAppChatPanel({
         width: "min(380px, 100vw)",
         height: "min(600px, 100vh)",
         backgroundColor: WA_CHAT_BG,
-        borderRadius: typeof window !== "undefined" && window.innerWidth > 480 ? 12 : 0,
-        boxShadow: "0 20px 48px rgba(0,0,0,0.22)",
+        borderRadius: typeof window !== "undefined" && window.innerWidth > 480 ? 22 : 0,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 36px rgba(20,20,30,0.10)",
+        border: `1px solid ${WA_BOT_BORDER}`,
         overflow: "hidden",
         margin: typeof window !== "undefined" && window.innerWidth > 480 ? 16 : 0,
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif',
       }}
     >
-      {/* ── HEADER (WhatsApp dark-green) ──────────────────────────────── */}
+      {/* ── HEADER (Apple-minimalist: white surface, navy text, hairline) ── */}
       <div
         style={{
-          backgroundColor: WA_HEADER,
-          color: "#fff",
-          padding: "10px 12px",
+          backgroundColor: W,
+          color: DARK,
+          padding: "12px 14px",
           display: "flex",
           alignItems: "center",
-          gap: 10,
+          gap: 12,
           flexShrink: 0,
+          borderBottom: `1px solid ${WA_BOT_BORDER}`,
         }}
       >
-        {/* Avatar */}
+        {/* Avatar — navy circle with white initial */}
         <div
           style={{
-            width: 38, height: 38, borderRadius: "50%",
-            backgroundColor: "#FFFFFF22",
+            width: 36, height: 36, borderRadius: "50%",
+            backgroundColor: DARK,
             display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 16, fontWeight: 700, color: "#fff",
+            fontSize: 15, fontWeight: 600, color: W,
             flexShrink: 0,
           }}
         >
@@ -1922,33 +2039,38 @@ function WhatsAppChatPanel({
         </div>
         {/* Name + status */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: "#fff" }}>Mary</div>
-          <div style={{ fontSize: 12, color: "#D1FAE5" }}>online</div>
+          <div style={{ fontSize: 15, fontWeight: 600, color: DARK, letterSpacing: "-0.01em" }}>Mary</div>
+          <div style={{ fontSize: 12, color: `${TEXT}60`, display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: GOLD, display: "inline-block" }} />
+            Online
+          </div>
         </div>
         {/* FAQ shortcut */}
         <button
           onClick={headerFaqShortcut}
           aria-label="Open FAQ"
           title="Browse FAQ"
+          className="hover:bg-black/5 transition-colors"
           style={{
-            width: 34, height: 34, borderRadius: 8, border: "none", cursor: "pointer",
-            backgroundColor: "transparent", color: "#fff",
+            width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
+            backgroundColor: "transparent", color: `${TEXT}99`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
-          <HelpCircle size={20} />
+          <HelpCircle size={16} />
         </button>
         {/* Close */}
         <button
           onClick={onClose}
           aria-label="Close chat"
+          className="hover:bg-black/5 transition-colors"
           style={{
-            width: 34, height: 34, borderRadius: 8, border: "none", cursor: "pointer",
-            backgroundColor: "transparent", color: "#fff",
+            width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
+            backgroundColor: "transparent", color: `${TEXT}66`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
-          <X size={20} />
+          <X size={16} />
         </button>
       </div>
 
@@ -1971,16 +2093,16 @@ function WhatsAppChatPanel({
         {isTyping && <TypingIndicator />}
       </div>
 
-      {/* ── INPUT BAR ─────────────────────────────────────────────────── */}
+      {/* ── INPUT BAR (cream surface, hairline pill input, navy send) ──── */}
       <div
         style={{
-          padding: "8px 10px",
+          padding: "10px 12px",
           backgroundColor: WA_INPUT_BG,
           display: "flex",
           alignItems: "center",
           gap: 8,
           flexShrink: 0,
-          borderTop: "1px solid rgba(0,0,0,0.05)",
+          borderTop: `1px solid ${WA_BOT_BORDER}`,
         }}
       >
         <input
@@ -2003,13 +2125,13 @@ function WhatsAppChatPanel({
           aria-label="Type your message"
           style={{
             flex: 1,
-            border: "none",
+            border: `1px solid ${WA_BOT_BORDER}`,
             outline: "none",
-            backgroundColor: "#fff",
-            borderRadius: 22,
+            backgroundColor: BG,
+            borderRadius: 999,
             padding: "10px 14px",
             fontSize: 14,
-            color: DARK,
+            color: TEXT,
           }}
         />
         <button
@@ -2017,18 +2139,18 @@ function WhatsAppChatPanel({
           aria-label="Send message"
           disabled={!inputValue.trim()}
           style={{
-            width: 42, height: 42, borderRadius: "50%",
+            width: 38, height: 38, borderRadius: "50%",
             border: "none",
-            backgroundColor: WA_BUBBLE,
-            color: "#fff",
+            backgroundColor: DARK,
+            color: W,
             cursor: inputValue.trim() ? "pointer" : "default",
-            opacity: inputValue.trim() ? 1 : 0.5,
+            opacity: inputValue.trim() ? 1 : 0.4,
             display: "flex", alignItems: "center", justifyContent: "center",
             flexShrink: 0,
             transition: "opacity 0.15s",
           }}
         >
-          <Send size={18} />
+          <Send size={16} />
         </button>
       </div>
     </div>
@@ -2056,17 +2178,17 @@ function MessageBubble({ message }: { message: Message }) {
       <div style={{ maxWidth: "82%", display: "flex", flexDirection: "column" }}>
         <div
           style={{
-            backgroundColor: isBot ? WA_BOT_BG : WA_USER_BG,
+            backgroundColor: isBot ? WA_BOT_BG : DARK,
             border: isBot ? `1px solid ${WA_BOT_BORDER}` : "none",
-            borderRadius: 12,
+            borderRadius: 18,
             // Tail effect on the side touching the edge
-            borderTopLeftRadius: isBot ? 4 : 12,
-            borderTopRightRadius: isBot ? 12 : 4,
-            padding: "8px 12px 6px",
-            color: DARK,
+            borderTopLeftRadius: isBot ? 6 : 18,
+            borderTopRightRadius: isBot ? 18 : 6,
+            padding: "9px 13px 7px",
+            color: isBot ? TEXT : BG,
             fontSize: 14,
             lineHeight: 1.45,
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+            boxShadow: isBot ? "0 1px 1px rgba(0,0,0,0.03)" : "none",
             wordBreak: "break-word",
           }}
         >
@@ -2077,7 +2199,7 @@ function MessageBubble({ message }: { message: Message }) {
           <div
             style={{
               fontSize: 10.5,
-              color: "#667781",
+              color: isBot ? `${TEXT}60` : "rgba(255,250,246,0.6)",
               textAlign: "right",
               marginTop: 2,
             }}
@@ -2091,7 +2213,7 @@ function MessageBubble({ message }: { message: Message }) {
               display: "flex",
               flexWrap: "wrap",
               gap: 6,
-              marginTop: 6,
+              marginTop: 8,
               justifyContent: isBot ? "flex-start" : "flex-end",
             }}
           >
@@ -2099,14 +2221,15 @@ function MessageBubble({ message }: { message: Message }) {
               <button
                 key={i}
                 onClick={qr.onClick}
+                className="hover:bg-black/5 transition-colors"
                 style={{
                   fontSize: 12.5,
                   fontWeight: 500,
-                  padding: "7px 12px",
+                  padding: "7px 13px",
                   borderRadius: 999,
-                  border: `1px solid ${WA_HEADER}`,
-                  color: WA_HEADER,
-                  backgroundColor: "#fff",
+                  border: `1px solid ${WA_BOT_BORDER}`,
+                  color: DARK,
+                  backgroundColor: W,
                   cursor: "pointer",
                   whiteSpace: "normal",
                   textAlign: "left",
@@ -2169,8 +2292,8 @@ function ChecklistBlock({ attachment }: { attachment: ChecklistAttachment }) {
               gap: 8,
               padding: "8px 10px",
               borderRadius: 8,
-              border: `1px solid ${isOn ? WA_HEADER : WA_BOT_BORDER}`,
-              backgroundColor: isOn ? "#E8F5EE" : "#FAFAFA",
+              border: `1px solid ${isOn ? DARK : WA_BOT_BORDER}`,
+              backgroundColor: isOn ? `${GOLD}14` : BG,
               cursor: submitted ? "default" : "pointer",
               textAlign: "left",
               opacity: submitted && !isOn ? 0.6 : 1,
@@ -2182,7 +2305,7 @@ function ChecklistBlock({ attachment }: { attachment: ChecklistAttachment }) {
               style={{
                 fontSize: 16,
                 lineHeight: 1.2,
-                color: isOn ? WA_HEADER : "#9CA3AF",
+                color: isOn ? DARK : `${TEXT}40`,
                 flexShrink: 0,
                 marginTop: 1,
               }}
@@ -2225,8 +2348,8 @@ function ChecklistBlock({ attachment }: { attachment: ChecklistAttachment }) {
           padding: "8px 14px",
           borderRadius: 999,
           border: "none",
-          backgroundColor: submitted ? "#9CA3AF" : WA_HEADER,
-          color: "#fff",
+          backgroundColor: submitted ? `${TEXT}40` : DARK,
+          color: W,
           fontSize: 13,
           fontWeight: 600,
           cursor: submitted ? "default" : "pointer",
@@ -2276,7 +2399,7 @@ function Dot({ delay }: { delay: string }) {
     <span
       style={{
         width: 7, height: 7, borderRadius: "50%",
-        backgroundColor: "#9CA3AF",
+        backgroundColor: `${TEXT}40`,
         display: "inline-block",
         animation: "hamzury-chat-dot 1.2s infinite",
         animationDelay: delay,
@@ -2310,25 +2433,27 @@ function FaqPanel({
         bottom: 0, right: 0,
         width: "min(380px, 100vw)",
         height: "min(600px, 100vh)",
-        backgroundColor: "#FFFFFF",
-        borderRadius: typeof window !== "undefined" && window.innerWidth > 480 ? 12 : 0,
-        boxShadow: "0 20px 48px rgba(0,0,0,0.22)",
+        backgroundColor: W,
+        borderRadius: typeof window !== "undefined" && window.innerWidth > 480 ? 22 : 0,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 36px rgba(20,20,30,0.10)",
+        border: `1px solid ${WA_BOT_BORDER}`,
         overflow: "hidden",
         margin: typeof window !== "undefined" && window.innerWidth > 480 ? 16 : 0,
         fontFamily:
           '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif',
       }}
     >
-      {/* HEADER */}
+      {/* HEADER (white, navy text, hairline) */}
       <div
         style={{
-          backgroundColor: WA_HEADER,
-          color: "#fff",
-          padding: "12px 14px",
+          backgroundColor: W,
+          color: DARK,
+          padding: "14px 16px",
           display: "flex",
           alignItems: "center",
           gap: 10,
           flexShrink: 0,
+          borderBottom: `1px solid ${WA_BOT_BORDER}`,
         }}
       >
         {view.kind !== "categories" && (
@@ -2341,25 +2466,26 @@ function FaqPanel({
               )
             }
             aria-label="Back"
+            className="hover:bg-black/5 transition-colors"
             style={{
-              width: 30, height: 30, borderRadius: 8, border: "none", cursor: "pointer",
-              backgroundColor: "transparent", color: "#fff",
+              width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
+              backgroundColor: "transparent", color: `${TEXT}99`,
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <ChevronLeft size={20} />
+            <ChevronLeft size={16} />
           </button>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 16, fontWeight: 600, color: "#fff" }}>
+          <div style={{ fontSize: 16, fontWeight: 600, color: DARK, letterSpacing: "-0.01em" }}>
             {view.kind === "categories"
               ? "FAQ"
               : view.kind === "questions"
               ? view.category.title
               : view.category.title}
           </div>
-          <div style={{ fontSize: 12, color: "#D1FAE5" }}>
+          <div style={{ fontSize: 12, color: `${TEXT}60`, marginTop: 1 }}>
             {view.kind === "categories"
               ? "Quick answers to common questions"
               : view.kind === "questions"
@@ -2370,13 +2496,14 @@ function FaqPanel({
         <button
           onClick={onClose}
           aria-label="Close FAQ"
+          className="hover:bg-black/5 transition-colors"
           style={{
-            width: 34, height: 34, borderRadius: 8, border: "none", cursor: "pointer",
-            backgroundColor: "transparent", color: "#fff",
+            width: 30, height: 30, borderRadius: "50%", border: "none", cursor: "pointer",
+            backgroundColor: "transparent", color: `${TEXT}66`,
             display: "flex", alignItems: "center", justifyContent: "center",
           }}
         >
-          <X size={20} />
+          <X size={16} />
         </button>
       </div>
 
@@ -2386,8 +2513,8 @@ function FaqPanel({
           flex: 1,
           overflowY: "auto",
           padding: "14px 14px 18px",
-          backgroundColor: "#F8FAF7",
-          color: DARK,
+          backgroundColor: BG,
+          color: TEXT,
         }}
       >
         {view.kind === "categories" && (
@@ -2398,33 +2525,33 @@ function FaqPanel({
                 <button
                   key={c.id}
                   onClick={() => setView({ kind: "questions", category: c })}
+                  className="hover:bg-black/[0.02] transition-colors"
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: 12,
                     padding: "12px 14px",
-                    borderRadius: 12,
-                    border: "1px solid #E5E7EB",
-                    backgroundColor: "#FFFFFF",
+                    borderRadius: 14,
+                    border: `1px solid ${WA_BOT_BORDER}`,
+                    backgroundColor: W,
                     cursor: "pointer",
                     textAlign: "left",
-                    boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                   }}
                 >
                   <div
                     style={{
-                      width: 38, height: 38, borderRadius: 10,
-                      backgroundColor: c.accent,
-                      color: "#fff",
+                      width: 36, height: 36, borderRadius: "50%",
+                      backgroundColor: `${DARK}08`,
+                      color: DARK,
                       display: "flex", alignItems: "center", justifyContent: "center",
                       flexShrink: 0,
                     }}
                   >
-                    <Icon size={18} />
+                    <Icon size={16} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: DARK }}>{c.title}</div>
-                    <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2 }}>{c.summary}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: DARK, letterSpacing: "-0.01em" }}>{c.title}</div>
+                    <div style={{ fontSize: 12, color: `${TEXT}60`, marginTop: 2 }}>{c.summary}</div>
                   </div>
                 </button>
               );
@@ -2438,12 +2565,13 @@ function FaqPanel({
               <button
                 key={i}
                 onClick={() => setView({ kind: "answer", category: view.category, item: q })}
+                className="hover:bg-black/[0.02] transition-colors"
                 style={{
                   textAlign: "left",
                   padding: "11px 14px",
-                  borderRadius: 10,
-                  border: "1px solid #E5E7EB",
-                  backgroundColor: "#FFFFFF",
+                  borderRadius: 12,
+                  border: `1px solid ${WA_BOT_BORDER}`,
+                  backgroundColor: W,
                   cursor: "pointer",
                   fontSize: 13.5,
                   fontWeight: 500,
@@ -2474,11 +2602,11 @@ function FaqPanel({
               style={{
                 fontSize: 13.5,
                 lineHeight: 1.55,
-                color: "#374151",
-                backgroundColor: "#FFFFFF",
-                border: "1px solid #E5E7EB",
-                borderRadius: 12,
-                padding: "12px 14px",
+                color: TEXT,
+                backgroundColor: W,
+                border: `1px solid ${WA_BOT_BORDER}`,
+                borderRadius: 14,
+                padding: "13px 15px",
                 whiteSpace: "pre-wrap",
               }}
             >
@@ -2486,13 +2614,14 @@ function FaqPanel({
             </div>
             <button
               onClick={() => setView({ kind: "questions", category: view.category })}
+              className="hover:bg-black/5 transition-colors"
               style={{
                 marginTop: 14,
-                padding: "9px 14px",
+                padding: "8px 14px",
                 borderRadius: 999,
-                border: `1px solid ${WA_HEADER}`,
-                backgroundColor: "#fff",
-                color: WA_HEADER,
+                border: `1px solid ${WA_BOT_BORDER}`,
+                backgroundColor: W,
+                color: DARK,
                 fontSize: 13,
                 fontWeight: 500,
                 cursor: "pointer",
@@ -2512,27 +2641,25 @@ function FaqPanel({
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   MAIN EXPORT — three-button floating action menu + panels
+   MAIN EXPORT — single floating bubble with unread badge + panels
    --------------------------------------------------------------------------
-   v13: replaces the single floating bubble with three peer buttons stacked
-   bottom-right (WhatsApp · Call · FAQ). WhatsApp opens the existing chat
-   thread. Call is a plain `tel:` link. FAQ opens the standalone FaqPanel.
-   The three buttons hide while either panel is open so they don't compete.
+   A single navy circular button (gold message icon) anchored bottom-right.
+   Clicking opens the chat panel directly. A small gold "2" badge invites
+   a click. FAQ remains reachable from inside the chat header (HelpCircle).
    ══════════════════════════════════════════════════════════════════════════ */
 export default function ChatWidget({
-  department = "general",
+  department: _department = "general",
   open: externalOpen,
   onClose,
   isDashboard: _isDashboard,
 }: Props) {
+  const department = _department;
   const isControlled = externalOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const chatOpen = isControlled ? externalOpen : internalOpen;
 
   const [faqOpen, setFaqOpen] = useState(false);
-  const [bubbleNotes, setBubbleNotes] = useState<string[]>([]);
   const [showBadge, setShowBadge] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const closeChat = () => {
     if (isControlled) onClose?.();
@@ -2540,44 +2667,10 @@ export default function ChatWidget({
   };
 
   const openChat = () => {
-    setBubbleNotes([]);
     setShowBadge(false);
     setFaqOpen(false);
-    setMenuOpen(false);
     if (!isControlled) setInternalOpen(true);
   };
-
-  const openFaq = () => {
-    setBubbleNotes([]);
-    setShowBadge(false);
-    setMenuOpen(false);
-    if (!isControlled) setInternalOpen(false);
-    else onClose?.();
-    setFaqOpen(true);
-  };
-
-  /* ── Teaser bubbles above the action menu ──────────────────────────── */
-  useEffect(() => {
-    if (chatOpen || faqOpen || isControlled) return;
-    const NOTES = [
-      "Hi, welcome.",
-      department === "bizdoc"
-        ? "Tap WhatsApp to chat about compliance & tax"
-        : department === "systemise"
-        ? "Tap WhatsApp to chat about websites & systems"
-        : department === "skills"
-        ? "Tap WhatsApp to chat about our programs"
-        : "Tap WhatsApp to chat with us",
-    ];
-    const t1 = window.setTimeout(() => setBubbleNotes([NOTES[0]]), 1800);
-    const t2 = window.setTimeout(() => setBubbleNotes([NOTES[0], NOTES[1]]), 3200);
-    const t3 = window.setTimeout(() => setBubbleNotes([]), 8000);
-    return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
-      window.clearTimeout(t3);
-    };
-  }, [chatOpen, faqOpen, isControlled, department]);
 
   const anyPanelOpen = chatOpen || faqOpen;
 
@@ -2586,103 +2679,54 @@ export default function ChatWidget({
       {chatOpen && <WhatsAppChatPanel department={department} onClose={closeChat} />}
       {faqOpen && <FaqPanel onClose={() => setFaqOpen(false)} />}
 
-      {/* Teaser notifications above the action menu (only when nothing open) */}
-      {!isControlled && !anyPanelOpen && bubbleNotes.length > 0 && (
-        <div
-          className="fixed right-4 z-[60] flex flex-col items-end gap-1.5"
-          style={{ bottom: 220 }}
-        >
-          {bubbleNotes.map((note, i) => (
-            <div
-              key={i}
-              onClick={openChat}
-              className="px-4 py-2.5 rounded-2xl rounded-br-sm shadow-lg text-[13px] font-medium max-w-[220px] cursor-pointer"
-              style={{ backgroundColor: WA_HEADER, color: "#fff" }}
-            >
-              {note}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Speed-dial: ONE main bubble. Tap to reveal Call · WhatsApp · FAQ.
-           Hidden while a panel is open. */}
+      {/* Single floating bubble with unread-count badge */}
       {!isControlled && !anyPanelOpen && (
         <div
-          className="fixed bottom-4 right-4 z-[60] flex flex-col items-center gap-3"
+          className="fixed bottom-4 right-4 z-[60]"
           style={{
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif',
           }}
         >
-          {/* Sub-buttons appear ABOVE main bubble when menuOpen */}
-          {menuOpen && (
-            <>
-              {/* FAQ (top) */}
-              <button
-                onClick={openFaq}
-                className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
-                style={{
-                  width: 48, height: 48,
-                  backgroundColor: WA_HEADER,
-                  color: "#fff",
-                }}
-                aria-label="Open FAQ"
-                title="Browse FAQ"
-              >
-                <HelpCircle size={20} />
-              </button>
-
-              {/* Call (middle) */}
-              <a
-                href={`tel:+${CSO_PHONE}`}
-                onClick={() => setMenuOpen(false)}
-                className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
-                style={{
-                  width: 48, height: 48,
-                  backgroundColor: "#1F2937",
-                  color: "#fff",
-                }}
-                aria-label={`Call +${CSO_PHONE}`}
-                title="Call us"
-              >
-                <Phone size={20} />
-              </a>
-
-              {/* WhatsApp (bottom of sub-stack — opens our embedded chat) */}
-              <button
-                data-chat-trigger
-                onClick={openChat}
-                className="rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-110"
-                style={{
-                  width: 48, height: 48,
-                  backgroundColor: WA_BUBBLE,
-                  color: "#fff",
-                }}
-                aria-label="Open chat"
-                title="Chat with us"
-              >
-                <MessageCircle size={20} />
-              </button>
-            </>
-          )}
-
-          {/* Main bubble — tap to toggle menu */}
           <button
-            onClick={() => setMenuOpen(v => !v)}
-            className="rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 relative"
+            data-chat-trigger
+            onClick={openChat}
+            className="relative"
             style={{
-              width: 56, height: 56,
-              backgroundColor: menuOpen ? "#1F2937" : WA_BUBBLE,
-              color: "#fff",
+              width: 54, height: 54, borderRadius: "50%",
+              backgroundColor: DARK,
+              color: GOLD,
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 1px 2px rgba(0,0,0,0.06), 0 12px 32px rgba(30,58,95,0.22)",
+              display: "flex", alignItems: "center", justifyContent: "center",
             }}
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            title={menuOpen ? "Close" : "Tap to chat"}
+            aria-label="Open chat"
+            title="Chat"
           >
-            {menuOpen ? <X size={22} /> : <MessageCircle size={24} />}
-            {!menuOpen && showBadge && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center">
-                1
+            <MessageCircle size={22} />
+            {showBadge && (
+              <span
+                aria-label="2 unread messages"
+                style={{
+                  position: "absolute",
+                  top: -4,
+                  right: -4,
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  backgroundColor: GOLD,
+                  color: W,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  border: `2px solid ${BG}`,
+                  lineHeight: 1,
+                }}
+              >
+                2
               </span>
             )}
           </button>

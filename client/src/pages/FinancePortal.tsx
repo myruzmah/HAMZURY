@@ -25,10 +25,15 @@ import { toast } from "sonner";
  * Mirrors CEO/CSO portal design. Staff surface (green/gold legacy).
  * ══════════════════════════════════════════════════════════════════════ */
 
-const BG = "#FFFAF6";
+const BG = "#FFFBEB";              // Milk (Apple rebrand)
 const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
-const MUTED = "#666666";
+const MUTED = "#6B7280";
+const HAIRLINE = "#E7E5E4";
+const SURFACE = "#FFFFFF";
+const NAV_HOVER = "#F5F5F4";
+const INK = "#1A1A1A";
+const INK_MUTED = "#6B7280";
 const GOLD = "#B48C4C";
 const GREEN = "#1B4D3E";
 const RED = "#EF4444";
@@ -171,8 +176,8 @@ export default function FinancePortal() {
       )}
 
       <aside style={{
-        width: 232, backgroundColor: GREEN, display: "flex", flexDirection: "column",
-        borderRight: `1px solid ${GOLD}20`,
+        width: 232, backgroundColor: SURFACE, display: "flex", flexDirection: "column",
+        borderRight: `1px solid ${HAIRLINE}`,
         ...(isMobile ? {
           position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 50,
           transform: mobileNavOpen ? "translateX(0)" : "translateX(-100%)",
@@ -181,19 +186,19 @@ export default function FinancePortal() {
         } : {}),
       }}>
         <div style={{
-          padding: "20px 18px", borderBottom: `1px solid ${GOLD}15`,
+          padding: "22px 20px 18px", borderBottom: `1px solid ${HAIRLINE}`,
           display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8,
         }}>
           <div>
-            <div style={{ fontSize: 11, color: GOLD, letterSpacing: "0.12em", fontWeight: 600, marginBottom: 2 }}>HAMZURY</div>
-            <div style={{ fontSize: 15, color: WHITE, fontWeight: 600, letterSpacing: -0.1 }}>Finance Portal</div>
-            <div style={{ fontSize: 10, color: `${GOLD}99`, marginTop: 4 }}>Money In · Money Out</div>
+            <div style={{ fontSize: 10, color: GREEN, letterSpacing: "0.16em", fontWeight: 600, marginBottom: 4 }}>HAMZURY</div>
+            <div style={{ fontSize: 17, color: INK, fontWeight: 600, letterSpacing: -0.3 }}>Finance Portal</div>
+            <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>Money In · Money Out</div>
           </div>
           {isMobile && (
             <button onClick={() => setMobileNavOpen(false)} aria-label="Close menu"
               style={{
                 width: 30, height: 30, borderRadius: 8,
-                backgroundColor: `${GOLD}15`, color: GOLD, border: "none", cursor: "pointer",
+                backgroundColor: NAV_HOVER, color: INK_MUTED, border: "none", cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}><X size={16} /></button>
           )}
@@ -208,8 +213,8 @@ export default function FinancePortal() {
                 style={{
                   width: "100%", display: "flex", alignItems: "center", gap: 10,
                   padding: "9px 12px", marginBottom: 2, borderRadius: 10,
-                  backgroundColor: isActive ? `${GOLD}20` : "transparent",
-                  color: isActive ? GOLD : `${GOLD}70`,
+                  backgroundColor: isActive ? `${GREEN}12` : "transparent",
+                  color: isActive ? GREEN : INK_MUTED,
                   border: "none", cursor: "pointer", textAlign: "left",
                   fontSize: 13, fontWeight: isActive ? 600 : 500,
                 }}
@@ -220,10 +225,10 @@ export default function FinancePortal() {
             );
           })}
         </nav>
-        <div style={{ padding: "12px 10px", borderTop: `1px solid ${GOLD}15` }}>
+        <div style={{ padding: "12px 12px 16px", borderTop: `1px solid ${HAIRLINE}` }}>
           <Link href="/" style={{
             display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
-            borderRadius: 10, color: `${GOLD}60`, fontSize: 12, textDecoration: "none", marginBottom: 2,
+            borderRadius: 10, color: INK_MUTED, fontSize: 12, fontWeight: 500, textDecoration: "none", marginBottom: 2,
           }}>
             <ArrowLeft size={13} /> Back to HAMZURY
           </Link>

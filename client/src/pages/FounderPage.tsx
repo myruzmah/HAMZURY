@@ -121,15 +121,13 @@ export default function FounderPage() {
       {/* CTA */}
       <section className="py-24 md:py-32 px-6">
         <div className="max-w-md mx-auto text-center">
-          <a
-            href="https://wa.me/2348034620520"
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href="/contact"
             className="inline-block px-8 py-4 rounded-full text-[14px] font-medium tracking-tight transition-opacity duration-200 hover:opacity-80"
             style={{ backgroundColor: CHARCOAL, color: MILK }}
           >
             Talk to the team
-          </a>
+          </Link>
         </div>
       </section>
 

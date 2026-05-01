@@ -484,11 +484,7 @@ function ServiceCard({ service, accent }: { service: Service; accent: string }) 
             ))}
           </ul>
           <a
-            href={`https://wa.me/2349130700056?text=${encodeURIComponent(
-              `Hello HAMZURY — I'm interested in ${service.name} (${service.price}).`
-            )}`}
-            target="_blank"
-            rel="noreferrer"
+            href="/contact"
             className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[13px] font-semibold"
             style={{ backgroundColor: accent, color: WHITE }}
           >

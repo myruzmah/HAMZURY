@@ -88,8 +88,8 @@
   .portal.active { display: grid; }
   @media (max-width: 900px) {
     .portal.active { grid-template-columns: 1fr; }
-    .sidebar { display: none; }
-    .sidebar.mobile-open { display: flex; position: fixed; inset: 0; z-index: 100; width: 280px; }
+    .sidebar { display: none !important; }
+    .sidebar.mobile-open { display: flex !important; position: fixed; inset: 0; z-index: 100; width: 280px; }
     .mobile-nav-btn { display: flex !important; }
   }
 
@@ -542,6 +542,7 @@
 <!-- LOGIN -->
 <div class="login-screen" id="login-screen">
   <div class="login-card">
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-muted);text-decoration:none;letter-spacing:.02em;margin-bottom:24px;">&larr; All workspaces</a>
     <div class="login-brand">
       <div class="dot">B</div>
       <span>Bizdoc</span>
@@ -568,10 +569,11 @@
 <!-- PORTAL -->
 <div class="portal" id="portal">
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
+    <div class="sidebar-brand" style="margin-bottom:4px;">
       <div class="brand-dot">B</div>
       <span>Bizdoc</span>
     </div>
+    <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-muted);text-decoration:none;padding:0 10px 14px;font-weight:400;">&larr; Back to workspaces</a>
 
     <div class="sidebar-section">Workspace</div>
     <button class="nav-item active" data-tab="home">

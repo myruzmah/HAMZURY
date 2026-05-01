@@ -147,6 +147,17 @@ async function submitPerSiteDiagnostic(opts: {
     submittedAt: new Date().toISOString(),
   });
 
+  // 2026-04-30 — auto-tag the division so CSO inbox shows the right
+  // colored badge. Per-site diagnostics know exactly which division they
+  // belong to (bizdoc / scalar / medialy / hub).
+  const sourceToDept: Record<string, string> = {
+    diagnostic_bizdoc: "bizdoc",
+    diagnostic_scalar: "systemise",
+    diagnostic_medialy: "medialy",
+    diagnostic_hub: "skills",
+  };
+  const assignedDepartment = sourceToDept[source];
+
   const ref = generateRefNumber(phone);
   const lead = await createLead({
     ref,
@@ -158,6 +169,7 @@ async function submitPerSiteDiagnostic(opts: {
     context,
     source,
     status: "new",
+    assignedDepartment,
   });
 
   try {

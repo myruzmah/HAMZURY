@@ -85,6 +85,7 @@ export async function sendNewLeadAlert(data: {
   phone?: string | null;
   email?: string | null;
   source: string;
+  scholarshipCode?: string | null;
 }) {
   const transport = getTransport();
   if (!transport) {
@@ -110,6 +111,7 @@ export async function sendNewLeadAlert(data: {
           ${data.phone ? `<tr><td style="padding:8px 12px;font-weight:bold">Phone</td><td style="padding:8px 12px">${data.phone}</td></tr>` : ""}
           ${data.email ? `<tr style="background:#F5F5F7"><td style="padding:8px 12px;font-weight:bold">Email</td><td style="padding:8px 12px">${data.email}</td></tr>` : ""}
           <tr><td style="padding:8px 12px;font-weight:bold">Source</td><td style="padding:8px 12px">${data.source}</td></tr>
+          ${data.scholarshipCode ? `<tr style="background:#FFF7E6"><td style="padding:8px 12px;font-weight:bold">Scholarship</td><td style="padding:8px 12px">Paid via scholarship code: <code>${data.scholarshipCode}</code></td></tr>` : ""}
         </table>
         <p style="font-size:13px;color:#86868B">
           View in <a href="https://hamzury.com/cso" style="color:#1B4D3E">CSO Portal</a>.

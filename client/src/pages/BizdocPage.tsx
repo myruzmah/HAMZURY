@@ -1,5 +1,6 @@
 import { Shield, Award, Factory, Receipt } from "lucide-react";
 import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
+import { bizdocServicesCatalog } from "./_divisions/data/bizdoc-services";
 
 const cfg: DivisionPortalConfig = {
   name:              "BIZDOC",
@@ -64,6 +65,7 @@ const cfg: DivisionPortalConfig = {
    *   3. Advisory Services
    *   4. Industry-Specific Packages
    * ─────────────────────────────────────────────────────────────────*/
+  servicesCatalog: bizdocServicesCatalog,
   serviceCategories: [
     {
       id: "tax-services", title: "Tax Services", icon: Receipt,

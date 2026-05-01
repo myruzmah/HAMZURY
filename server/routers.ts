@@ -34,6 +34,7 @@ import {
   getInstitutionalStats,
   listCohorts, getCohortById,
   createSkillsApplication, getSkillsApplications, getSkillsApplicationByRef, updateSkillsApplicationStatus,
+  validateScholarshipCode, consumeScholarshipCode, listScholarshipCodes, createScholarshipCode, deactivateScholarshipCode,
   generateSKLRefNumber,
   createAffiliate, getAffiliateByEmail, getAffiliateById, verifyAffiliatePassword,
   getAffiliateRecordsByAffiliate, getAffiliateWithdrawals, createAffiliateWithdrawal,
@@ -111,7 +112,7 @@ import {
   // Agent Suggestions
   getAgentSuggestions, reviewAgentSuggestion,
   // Verified Client Truth Layer
-  createClient, getClientByRef, getAllClients, getClientsByStatus, getClientsByDepartment,
+  createClient, getClientByRef, getClientByPhone, getAllClients, getClientsByStatus, getClientsByDepartment,
   updateClient, verifyClientIdentity, createClientSession, validateClientSession,
   getTasksForClient, getSubscriptionsForClient, getInvoicesForClient,
   // CSO Phase 2
@@ -183,6 +184,19 @@ function mapHamzuryRoleToReportDept(role: string | null | undefined): ReportDept
     default:
       return null;
   }
+}
+
+// skillsApplications.pricingTier is varchar(20). Hub assessment form sends
+// verbose labels — collapse them to short, stable codes that fit the column.
+function mapPaymentToTier(payment: string | undefined | null): string {
+  const v = (payment || "").toLowerCase();
+  if (!v) return "early_bird";
+  if (v.includes("scholarship code")) return "scholarship_code";
+  if (v.includes("scholarship"))      return "scholarship_apply";
+  if (v.includes("seat hold"))        return "seat_hold";
+  if (v.includes("full payment"))     return "full";
+  if (v.includes("sponsor") || v.includes("company")) return "sponsor";
+  return "early_bird";
 }
 
 export const appRouter = router({
@@ -287,20 +301,112 @@ export const appRouter = router({
         referralSourceType: z.string().optional(),
         leadOwner: z.string().optional(),
         notifyCso: z.boolean().optional(),
+        // 2026-04-30 — accept source + division from public assessment forms
+        // so the lead lands in CSO inbox tagged correctly. Hub, Scalar,
+        // Medialy, Bizdoc assessments and the diagnostic forms all pass
+        // these. Without this, zod strips them and CSO sees the wrong tag.
+        source: z.string().optional(),
+        meta: z.record(z.string(), z.string()).optional(),
+        assignedDepartment: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const ref = generateRefNumber(input.phone);
-        const lead = await createLead({ ...input, ref });
+        // Auto-derive division from form source if it wasn't passed
+        // explicitly (e.g. "assessment_hub" → "skills").
+        const sourceToDept: Record<string, string> = {
+          assessment_hub: "skills",
+          assessment_bizdoc: "bizdoc",
+          assessment_scalar: "systemise",
+          assessment_medialy: "medialy",
+          diagnostic_business: "bizdoc",
+          diagnostic_software: "systemise",
+          diagnostic_media: "medialy",
+          diagnostic_skills: "skills",
+          diagnostic_clarity: "bizdoc",
+        };
+        const inferredDept = input.assignedDepartment
+          || (input.source ? sourceToDept[input.source] : undefined);
+
+        // Pre-validate scholarship code (Hub only) so we can annotate the
+        // lead's context blob before persistence if it's invalid.
+        const meta = input.meta || {};
+        const isHubAssessment = input.source === "assessment_hub";
+        const scholarshipCodeRaw = isHubAssessment ? (meta.scholarshipCode || "").trim() : "";
+        let scholarshipResult: { ok: true; id: number } | { ok: false; reason: string } | null = null;
+        if (isHubAssessment && scholarshipCodeRaw) {
+          try {
+            scholarshipResult = await validateScholarshipCode(scholarshipCodeRaw);
+          } catch (err) {
+            console.error("[leads.submit] scholarship validation failed:", err);
+            scholarshipResult = { ok: false, reason: "validation_error" };
+          }
+        }
+        let augmentedContext = input.context;
+        if (scholarshipResult && !scholarshipResult.ok) {
+          const note = `\n[Scholarship code invalid: ${scholarshipCodeRaw} — ${scholarshipResult.reason}]`;
+          augmentedContext = (augmentedContext || "") + note;
+        }
+
+        const lead = await createLead({
+          ...input,
+          context: augmentedContext,
+          ref,
+          assignedDepartment: inferredDept,
+        });
         const task = await createTaskFromLead(lead);
-        // Email alert — non-blocking
+        // Email alert — non-blocking; pass real source/division so the
+        // alert subject matches what the CSO sees in inbox.
+        const scholarshipForEmail = scholarshipResult?.ok ? scholarshipCodeRaw : undefined;
         sendNewLeadAlert({
           ref: lead.ref,
           clientName: input.name,
           service: input.service,
           phone: input.phone ?? null,
           email: input.email ?? null,
-          source: "bizdoc",
+          source: inferredDept || input.source || "direct",
+          scholarshipCode: scholarshipForEmail,
         }).catch(err => console.error("[email] New lead alert failed:", err));
+
+        // ─── Dual-write Hub assessment to skillsApplications ───────────────
+        // The admin portal reads from skillsApplications, so we mirror the
+        // submission there using the same `ref` for correlation. Failure of
+        // this insert MUST NOT fail the lead — log and move on.
+        if (isHubAssessment) {
+          try {
+            const commitment = meta.commitment || "";
+            const device = meta.device || "";
+            const paymentStatus: "pending" | "paid_via_scholarship" =
+              scholarshipResult?.ok ? "paid_via_scholarship" : "pending";
+            await createSkillsApplication({
+              ref: lead.ref,
+              fullName: input.name,
+              phone: input.phone,
+              email: input.email,
+              program: meta.program || "Not specified",
+              pathway: meta.mode || undefined,
+              businessDescription: meta.goal || "",
+              biggestChallenge: meta.notes || "",
+              heardFrom: "",
+              canCommitTime: commitment === "16+ hours (full focus)" ? true : Boolean(commitment),
+              hasEquipment: device.toLowerCase().includes("laptop") ? true : Boolean(device),
+              willingToExecute: Boolean(meta.ai_level),
+              pricingTier: mapPaymentToTier(meta.payment),
+              agreedToTerms: true,
+              agreedToEffort: true,
+              status: "submitted",
+              paymentStatus,
+            });
+            if (scholarshipResult?.ok) {
+              try {
+                await consumeScholarshipCode(scholarshipResult.id, lead.ref);
+              } catch (err) {
+                console.error("[leads.submit] consumeScholarshipCode failed:", err);
+              }
+            }
+          } catch (err) {
+            console.error("[leads.submit] createSkillsApplication dual-write failed:", err);
+          }
+        }
         // CSO notification if referral came through CSO
         if (input.notifyCso || input.referralSourceType === "CSO") {
           createNotification({
@@ -538,7 +644,10 @@ export const appRouter = router({
         return all;
       }),
 
-    /** v1 restructure — single entry point to move a lead through pipeline stages. */
+    /** v1 restructure — single entry point to move a lead through pipeline stages.
+     *  2026-04-30 — when stage transitions to "won", auto-create the
+     *  commission row + the verified client truth row so the deal shows
+     *  up in Closed Deals & Active Clients without manual entry. */
     updateStage: csoProcedure
       .input(z.object({
         leadId: z.number(),
@@ -561,6 +670,61 @@ export const appRouter = router({
           resourceId: input.leadId,
           details: `Stage: ${input.stage}${input.note ? ` · ${input.note}` : ""}`,
         });
+
+        // ─── Auto-handoff on Won (P0 fix) ────────────────────────────────
+        if (input.stage === "won" && lead) {
+          try {
+            // 1) Upsert the verified client truth record
+            const existingClient = lead.phone
+              ? await getClientByPhone(lead.phone).catch(() => null)
+              : null;
+            if (!existingClient) {
+              await createClient({
+                ref: lead.ref,
+                name: lead.name,
+                businessName: lead.businessName ?? null,
+                phone: lead.phone ?? null,
+                email: lead.email ?? null,
+                status: "converted",
+                department: lead.assignedDepartment ?? null,
+                leadId: lead.id,
+                csoOwner: ctx.user.name || ctx.user.email || null,
+                source: lead.source ?? null,
+              } as any);
+              console.log(`[leads.updateStage:won] Created client truth for lead ${lead.ref}`);
+            }
+
+            // 2) Create commission row from linked task (if it has a quotedPrice)
+            const tasks = await getTasksByLeadId(input.leadId);
+            const taskWithPrice = tasks.find((t: any) => t.quotedPrice && parseFloat(String(t.quotedPrice)) > 0);
+            if (taskWithPrice) {
+              const existing = await getCommissionByTaskRef(taskWithPrice.ref).catch(() => null);
+              if (!existing) {
+                const quoted = parseFloat(String((taskWithPrice as any).quotedPrice));
+                const breakdown = calculateCommission(quoted);
+                await createCommission({
+                  taskId: taskWithPrice.id,
+                  taskRef: taskWithPrice.ref,
+                  clientName: (taskWithPrice as any).clientName || lead.name,
+                  service: (taskWithPrice as any).service || lead.service,
+                  quotedPrice: String(quoted),
+                  institutionalAmount: String(breakdown.institutionalAmount),
+                  commissionPool: String(breakdown.commissionPool),
+                  tierBreakdown: breakdown.tiers as any,
+                  status: "pending",
+                  createdBy: ctx.user.id,
+                } as any);
+                console.log(`[leads.updateStage:won] Created commission for task ${taskWithPrice.ref}`);
+              }
+            } else {
+              console.log(`[leads.updateStage:won] No task with quotedPrice for lead ${lead.ref} — commission not auto-created`);
+            }
+          } catch (err) {
+            // Non-fatal — the stage move already succeeded; log so it can be retried manually
+            console.error(`[leads.updateStage:won] Auto-handoff partially failed for lead ${lead.ref}:`, err);
+          }
+        }
+
         return lead;
       }),
 
@@ -2462,6 +2626,35 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
           details: `Application status changed to: ${input.status}`,
         });
         return updated;
+      }),
+
+    // ─── Scholarship codes ────────────────────────────────────────────────
+    validateCode: rateLimitedProcedure
+      .input(z.object({ code: z.string().min(1) }))
+      .query(async ({ input }) => validateScholarshipCode(input.code)),
+
+    listCodes: seniorProcedure.query(async () => listScholarshipCodes()),
+
+    createCode: seniorProcedure
+      .input(z.object({
+        code: z.string().min(1),
+        description: z.string().optional(),
+        maxUses: z.number().int().positive().optional(),
+        expiresAt: z.string().datetime().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => createScholarshipCode({
+        code: input.code,
+        description: input.description,
+        maxUses: input.maxUses,
+        expiresAt: input.expiresAt ? new Date(input.expiresAt) : undefined,
+        createdBy: ctx.user?.email || "admin",
+      })),
+
+    deactivateCode: seniorProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deactivateScholarshipCode(input.id);
+        return { ok: true };
       }),
 
     chat: rateLimitedProcedure

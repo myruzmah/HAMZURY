@@ -15,6 +15,8 @@ import {
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import SplashScreen from "@/components/SplashScreen";
 import { trpc } from "@/lib/trpc";
+import DivisionServices from "./DivisionServices";
+import type { DivisionServicesCatalog } from "./division-services-types";
 
 /* ─── Config shape ─────────────────────────────────────────────────────── */
 export type PackageConfig = {
@@ -63,8 +65,12 @@ export type DivisionPortalConfig = {
   servicesTitle: string;
   /** 4 package cards */
   packages: PackageConfig[];
-  /** 2-4 service categories */
+  /** 2-4 service categories (legacy — used as fallback when servicesCatalog is absent) */
   serviceCategories: ServiceCategory[];
+  /** Optional richer services catalog. When supplied, the template renders the
+   *  DivisionServices component (educational layer + cart + industries) instead
+   *  of the legacy serviceCategories accordion. */
+  servicesCatalog?: DivisionServicesCatalog;
   /** Nav menu links to other divisions */
   navLinks: { label: string; href: string }[];
   /** Primary accent (deep brand colour) */
@@ -229,7 +235,7 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
 
       {/* ── HERO ── */}
       <section
-        className="relative min-h-screen flex items-center justify-center overflow-hidden"
+        className="relative min-h-[80vh] md:min-h-[88vh] flex items-center justify-center overflow-hidden py-20 md:py-24"
         style={{ background: `linear-gradient(165deg, ${G} 0%, ${darken(G, 0.08)} 50%, ${darken(G, 0.18)} 100%)` }}
       >
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -252,25 +258,25 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
             <span style={{ color: Au }}>{cfg.heroHighlight}</span>
           </h1>
           <p
-            className="text-[15px] leading-[1.8] mb-14 max-w-lg mx-auto fade-up-d1"
-            style={{ color: W, opacity: 0.45 }}
+            className="text-[15px] md:text-[16px] leading-[1.7] mb-12 max-w-lg mx-auto fade-up-d1"
+            style={{ color: W, opacity: 0.72 }}
           >
             {cfg.heroSub}
           </p>
-          <div className="flex flex-wrap gap-4 justify-center fade-up-d2">
+          <div className="flex flex-wrap gap-3 justify-center fade-up-d2">
             <button
               onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-7 py-3.5 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 hover:opacity-80"
-              style={{ color: W, border: `1px solid rgba(255,255,255,0.2)` }}
+              className="px-7 py-3.5 rounded-full text-[13px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.02] hover:opacity-95"
+              style={{ backgroundColor: Au, color: G, boxShadow: `0 8px 24px ${Au}40` }}
             >
-              Our Services
+              See our services
             </button>
             <button
               onClick={() => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-7 py-3.5 rounded-full text-[12px] font-medium tracking-wide transition-all duration-300 hover:opacity-80"
-              style={{ color: W, border: `1px solid rgba(255,255,255,0.2)` }}
+              className="px-7 py-3.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-300 hover:opacity-90"
+              style={{ color: W, border: `1px solid rgba(255,255,255,0.28)` }}
             >
-              Track
+              Track my file
             </button>
             {cfg.blueprintLink && (
               <Link href={cfg.blueprintLink.href}>
@@ -322,23 +328,23 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
                       borderColor: pkg.badge ? `${Au}40` : pkg.dark ? G : `${G}10`,
                     }}
                   >
-                    <p className="text-[9px] font-bold tracking-wider uppercase mb-2" style={{ color: pkg.dark ? "rgba(255,255,255,0.5)" : Au }}>
+                    <p className="text-[10px] font-bold tracking-[0.18em] uppercase mb-2" style={{ color: pkg.dark ? "rgba(255,255,255,0.7)" : Au }}>
                       {pkg.label}
                     </p>
-                    <p className="text-[15px] font-semibold mb-1" style={{ color: pkg.dark ? W : G }}>
+                    <p className="text-[16px] font-semibold mb-1" style={{ color: pkg.dark ? W : G }}>
                       {pkg.price}
                     </p>
-                    <p className="text-[10px] opacity-50" style={{ color: pkg.dark ? W : G }}>
+                    <p className="text-[10.5px] opacity-60" style={{ color: pkg.dark ? W : G }}>
                       {pkg.sub}
                     </p>
-                    <ChevronDown
-                      size={12} className="mt-2"
-                      style={{
-                        color: pkg.dark ? "rgba(255,255,255,0.4)" : `${G}40`,
-                        transition: "transform 0.2s",
-                        transform: isOpen ? "rotate(180deg)" : "rotate(0)",
-                      }}
-                    />
+                    <p className="text-[10.5px] mt-3 flex items-center gap-1 font-medium"
+                       style={{ color: pkg.dark ? W : G, opacity: 0.7 }}>
+                      {isOpen ? "Hide" : "Tap to see what's inside"}
+                      <ChevronDown
+                        size={11}
+                        style={{ transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0)" }}
+                      />
+                    </p>
                   </button>
                   {isOpen && (
                     <div
@@ -362,10 +368,10 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
                       </ul>
                       <button
                         onClick={() => openChat(pkg.context)}
-                        className="w-full py-2.5 rounded-xl text-[11px] font-semibold text-center"
+                        className="w-full py-3 rounded-xl text-[12px] font-semibold text-center transition-all hover:opacity-95"
                         style={{ backgroundColor: pkg.dark ? Au : G, color: pkg.dark ? G : Au }}
                       >
-                        Get Started
+                        Start with this →
                       </button>
                     </div>
                   )}
@@ -409,10 +415,11 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
                     <li className="flex items-start gap-2 opacity-60"><span className="text-[10px]">ℹ️</span> <span className="italic">{pkg.note}</span></li>
                   )}
                 </ul>
-                <div className="mt-5 pt-4 border-t text-xs font-medium flex items-center justify-between"
-                  style={{ borderColor: pkg.dark ? "rgba(255,255,255,0.12)" : `${G}08`, color: Au }}
+                <div className="mt-5 pt-4 border-t text-[12px] font-semibold flex items-center justify-between"
+                  style={{ borderColor: pkg.dark ? "rgba(255,255,255,0.12)" : `${G}10`, color: Au }}
                 >
-                  Get Started <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <span>Start with this</span>
+                  <ArrowRight size={13} className="transition-transform group-hover:translate-x-0.5" />
                 </div>
               </button>
             ))}
@@ -421,8 +428,8 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
       </section>
 
       {/* ── SERVICES ── */}
-      <section id="services" className="min-h-screen flex flex-col justify-center py-16 md:py-24" style={{ backgroundColor: W }}>
-        <div className="max-w-5xl mx-auto px-6">
+      <section id="services" className="py-12 md:py-24 overflow-x-hidden" style={{ backgroundColor: W }}>
+        <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 md:px-6">
           <div className="mb-8 md:mb-12">
             <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.35em] uppercase mb-3" style={{ color: Au }}>
               {cfg.servicesEyebrow}
@@ -432,6 +439,15 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
             </h2>
           </div>
 
+          {cfg.servicesCatalog ? (
+            <DivisionServices
+              catalog={cfg.servicesCatalog}
+              accent={G}
+              highlight={Au}
+              division={cfg.motivationalDept === "skills" ? "general" : cfg.motivationalDept}
+            />
+          ) : (
+          <>
           {/* MOBILE: compact accordion */}
           <div className="md:hidden flex flex-col gap-2">
             {cfg.serviceCategories.map((cat) => {
@@ -521,6 +537,8 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
               );
             })}
           </div>
+          </>
+          )}
         </div>
       </section>
 

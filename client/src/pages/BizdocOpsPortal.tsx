@@ -15,15 +15,25 @@ import { toast } from "sonner";
  * Daily operations for tax + compliance delivery.
  * ══════════════════════════════════════════════════════════════════════ */
 
-const BG = "#FFFAF6";
+/* Apple-clean rebrand 2026-04-30 (matches CSO + Hub treatment).
+ * Bizdoc primary accent = deep heritage green (#1B4D3E) per Phase 6 + Brand Bible.
+ * White sidebar, hairline borders, soft active pill. */
+const BG = "#FFFBEB";              // Milk
 const WHITE = "#FFFFFF";
 const DARK = "#1A1A1A";
-const MUTED = "#666666";
+const MUTED = "#6B7280";
 const GOLD = "#B48C4C";
-const GREEN = "#1B4D3E";
+const GREEN = "#1B4D3E";           // Bizdoc primary accent
 const RED = "#EF4444";
 const ORANGE = "#F59E0B";
 const BLUE = "#3B82F6";
+/* Apple-style additions */
+const HAIRLINE = "#E7E5E4";
+const SURFACE = "#FFFFFF";
+const NAV_HOVER = "#F5F5F4";
+const ACTIVE_PILL = "#E8F0EC";     // soft green tint for current tab
+const INK = "#1A1A1A";
+const INK_MUTED = "#6B7280";
 
 type Section =
   | "dashboard" | "clients" | "tasks" | "filings"
@@ -151,66 +161,71 @@ export default function BizdocOpsPortal() {
       )}
 
       <aside style={{
-        width: 232, backgroundColor: GREEN, display: "flex", flexDirection: "column",
-        borderRight: `1px solid ${GOLD}20`,
+        width: 232, backgroundColor: SURFACE, display: "flex", flexDirection: "column",
+        borderRight: `1px solid ${HAIRLINE}`,
         ...(isMobile ? {
           position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 50,
           transform: mobileNavOpen ? "translateX(0)" : "translateX(-100%)",
           transition: "transform 0.25s ease",
-          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.2)" : "none",
+          boxShadow: mobileNavOpen ? "4px 0 24px rgba(0,0,0,0.08)" : "none",
         } : {}),
       }}>
         <div style={{
-          padding: "20px 18px", borderBottom: `1px solid ${GOLD}15`,
+          padding: "22px 20px 18px", borderBottom: `1px solid ${HAIRLINE}`,
           display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8,
         }}>
           <div>
-            <div style={{ fontSize: 11, color: GOLD, letterSpacing: "0.12em", fontWeight: 600, marginBottom: 2 }}>HAMZURY</div>
-            <div style={{ fontSize: 15, color: WHITE, fontWeight: 600, letterSpacing: -0.1 }}>Bizdoc Ops</div>
-            <div style={{ fontSize: 10, color: `${GOLD}99`, marginTop: 4 }}>Tax · Compliance · Licences</div>
+            <div style={{ fontSize: 10, color: GREEN, letterSpacing: "0.16em", fontWeight: 600, marginBottom: 4 }}>HAMZURY</div>
+            <div style={{ fontSize: 17, color: INK, fontWeight: 600, letterSpacing: -0.3 }}>Bizdoc</div>
+            <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>Tax · Compliance · Licences</div>
           </div>
           {isMobile && (
             <button onClick={() => setMobileNavOpen(false)} aria-label="Close menu"
               style={{
-                width: 30, height: 30, borderRadius: 8, backgroundColor: `${GOLD}15`, color: GOLD,
+                width: 30, height: 30, borderRadius: 8, backgroundColor: NAV_HOVER, color: INK_MUTED,
                 border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
               }}><X size={16} /></button>
           )}
         </div>
-        <nav style={{ flex: 1, padding: "12px 10px", overflowY: "auto" }}>
+        <nav style={{ flex: 1, padding: "14px 12px", overflowY: "auto" }}>
           {NAV.map(({ key, icon: Icon, label }) => {
             const isActive = active === key;
             return (
               <button key={key}
                 onClick={() => { setActive(key); if (isMobile) setMobileNavOpen(false); }}
                 style={{
-                  width: "100%", display: "flex", alignItems: "center", gap: 10,
-                  padding: "9px 12px", marginBottom: 2, borderRadius: 10,
-                  backgroundColor: isActive ? `${GOLD}20` : "transparent",
-                  color: isActive ? GOLD : `${GOLD}70`,
+                  width: "100%", display: "flex", alignItems: "center", gap: 11,
+                  padding: "10px 12px", marginBottom: 2, borderRadius: 9,
+                  backgroundColor: isActive ? ACTIVE_PILL : "transparent",
+                  color: isActive ? GREEN : INK_MUTED,
                   border: "none", cursor: "pointer", textAlign: "left",
                   fontSize: 13, fontWeight: isActive ? 600 : 500,
-                }}>
-                <Icon size={15} /> <span>{label}</span>
+                  transition: "background-color 0.15s, color 0.15s",
+                }}
+                onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = NAV_HOVER; }}
+                onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.backgroundColor = "transparent"; }}
+              >
+                <Icon size={15} strokeWidth={1.75} /> <span>{label}</span>
               </button>
             );
           })}
         </nav>
-        <div style={{ padding: "12px 10px", borderTop: `1px solid ${GOLD}15` }}>
+        <div style={{ padding: "12px 12px 16px", borderTop: `1px solid ${HAIRLINE}` }}>
           <Link href="/" style={{
             display: "flex", alignItems: "center", gap: 10, padding: "8px 12px",
-            borderRadius: 10, color: `${GOLD}60`, fontSize: 12, textDecoration: "none", marginBottom: 2,
+            borderRadius: 9, color: INK_MUTED, fontSize: 12, textDecoration: "none",
+            marginBottom: 2, fontWeight: 500,
           }}>
-            <ArrowLeft size={13} /> Back to HAMZURY
+            <ArrowLeft size={13} strokeWidth={1.75} /> Back to HAMZURY
           </Link>
           <button onClick={logout}
             style={{
               width: "100%", display: "flex", alignItems: "center", gap: 10,
-              padding: "8px 12px", borderRadius: 10,
-              color: `${GOLD}60`, backgroundColor: "transparent", border: "none",
-              fontSize: 12, cursor: "pointer", textAlign: "left",
+              padding: "8px 12px", borderRadius: 9,
+              color: INK_MUTED, backgroundColor: "transparent", border: "none",
+              fontSize: 12, cursor: "pointer", textAlign: "left", fontWeight: 500,
             }}>
-            <LogOut size={13} /> Sign Out
+            <LogOut size={13} strokeWidth={1.75} /> Sign out
           </button>
         </div>
       </aside>

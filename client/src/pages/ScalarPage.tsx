@@ -1,5 +1,6 @@
 import { Globe, Workflow, Bot } from "lucide-react";
 import DivisionPortalTemplate, { type DivisionPortalConfig } from "./_divisions/DivisionPortalTemplate";
+import { scalarServicesCatalog } from "./_divisions/data/scalar-services";
 
 const cfg: DivisionPortalConfig = {
   name:              "SCALAR",
@@ -14,8 +15,8 @@ const cfg: DivisionPortalConfig = {
   packagesSub:       "Pick the tier that matches what your business needs this year.",
   servicesEyebrow:   "OUR SERVICES",
   servicesTitle:     "The layer behind every modern business.",
-  accent:            "#D4A017",
-  highlight:         "#0F172A",
+  accent:            "#1E3A8A",
+  highlight:         "#B48C4C",
   path:              "/scalar",
   footerLabel:       "SCALAR",
   motivationalDept:  "systemise",
@@ -56,6 +57,7 @@ const cfg: DivisionPortalConfig = {
       context: "Scalar Platform Package",
     },
   ],
+  servicesCatalog: scalarServicesCatalog,
   serviceCategories: [
     {
       id: "web", title: "Websites & Landing Pages", icon: Globe,

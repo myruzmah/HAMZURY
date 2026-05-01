@@ -9,7 +9,7 @@ import {
   Calendar, Clock, CheckCircle, MessageSquare, Eye, EyeOff,
   Award, Briefcase, ChevronRight, ChevronLeft, AlertCircle,
   Pin, ExternalLink, Wrench, Baby, MapPin, Play, Lock,
-  CreditCard, UserCheck, Heart, Camera, Video, TrendingUp, Rocket,
+  CreditCard, UserCheck, Heart, Camera, Video, TrendingUp,
 } from "lucide-react";
 import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import SplashScreen from "@/components/SplashScreen";
@@ -52,52 +52,55 @@ type OfferCategory = {
 const OFFER_CATEGORIES: OfferCategory[] = [
   {
     id: "programs",
-    title: "Core Programmes",
+    title: "Core Programmes — Physical Cohorts (Jos)",
     icon: GraduationCap,
-    description: "Cohort-based tech education. Mon–Wed, 8am–2pm. LMS + AI-guided learning + physical sessions + international certification.",
+    description: "Cohort-based, AI-driven business training. Advanced programmes run Mon–Wed 8am–2pm; basics run Thu–Sat (morning + afternoon batches). 20 students per class. Each student gets a 1-on-1 mentor. Up to 3 classes can run at the same time during enrolment windows.",
     items: [
-      { name: "Business Builders Academy", duration: "3 weeks", certificate: true, status: "active", age: "18+", locations: ["Abuja", "Online"], maxStudents: 30, onlinePrice: 150000, whatYouGet: ["Opportunity identification & market research", "Business model canvas + financial modelling", "Pitch deck built with AI", "Google Business Certificate", "Hamzury HUB Certificate"], context: "I am interested in Business Builders Academy. Please ask me screening questions to confirm fit for the next cohort." },
-      { name: "Digital Dominance", duration: "4 weeks", certificate: true, status: "active", age: "16+", locations: ["Abuja", "Online"], maxStudents: 30, onlinePrice: 80000, whatYouGet: ["Social media across Instagram, TikTok, LinkedIn, Twitter", "Content creation with Canva + AI", "Personal branding + thought leadership", "Growth hacking + monetisation", "Google Digital Marketing Certificate"], context: "I am interested in Digital Dominance. Please ask me screening questions and share what to prepare." },
-      { name: "Code Craft Bootcamp", duration: "12 weeks", certificate: true, status: "active", age: "16+", prerequisites: "Basic computer skills", locations: ["Abuja", "Online"], maxStudents: 25, onlinePrice: 300000, whatYouGet: ["Python + web fundamentals (HTML/CSS/JS)", "Flask / Django + SQL databases", "Full-stack final project (team-based)", "AI coding assistants + debugging", "Coursera Programming Certificate"], context: "I am interested in Code Craft Bootcamp. Please ask me screening questions about background." },
-      { name: "Compliance Mastery", duration: "6 weeks", certificate: true, status: "active", age: "18+", locations: ["Abuja", "Online"], maxStudents: 25, onlinePrice: 120000, whatYouGet: ["CAC registration + TIN", "VAT, PAYE, Tax Clearance Certificates", "NAFDAC, PENCOM + industry licences", "Guest lectures from Bizdoc team", "Professional Compliance Certificate"], context: "I am interested in Compliance Mastery. Please ask me screening questions about my role and need." },
-      { name: "Money Mastery", duration: "4 weeks", certificate: true, status: "active", age: "18+", locations: ["Abuja", "Online"], maxStudents: 25, onlinePrice: 90000, whatYouGet: ["Personal budgeting + debt management", "Investing basics + portfolio diversification", "Multiple income streams", "10-year wealth plan", "Financial Literacy Certificate"], context: "I am interested in Money Mastery. Please ask me screening questions." },
-      { name: "MetFix Hardware & Robotics", duration: "8 weeks", certificate: true, status: "active", age: "16+", locations: ["Abuja (physical)", "Online (simulations)"], maxStudents: 20, onlinePrice: 180000, whatYouGet: ["Laptop disassembly + hardware repair", "Arduino, circuits, sensors", "Robotics design + build", "Final competition", "Hardware Engineering Certificate"], context: "I am interested in MetFix Hardware & Robotics. Please ask me whether I want the physical (₦180k) or online (₦80k) track and my background." },
+      { name: "Business Builders Academy", duration: "3 weeks", certificate: true, status: "active", age: "18+", locations: ["Jos (physical)", "Online"], maxStudents: 20, onlinePrice: 150000, whatYouGet: ["Find the business problem worth solving (using AI to research the market)", "Design the business — model, financials, operations — with AI as your analyst", "Pitch deck and one-pager built with AI", "1-on-1 mentor across the 3 weeks", "Hamzury HUB + Google Business Certificate"], context: "I am interested in Business Builders Academy. Please ask me screening questions to confirm fit for the next Jos cohort." },
+      { name: "Digital Dominance", duration: "4 weeks", certificate: true, status: "active", age: "16+", locations: ["Jos (physical)", "Online"], maxStudents: 20, onlinePrice: 80000, whatYouGet: ["Social media growth across IG, TikTok, LinkedIn, X — using AI for content + analytics", "Video editing (CapCut + Premiere) — short-form, long-form, reels", "Recording basics — phone-first cinematography, lighting, audio", "Motion graphics + simple After Effects with AI assistants", "Personal branding + monetisation — turn views into income", "1-on-1 mentor across the 4 weeks", "Hamzury HUB + Google Digital Marketing Certificate"], context: "I am interested in Digital Dominance. Please ask me screening questions and share what to prepare." },
+      { name: "Code Craft Bootcamp", duration: "8 weeks", certificate: true, status: "active", age: "16+", prerequisites: "Basic computer skills", locations: ["Jos (physical)", "Online"], maxStudents: 20, onlinePrice: 300000, whatYouGet: ["Build real businesses with AI — not vibe-coding, real product engineering", "Python + JavaScript fundamentals taught in service of products", "AI coding assistants (Cursor, Claude Code) used the right way", "Backend + database + deployment — your project goes live", "Capstone: ship a working AI-powered product", "1-on-1 mentor across the 8 weeks", "Hamzury HUB + Coursera Programming Certificate"], context: "I am interested in Code Craft Bootcamp. Please ask me screening questions about background." },
+      { name: "Compliance Mastery", duration: "6 weeks", certificate: true, status: "active", age: "18+", locations: ["Jos (physical)", "Online"], maxStudents: 20, onlinePrice: 120000, whatYouGet: ["CAC registration + TIN — done with AI assistants for filings", "VAT, PAYE, Tax Clearance Certificates", "NAFDAC, PENCOM + industry licences", "Guest lectures from Bizdoc team", "1-on-1 mentor across the 6 weeks", "Professional Compliance Certificate"], context: "I am interested in Compliance Mastery. Please ask me screening questions about my role and need." },
+      { name: "Data Analytics", duration: "6 weeks", certificate: true, status: "active", age: "18+", locations: ["Jos (physical)", "Online"], maxStudents: 20, onlinePrice: 130000, whatYouGet: ["Excel + Google Sheets — pivot tables, formulas, dashboards", "SQL fundamentals — query real business data", "Power BI / Looker Studio — visualisation and storytelling", "AI-assisted analysis — Claude / ChatGPT for fast insight", "Final project: a real business dashboard you can show", "1-on-1 mentor across the 6 weeks", "Hamzury HUB + Google Data Analytics Certificate"], context: "I am interested in Data Analytics. Please ask me screening questions about my background and goals." },
+      { name: "MetFix Hardware & Robotics", duration: "8 weeks", certificate: true, status: "active", age: "16+", locations: ["Jos (physical)", "Online (simulations)"], maxStudents: 20, onlinePrice: 180000, whatYouGet: ["Laptop disassembly + hardware repair", "Arduino, circuits, sensors", "Robotics design + build with AI-assisted design", "Final competition", "1-on-1 mentor across the 8 weeks", "Hardware Engineering Certificate"], context: "I am interested in MetFix Hardware & Robotics. Please ask me whether I want the physical (₦180k) or online (₦80k) track and my background." },
+      { name: "Cybersecurity & Networking", duration: "6 weeks", certificate: true, status: "coming", age: "16+", locations: ["Jos (physical)", "Online"], maxStudents: 20, onlinePrice: 130000, whatYouGet: ["IT support fundamentals — Windows + macOS + Linux", "Networking, Wi-Fi, routers, switches", "Cybersecurity basics — accounts, passwords, phishing, backups", "Cloud setup (Google Workspace, Microsoft 365)", "AI-assisted troubleshooting playbook", "1-on-1 mentor across the 6 weeks", "Hamzury HUB IT Certificate"], context: "I am interested in the Cybersecurity & Networking programme. Please ask me screening questions about my background." },
+      { name: "HUB Internship (placement-track)", duration: "1–12 months", certificate: true, status: "active", age: "18+", prerequisites: "Completed any HUB programme", locations: ["Jos (physical)"], maxStudents: 20, onlinePrice: 50000, whatYouGet: ["Placement inside Hamzury (Bizdoc / Scalar / Medialy / HUB / Studio)", "Flat ₦50,000 per month — pay only for the months you do, no discount", "Real client work, real KPIs, real reviews", "Stipend + transport allowance", "Performance-based offer at the end (junior staff role)", "1-on-1 mentor — your line manager"], context: "I want to apply for the Hamzury HUB Internship (placement-track). Please ask me which programme I completed and what role I want." },
+      { name: "Higher-Institution Internship (SIWES / IT)", duration: "1–12 months", certificate: true, status: "active", age: "16+", prerequisites: "Letter from your university or polytechnic", locations: ["Jos (physical)"], maxStudents: 20, onlinePrice: 45000, whatYouGet: ["For students on SIWES / industrial training from universities and polytechnics", "Pricing: 1 mo ₦45k · 2 mo ₦80k · 3 mo ₦100k", "Each additional month adds ₦20k (4 mo ₦120k → 12 mo ₦280k)", "Real placement inside Hamzury (Bizdoc / Scalar / Medialy / HUB / Studio)", "Logbook signed + Hamzury HUB internship certificate at completion", "1-on-1 mentor — your line manager"], context: "I am a student on industrial training (SIWES / IT) from my school. Please ask for my school, course of study, required duration, and start date." },
     ],
   },
   {
     id: "kids",
-    title: "Kids Programme",
-    icon: Users,
-    description: "Saturdays 8am–2pm. Age-appropriate tech education with weekly parent progress reports.",
+    title: "Kids Programme (8–15)",
+    icon: Baby,
+    description: "Thu–Sat, morning + afternoon batches. Age-appropriate, AI-aware tech education with weekly parent progress reports. 20 children per class.",
     items: [
-      { name: "Basic Computer Skills — Kids", duration: "2 weeks (Thu–Sat)", certificate: true, status: "active", age: "8–15", locations: ["Abuja"], maxStudents: 15, onlinePrice: 25000, whatYouGet: ["Computer parts + keyboard + mouse skills", "MS Word + internet basics + online safety", "Creative final project (document + presentation)", "Weekly parent progress reports", "Computer Literacy Certificate"], context: "I want to enrol my child in the Basic Computer Skills kids programme. Please ask about my child's age and experience." },
+      { name: "Beginner Tech Skills — Kids", duration: "2 weeks (Thu–Sat)", certificate: true, status: "active", age: "8–15", locations: ["Jos"], maxStudents: 20, onlinePrice: 25000, whatYouGet: ["Computer parts + keyboard + mouse skills", "MS Word + internet basics + online safety", "Intro to AI — what it is, how to use it safely", "Creative final project (document + presentation built with AI help)", "Weekly parent progress reports", "Hamzury HUB Beginner Certificate"], context: "I want to enrol my child in the Beginner Tech Skills kids programme. Please ask about my child's age and experience." },
+      { name: "Kids Robotics & Build Club", duration: "4 weeks (Thu–Sat)", certificate: true, status: "active", age: "10–15", locations: ["Jos"], maxStudents: 20, onlinePrice: 60000, whatYouGet: ["Build their first robot — circuits, sensors, motors", "Block-based programming (Scratch + microcontroller blocks)", "Team challenges + final showcase", "Weekly parent progress reports", "Hamzury HUB Robotics Certificate (Kids)"], context: "I want to enrol my child in Kids Robotics & Build Club. Please ask about my child's age." },
+      { name: "Kids Coding with AI", duration: "3 weeks (Thu–Sat)", certificate: true, status: "active", age: "10–15", locations: ["Jos"], maxStudents: 20, onlinePrice: 45000, whatYouGet: ["Make games + small apps with the help of AI assistants", "Logic, sequence, debugging — fundamentals for life", "Build something cool to show off — final showcase", "Weekly parent progress reports", "Hamzury HUB Junior Coder Certificate"], context: "I want to enrol my child in Kids Coding with AI. Please ask about my child's age and experience." },
     ],
   },
   {
     id: "online",
-    title: "Online Academy",
+    title: "Online Academy — Solving Business with AI",
     icon: Monitor,
-    description: "Self-paced LMS courses with video lessons, auto-graded quizzes and certificates. Optional mentor support +₦10k.",
+    description: "Self-paced LMS courses, all built around solving a business segment using AI. Video lessons, auto-graded quizzes, certificates, optional 1-on-1 mentor support (+₦10k).",
     items: [
-      { name: "Excel Mastery", duration: "2 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 15000, whatYouGet: ["Formulas, pivot tables, charts", "Data cleaning + analysis", "Business reporting templates", "Course completion certificate"], context: "I am interested in the Excel Mastery online course. Please ask me any screening questions." },
-      { name: "PowerPoint Pro", duration: "1 week", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 10000, whatYouGet: ["Slide design principles", "Animations + transitions", "Pitch-deck templates", "Course completion certificate"], context: "I am interested in PowerPoint Pro online." },
-      { name: "Email Marketing", duration: "3 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 20000, whatYouGet: ["List building + segmentation", "Writing that converts", "Automation basics (Mailchimp, Brevo)", "Course completion certificate"], context: "I am interested in the Email Marketing online course." },
-      { name: "SEO Basics", duration: "3 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 25000, whatYouGet: ["Keyword research", "On-page + technical SEO", "Google Search Console", "Course completion certificate"], context: "I am interested in the SEO Basics online course." },
-      { name: "Graphic Design Fundamentals", duration: "4 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 30000, whatYouGet: ["Colour, typography, layout", "Canva + Figma basics", "Brand identity exercises", "Course completion certificate"], context: "I am interested in Graphic Design Fundamentals online." },
-      { name: "Video Editing Basics", duration: "4 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 35000, whatYouGet: ["CapCut + DaVinci Resolve", "Cuts, transitions, audio", "Short-form content for reels/TikTok", "Course completion certificate"], context: "I am interested in Video Editing Basics online." },
-      { name: "Freelancing 101", duration: "4 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 40000, whatYouGet: ["Upwork, Fiverr, direct outreach", "Proposals + pricing", "Client management", "Course completion certificate"], context: "I am interested in Freelancing 101 online." },
-      { name: "AI Tools Mastery", duration: "6 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 50000, whatYouGet: ["ChatGPT + Claude for work + study", "Make.com + Zapier automation", "AI image + video tools", "Course completion certificate"], context: "I am interested in AI Tools Mastery online." },
+      { name: "AI for Operations & Admin", duration: "2 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 20000, whatYouGet: ["Cut admin time with AI — emails, scheduling, summaries", "Automate routine tasks with Make.com + AI", "SOPs that write themselves", "Course completion certificate"], context: "I am interested in AI for Operations & Admin online." },
+      { name: "AI for Sales & Customer Growth", duration: "3 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 25000, whatYouGet: ["Lead research with AI — find buyers fast", "Outreach scripts that convert", "CRM + pipeline automation", "Course completion certificate"], context: "I am interested in AI for Sales & Customer Growth online." },
+      { name: "AI for Finance & Bookkeeping", duration: "3 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 25000, whatYouGet: ["AI-assisted bookkeeping + reconciliation", "Cash-flow + budgeting with AI", "Tax + compliance basics", "Course completion certificate"], context: "I am interested in AI for Finance & Bookkeeping online." },
+      { name: "AI for Marketing & Content", duration: "4 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 35000, whatYouGet: ["Content engine — write, design, schedule with AI", "Brand voice + on-message creative", "Performance + A/B testing", "Course completion certificate"], context: "I am interested in AI for Marketing & Content online." },
+      { name: "AI for HR & People Ops", duration: "3 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 25000, whatYouGet: ["AI-assisted hiring (JDs, screening, comms)", "Onboarding + training systems", "Performance reviews with AI summaries", "Course completion certificate"], context: "I am interested in AI for HR & People Ops online." },
+      { name: "AI for Product & Strategy", duration: "4 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 35000, whatYouGet: ["Customer research + insights with AI", "Roadmaps + prioritisation", "Strategy memos + investor decks", "Course completion certificate"], context: "I am interested in AI for Product & Strategy online." },
+      { name: "AI Tools Mastery (foundation)", duration: "2 weeks", certificate: true, status: "active", age: "Any", locations: ["Online"], onlinePrice: 15000, whatYouGet: ["ChatGPT + Claude for work — prompts that work", "Make.com + Zapier automation basics", "Daily-use AI image + video tools", "Course completion certificate"], context: "I am interested in AI Tools Mastery online." },
     ],
   },
   {
     id: "enterprise",
-    title: "Team & Corporate",
+    title: "Corporate — AI Solving Business Problems",
     icon: Briefcase,
-    description: "Discounts for groups and custom curricula for companies. 3–5 students: 15% off · 6–10: 20% off · 11+: 25% off.",
+    description: "Short, sharp, AI-driven training for teams. Maximum 1 week per engagement. Each cohort gets a dedicated 1-on-1 mentor and a real business problem to solve before they leave.",
     items: [
-      { name: "Team Training (3–10 staff)", duration: "Custom", certificate: true, status: "active", age: "Any", locations: ["Abuja", "Online", "On-site"], onlinePrice: "custom", whatYouGet: ["Custom curriculum from HUB programmes", "On-site or virtual delivery", "All certificates included", "Manager progress reports", "Group discount applied"], context: "I want Team Training for my company. Please ask about team size, goals, and which HUB programmes we need." },
-      { name: "Corporate (10+ employees)", duration: "Retainer", certificate: true, status: "active", age: "Any", locations: ["Abuja", "Online", "On-site"], onlinePrice: "custom", whatYouGet: ["Full curriculum customisation", "Ongoing coaching + quarterly reviews", "Skills assessment framework", "All certificates + alumni access", "Dedicated HUB liaison"], context: "I want HUB Corporate training for 10+ employees. Please ask about company size, function, and needs." },
-      { name: "Scholarship (Application)", duration: "Varies", certificate: true, status: "active", age: "Any", locations: ["Abuja", "Online"], onlinePrice: "free", whatYouGet: ["Full or partial tuition coverage", "Application-based", "Eligibility: financial need + commitment", "Same programme + certificate as paid students"], context: "I want to apply for a HUB scholarship. Please tell me what to prepare." },
+      { name: "Corporate Workshop (1–5 days)", duration: "Up to 1 week", certificate: true, status: "active", age: "Any", locations: ["Jos", "On-site (your office)", "Online"], onlinePrice: "custom", whatYouGet: ["AI applied to one segment of your business — pick: Ops, Sales, Marketing, Finance, HR, Product", "Real workshop, real outputs — your team leaves with a working AI solution", "1-on-1 mentor for the cohort", "Custom certification + executive briefing", "Follow-up 30-day check-in"], context: "I want a Corporate Workshop. Please ask which business segment we want AI to solve, team size, and dates." },
+      { name: "Scholarship (Application)", duration: "Varies", certificate: true, status: "active", age: "Any", locations: ["Jos", "Online"], onlinePrice: "free", whatYouGet: ["Full or partial tuition coverage on any HUB programme", "Application-based — financial need + commitment", "Same programme + certificate as paid students", "1-on-1 mentor included"], context: "I want to apply for a HUB scholarship. Please tell me what to prepare." },
     ],
   },
 ];
@@ -152,67 +155,81 @@ type CalEvent = {
  *   · End of programme — Programme graduation
  */
 const CALENDAR_EVENTS: Record<string, CalEvent[]> = {
-  // ── APRIL 2026 ──
-  "2026-04-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "April Cohort Resumption", detail: "New students start today. Orientation + welcome session for all April intakes across every programme.", chatContext: "I'd like to join the April cohort. Please tell me what to prepare." }],
-  "2026-04-06": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of the month. New challenge released to all four teams — AI, Cyber, Quantum, Robotics.", chatContext: "Tell me about the HUB team competition and how I can join." }],
+  // ── APRIL 2026 ── (first Monday: 6th)
+  "2026-04-06": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "April Cohort — Resumption & Orientation", detail: "New students start today. Welcome session + orientation for all April intakes across every programme.", chatContext: "I'd like to join the April cohort. Please tell me what to prepare." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of the month. New challenge released to all four teams — AI, Cyber, Quantum, Robotics.", chatContext: "Tell me about the HUB team competition and how I can join." },
+  ],
   "2026-04-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Digital Dominance — New Cohort", detail: "4-week social media programme begins. ₦80,000. Mon–Wed 8am–2pm. Google Digital Marketing Certificate.", chatContext: "I want to enrol in Digital Dominance starting April 13th." }],
-  "2026-04-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Money Mastery — New Cohort", detail: "4-week financial literacy programme begins. ₦90,000. Personal finance, investing, wealth building.", chatContext: "I want to enrol in Money Mastery starting April 20th." }],
+  "2026-04-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Data Analytics — New Cohort", detail: "6-week data analytics programme begins. ₦130,000. Excel, SQL, Power BI, AI-assisted analysis.", chatContext: "I want to enrol in Data Analytics starting April 20th." }],
   "2026-04-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Business Builders Graduation", detail: "3-week Business Builders Academy ends. Final pitches + Google Business Certificate.", chatContext: "When is the next Business Builders Academy cohort?" }],
 
-  // ── MAY 2026 ──
-  "2026-05-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "May Cohort Resumption", detail: "New students welcome + orientation. All 8 programmes open for enrolment today.", chatContext: "I'd like to join the May cohort." }],
+  // ── MAY 2026 ── (first Monday: 4th)
   "2026-05-04": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "May Cohort — Resumption & Orientation", detail: "New students welcome + orientation. All programmes open for enrolment today.", chatContext: "I'd like to join the May cohort." },
     { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge for AI · Cyber · Quantum · Robotics teams.", chatContext: "Tell me about the May team competition." },
-    { type: "Classes Start", color: CAL_COLORS.cohort, title: "Code Craft Bootcamp Starts", detail: "12-week full-stack programme. ₦300,000. Python → Web → Backend → Final project. Coursera Certificate.", chatContext: "I want to enrol in Code Craft Bootcamp starting May 4th." },
+    { type: "Classes Start", color: CAL_COLORS.cohort, title: "Code Craft Bootcamp Starts", detail: "8-week full-stack programme. ₦300,000. Build with AI — backend, frontend, ship a real product. Coursera Certificate.", chatContext: "I want to enrol in Code Craft Bootcamp starting May 4th." },
   ],
   "2026-05-11": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Compliance Mastery Starts", detail: "6-week programme with Bizdoc partnership. ₦120,000. CAC, tax, NAFDAC, PENCOM.", chatContext: "I want to enrol in Compliance Mastery." }],
   "2026-05-18": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "MetFix Hardware & Robotics", detail: "8-week hardware + robotics track. ₦180k physical / ₦80k online. Arduino, circuits, competition.", chatContext: "I want to enrol in MetFix Hardware & Robotics." }],
   "2026-05-28": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Digital Dominance Graduation", detail: "4-week cohort ends. Final social media showcase + certificate ceremony.", chatContext: "When is the next Digital Dominance cohort?" }],
 
-  // ── JUNE 2026 ──
+  // ── JUNE 2026 ── (first Monday: 1st)
   "2026-06-01": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "June Cohort Resumption", detail: "New students start + orientation. Summer intakes open.", chatContext: "I'd like to join the June cohort." },
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "June Cohort — Resumption & Orientation", detail: "New students start + orientation. Summer intakes open.", chatContext: "I'd like to join the June cohort." },
     { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of June. New challenge released.", chatContext: "Tell me about the June team competition." },
   ],
   "2026-06-15": [{ type: "Project Start", color: CAL_COLORS.project, title: "Code Craft — Web Development Block", detail: "Code Craft students enter the HTML/CSS/JS block. Portfolio site is due by end of block.", chatContext: "Tell me more about Code Craft Bootcamp." }],
   "2026-06-22": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Compliance Mastery Graduation", detail: "6-week programme ends. Students graduate with full compliance roadmap + Professional Compliance Certificate.", chatContext: "When is the next Compliance Mastery cohort?" }],
   "2026-06-29": [{ type: "Project Start", color: CAL_COLORS.project, title: "Team Competition Mid-Year Judging", detail: "All four teams present Q2 challenge outputs. Awards, points, team photos.", chatContext: "Tell me about the team competition mid-year judging." }],
 
-  // ── JULY 2026 ──
-  "2026-07-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "July Cohort Resumption", detail: "New students welcome. All programmes open for July intake.", chatContext: "I'd like to join the July cohort." }],
-  "2026-07-06": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New month, new challenge.", chatContext: "Tell me about the July team competition." }],
+  // ── JULY 2026 ── (first Monday: 6th)
+  "2026-07-06": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "July Cohort — Resumption & Orientation", detail: "New students welcome. All programmes open for July intake.", chatContext: "I'd like to join the July cohort." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New month, new challenge.", chatContext: "Tell me about the July team competition." },
+  ],
   "2026-07-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "MetFix Physical Track", detail: "Physical MetFix Hardware cohort begins at HUB workshop. ₦180,000. Abuja only.", chatContext: "I want to enrol in MetFix physical track." }],
   "2026-07-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Business Builders Academy", detail: "3-week business foundations programme. ₦150,000. Google Business Certificate.", chatContext: "I want to enrol in Business Builders Academy." }],
   "2026-07-27": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Mid-Point Review", detail: "Week 6 milestone. Students present portfolio sites for peer + instructor review.", chatContext: "Tell me about the Code Craft mid-point review." }],
 
-  // ── AUGUST 2026 ──
-  "2026-08-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "August Cohort Resumption", detail: "New students orientation + welcome.", chatContext: "I'd like to join the August cohort." }],
-  "2026-08-03": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. August challenge released.", chatContext: "Tell me about the August team competition." }],
+  // ── AUGUST 2026 ── (first Monday: 3rd)
+  "2026-08-03": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "August Cohort — Resumption & Orientation", detail: "New students orientation + welcome.", chatContext: "I'd like to join the August cohort." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. August challenge released.", chatContext: "Tell me about the August team competition." },
+  ],
   "2026-08-10": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Kids Programme — August Cohort", detail: "Basic Computer Skills (Kids, 8–15). Thu–Sat, 2 weeks. ₦25,000.", chatContext: "I want to enrol my child in the August kids programme." }],
   "2026-08-17": [{ type: "Project Start", color: CAL_COLORS.project, title: "MetFix Robotics Build", detail: "MetFix students begin robot design + programming phase.", chatContext: "Tell me about MetFix robotics." }],
-  "2026-08-31": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Money Mastery Graduation", detail: "Students present their 10-year wealth plans. Financial Literacy Certificate.", chatContext: "When is the next Money Mastery cohort?" }],
+  "2026-08-31": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Data Analytics Graduation", detail: "Students present their final business dashboards. Hamzury HUB + Google Data Analytics Certificate.", chatContext: "When is the next Data Analytics cohort?" }],
 
-  // ── SEPTEMBER 2026 ──
-  "2026-09-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "September Cohort Resumption", detail: "New students orientation. Back-to-school intake — extra capacity.", chatContext: "I'd like to join the September cohort." }],
-  "2026-09-07": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge.", chatContext: "Tell me about the September team competition." }],
+  // ── SEPTEMBER 2026 ── (first Monday: 7th)
+  "2026-09-07": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "September Cohort — Resumption & Orientation", detail: "New students orientation. Back-to-school intake — extra capacity.", chatContext: "I'd like to join the September cohort." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge.", chatContext: "Tell me about the September team competition." },
+  ],
   "2026-09-21": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "MetFix + Robotics Graduation", detail: "8-week programme ends. Robot showcase + Hardware Engineering Certificate.", chatContext: "When is the next MetFix cohort?" }],
   "2026-09-28": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q3 Team Competition Finals", detail: "All four teams compete. Annual rankings updated.", chatContext: "Tell me about Q3 team competition finals." }],
 
-  // ── OCTOBER 2026 ──
-  "2026-10-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "October Cohort Resumption", detail: "New students welcome. Q4 intakes open.", chatContext: "I'd like to join the October cohort." }],
-  "2026-10-05": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of October.", chatContext: "Tell me about the October team competition." }],
+  // ── OCTOBER 2026 ── (first Monday: 5th)
+  "2026-10-05": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "October Cohort — Resumption & Orientation", detail: "New students welcome. Q4 intakes open.", chatContext: "I'd like to join the October cohort." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of October.", chatContext: "Tell me about the October team competition." },
+  ],
   "2026-10-19": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Final 2026 Digital Dominance Cohort", detail: "Last Digital Dominance cohort of 2026. 4 weeks.", chatContext: "I want to join the final 2026 Digital Dominance cohort." }],
-  "2026-10-26": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Bootcamp Graduation", detail: "12-week full-stack programme ends. Final project demo day + Coursera Certificate.", chatContext: "When is the next Code Craft Bootcamp?" }],
+  "2026-10-26": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Bootcamp Graduation", detail: "8-week full-stack programme ends. Final project demo day + Coursera Certificate.", chatContext: "When is the next Code Craft Bootcamp?" }],
 
-  // ── NOVEMBER 2026 ──
-  "2026-11-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "November Cohort Resumption", detail: "Final standard intakes of 2026.", chatContext: "I'd like to join the November cohort." }],
-  "2026-11-02": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of November.", chatContext: "Tell me about the November team competition." }],
+  // ── NOVEMBER 2026 ── (first Monday: 2nd)
+  "2026-11-02": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "November Cohort — Resumption & Orientation", detail: "Final standard intakes of 2026.", chatContext: "I'd like to join the November cohort." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of November.", chatContext: "Tell me about the November team competition." },
+  ],
   "2026-11-16": [{ type: "Project Start", color: CAL_COLORS.project, title: "Year-End Project Phase", detail: "All ongoing programmes enter capstone project phase. Market-ready deliverables.", chatContext: "Tell me about the year-end project phase." }],
-  "2026-11-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "November Programme Graduations", detail: "Digital Dominance, Money Mastery, Kids programme graduations + certificate ceremony.", chatContext: "Tell me about November graduations." }],
+  "2026-11-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "November Programme Graduations", detail: "Digital Dominance, Data Analytics, Kids programme graduations + certificate ceremony.", chatContext: "Tell me about November graduations." }],
 
-  // ── DECEMBER 2026 ──
-  "2026-12-01": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "December Cohort Resumption", detail: "Last cohort of 2026. Short-run programmes only (Digital Dominance, Money Mastery, Online Academy).", chatContext: "I'd like to join the December cohort — last chance in 2026." }],
-  "2026-12-07": [{ type: "Competition", color: CAL_COLORS.executive, title: "Team Competition — Year-End Championship", detail: "First Monday of December. Annual team championship begins.", chatContext: "Tell me about the year-end team competition championship." }],
+  // ── DECEMBER 2026 ── (first Monday: 7th)
+  "2026-12-07": [
+    { type: "Orientation", color: CAL_COLORS.orientation, title: "December Cohort — Resumption & Orientation", detail: "Last cohort of 2026. Short-run programmes only (Digital Dominance, Data Analytics, Online Academy).", chatContext: "I'd like to join the December cohort — last chance in 2026." },
+    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition — Year-End Championship", detail: "Annual team championship begins.", chatContext: "Tell me about the year-end team competition championship." },
+  ],
   "2026-12-14": [{ type: "Executive", color: CAL_COLORS.executive, title: "Year-End Workshop + Showcase (2 Days)", detail: "All 2026 students gather. Team championship finals, project showcase, pitching, 2027 planning. The biggest event of the year.", chatContext: "Tell me about the year-end workshop and showcase in December." }],
   "2026-12-21": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "2027 Early Bird Orientation", detail: "Preview 2027 programmes. Early registrants get priority placement + 10% discount.", chatContext: "I'd like to attend the 2027 Early Bird Orientation." }],
 };
@@ -222,7 +239,8 @@ const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "Ju
 const MONTH_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function buildMonthGrid(year: number, month: number) {
-  const firstDay = new Date(year, month, 1).getDay();
+  // Week starts on Monday: shift Sunday (0) to the end so 0=Mon, 6=Sun.
+  const firstDay = (new Date(year, month, 1).getDay() + 6) % 7;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrev = new Date(year, month, 0).getDate();
   const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
@@ -267,10 +285,9 @@ function CalendarSection() {
 
   const selectedEvents = selectedDate ? CALENDAR_EVENTS[selectedDate] ?? [] : [];
 
-  /** HUB has no AI chat — all "contact" CTAs open WhatsApp with context. */
-  const openChat = (context: string) => {
-    const msg = encodeURIComponent(context);
-    window.open(`https://wa.me/2349130700056?text=${msg}`, "_blank");
+  /** HUB has no AI chat — all "contact" CTAs route to the enrolment form. */
+  const openChat = (_context: string) => {
+    window.location.href = "/hub/enroll";
   };
 
   const legendItems = [
@@ -295,37 +312,63 @@ function CalendarSection() {
         <p className="text-[13px] text-center mb-12 max-w-md mx-auto" style={{ color: `${TEXT}55` }}>Click any highlighted date to see details.</p>
 
         {/* Month strip — horizontal scroll on mobile, centered on desktop */}
-        <div className="overflow-x-auto scrollbar-hide mb-8 -mx-6 px-6">
-          <div className="flex gap-0 min-w-max mx-auto w-fit rounded-2xl overflow-hidden" style={{ backgroundColor: `${DARK}04` }}>
-            {CALENDAR_MONTHS.map(m => {
-              const isActive = m === activeMonth;
-              const evCount = monthEventCount(m);
-              const past = isPastMonth(m);
-              return (
-                <button
-                  key={m}
-                  onClick={() => { setActiveMonth(m); setSelectedDate(null); }}
-                  className="relative flex flex-col items-center justify-center transition-all duration-200"
-                  style={{
-                    width: 52,
-                    height: 48,
-                    backgroundColor: isActive ? DARK : "transparent",
-                    color: isActive ? W : past ? `${TEXT}30` : TEXT,
-                    borderRadius: isActive ? 14 : 0,
-                  }}
-                >
-                  <span className="text-[11px] font-semibold tracking-wide">{MONTH_SHORT[m]}</span>
-                  {evCount > 0 && (
-                    <div className="flex gap-[2px] mt-1">
-                      {Array.from({ length: Math.min(evCount, 4) }).map((_, i) => (
-                        <div key={i} className="w-[3px] h-[3px] rounded-full" style={{ backgroundColor: isActive ? GOLD : past ? `${TEXT}20` : CAL_COLORS.cohort }} />
-                      ))}
-                    </div>
-                  )}
-                </button>
-              );
-            })}
+        {/* 3-month rolling strip with prev / next chevrons */}
+        <div className="flex items-center justify-center gap-2 mb-8">
+          <button
+            onClick={() => { setActiveMonth(m => Math.max(0, m - 1)); setSelectedDate(null); }}
+            disabled={activeMonth <= 0}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 hover:bg-black/5"
+            style={{ color: TEXT }}
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={18} />
+          </button>
+
+          <div className="flex gap-1 rounded-full p-1" style={{ backgroundColor: `${DARK}06` }}>
+            {(() => {
+              // Show a 3-month window centered on activeMonth, clamped to [0, 11].
+              let start = Math.max(0, Math.min(activeMonth - 1, 9));
+              const window = [start, start + 1, start + 2];
+              return window.map(m => {
+                const isActive = m === activeMonth;
+                const evCount = monthEventCount(m);
+                const past = isPastMonth(m);
+                return (
+                  <button
+                    key={m}
+                    onClick={() => { setActiveMonth(m); setSelectedDate(null); }}
+                    className="relative flex flex-col items-center justify-center transition-all duration-200"
+                    style={{
+                      width: 64,
+                      height: 44,
+                      backgroundColor: isActive ? DARK : "transparent",
+                      color: isActive ? W : past ? `${TEXT}30` : TEXT,
+                      borderRadius: 999,
+                    }}
+                  >
+                    <span className="text-[12px] font-semibold tracking-wide">{MONTH_SHORT[m]}</span>
+                    {evCount > 0 && (
+                      <div className="flex gap-[2px] mt-0.5">
+                        {Array.from({ length: Math.min(evCount, 4) }).map((_, i) => (
+                          <div key={i} className="w-[3px] h-[3px] rounded-full" style={{ backgroundColor: isActive ? GOLD : past ? `${TEXT}20` : CAL_COLORS.cohort }} />
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                );
+              });
+            })()}
           </div>
+
+          <button
+            onClick={() => { setActiveMonth(m => Math.min(11, m + 1)); setSelectedDate(null); }}
+            disabled={activeMonth >= 11}
+            className="w-10 h-10 rounded-full flex items-center justify-center transition-all disabled:opacity-30 hover:bg-black/5"
+            style={{ color: TEXT }}
+            aria-label="Next month"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
 
         {/* Calendar grid */}
@@ -335,7 +378,7 @@ function CalendarSection() {
           </div>
 
           <div className="grid grid-cols-7 px-4 pt-4">
-            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d, i) => (
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d, i) => (
               <div key={i} className="text-center text-[11px] font-medium pb-3" style={{ color: `${TEXT}44` }}>{d}</div>
             ))}
           </div>
@@ -391,41 +434,123 @@ function CalendarSection() {
             ))}
           </div>
 
-          {/* Inline overlay for selected date — floats over calendar */}
+          {/* Apple-standard event detail overlay */}
           {selectedDate && selectedEvents.length > 0 && (
-            <div className="absolute inset-0 flex items-center justify-center p-4 z-10" style={{ backgroundColor: "rgba(0,0,0,0.3)", backdropFilter: "blur(4px)" }}>
-              <div className="rounded-2xl p-6 w-full max-w-md" style={{ backgroundColor: W, boxShadow: "0 8px 40px rgba(0,0,0,0.15)" }}>
-                <div className="flex items-center justify-between mb-4">
-                  <p className="text-[11px] font-medium tracking-wide uppercase" style={{ color: `${TEXT}44` }}>
-                    {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-NG", { weekday: "short", day: "numeric", month: "short" })}
-                  </p>
-                  <button onClick={() => setSelectedDate(null)} className="p-1.5 rounded-full hover:bg-black/5 transition-colors"><X size={16} style={{ color: `${TEXT}55` }} /></button>
-                </div>
-                {selectedEvents.map((ev, i) => (
-                  <div key={i}>
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-3 h-3 rounded-full mt-1 shrink-0" style={{ backgroundColor: ev.color }} />
-                      <div>
-                        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: `${ev.color}15`, color: ev.color }}>{ev.type}</span>
-                        <h4 className="text-[16px] font-semibold mt-1.5 mb-1.5" style={{ color: TEXT }}>{ev.title}</h4>
-                        <p className="text-[13px] leading-relaxed" style={{ color: TEXT, opacity: 0.6 }}>{ev.detail}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => { openChat(ev.chatContext); setSelectedDate(null); }}
-                      className="w-full py-3 rounded-xl text-[13px] font-medium transition-all hover:scale-[1.01] flex items-center justify-center gap-2"
-                      style={{ backgroundColor: ev.color, color: W }}
-                    >
-                      <MessageSquare size={14} /> Learn More & Enroll
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CalendarEventModal
+              date={selectedDate}
+              events={selectedEvents}
+              onClose={() => setSelectedDate(null)}
+            />
           )}
         </div>
       </div>
     </section>
+  );
+}
+
+// ── CALENDAR EVENT MODAL — Apple-standard ─────────────────────────────────────
+function CalendarEventModal({
+  date,
+  events,
+  onClose,
+}: {
+  date: string;
+  events: { type: string; color: string; title: string; detail: string; chatContext: string }[];
+  onClose: () => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const ev = events[0];
+  const fullDate = new Date(date + "T00:00:00").toLocaleDateString("en-NG", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+
+  return (
+    <div
+      className="absolute inset-0 flex items-center justify-center p-4 z-10"
+      style={{ backgroundColor: "rgba(20,20,30,0.45)", backdropFilter: "blur(12px)" }}
+      onClick={onClose}
+    >
+      <div
+        className="rounded-[24px] w-full max-w-md overflow-hidden"
+        style={{ backgroundColor: W, boxShadow: "0 24px 80px rgba(0,0,0,0.18)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="px-7 pt-7 pb-5 flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] font-semibold tracking-[0.25em] uppercase mb-1.5" style={{ color: ev.color }}>
+              {ev.type}
+            </p>
+            <p className="text-[12px] font-medium" style={{ color: `${TEXT}66` }}>{fullDate}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 flex-shrink-0"
+            aria-label="Close"
+          >
+            <X size={16} style={{ color: `${TEXT}66` }} />
+          </button>
+        </div>
+
+        {/* Title + summary */}
+        <div className="px-7 pb-6">
+          <h3 className="text-[24px] md:text-[26px] font-light leading-[1.2] tracking-tight mb-3" style={{ color: TEXT }}>
+            {ev.title}
+          </h3>
+          <p className="text-[14px] leading-[1.6]" style={{ color: TEXT, opacity: 0.6 }}>
+            {ev.detail}
+          </p>
+        </div>
+
+        {/* Inline Learn-more expansion */}
+        <div
+          className="overflow-hidden transition-all duration-300 ease-out"
+          style={{
+            maxHeight: expanded ? 320 : 0,
+            opacity: expanded ? 1 : 0,
+          }}
+        >
+          <div className="px-7 pb-6">
+            <div className="rounded-2xl p-5" style={{ backgroundColor: `${ev.color}08`, border: `1px solid ${ev.color}22` }}>
+              <p className="text-[10px] font-semibold tracking-[0.25em] uppercase mb-3" style={{ color: ev.color }}>WHAT TO EXPECT</p>
+              <ul className="space-y-2.5">
+                {[
+                  "20-student cohort with a dedicated 1-on-1 mentor.",
+                  "Mon–Wed 8–2 (advanced) or Thu–Sat (basics) at the Jos campus, or fully online.",
+                  "₦10,000 secures your seat — or apply with a scholarship code.",
+                  "Hamzury HUB certificate plus a partner certificate on completion.",
+                ].map((line, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[13px] leading-[1.6]" style={{ color: TEXT, opacity: 0.75 }}>
+                    <span className="mt-1.5 w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: ev.color }} />
+                    {line}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="px-7 pb-7 flex flex-col gap-2.5" style={{ borderTop: `1px solid ${TEXT}08`, paddingTop: 20 }}>
+          <Link href="/hub/enroll">
+            <span
+              className="w-full py-3.5 rounded-full text-[14px] font-medium transition-all hover:opacity-90 flex items-center justify-center gap-2 cursor-pointer"
+              style={{ backgroundColor: DARK, color: GOLD }}
+            >
+              Book your seat <ArrowRight size={14} />
+            </span>
+          </Link>
+          <button
+            onClick={() => setExpanded(p => !p)}
+            className="w-full py-3 rounded-full text-[13px] font-medium transition-colors hover:bg-black/5"
+            style={{ color: TEXT, opacity: 0.7 }}
+            aria-expanded={expanded}
+          >
+            {expanded ? "Show less" : "Learn more"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -447,29 +572,27 @@ function StickyNote({
 
   return (
     <div
-      className="rounded-lg p-5 relative transition-all duration-300 hover:shadow-xl sticky-enter"
+      className="relative transition-all duration-300 sticky-enter"
       style={{
-        backgroundColor: stickyColor.bg,
-        border: `1px solid ${stickyColor.border}`,
-        boxShadow: `3px 3px 12px ${stickyColor.shadow}, 0 1px 3px rgba(0,0,0,0.06)`,
-        minWidth: 260,
-        maxWidth: 300,
-        fontFamily: "'Caveat', 'Segoe Print', 'Comic Sans MS', cursive",
-        transform: `rotate(${Math.random() > 0.5 ? '' : '-'}${(Math.random() * 2 + 0.5).toFixed(1)}deg)`,
+        backgroundColor: W,
+        borderRadius: 20,
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 36px rgba(20,20,30,0.10)",
+        minWidth: 280,
+        maxWidth: 320,
+        overflow: "hidden",
+        border: `1px solid ${TEXT}08`,
       }}
     >
-      {/* Pin visual */}
-      <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-5 h-5 rounded-full" style={{ backgroundColor: stickyColor.border, boxShadow: `0 2px 6px ${stickyColor.shadow}` }}>
-        <div className="w-2 h-2 rounded-full bg-white/60 absolute top-1 left-1.5" />
-      </div>
+      {/* Apple Notes-style accent strip */}
+      <div className="h-1.5" style={{ backgroundColor: stickyColor.border }} />
 
-      {/* Unpin */}
-      <button onClick={onClose} className="absolute top-2 right-2 p-1 rounded-full transition-colors hover:bg-black/10" title="Unpin">
+      {/* Close */}
+      <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-black/5" title="Close">
         <X size={14} style={{ color: `${TEXT}55` }} />
       </button>
 
-      <div className="mt-2">
-        <h4 className="text-[18px] font-bold mb-1" style={{ color: TEXT }}>{item.name}</h4>
+      <div className="p-5">
+        <h4 className="text-[17px] font-semibold tracking-tight mb-2 pr-6" style={{ color: TEXT, letterSpacing: "-0.01em" }}>{item.name}</h4>
 
         <div className="flex items-center gap-2 flex-wrap mb-3">
           <span className="text-[11px] font-sans font-medium px-2 py-0.5 rounded-full" style={{ backgroundColor: badge.bg, color: badge.text }}>{badge.label}</span>
@@ -546,20 +669,169 @@ function StickyNote({
               href={item.videoUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-2 rounded-lg text-[12px] font-medium flex items-center justify-center gap-1.5 transition-opacity hover:opacity-80"
-              style={{ backgroundColor: "rgba(0,0,0,0.06)", color: TEXT }}
+              className="w-full py-2.5 rounded-full text-[12.5px] font-medium flex items-center justify-center gap-1.5 transition-opacity hover:opacity-80"
+              style={{ backgroundColor: `${TEXT}06`, color: TEXT }}
             >
               <Play size={12} /> Watch Video
             </a>
           )}
-          <button
-            onClick={() => openChat(`I'm interested in ${item.name}. Please:\n1. Explain what this course covers, who it's for, and what I'll gain\n2. Run a clarity questionnaire to assess my current skill level and background\n3. Based on my answers, tell me honestly if I'm ready — or suggest the right starting point\n4. If I'm a fit, ask me to choose location: Online, Abuja, Jos, or Kano\n5. If Online — confirm availability, collect my details, process payment (max ₦20,000 for online). After payment give me my certificate/reference number to login\n6. If Physical — we have limited seats (${item.maxStudents || 'limited'} per cohort). If qualified, process payment and invite to orientation. We'll email admission details, procedures, and orientation packages\n7. Enrollment is for the NEXT cohort only\n8. Course: ${item.name} | Duration: ${item.duration || 'TBD'} | Age: ${item.age || 'Any'} | Prerequisites: ${item.prerequisites || 'None'}`)}
-            className="w-full py-2.5 rounded-lg text-[12px] font-medium transition-all hover:scale-[1.01] flex items-center justify-center gap-1.5"
-            style={{ backgroundColor: DARK, color: W }}
-          >
-            <MessageSquare size={12} /> Learn More & Book a Seat
-          </button>
+          {item.status === "coming" ? (
+            <button
+              disabled
+              className="w-full py-3 rounded-full text-[13px] font-semibold flex items-center justify-center gap-2 cursor-not-allowed"
+              style={{ backgroundColor: `${TEXT}10`, color: `${TEXT}55` }}
+            >
+              Coming Soon
+            </button>
+          ) : (
+            <Link href="/hub/enroll">
+              <span
+                className="w-full py-3 rounded-full text-[13px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-95 cursor-pointer"
+                style={{ backgroundColor: "#16A34A", color: W }}
+              >
+                <span style={{ fontSize: 15, lineHeight: 1 }}>🪑</span> Book a seat
+              </span>
+            </Link>
+          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── HOW IT WORKS — horizontal minimal icons, click to expand ─────────────────
+function HowItWorks() {
+  const [open, setOpen] = useState<number | null>(null);
+
+  const STEPS = [
+    { icon: Pin,        t: "Apply",    b: "Three-minute form. We reply on WhatsApp." },
+    { icon: CreditCard, t: "Hold",     b: "₦10,000 or scholarship code locks your seat." },
+    { icon: GraduationCap, t: "Learn", b: "Twenty per class. Mentor included." },
+    { icon: Award,      t: "Graduate", b: "HUB + partner certificate. Lifetime alumni." },
+  ];
+
+  const RULES = [
+    { icon: MapPin,     t: "Where",    b: "Jos active. Abuja 2027. Online global." },
+    { icon: Calendar,   t: "When",     b: "Mon–Wed 8–2 for advanced. Thu–Sat for basics." },
+    { icon: Users,      t: "Size",     b: "Twenty per class. No more." },
+    { icon: Briefcase,  t: "Stack",    b: "Up to three programmes in parallel." },
+    { icon: UserCheck,  t: "Mentor",   b: "One mentor. Weekly check-ins." },
+    { icon: Lightbulb,  t: "AI-first", b: "Build with AI. Ship real outcomes." },
+  ];
+
+  const renderRow = (items: typeof STEPS, prefix: string) => (
+    <div className="overflow-x-auto -mx-6 px-6 pb-2 scrollbar-hide">
+      <div className="flex items-start gap-2 md:gap-3 min-w-max md:min-w-0 md:justify-center md:flex-wrap">
+        {items.map((it, i) => {
+          const key = `${prefix}-${i}`;
+          const isOpen = open === i && open !== null && (prefix === "step" ? i < STEPS.length : i >= STEPS.length);
+          // simpler: use prefix-aware open key
+          return null;
+        })}
+      </div>
+    </div>
+  );
+  void renderRow; // discard helper, we'll inline render below
+
+  return (
+    <section id="rules" className="py-24 md:py-32 px-6" style={{ backgroundColor: BG }}>
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-14 md:mb-16">
+          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-5" style={{ color: GOLD }}>HOW IT WORKS</p>
+          <h2 className="text-[clamp(32px,5vw,52px)] font-light leading-[1.05] tracking-tight mb-4" style={{ color: TEXT }}>
+            From application <span style={{ color: DARK }}>to certificate.</span>
+          </h2>
+          <p className="text-[14px]" style={{ color: TEXT, opacity: 0.55 }}>Tap an icon to expand.</p>
+        </div>
+
+        {/* Steps row */}
+        <IconRow items={STEPS} group="step" />
+
+        {/* Divider */}
+        <div className="mt-16 mb-12 flex items-center gap-4">
+          <div className="flex-1 h-px" style={{ backgroundColor: `${DARK}12` }} />
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase" style={{ color: GOLD }}>FINE PRINT</p>
+          <div className="flex-1 h-px" style={{ backgroundColor: `${DARK}12` }} />
+        </div>
+
+        {/* Rules row */}
+        <IconRow items={RULES} group="rule" />
+
+        {/* Offices */}
+        <div className="mt-20 pt-8 flex flex-col md:flex-row items-center justify-between gap-4" style={{ borderTop: `1px solid ${DARK}10` }}>
+          <p className="text-[10px] font-semibold tracking-[0.3em] uppercase" style={{ color: GOLD }}>OFFICES</p>
+          <div className="flex flex-wrap justify-center gap-6 text-[13px]">
+            {[
+              { city: "Jos",    state: "active", color: "#16A34A" },
+              { city: "Online", state: "active", color: "#16A34A" },
+              { city: "Abuja",  state: "2027",   color: GOLD },
+            ].map((o) => (
+              <div key={o.city} className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: o.color }} />
+                <span className="font-medium" style={{ color: TEXT }}>{o.city}</span>
+                <span style={{ color: TEXT, opacity: 0.45 }}>{o.state}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function IconRow({ items, group }: { items: { icon: typeof Users; t: string; b: string }[]; group: string }) {
+  const [open, setOpen] = useState<number | null>(null);
+
+  return (
+    <div>
+      {/* Horizontal icon strip */}
+      <div className="flex items-start justify-center gap-1 md:gap-2 overflow-x-auto -mx-6 px-6 pb-1 scrollbar-hide">
+        {items.map((it, i) => {
+          const Icon = it.icon;
+          const isOpen = open === i;
+          return (
+            <button
+              key={`${group}-${i}`}
+              onClick={() => setOpen(isOpen ? null : i)}
+              className="group flex flex-col items-center gap-2 px-4 py-3 rounded-xl transition-all flex-shrink-0"
+              style={{
+                backgroundColor: isOpen ? `${GOLD}14` : "transparent",
+              }}
+              aria-expanded={isOpen}
+            >
+              <div
+                className="w-11 h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all"
+                style={{
+                  backgroundColor: isOpen ? DARK : `${DARK}08`,
+                  color: isOpen ? GOLD : DARK,
+                }}
+              >
+                <Icon size={18} strokeWidth={1.6} />
+              </div>
+              <span className="text-[11px] md:text-[12px] font-medium tracking-tight" style={{ color: isOpen ? DARK : `${TEXT}88` }}>
+                {it.t}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Inline expand */}
+      <div
+        className="overflow-hidden transition-all duration-300 ease-out"
+        style={{
+          maxHeight: open !== null ? 200 : 0,
+          opacity: open !== null ? 1 : 0,
+          marginTop: open !== null ? 16 : 0,
+        }}
+      >
+        {open !== null && (
+          <div className="max-w-md mx-auto text-center px-6 py-5 rounded-2xl" style={{ backgroundColor: "#FFFFFF", border: `1px solid ${DARK}10` }}>
+            <p className="text-[15px] leading-relaxed" style={{ color: TEXT, opacity: 0.8 }}>
+              {items[open].b}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -600,10 +872,9 @@ export default function HubPage() {
     rejected: "Not accepted this cycle",
   };
 
-  /** HUB has no AI chat — route CTAs directly to WhatsApp with context. */
-  const openChat = (context: string) => {
-    const msg = encodeURIComponent(context);
-    window.open(`https://wa.me/2349130700056?text=${msg}`, "_blank");
+  /** HUB has no AI chat — all CTAs route to the enrolment form. */
+  const openChat = (_context: string) => {
+    window.location.href = "/hub/enroll";
   };
 
   const togglePin = (item: CourseItem) => {
@@ -619,19 +890,19 @@ export default function HubPage() {
   };
 
   const catColors: Record<string, string> = {
-    courses: DARK,
-    internship: "#7C3AED",
-    workshops: GOLD,
-    corporate: "#059669",
-    hals: "#2563EB",
+    programs: DARK,
+    kids: "#F97316",
+    online: "#2563EB",
+    enterprise: "#059669",
+    access: "#7C3AED",
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: BG, color: TEXT }}>
-      <SplashScreen text="HAMZURY" color={DARK} departmentName="HUB" tagline="Tech skills that get you paid." />
+      <SplashScreen text="HAMZURY" color={DARK} departmentName="HUB" tagline="Learn what actually works." />
       <PageMeta
         title="HUB — Tech Training | HAMZURY"
-        description="Tech skills that get you paid. Web development, data analysis, graphics, marketing, AI & automation — with job-placement support."
+        description="Learn what actually works. AI-driven programmes in business, code, data, marketing and compliance — with international certification and placement support."
       />
 
       <style>{`
@@ -660,92 +931,78 @@ export default function HubPage() {
         }}
       >
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between relative">
-          <span className="text-[13px] tracking-[4px] font-light uppercase" style={{ color: TEXT }}>HAMZURY HUB</span>
+          <Link href="/hub">
+            <span className="text-[13px] tracking-[4px] font-light uppercase cursor-pointer hover:opacity-70 transition-opacity" style={{ color: TEXT }}>HAMZURY HUB</span>
+          </Link>
           <button onClick={() => setMobileMenuOpen(p => !p)} className="flex items-center justify-center w-9 h-9 transition-opacity hover:opacity-70" style={{ color: TEXT }} aria-label="Menu">
             {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
 
           {mobileMenuOpen && (
             <div className="absolute top-12 right-0 rounded-2xl py-2 min-w-[220px] shadow-xl" style={{ backgroundColor: W }} onClick={() => setMobileMenuOpen(false)}>
-              <a
-                href={`https://wa.me/2349130700056?text=${encodeURIComponent("Hello HAMZURY HUB — I'd like to talk about a programme.")}`}
-                target="_blank"
-                rel="noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 px-3 py-3.5 rounded-xl w-full text-left mx-2"
-                style={{ backgroundColor: "#25D36615", color: "#128C7E" }}
-              >
-                <MessageSquare size={16} />
-                <span className="text-[13px] font-medium">WhatsApp us</span>
-              </a>
               {[
-                { label: "Bizdoc",  href: "/bizdoc" },
-                { label: "Scalar",  href: "/scalar" },
-                { label: "Medialy", href: "/medialy" },
-                { label: "About",   href: "/about" },
-                { label: "Contact", href: "/contact" },
-                { label: "HAMZURY", href: "/" },
+                { label: "Programmes",         action: () => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" }) },
+                { label: "Calendar",           action: () => document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth" }) },
+                { label: "Cohort Rules",       action: () => document.getElementById("rules")?.scrollIntoView({ behavior: "smooth" }) },
+                { label: "Verify Certificate", action: () => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" }) },
               ].map(item => (
-                <Link key={item.href} href={item.href}>
-                  <span className="block px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>{item.label}</span>
-                </Link>
+                <button
+                  key={item.label}
+                  onClick={() => { item.action(); setMobileMenuOpen(false); }}
+                  className="block w-full text-left px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer"
+                  style={{ color: TEXT }}
+                >
+                  {item.label}
+                </button>
               ))}
+              <Link href="/startup">
+                <span className="block w-full text-left px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>
+                  Startup
+                </span>
+              </Link>
+              <Link href="/alumni">
+                <span className="block w-full text-left px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>
+                  Alumni
+                </span>
+              </Link>
+              <Link href="/milestones">
+                <span className="block w-full text-left px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>
+                  Milestones
+                </span>
+              </Link>
+              <Link href="/partner">
+                <span className="block w-full text-left px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>
+                  Partner with us
+                </span>
+              </Link>
+              <Link href="/feedback">
+                <span className="block w-full text-left px-5 py-2.5 text-[13px] font-medium transition-colors hover:bg-gray-50 cursor-pointer" style={{ color: TEXT }}>
+                  Feedback
+                </span>
+              </Link>
+              <Link href="/hub/enroll">
+                <span className="block mx-2 mt-2 px-4 py-3 rounded-xl text-[13px] font-semibold text-center cursor-pointer" style={{ backgroundColor: DARK, color: GOLD }}>
+                  Enrol now →
+                </span>
+              </Link>
             </div>
           )}
         </div>
       </nav>
 
-      {/* ── MAY COHORT BANNER — campaign strip ── */}
-      <section className="pt-20 pb-2" style={{ backgroundColor: BG }}>
-        <div className="max-w-3xl mx-auto px-6">
-          <div
-            className="flex items-center gap-3 px-5 py-3 rounded-full text-[12px] md:text-[13px] font-medium mx-auto"
-            style={{
-              backgroundColor: `${GOLD}12`,
-              border: `1px solid ${GOLD}30`,
-              color: DARK,
-              width: "fit-content",
-              maxWidth: "100%",
-            }}
-          >
-            <span
-              className="w-2 h-2 rounded-full animate-pulse flex-shrink-0"
-              style={{ backgroundColor: GOLD }}
-            />
-            <span className="tracking-[0.08em]">
-              <strong style={{ color: GOLD }}>May Cohort</strong>
-              <span className="opacity-60"> · starts May 1, 2026 · enrolment open</span>
-            </span>
-          </div>
-        </div>
-      </section>
-
       {/* ── HERO ── */}
-      <section className="min-h-[85vh] flex items-center justify-center px-6">
+      <section className="min-h-[85vh] flex items-center justify-center px-6 pt-20">
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-[10px] md:text-[11px] font-semibold tracking-[0.3em] uppercase mb-4" style={{ color: GOLD }}>
-            HAMZURY HUB · BUILT TO LAST
-          </p>
           <h1 className="text-[clamp(32px,6vw,54px)] font-light leading-[1.05] tracking-tight mb-6" style={{ color: TEXT }}>
-            Tech skills that{" "}<span style={{ color: DARK }}>get you paid.</span>
+            Learn what{" "}<span style={{ color: DARK }}>actually works.</span>
           </h1>
-          <p className="text-[15px] leading-relaxed mb-12 max-w-lg mx-auto" style={{ color: TEXT, opacity: 0.55 }}>
-            Eight programmes. Real portfolios. International certification. Pick your path — we'll walk you to placement.
-          </p>
-          <div className="flex flex-wrap gap-3 justify-center mb-8">
-            <Link
-              href="/hub/enroll"
+          <div className="flex flex-wrap gap-3 justify-center mt-12 mb-8">
+            <button
+              onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
               className="px-8 py-4 rounded-full text-[14px] font-semibold transition-all duration-300 hover:scale-[1.02]"
               style={{ backgroundColor: DARK, color: GOLD }}
             >
-              Enrol for May Cohort →
-            </Link>
-            <button
-              onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-8 py-4 rounded-full text-[14px] font-medium transition-all duration-300 hover:opacity-80"
-              style={{ color: TEXT, border: `1px solid ${TEXT}20` }}
-            >
-              See Programmes
+              Programmes
             </button>
             <button
               onClick={() => document.getElementById("calendar")?.scrollIntoView({ behavior: "smooth" })}
@@ -755,9 +1012,6 @@ export default function HubPage() {
               Calendar
             </button>
           </div>
-          <p className="text-[12px]" style={{ color: `${TEXT}50` }}>
-            Not sure which skill? Start the enrolment form — we'll help you choose.
-          </p>
         </div>
       </section>
 
@@ -885,8 +1139,25 @@ export default function HubPage() {
         </div>
       )}
 
+      {/* ── HOW IT WORKS — horizontal minimal icons, click to expand ── */}
+      <HowItWorks />
+
+
       {/* ── CALENDAR ── */}
       <CalendarSection />
+
+      {/* ── PARTNERS — single slim strip ── */}
+      <section className="py-6 px-6" style={{ backgroundColor: W, borderTop: `1px solid ${DARK}08`, borderBottom: `1px solid ${DARK}08` }}>
+        <div className="max-w-5xl mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+          <span className="text-[10px] font-semibold tracking-[0.3em] uppercase" style={{ color: GOLD }}>PARTNERS</span>
+          <span className="hidden md:inline-block w-px h-3" style={{ backgroundColor: `${TEXT}15` }} />
+          {["Plan Aid Academy", "RIDI", "NITDA", "METFIX"].map((p) => (
+            <span key={p} className="text-[12px] font-medium tracking-wide" style={{ color: `${TEXT}70` }}>{p}</span>
+          ))}
+          <span className="hidden md:inline-block w-px h-3" style={{ backgroundColor: `${TEXT}15` }} />
+          <Link href="/partner"><span className="text-[12px] font-medium cursor-pointer" style={{ color: DARK }}>Partner with us →</span></Link>
+        </div>
+      </section>
 
       {/* ── TRACK ── */}
       <section id="track" ref={myUpdateRef} className="py-24 md:py-32" style={{ backgroundColor: BG }}>

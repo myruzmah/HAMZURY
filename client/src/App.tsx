@@ -13,6 +13,11 @@ import BizdocPage from "./pages/BizdocPage";
 import ScalarPage from "./pages/ScalarPage";
 import MedialyPage from "./pages/MedialyPage";
 import HubPage from "./pages/HubPage";
+import StartupPage from "./pages/StartupPage";
+import AlumniPage from "./pages/AlumniPage";
+import MilestonesPage from "./pages/MilestonesPage";
+import HubPartner from "./pages/HubPartner";
+import HubFeedback from "./pages/HubFeedback";
 import AboutPage from "./pages/AboutPage";
 import ContactPage from "./pages/ContactPage";
 
@@ -122,6 +127,11 @@ function Router() {
       <Route path="/scalar"    component={ScalarPage} />
       <Route path="/medialy"   component={MedialyPage} />
       <Route path="/hub"       component={HubPage} />
+      <Route path="/startup"    component={StartupPage} />
+      <Route path="/alumni"     component={AlumniPage} />
+      <Route path="/milestones" component={MilestonesPage} />
+      <Route path="/partner"    component={HubPartner} />
+      <Route path="/feedback"   component={HubFeedback} />
       <Route path="/about"     component={AboutPage} />
       <Route path="/contact"   component={ContactPage} />
 
@@ -179,7 +189,6 @@ function Router() {
       <Route path="/bizdoc/blueprint">{() => <Redirect to="/bizdoc" />}</Route>
       <Route path="/team">{() => <Redirect to="/about" />}</Route>
       <Route path="/consultant">{() => <Redirect to="/about" />}</Route>
-      <Route path="/alumni">{() => <Redirect to="/hub" />}</Route>
       <Route path="/ridi">{() => <Redirect to="/hub" />}</Route>
       <Route path="/cto">{() => <Redirect to="/scalar" />}</Route>
       <Route path="/metfix">{() => <Redirect to="/hub" />}</Route>
@@ -276,15 +285,13 @@ function FloatingChat() {
   const [location] = useLocation();
   if (location === "/privacy" || location === "/terms") return null;
 
-  // HUB intentionally excluded — founder preference: no AI chat on /hub,
-  // clients reach HUB via WhatsApp/phone from the contact buttons instead.
-  const chatRoutes: { prefix: string; dept: "bizdoc" | "systemise" | "skills" | "general"; exact?: boolean }[] = [
+  // Chat is intentionally limited to the three public division pages.
+  // Hub, dashboards, contact, founder — no chat on those.
+  // 2026-04-30 — "skills" removed. Hub clients use WhatsApp/phone, not chat.
+  const chatRoutes: { prefix: string; dept: "bizdoc" | "systemise" | "general"; exact?: boolean }[] = [
     { prefix: "/bizdoc",  dept: "bizdoc" },
     { prefix: "/scalar",  dept: "systemise" },
     { prefix: "/medialy", dept: "general" },
-    { prefix: "/cso",     dept: "bizdoc" },
-    { prefix: "/contact", dept: "general" },
-    { prefix: "/founder", dept: "general" },
   ];
 
   const match = chatRoutes.find(r =>

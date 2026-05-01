@@ -31,7 +31,7 @@
   .hero p { font-size: 17px; line-height: 1.6; color: var(--ink-soft); max-width: 640px; margin-bottom: 56px; }
   .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-bottom: 48px; }
   @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } .hero h1 { font-size: 38px; } .wrap { padding: 40px 24px; } }
-  .card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 16px; padding: 28px 28px 24px; text-decoration: none; color: inherit; transition: all 0.18s; display: block; position: relative; overflow: hidden; }
+  .card { background: var(--paper); border: 0.5px solid var(--line); border-radius: 16px; padding: 28px 28px 24px; text-decoration: none; color: inherit; transition: all 0.18s; display: block; position: relative; overflow: hidden; cursor: pointer; }
   .card:hover { transform: translateY(-2px); border-color: var(--ink-soft); box-shadow: 0 8px 24px rgba(0,0,0,0.04); }
   .card-eyebrow { font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 14px; }
   .card-title { font-family: var(--serif); font-size: 24px; font-weight: 500; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
@@ -64,6 +64,14 @@
   .pending .card-arrow { opacity: 0.3; }
   .pending-label { font-size: 10.5px; color: var(--ink-muted); font-style: italic; }
 
+  .card-meta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+  .live-tag { font-size: 9.5px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #166534; background: #DCFCE7; padding: 3px 7px; border-radius: 4px; }
+  .preview-link { font-size: 11px; color: var(--ink-muted); text-decoration: none; border-bottom: 0.5px dotted var(--ink-muted); padding-bottom: 1px; }
+  .preview-link:hover { color: var(--ink); border-color: var(--ink); }
+
+  .top-banner { background: #FEF7E6; border: 0.5px solid #F2D7A1; border-radius: 12px; padding: 14px 20px; font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 32px; }
+  .top-banner strong { color: var(--ink); }
+
   .legend { background: var(--paper); border: 0.5px solid var(--line); border-radius: 12px; padding: 20px 24px; font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; }
   .legend strong { color: var(--ink); font-weight: 500; }
   .footer { text-align: center; margin-top: 56px; font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--ink-muted); }
@@ -81,79 +89,126 @@
 
   <div class="hero">
     <h1>One company.<br>Six <em>workspaces</em>.</h1>
-    <p>Each workspace serves one role inside Hamzury. CSO faces clients. The other teams build behind the curtain. Pick a workspace below to log in — demo data is seeded so you can click around.</p>
+    <p>Each workspace serves one role inside Hamzury. CSO faces clients. The other teams build behind the curtain. Pick a workspace to enter the live ops portal — sign in with your team account.</p>
+  </div>
+
+  <div class="top-banner">
+    <strong>Live data &amp; preview.</strong> Each card opens the <strong>live production portal</strong> (real database, real HUB form submissions, real client briefs). Sign in first via <a href="/" style="color:var(--ink);text-decoration:underline;">Track &rarr; Staff?</a> using your team credentials. Need to show the UI without signing in? Use the small "Preview UI" link on each card to open a static training demo with seeded sample data.
   </div>
 
   <div class="grid">
-    <a href="cso.html" class="card card-cso">
+    <div class="card card-cso" data-live="/cso" tabindex="0" role="link" aria-label="Open CSO Portal">
       <div class="accent-bar"></div>
       <div class="card-eyebrow">Front office</div>
       <div class="card-title">CSO Portal</div>
       <div class="card-desc">The only team that talks to clients. Receives leads, qualifies, sells, assigns work to back-office workspaces, delivers.</div>
       <div class="card-foot">
-        <span class="card-creds">CSO / CSO</span>
+        <div class="card-meta">
+          <span class="live-tag">Live</span>
+          <a href="cso.html" class="preview-link">Preview UI</a>
+        </div>
         <span class="card-arrow">→</span>
       </div>
-    </a>
+    </div>
 
-    <a href="bizdoc.html" class="card card-bizdoc">
+    <div class="card card-bizdoc" data-live="/bizdoc/ops" tabindex="0" role="link" aria-label="Open Bizdoc Portal">
       <div class="accent-bar"></div>
       <div class="card-eyebrow">Tax & compliance</div>
       <div class="card-title">Bizdoc Portal</div>
       <div class="card-desc">Compliance & growth back office. 21-service catalog. Receives briefs from CSO, ships monthly compliance reports back.</div>
       <div class="card-foot">
-        <span class="card-creds">BIZDOC / BIZDOC</span>
+        <div class="card-meta">
+          <span class="live-tag">Live</span>
+          <a href="bizdoc.html" class="preview-link">Preview UI</a>
+        </div>
         <span class="card-arrow">→</span>
       </div>
-    </a>
+    </div>
 
-    <a href="scalar.html" class="card card-scalar">
+    <div class="card card-scalar" data-live="/scalar/ops" tabindex="0" role="link" aria-label="Open Scalar Portal">
       <div class="accent-bar"></div>
       <div class="card-eyebrow">Web & automation</div>
       <div class="card-title">Scalar Portal</div>
       <div class="card-desc">Software studio. Builds and maintains websites, automation, custom systems. Project pipeline + software management retainer.</div>
       <div class="card-foot">
-        <span class="card-creds">SCALAR / SCALAR</span>
+        <div class="card-meta">
+          <span class="live-tag">Live</span>
+          <a href="scalar.html" class="preview-link">Preview UI</a>
+        </div>
         <span class="card-arrow">→</span>
       </div>
-    </a>
+    </div>
 
-    <a href="medialy.html" class="card card-medialy">
+    <div class="card card-medialy" data-live="/medialy/ops" tabindex="0" role="link" aria-label="Open Medialy Portal">
       <div class="accent-bar"></div>
       <div class="card-eyebrow">Social media</div>
       <div class="card-title">Medialy Portal</div>
       <div class="card-desc">Social media management. Plans monthly content for clients, briefs Studio for design + video, schedules and publishes.</div>
       <div class="card-foot">
-        <span class="card-creds">MEDIALY / MEDIALY</span>
+        <div class="card-meta">
+          <span class="live-tag">Live</span>
+          <a href="medialy.html" class="preview-link">Preview UI</a>
+        </div>
         <span class="card-arrow">→</span>
       </div>
-    </a>
+    </div>
 
-    <a href="studio.html" class="card card-studio">
+    <div class="card card-studio" data-live="/video/ops" tabindex="0" role="link" aria-label="Open Studio Portal">
       <div class="accent-bar"></div>
       <div class="card-eyebrow">Design + video</div>
       <div class="card-title">Studio</div>
       <div class="card-desc">In-house creative studio. Designers and video editors share the workspace. Receives briefs from Medialy and CSO.</div>
       <div class="card-foot">
-        <span class="card-creds">STUDIO / STUDIO</span>
+        <div class="card-meta">
+          <span class="live-tag">Live</span>
+          <a href="studio.html" class="preview-link">Preview UI</a>
+        </div>
         <span class="card-arrow">→</span>
       </div>
-    </a>
+    </div>
 
-    <a href="bizdev.html" class="card card-bizdev">
+    <div class="card card-bizdev" data-live="/bizdev" tabindex="0" role="link" aria-label="Open Business Dev Portal">
       <div class="accent-bar"></div>
       <div class="card-eyebrow">Growth</div>
       <div class="card-title">Business Dev</div>
       <div class="card-desc">Marketing, grants & partnerships, affiliates. Three lanes, one workspace. Filter by your lane to focus.</div>
       <div class="card-foot">
-        <span class="card-creds">BIZDEV / BIZDEV</span>
+        <div class="card-meta">
+          <span class="live-tag">Live</span>
+          <a href="bizdev.html" class="preview-link">Preview UI</a>
+        </div>
         <span class="card-arrow">→</span>
       </div>
-    </a>
+    </div>
   </div>
 
+  <script>
+    document.querySelectorAll('.card[data-live]').forEach(card => {
+      const goLive = () => { window.location.href = card.dataset.live; };
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('a')) return; // let inner links work
+        goLive();
+      });
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goLive(); }
+      });
+    });
+  </script>
+
   <div class="legend">
-    <strong>How it flows.</strong> A visitor chats with the bot on a Hamzury site → CSO sees the lead → CSO sells and assigns to the right back office (Bizdoc, Scalar, Medialy). Medialy plans content and briefs Studio for visuals. Studio also takes standalone work directly from CSO. Business Dev runs the growth engine across all of it — campaigns, grants, affiliates.
+    <strong>How it flows.</strong> A visitor chats with the bot on a Hamzury site (or fills a HUB form) → submission lands in the <code>leads</code> table → CSO sees the lead in the live CSO portal → CSO sells and assigns to the right back office (Bizdoc, Scalar, Medialy). Medialy plans content and briefs Studio for visuals. Studio also takes standalone work directly from CSO. Business Dev runs the growth engine across all of it — campaigns, grants, affiliates. <strong>Yes — HUB form fills DO appear in the CSO workspace once submitted.</strong>
+  </div>
+
+  <div style="margin-top:24px;padding:18px 24px;border:0.5px dashed var(--line);border-radius:12px;font-size:12.5px;color:var(--ink-muted);line-height:1.7;">
+    <div style="font-size:10.5px;font-weight:500;letter-spacing:0.16em;text-transform:uppercase;color:var(--ink);margin-bottom:8px;">Executive &amp; admin</div>
+    Other live portals (sign in required):
+    <a href="/hub/admin" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">HUB Admin</a>·
+    <a href="/ceo" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">CEO</a>·
+    <a href="/founder/portal" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">Founder</a>·
+    <a href="/finance" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">Finance</a>·
+    <a href="/hr" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">HR</a>·
+    <a href="/podcast/ops" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">Podcast Ops</a>·
+    <a href="/faceless/ops" style="color:var(--ink-soft);text-decoration:none;border-bottom:0.5px dotted var(--ink-muted);margin:0 6px;">Faceless Ops</a>
   </div>
 
   <div class="footer">Built to last.</div>

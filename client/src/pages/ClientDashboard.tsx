@@ -545,9 +545,7 @@ function DashboardView({ token, onLogout }: { token: string; onLogout: () => voi
             Questions about your project?
           </p>
           <a
-            href="https://wa.me/2348067149356"
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/contact"
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "10px 24px", borderRadius: 10, backgroundColor: DARK,

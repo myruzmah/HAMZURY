@@ -531,10 +531,31 @@ export const skillsApplications = mysqlTable("skills_applications", {
   status: mysqlEnum("appStatus", ["submitted", "under_review", "accepted", "waitlisted", "rejected"]).default("submitted").notNull(),
   reviewedBy: int("reviewedBy"),
   reviewNotes: text("reviewNotes"),
-  paymentStatus: mysqlEnum("appPaymentStatus", ["pending", "paid", "waived", "refunded"]).default("pending").notNull(),
+  paymentStatus: mysqlEnum("appPaymentStatus", ["pending", "paid", "waived", "refunded", "paid_via_scholarship", "pending_seat_hold"]).default("pending").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+
+/**
+ * Scholarship codes — created by HUB admins, applied at enrolment time to
+ * waive the seat-hold payment. One code can have multiple uses up to maxUses.
+ */
+export const scholarshipCodes = mysqlTable("scholarship_codes", {
+  id: int("id").autoincrement().primaryKey(),
+  code: varchar("code", { length: 32 }).notNull().unique(),
+  description: varchar("description", { length: 255 }),
+  maxUses: int("maxUses").notNull().default(1),
+  usedCount: int("usedCount").notNull().default(0),
+  /** CSV of skills application refs that consumed this code */
+  usedByRefs: text("usedByRefs"),
+  expiresAt: timestamp("expiresAt"),
+  active: boolean("active").notNull().default(true),
+  createdBy: varchar("createdBy", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ScholarshipCode = typeof scholarshipCodes.$inferSelect;
+export type InsertScholarshipCode = typeof scholarshipCodes.$inferInsert;
 
 export type SkillsApplication = typeof skillsApplications.$inferSelect;
 export type InsertSkillsApplication = typeof skillsApplications.$inferInsert;
@@ -3249,4 +3270,60 @@ export const hrCalendarEvents = mysqlTable("hr_calendar_events", {
 });
 export type HrCalendarEvent = typeof hrCalendarEvents.$inferSelect;
 export type InsertHrCalendarEvent = typeof hrCalendarEvents.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HUB — TEAM COMPETITION + SOCIAL POSTING (Phase 7)
+// 2026-04-30: previously stored in localStorage which made certifications
+// unenforceable. Now persisted in MySQL so the certification gate works.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Monthly Hub team competitions (Phase 7 spec — 4 teams: AI / Cyber / Quantum / Robotics).
+ * One row per challenge per month; scores held inline as JSON keyed by team key.
+ */
+export const hubTeamCompetitions = mysqlTable("hub_team_competitions", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Year-month "YYYY-MM" — one competition per month is the canonical pattern */
+  month: varchar("month", { length: 7 }).notNull(),
+  title: varchar("title", { length: 255 }).notNull(),
+  /** Submission deadline (YYYY-MM-DD) */
+  deadline: varchar("deadline", { length: 10 }).notNull(),
+  status: mysqlEnum("hubCompStatus", ["active", "judged", "archived"]).default("active").notNull(),
+  /** team_key → points map; scored after judging.
+   *  Default scoring (Phase 7 spec): 1st 100, 2nd 75, 3rd 50, participation 25. */
+  scores: json("scores").default({}).notNull(),
+  /** Optional notes on judging outcome */
+  notes: text("notes"),
+  createdBy: varchar("createdBy", { length: 255 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubTeamCompetition = typeof hubTeamCompetitions.$inferSelect;
+export type InsertHubTeamCompetition = typeof hubTeamCompetitions.$inferInsert;
+
+/**
+ * Weekly social media posts a Hub student must publish to satisfy the
+ * certification gate. One row per post.
+ */
+export const hubSocialPosts = mysqlTable("hub_social_posts", {
+  id: int("id").autoincrement().primaryKey(),
+  /** Student name (denormalised for fast list queries; FK to skillsApplications.id is optional) */
+  studentName: varchar("studentName", { length: 255 }).notNull(),
+  /** Optional link to the application row */
+  applicationId: int("applicationId"),
+  /** ISO date of the Monday of the week this post counts for (YYYY-MM-DD) */
+  weekOf: varchar("weekOf", { length: 10 }).notNull(),
+  /** instagram, tiktok, linkedin, twitter, facebook, threads, youtube, other */
+  platform: varchar("platform", { length: 30 }).notNull(),
+  postUrl: varchar("postUrl", { length: 500 }).notNull(),
+  verified: boolean("verified").default(false).notNull(),
+  verifiedBy: varchar("verifiedBy", { length: 255 }),
+  verifiedAt: timestamp("verifiedAt"),
+  /** Optional notes from the verifier */
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type HubSocialPost = typeof hubSocialPosts.$inferSelect;
+export type InsertHubSocialPost = typeof hubSocialPosts.$inferInsert;
 

@@ -53,7 +53,7 @@
   }
   @media (max-width: 900px) {
     .app { grid-template-columns: 1fr; }
-    .sidebar { display: none; }
+    .sidebar { display: none !important; }
   }
 
   /* ============ SIDEBAR ============ */
@@ -641,6 +641,12 @@
 </style>
 </head>
 <body>
+<script>if (window.self !== window.top) document.documentElement.classList.add('embedded');</script>
+<style>
+  html.embedded .preview-banner { display: none !important; }
+  html.embedded .sidebar-brand { display: none !important; }
+  html.embedded .sidebar { padding-top: 14px !important; }
+</style>
 
 <div class="preview-banner" id="preview-banner">
   <div>

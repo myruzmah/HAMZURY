@@ -24,6 +24,7 @@ import {
   cohorts, InsertCohort, Cohort,
   cohortModules, InsertCohortModule, CohortModule,
   skillsApplications, InsertSkillsApplication, SkillsApplication,
+  scholarshipCodes, InsertScholarshipCode, ScholarshipCode,
   studentAssignments, InsertStudentAssignment, StudentAssignment,
   liveSessions, InsertLiveSession, LiveSession,
   affiliates, InsertAffiliate, Affiliate,
@@ -799,6 +800,90 @@ export async function updateSkillsApplicationStatus(id: number, status: string, 
   await db.update(skillsApplications).set(updateData).where(eq(skillsApplications.id, id));
   const result = await db.select().from(skillsApplications).where(eq(skillsApplications.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
+}
+
+// ─── Scholarship Codes ──────────────────────────────────────────────────────
+
+export async function validateScholarshipCode(
+  code: string
+): Promise<{ ok: true; id: number } | { ok: false; reason: string }> {
+  const db = await getDb();
+  if (!db) return { ok: false, reason: "db_unavailable" };
+  const trimmed = code.trim();
+  if (!trimmed) return { ok: false, reason: "empty" };
+  const result = await db
+    .select()
+    .from(scholarshipCodes)
+    .where(eq(scholarshipCodes.code, trimmed))
+    .limit(1);
+  const row = result[0];
+  if (!row) return { ok: false, reason: "not_found" };
+  if (!row.active) return { ok: false, reason: "inactive" };
+  if (row.expiresAt && new Date(row.expiresAt).getTime() < Date.now()) {
+    return { ok: false, reason: "expired" };
+  }
+  if (row.usedCount >= row.maxUses) return { ok: false, reason: "exhausted" };
+  return { ok: true, id: row.id };
+}
+
+export async function consumeScholarshipCode(codeId: number, ref: string): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select()
+      .from(scholarshipCodes)
+      .where(eq(scholarshipCodes.id, codeId))
+      .limit(1);
+    const row = rows[0];
+    if (!row) throw new Error("Scholarship code not found");
+    const existing = row.usedByRefs ? row.usedByRefs.split(",").filter(Boolean) : [];
+    if (!existing.includes(ref)) existing.push(ref);
+    await tx
+      .update(scholarshipCodes)
+      .set({
+        usedCount: row.usedCount + 1,
+        usedByRefs: existing.join(","),
+      })
+      .where(eq(scholarshipCodes.id, codeId));
+  });
+}
+
+export async function listScholarshipCodes(): Promise<ScholarshipCode[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(scholarshipCodes).orderBy(desc(scholarshipCodes.createdAt));
+}
+
+export async function createScholarshipCode(data: {
+  code: string;
+  description?: string;
+  maxUses?: number;
+  expiresAt?: Date;
+  createdBy?: string;
+}): Promise<ScholarshipCode> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const insert: InsertScholarshipCode = {
+    code: data.code.trim(),
+    description: data.description,
+    maxUses: data.maxUses ?? 1,
+    expiresAt: data.expiresAt,
+    createdBy: data.createdBy,
+  };
+  await db.insert(scholarshipCodes).values(insert);
+  const result = await db
+    .select()
+    .from(scholarshipCodes)
+    .where(eq(scholarshipCodes.code, insert.code))
+    .limit(1);
+  return result[0];
+}
+
+export async function deactivateScholarshipCode(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.update(scholarshipCodes).set({ active: false }).where(eq(scholarshipCodes.id, id));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

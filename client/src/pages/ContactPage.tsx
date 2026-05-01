@@ -57,10 +57,9 @@ export default function ContactPage() {
                 display: "block", marginBottom: 4,
               }}>📧 {d.email}</a>
               <a
-                href={`https://wa.me/234${d.whatsapp.replace(/^0/, "")}`}
-                target="_blank" rel="noreferrer"
+                href={`tel:+234${d.whatsapp.replace(/^0/, "")}`}
                 style={{ fontSize: 13, color: PUBLIC.dark, textDecoration: "none" }}
-              >💬 WhatsApp · {d.whatsapp}</a>
+              >📞 {d.whatsapp}</a>
             </div>
           ))}
         </div>
