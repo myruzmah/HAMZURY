@@ -391,6 +391,56 @@ const cfg: AssessmentConfig = {
   },
 };
 
+/**
+ * Pre-select the programme dropdown when the user clicked "Book a seat" from
+ * a specific course card. The card passes `?programme=<course name>`. We find
+ * the dropdown option that starts with the same first 4 words (or contains
+ * the course name) and pre-fill it so the user doesn't have to scroll the
+ * 14-option list a second time.
+ */
+/**
+ * Normalise a programme name so card-name and dropdown-option formats can be
+ * compared. Strips parentheticals, em-dashes, prices, weeks notation.
+ *   "Business Builders Academy"
+ *   "Business Builders Academy — 3 wks, ₦150k (Jos / Online)"
+ *   → both → "business builders academy"
+ */
+function normaliseProgramme(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[—–-].*$/, "")           // strip everything after dash
+    .replace(/\([^)]*\)/g, "")          // strip parenthetical descriptions
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function preselectFromUrl(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const wanted = new URLSearchParams(window.location.search).get("programme");
+  if (!wanted) return {};
+  const norm = normaliseProgramme(wanted);
+  if (!norm) return {};
+  const programmeStep = cfg.steps.find(s => s.questions.some(q => q.id === "program"));
+  const options = programmeStep?.questions.find(q => q.id === "program")?.options || [];
+
+  // Pass 1: exact normalised prefix match.
+  let match = options.find(opt => normaliseProgramme(opt) === norm);
+  // Pass 2: dropdown option starts with wanted (handles "Beginner Tech Skills"
+  //         card → "Beginner Tech Skills (Kids 8–15)" option).
+  if (!match) match = options.find(opt => normaliseProgramme(opt).startsWith(norm));
+  // Pass 3: wanted starts with the dropdown option (handles individual online
+  //         courses → the single "Online Academy" umbrella option, or
+  //         "Corporate Workshop (1–5 days)" → "Corporate Workshop").
+  if (!match) {
+    if (norm.startsWith("ai for ") || norm.startsWith("ai tools")) {
+      match = options.find(opt => opt.toLowerCase().startsWith("online academy"));
+    } else if (norm.startsWith("corporate")) {
+      match = options.find(opt => opt.toLowerCase().startsWith("corporate"));
+    }
+  }
+  return match ? { program: match } : {};
+}
+
 export default function HubEnroll() {
-  return <AssessmentForm cfg={cfg} />;
+  return <AssessmentForm cfg={cfg} initialAnswers={preselectFromUrl()} />;
 }

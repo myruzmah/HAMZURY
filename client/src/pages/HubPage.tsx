@@ -692,7 +692,7 @@ function StickyNote({
               Coming Soon
             </button>
           ) : (
-            <Link href="/hub/enroll">
+            <Link href={`/hub/enroll?programme=${encodeURIComponent(item.name)}`}>
               <span
                 className="w-full py-3 rounded-full text-[13px] font-semibold flex items-center justify-center gap-2 transition-opacity hover:opacity-95 cursor-pointer"
                 style={{ backgroundColor: "#16A34A", color: W }}
@@ -1029,7 +1029,7 @@ export default function HubPage() {
           <p className="text-[11px] font-medium tracking-[0.25em] uppercase mb-4 text-center" style={{ color: GOLD }}>WHAT WE OFFER</p>
           <h2 className="text-[clamp(24px,3.5vw,36px)] font-light mb-4 text-center tracking-tight" style={{ color: TEXT }}>Pick what interests you.</h2>
           <p className="text-[13px] text-center mb-12 max-w-lg mx-auto" style={{ color: `${TEXT}55` }}>
-            Click a category to expand. Tap any course to pin it as a sticky note on your screen.
+            Tap a category to expand · tap any course to see details and apply.
           </p>
 
           <div className="space-y-3">
@@ -1109,11 +1109,18 @@ export default function HubPage() {
                                   {item.maxStudents && <span className="text-[10px]" style={{ color: `${TEXT}44` }}>{item.maxStudents} seats</span>}
                                 </div>
                               </div>
-                              <div className="ml-3 shrink-0">
-                                {isPinned ? (
+                              <div className="ml-3 shrink-0 flex items-center gap-2">
+                                {/* Clear apply affordance — without this clients
+                                    didn't realise the row was tappable. The
+                                    sticky-note popup handles the actual Book a seat. */}
+                                {item.status === "coming" ? (
+                                  <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${TEXT}10`, color: `${TEXT}55` }}>Soon</span>
+                                ) : isPinned ? (
                                   <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${color}15`, color }}>Pinned</span>
                                 ) : (
-                                  <Pin size={14} style={{ color: `${TEXT}33` }} />
+                                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ backgroundColor: "#16A34A14", color: "#15803D" }}>
+                                    <span style={{ fontSize: 11, lineHeight: 1 }}>🪑</span> Apply
+                                  </span>
                                 )}
                               </div>
                             </button>

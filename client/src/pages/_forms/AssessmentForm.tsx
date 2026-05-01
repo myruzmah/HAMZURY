@@ -72,18 +72,33 @@ export type AssessmentConfig = {
   thankYou: { title: string; sub: string; nextStep: string };
 };
 
-export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
+export default function AssessmentForm({ cfg, initialAnswers }: { cfg: AssessmentConfig; initialAnswers?: Record<string, string> }) {
   const [stepIndex, setStepIndex] = useState(-1); // -1 = welcome screen
   const [contact, setContact] = useState({ name: "", businessName: "", phone: "", email: "" });
-  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers || {});
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const submitMut = trpc.leads.submit.useMutation({
+    onMutate: (vars) => {
+      setSubmitError(null);
+      // 2026-04-30 — verbose logging so production failures are diagnosable.
+      console.log("[AssessmentForm] submitting →", { ...vars, context: "(omitted)" });
+    },
     onSuccess: (data: any) => {
+      console.log("[AssessmentForm] success ←", data);
       setSubmittedRef(data?.ref || null);
       toast.success("Received. We'll be in touch.");
     },
-    onError: (e) => toast.error(e.message || "Submission failed. Try again."),
+    onError: (e) => {
+      console.error("[AssessmentForm] FAILED:", e);
+      // Surface the real error in BOTH the toast AND a banner above the form
+      // so the visitor knows it didn't go through (network / 5xx / validation).
+      const msg = e.message || "Submission failed. Try again.";
+      setSubmitError(msg);
+      toast.error(msg);
+    },
   });
 
   const G  = cfg.accent;
@@ -309,6 +324,26 @@ export default function AssessmentForm({ cfg }: { cfg: AssessmentConfig }) {
             </div>
           </>
         ) : null}
+
+        {/* 2026-04-30 — visible error banner on contact step so submission
+            failures (network / 5xx / validation) are obvious. */}
+        {isContactStep && submitError && (
+          <div
+            role="alert"
+            className="mb-4 px-4 py-3 rounded-lg text-[13px] leading-snug"
+            style={{
+              backgroundColor: "#FEE2E2",
+              border: "1px solid #FCA5A5",
+              color: "#991B1B",
+            }}
+          >
+            <strong>Couldn't submit:</strong> {submitError}
+            <br />
+            <span style={{ fontSize: 11, opacity: 0.85 }}>
+              Check your internet, then try again. If it keeps failing, WhatsApp us on +234 913 070 0056 with your name + interest.
+            </span>
+          </div>
+        )}
 
         <button
           onClick={next}
