@@ -75,7 +75,15 @@ export type AssessmentConfig = {
   /** Ordered steps */
   steps: AssessmentStep[];
   /** Thank-you copy shown after submit */
-  thankYou: { title: string; sub: string; nextStep: string };
+  thankYou: {
+    title: string;
+    sub: string;
+    nextStep: string;
+    /** Optional WhatsApp CTA shown on the thank-you screen. Useful when the
+     *  flow needs the client to send something (receipt, file, etc.) to a
+     *  staff number after submitting. Pre-fills the message with their ref. */
+    whatsappCta?: { label: string; phone: string; messageTemplate: string };
+  };
 };
 
 export default function AssessmentForm({ cfg, initialAnswers }: { cfg: AssessmentConfig; initialAnswers?: Record<string, string> }) {
@@ -214,6 +222,25 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
           <p className="text-[13px] mb-8" style={{ color: MUTED }}>
             {cfg.thankYou.nextStep}
           </p>
+          {cfg.thankYou.whatsappCta && (() => {
+            const wa = cfg.thankYou.whatsappCta!;
+            const phone = wa.phone.replace(/\D/g, "").replace(/^0/, "234");
+            const msg = wa.messageTemplate
+              .replace(/\{ref\}/g, submittedRef || "")
+              .replace(/\{name\}/g, contact.name || "");
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+            return (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-7 py-3 rounded-full text-[13px] font-semibold mr-3 mb-3 transition-transform hover:scale-[1.02]"
+                style={{ backgroundColor: "#16A34A", color: "#FFFFFF" }}
+              >
+                💬 {wa.label}
+              </a>
+            );
+          })()}
           <Link
             href="/"
             className="inline-block px-7 py-3 rounded-full text-[13px] font-semibold transition-transform hover:scale-[1.02]"

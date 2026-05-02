@@ -343,13 +343,13 @@ const cfg: AssessmentConfig = {
     /* ─── 7. Seat-hold payment ─── (only for cash payers — skip scholarship apply / sponsor) */
     {
       title: "Pay your seat hold",
-      sub: "Send ₦10,000 to the account below, then upload your receipt. Without this we can't lock your seat. Scholarship-code, scholarship-application, and sponsor payers can skip — we'll arrange this with you separately.",
+      sub: "Send ₦10,000 to the account below. After this form is submitted, send the receipt to our WhatsApp — we'll match it to your enrolment within minutes. Scholarship-code, scholarship-application, and sponsor payers can skip — we'll arrange this with you separately.",
       accountInfo: {
         bank: "MoniePoint",
         name: "Hamzury Ltd.",
         number: "8034620520",
         amount: "₦10,000 — Seat Hold",
-        note: "After paying, take a clear screenshot of the success page and upload it below. Use your full name as the transfer narration if your app allows.",
+        note: "Use your full name as the transfer narration if your app allows. After submitting this form, the next screen will give you a 1-tap WhatsApp link to send the receipt.",
       },
       showWhen: (a) => {
         // Only for paths that involve cash up-front
@@ -365,17 +365,9 @@ const cfg: AssessmentConfig = {
       },
       questions: [
         { id: "paidConfirm", prompt: "Have you sent ₦10,000?", required: true, options: [
-          "Yes — I've sent it",
+          "Yes — I've sent it (next screen has the WhatsApp link to send the receipt)",
           "Not yet — I'll send it after this form (we won't lock the seat until we see the receipt)",
         ]},
-        {
-          id: "receiptUrl",
-          kind: "file",
-          // Optional — if the upload service is down or the user skips, the
-          // form should still submit. CSO will follow up for the receipt.
-          prompt: "Upload your payment receipt (screenshot or PDF) — optional, you can also send it on WhatsApp after.",
-          showWhen: (a) => (a.paidConfirm || "").startsWith("Yes"),
-        },
         {
           id: "transferNarration",
           kind: "text",
@@ -388,7 +380,12 @@ const cfg: AssessmentConfig = {
   thankYou: {
     title: "Welcome to HUB.",
     sub: "Our team will review your enrolment, match you to the right cohort, and send your orientation pack with payment details and next steps.",
-    nextStep: "You'll hear from us within 2 business hours. Pay ₦10,000 seat-hold (or send your scholarship code) to lock your spot. Save your reference number.",
+    nextStep: "If you've already paid the ₦10,000 seat-hold, tap the WhatsApp button below to send us the receipt. We'll match it to your reference and lock your seat within minutes.",
+    whatsappCta: {
+      label: "Send receipt on WhatsApp",
+      phone: "09130700056",
+      messageTemplate: "Hi HAMZURY HUB — I just submitted the enrolment form. Reference: {ref}. Sending my ₦10,000 seat-hold receipt now.",
+    },
   },
 };
 
