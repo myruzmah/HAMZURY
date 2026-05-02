@@ -87,6 +87,56 @@ const WA_INPUT_BG   = "#FFFFFF"; // input bar surface
 /* ── Contact (single CSO line — Brand Bible) ───────────────────────────── */
 const CSO_PHONE = "2349130700056";
 
+/* ── Bizdoc-specific direct line (for Book-a-call WhatsApp deep link) ──── */
+const BIZDOC_PHONE = "2348067149356"; // "08067149356" in international form
+
+/* ── Bizdoc accent (gold eyebrow + tile hover ring) ────────────────────── */
+const BIZDOC_GREEN = GOLD; // Founder palette: Bizdoc accent is the brand gold
+
+/* ══════════════════════════════════════════════════════════════════════════
+   "Reply in minutes" indicator — Africa/Lagos (UTC+1, no DST)
+   --------------------------------------------------------------------------
+   Three tones based on the visitor's wall-clock time in Lagos:
+     • Live      (green) — Mon-Sat, 09:00-17:00 WAT, "Replies in minutes"
+     • Within 1h (gold)  — Mon-Sat outside live hours but before 21:00,
+                           "Replies within an hour"
+     • Next biz  (grey)  — Sundays + after 21:00 any day,
+                           "Replies next business hour"
+   Computed client-side from `Date()` by shifting to UTC+1; intentionally
+   ignores DST because Nigeria does not observe it. Pure function — safe
+   to call on every render.
+   ══════════════════════════════════════════════════════════════════════════ */
+type ReplyTone = "live" | "soon" | "next";
+type ReplyIndicator = { tone: ReplyTone; label: string; dot: string };
+function getReplyIndicator(now: Date = new Date()): ReplyIndicator {
+  // Shift `now` to Africa/Lagos (UTC+1) by adding the offset in ms to the
+  // UTC epoch, then reading UTC fields off the resulting Date.
+  const lagosMs = now.getTime() + 60 * 60 * 1000 + now.getTimezoneOffset() * 60 * 1000;
+  const lagos = new Date(lagosMs);
+  const day = lagos.getUTCDay();      // 0 = Sun, 6 = Sat
+  const hour = lagos.getUTCHours();   // 0-23
+  const isSunday = day === 0;
+  const liveHours = hour >= 9 && hour < 17;
+  const beforeNight = hour < 21;
+  if (!isSunday && liveHours) {
+    return { tone: "live", label: "Replies in minutes", dot: "#3FB950" };
+  }
+  if (!isSunday && beforeNight) {
+    return { tone: "soon", label: "Replies within an hour", dot: GOLD };
+  }
+  return { tone: "next", label: "Replies next business hour", dot: "#9CA3AF" };
+}
+
+/* ── Service-id → context hint map (for context-aware greetings) ───────── */
+const BIZDOC_SERVICE_HINT: Record<string, string> = {
+  cac: "CAC registration",
+  tin: "tax registration (TIN)",
+  nafdac: "NAFDAC registration",
+  son: "SON registration",
+  licences: "business licences",
+  compliance: "compliance management",
+};
+
 /* ══════════════════════════════════════════════════════════════════════════
    COMPANY CONFIGURATION (preserved verbatim from v11 Command Centre spec)
    ══════════════════════════════════════════════════════════════════════════ */
@@ -769,6 +819,19 @@ function WhatsAppChatPanel({
   const messageIdRef = useRef(1);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const initRef = useRef(false);
+
+  // Bizdoc-only: re-render header indicator every minute so tone updates as
+  // the visitor crosses 09:00 / 17:00 / 21:00 boundaries during a session.
+  const [, setIndicatorTick] = useState(0);
+  useEffect(() => {
+    if (companyKey !== "bizdoc") return;
+    const id = window.setInterval(() => setIndicatorTick((t) => t + 1), 60_000);
+    return () => window.clearInterval(id);
+  }, [companyKey]);
+  const replyIndicator = useMemo(() => getReplyIndicator(), [
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    messages.length, // recompute on each new message too
+  ]);
 
   /* ── Phase 3 (v16): Bizdoc pre-payment questionnaire state ──────────────
    *  Persists the visitor's answers across multiple bot turns inside one
@@ -1950,11 +2013,191 @@ function WhatsAppChatPanel({
     );
   };
 
+  /* ── Bizdoc-only: 24h persistent chat state ─────────────────────────────
+   *  Key `hamzury:bizdoc:chat-state` — distinct from the company-scoped
+   *  resume snapshot above. Hydrates only if `lastUpdated > now - 24h`.
+   *  Debounced 500ms to avoid thrashing localStorage on every keystroke. */
+  const BIZDOC_PERSIST_KEY = "hamzury:bizdoc:chat-state";
+  const persistTimerRef = useRef<number | null>(null);
+  const hydratedFromBizdocRef = useRef(false);
+
+  useEffect(() => {
+    if (companyKey !== "bizdoc") return;
+    if (typeof window === "undefined") return;
+    if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = window.setTimeout(() => {
+      try {
+        if (messages.length === 0) return;
+        window.localStorage.setItem(
+          BIZDOC_PERSIST_KEY,
+          JSON.stringify({ messages, lastUpdated: Date.now() }),
+        );
+      } catch { /* quota / private mode — non-fatal */ }
+    }, 500);
+    return () => {
+      if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
+    };
+  }, [messages, companyKey]);
+
+  const clearBizdocChat = useCallback(() => {
+    if (typeof window === "undefined") return;
+    if (!window.confirm("Clear this chat? This can't be undone.")) return;
+    try { window.localStorage.removeItem(BIZDOC_PERSIST_KEY); } catch { /* noop */ }
+    setMessages([]);
+    messageIdRef.current = 1;
+    initRef.current = false; // allow welcome flow to re-fire
+    hydratedFromBizdocRef.current = false;
+    // Re-trigger greeting on next tick.
+    window.setTimeout(() => {
+      if (!initRef.current) {
+        initRef.current = true;
+        addBotMessage("Hello. I can help with Bizdoc — tax, registrations, licences.", undefined, 200);
+        window.setTimeout(() => showMainMenu(), 1000);
+      }
+    }, 50);
+  }, [addBotMessage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── HMZ-ref smart-paste detection (Bizdoc only) ────────────────────────
+   *  Watch inputValue for anything matching the Hamzury reference pattern;
+   *  surface an inline prompt above the composer offering one-tap track. */
+  const HMZ_REF_RE = /HMZ-\d{2}\/\d{1,2}-\d{4}(-[A-Z0-9]{2})?/i;
+  const detectedHmzRef = useMemo(() => {
+    if (companyKey !== "bizdoc") return null;
+    const m = inputValue.match(HMZ_REF_RE);
+    return m ? m[0].toUpperCase() : null;
+  }, [inputValue, companyKey]);
+
+  /* ── Tracking lookup (used by tile + smart-paste hint) ─────────────────
+   *  Calls trpc.tracking.lookup imperatively via the utils client. We post
+   *  a "Tracking …" user bubble first so the visitor sees feedback. */
+  const trpcUtils = trpc.useUtils();
+  const runTrackingLookup = useCallback(async (refRaw: string) => {
+    const ref = refRaw.trim().toUpperCase();
+    if (!ref) return;
+    addUserMessage(`Track ${ref}`);
+    try {
+      const result = await trpcUtils.tracking.lookup.fetch({ ref });
+      if (result && (result as any).found) {
+        const r = result as any;
+        const lines = [
+          `Ref ${r.ref} — ${r.service || "Bizdoc filing"}`,
+          `Status: ${r.status}${r.statusIndex !== undefined && r.statusTotal ? ` (${r.statusIndex + 1}/${r.statusTotal})` : ""}`,
+          r.statusMessage || "",
+          r.deadline ? `Deadline: ${new Date(r.deadline).toLocaleDateString()}` : "",
+        ].filter(Boolean).join("\n");
+        addBotMessage(lines, [
+          { label: "Need help with this filing", onClick: () => onPickCallback() },
+          { label: "Browse services", onClick: () => onPickServicesIntro() },
+        ]);
+      } else {
+        addBotMessage(
+          `I couldn't find anything for ${ref}. Double-check the format (HMZ-YY/M-XXXX) — or our team can look it up.`,
+          [{ label: "Request a call", onClick: () => onPickCallback() }],
+        );
+      }
+    } catch {
+      addBotMessage(
+        "I hit an error reaching tracking. Our team can look it up for you.",
+        [{ label: "Request a call", onClick: () => onPickCallback() }],
+      );
+    }
+  }, [addBotMessage, addUserMessage, trpcUtils]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /* ── Bizdoc command-center tile handlers ───────────────────────────── */
+  const onTrackFilingTile = useCallback(() => {
+    const ref = window.prompt("Paste your Hamzury reference (HMZ-YY/M-XXXX):");
+    if (ref && ref.trim()) void runTrackingLookup(ref);
+  }, [runTrackingLookup]);
+
+  const onPricingTile = useCallback(() => {
+    addUserMessage("Get pricing");
+    addBotMessage(
+      "Bizdoc packages:\n\n" +
+      "• Starter — ₦90,000\n" +
+      "• Compliant — ₦150,000\n" +
+      "• ProMax — ₦300,000\n" +
+      "• Enterprise — ₦500,000\n\n" +
+      "Want details on one?",
+      [
+        { label: "Starter", onClick: () => { addUserMessage("Starter"); addBotMessage("Starter ₦90k — entry-level: company registration + TIN. Good for sole-prop and brand-new ventures.", [{ label: "Start now", onClick: () => onPickServicesIntro() }, { label: "Talk to us", onClick: () => onPickCallback() }]); } },
+        { label: "Compliant", onClick: () => { addUserMessage("Compliant"); addBotMessage("Compliant ₦150k — registration + TIN + first-year compliance filings handled.", [{ label: "Start now", onClick: () => onPickServicesIntro() }, { label: "Talk to us", onClick: () => onPickCallback() }]); } },
+        { label: "ProMax", onClick: () => { addUserMessage("ProMax"); addBotMessage("ProMax ₦300k — registration + TIN + ongoing compliance + advisory access.", [{ label: "Start now", onClick: () => onPickServicesIntro() }, { label: "Talk to us", onClick: () => onPickCallback() }]); } },
+      ],
+    );
+  }, [addBotMessage, addUserMessage]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const onBookCallTile = useCallback(() => {
+    const hint = lastInterestRef.current || "your services";
+    const url = `https://wa.me/${BIZDOC_PHONE}?text=${encodeURIComponent(
+      `Hi Bizdoc, I'd like to book a call about ${hint}`,
+    )}`;
+    window.open(url, "_blank", "noopener");
+  }, []);
+
+  const onBrowseServicesTile = useCallback(() => {
+    onClose();
+    window.setTimeout(() => {
+      const el = document.querySelector("#services");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      else window.location.hash = "#services";
+    }, 60);
+  }, [onClose]);
+
   /* ── First-open welcome flow ───────────────────────────────────────── */
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    const greet =
+
+    // Bizdoc — try 24h persistent hydration first.
+    if (companyKey === "bizdoc" && typeof window !== "undefined") {
+      try {
+        const raw = window.localStorage.getItem(BIZDOC_PERSIST_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const fresh =
+            parsed?.lastUpdated &&
+            Date.now() - Number(parsed.lastUpdated) < 24 * 60 * 60 * 1000;
+          if (fresh && Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+            const restored: Message[] = parsed.messages.map((m: any, i: number) => ({
+              id: i + 1,
+              role: m.role,
+              text: m.text,
+              quickReplies: undefined, // closures don't survive serialisation
+              timestamp: new Date(m.timestamp || Date.now()),
+            }));
+            setMessages(restored);
+            messageIdRef.current = restored.length + 1;
+            hydratedFromBizdocRef.current = true;
+            return; // skip greeting — they already had a session
+          }
+        }
+      } catch { /* fall through to fresh greeting */ }
+    }
+
+    // Detect ?service= or referrer-based service hint (Bizdoc only).
+    let serviceHint: string | null = null;
+    if (companyKey === "bizdoc" && typeof window !== "undefined") {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const sid = (params.get("service") || "").toLowerCase();
+        if (BIZDOC_SERVICE_HINT[sid]) {
+          serviceHint = BIZDOC_SERVICE_HINT[sid];
+          lastInterestRef.current = serviceHint;
+        } else {
+          // Referrer fallback — match service id as a path/query token.
+          const ref = (document.referrer || "").toLowerCase();
+          for (const [id, label] of Object.entries(BIZDOC_SERVICE_HINT)) {
+            if (ref.includes(`service=${id}`) || ref.includes(`/${id}`)) {
+              serviceHint = label;
+              lastInterestRef.current = label;
+              break;
+            }
+          }
+        }
+      } catch { /* ignore URL parse issues */ }
+    }
+
+    const baseGreet =
       companyKey === "bizdoc"
         ? "Hello. I can help with Bizdoc — tax, registrations, licences."
         : companyKey === "scalar"
@@ -1962,7 +2205,20 @@ function WhatsAppChatPanel({
           : companyKey === "medialy"
             ? "Hello. I can help with Medialy — branding, content, social."
             : `Hello. Welcome to ${company.name}.`;
-    addBotMessage(greet, undefined, 400);
+
+    if (serviceHint) {
+      addBotMessage(
+        `${baseGreet}\n\nI see you're looking at ${serviceHint} — want pricing, or to start now?`,
+        [
+          { label: "Pricing", onClick: () => onPricingTile() },
+          { label: "Start now", onClick: () => onPickServicesIntro() },
+          { label: "Different question", onClick: () => showMainMenu() },
+        ],
+        400,
+      );
+    } else {
+      addBotMessage(baseGreet, undefined, 400);
+    }
 
     // Read service-cart prefill if the user came from "Send selection".
     // Stored by DivisionServices as { savedAt, department, prefill }.
@@ -1979,7 +2235,7 @@ function WhatsAppChatPanel({
       }
     } catch { /* ignore parse errors */ }
 
-    window.setTimeout(() => showMainMenu(), 1400);
+    if (!serviceHint) window.setTimeout(() => showMainMenu(), 1400);
 
     if (prefill) {
       window.setTimeout(() => {
@@ -2041,8 +2297,14 @@ function WhatsAppChatPanel({
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 600, color: DARK, letterSpacing: "-0.01em" }}>Mary</div>
           <div style={{ fontSize: 12, color: `${TEXT}60`, display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: GOLD, display: "inline-block" }} />
-            Online
+            <span
+              style={{
+                width: 6, height: 6, borderRadius: "50%",
+                backgroundColor: companyKey === "bizdoc" ? replyIndicator.dot : GOLD,
+                display: "inline-block",
+              }}
+            />
+            {companyKey === "bizdoc" ? replyIndicator.label : "Online"}
           </div>
         </div>
         {/* FAQ shortcut */}
@@ -2059,6 +2321,23 @@ function WhatsAppChatPanel({
         >
           <HelpCircle size={16} />
         </button>
+        {/* Clear chat (Bizdoc only) */}
+        {companyKey === "bizdoc" && (
+          <button
+            onClick={clearBizdocChat}
+            aria-label="Clear chat"
+            title="Clear chat"
+            className="hover:bg-black/5 transition-colors"
+            style={{
+              height: 30, padding: "0 10px", borderRadius: 999, border: `1px solid ${WA_BOT_BORDER}`,
+              cursor: "pointer", backgroundColor: "transparent", color: `${TEXT}99`,
+              fontSize: 11, fontWeight: 500, letterSpacing: "0.02em",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            Clear
+          </button>
+        )}
         {/* Close */}
         <button
           onClick={onClose}
@@ -2074,6 +2353,82 @@ function WhatsAppChatPanel({
         </button>
       </div>
 
+      {/* ── BIZDOC COMMAND CENTER (4-tile action grid) ─────────────────── */}
+      {companyKey === "bizdoc" && (
+        <div
+          style={{
+            padding: "12px 14px 4px",
+            backgroundColor: WA_CHAT_BG,
+            flexShrink: 0,
+            borderBottom: `1px solid ${WA_BOT_BORDER}`,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.3em",
+              textTransform: "uppercase",
+              color: BIZDOC_GREEN,
+              fontWeight: 600,
+              marginBottom: 8,
+            }}
+          >
+            What do you need?
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 8,
+            }}
+          >
+            {[
+              { icon: "🔍", label: "Track filing", onClick: onTrackFilingTile },
+              { icon: "💰", label: "Get pricing", onClick: onPricingTile },
+              { icon: "📅", label: "Book a call", onClick: onBookCallTile },
+              { icon: "📚", label: "Browse services", onClick: onBrowseServicesTile },
+            ].map((tile) => (
+              <button
+                key={tile.label}
+                onClick={tile.onClick}
+                className="bizdoc-cmd-tile"
+                style={{
+                  minHeight: 44,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(0,0,0,0.06)",
+                  backgroundColor: W,
+                  cursor: "pointer",
+                  textAlign: "left",
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
+                  transition: "border-color 0.15s, transform 0.15s",
+                }}
+              >
+                <span style={{ fontSize: 14, lineHeight: 1 }} aria-hidden="true">{tile.icon}</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: DARK, lineHeight: 1.2 }}>
+                  {tile.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          <style>{`
+            .bizdoc-cmd-tile:hover {
+              border-color: ${BIZDOC_GREEN}30 !important;
+              transform: translateY(-1px);
+            }
+            .bizdoc-qr-pill {
+              transition: transform 120ms ease;
+            }
+            .bizdoc-qr-pill:active {
+              transform: scale(0.94);
+            }
+          `}</style>
+        </div>
+      )}
+
       {/* ── MESSAGE THREAD ────────────────────────────────────────────── */}
       <div
         ref={scrollRef}
@@ -2088,10 +2443,49 @@ function WhatsAppChatPanel({
         }}
       >
         {messages.map((m) => (
-          <MessageBubble key={m.id} message={m} />
+          <MessageBubble key={m.id} message={m} companyKey={companyKey} />
         ))}
         {isTyping && <TypingIndicator />}
       </div>
+
+      {/* ── HMZ-ref smart-paste prompt (Bizdoc only) ────────────────────── */}
+      {companyKey === "bizdoc" && detectedHmzRef && (
+        <div
+          style={{
+            padding: "8px 12px",
+            backgroundColor: `${BIZDOC_GREEN}10`,
+            borderTop: `1px solid ${WA_BOT_BORDER}`,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            flexShrink: 0,
+          }}
+        >
+          <div style={{ fontSize: 12, color: TEXT, flex: 1, lineHeight: 1.35 }}>
+            That looks like a Hamzury reference — want me to pull up the status?
+          </div>
+          <button
+            onClick={() => {
+              const ref = detectedHmzRef;
+              setInputValue("");
+              if (ref) void runTrackingLookup(ref);
+            }}
+            style={{
+              padding: "6px 10px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: DARK,
+              color: W,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+              flexShrink: 0,
+            }}
+          >
+            Yes, track it
+          </button>
+        </div>
+      )}
 
       {/* ── INPUT BAR (cream surface, hairline pill input, navy send) ──── */}
       <div
@@ -2160,8 +2554,9 @@ function WhatsAppChatPanel({
 /* ══════════════════════════════════════════════════════════════════════════
    MESSAGE BUBBLE — left-gray for bot, right-green for visitor
    ══════════════════════════════════════════════════════════════════════════ */
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, companyKey }: { message: Message; companyKey?: CompanyKey }) {
   const isBot = message.role === "bot";
+  const isBizdoc = companyKey === "bizdoc";
   const time = message.timestamp.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -2221,7 +2616,7 @@ function MessageBubble({ message }: { message: Message }) {
               <button
                 key={i}
                 onClick={qr.onClick}
-                className="hover:bg-black/5 transition-colors"
+                className={`hover:bg-black/5 transition-colors${isBizdoc ? " bizdoc-qr-pill" : ""}`}
                 style={{
                   fontSize: 12.5,
                   fontWeight: 500,
@@ -2237,6 +2632,7 @@ function MessageBubble({ message }: { message: Message }) {
                 }}
               >
                 {qr.label}
+                {isBizdoc && <span style={{ marginLeft: 6, color: `${DARK}99` }}>→</span>}
               </button>
             ))}
           </div>
