@@ -22,6 +22,7 @@ import {
 } from "@/lib/bizdoc-prepayment";
 import { postToAppsScript } from "@/lib/apps-script";
 import { trpc } from "@/lib/trpc";
+import { FORMS as REQUIREMENT_FORMS, type RequirementField } from "@/lib/requirement-forms";
 
 /* ══════════════════════════════════════════════════════════════════════════
    HAMZURY Chat — v12: TRUE WhatsApp-style chat interface
@@ -749,6 +750,29 @@ type ClosingState = null | {
   ref?: string;               // generated when "I've paid" is tapped
 };
 
+/* Inline requirement-intake flow (2026-05) — collects each non-file field
+ *  one bot-turn at a time. File-type fields are filtered out and handed to
+ *  WhatsApp so the client can upload there with their reference number. */
+type RequirementFlowField = {
+  id: string;
+  label: string;
+  type: "text" | "textarea" | "number" | "tel" | "email" | "select";
+  options?: string[];
+  hint?: string;
+  required?: boolean;
+};
+type RequirementFlowState = null | {
+  serviceId: string;
+  serviceName: string;
+  ref: string;
+  fields: RequirementFlowField[];     // non-file, in order
+  fileLabels: string[];               // labels of file fields (sent via WA)
+  index: number;                      // current field index
+  answers: Record<string, string>;
+  reprompted?: boolean;               // empty-input second-chance flag
+  submitted?: boolean;                // tRPC submit fired
+};
+
 /* ── Bank account details shown in the closing flow ─────────────────────
  *  TODO: Founder will swap these placeholder values for the real Hamzury
  *  Limited account before launch. Centralised here so a single edit
@@ -847,6 +871,12 @@ function WhatsAppChatPanel({
    *  replies so each handler reads the latest snapshot synchronously. */
   const closingRef = useRef<ClosingState>(null);
 
+  /* ── Inline requirement-intake flow state (2026-05) ────────────────────
+   *  After finishClosing(), if the service has a definition in
+   *  REQUIREMENT_FORMS we collect each non-file field as a chat turn
+   *  instead of opening the standalone /requirements/<id> page. */
+  const requirementRef = useRef<RequirementFlowState>(null);
+
   /* ── Last interest tracker ─────────────────────────────────────────────
    *  We log the last service / topic the visitor expressed interest in
    *  so a callback request can be tagged with what they were looking
@@ -871,6 +901,9 @@ function WhatsAppChatPanel({
    *  Founder rule: every conversation that captures a phone number must
    *  land in CSO inbox with the full transcript so CSO has context. */
   const submitToInbox = trpc.leads.submit.useMutation();
+
+  /* ── Inline requirement-intake → reuse standalone form's submit endpoint */
+  const requirementSubmit = trpc.requirements.submit.useMutation();
 
   /* ── Resume-later magic code (2026-04-30). Persist chat state to
    *  localStorage so a visitor can pick up where they left off. The code
@@ -1792,24 +1825,6 @@ function WhatsAppChatPanel({
     const state = closingRef.current;
     if (!state) return;
     const ref = state.ref ?? generateClientRef(phoneRef.current || undefined);
-    const formUrl = requirementFormUrl(state.serviceId, ref);
-
-    addBotMessage(
-      `Welcome to ${company.name}.\n` +
-        `Reference: ${ref}\n\n` +
-        `Please fill out this short form so we can begin work.`,
-      [
-        {
-          label: "Open requirement form",
-          onClick: () => {
-            if (typeof window !== "undefined") {
-              window.open(formUrl, "_blank", "noopener,noreferrer");
-            }
-          },
-        },
-      ],
-      900,
-    );
 
     // Phase 5: dual-write the "chat_paid" lead to Apps Script. The
     // existing captureLead() console-logs an internal record; this fires
@@ -1829,6 +1844,252 @@ function WhatsAppChatPanel({
     });
 
     closingRef.current = { ...state, step: "complete" };
+
+    // 2026-05 — inline requirement intake. If the service has a form
+    // definition, collect its non-file fields as chat turns instead of
+    // opening the standalone /requirements/<id> page. Falls back to the
+    // external link when no definition exists yet.
+    const def = REQUIREMENT_FORMS[state.serviceId as keyof typeof REQUIREMENT_FORMS];
+    if (def) {
+      startRequirementFlow(state.serviceId, state.serviceName, ref);
+      return;
+    }
+
+    const formUrl = requirementFormUrl(state.serviceId, ref);
+    addBotMessage(
+      `Welcome to ${company.name}.\n` +
+        `Reference: ${ref}\n\n` +
+        `Please fill out this short form so we can begin work.`,
+      [
+        {
+          label: "Open requirement form",
+          onClick: () => {
+            if (typeof window !== "undefined") {
+              window.open(formUrl, "_blank", "noopener,noreferrer");
+            }
+          },
+        },
+      ],
+      900,
+    );
+  };
+
+  /* ══════════════════════════════════════════════════════════════════════
+     Inline requirement intake (2026-05)
+     ──────────────────────────────────────────────────────────────────────
+     Walks the visitor through each non-file field of REQUIREMENT_FORMS[id]
+     as a chat turn. File-type fields are deferred to a single WhatsApp
+     handoff at the end so the client uploads via WhatsApp with their
+     ref-prefilled message.
+     ══════════════════════════════════════════════════════════════════════ */
+  const startRequirementFlow = (
+    serviceId: string,
+    serviceName: string,
+    ref: string,
+  ) => {
+    const def = REQUIREMENT_FORMS[serviceId as keyof typeof REQUIREMENT_FORMS];
+    if (!def) return;
+    const allFields: RequirementField[] = def.steps.flatMap((s) => s.fields);
+    const fields: RequirementFlowField[] = allFields
+      .filter((f) => f.type !== "file")
+      .map((f) => ({
+        id: f.id,
+        label: f.label,
+        type: f.type as RequirementFlowField["type"],
+        options: f.type === "select" ? (f as { options: string[] }).options : undefined,
+        hint: f.hint,
+        required: f.required,
+      }));
+    const fileLabels = allFields.filter((f) => f.type === "file").map((f) => f.label);
+
+    requirementRef.current = {
+      serviceId,
+      serviceName,
+      ref,
+      fields,
+      fileLabels,
+      index: 0,
+      answers: {},
+    };
+
+    addBotMessage(
+      `Welcome to ${company.name}.\n` +
+        `Reference: ${ref}\n\n` +
+        `I'll ask a few quick questions so we can start work — about ${fields.length} questions, takes about 3 minutes.`,
+      undefined,
+      900,
+    );
+    askNextRequirementField();
+  };
+
+  const askNextRequirementField = () => {
+    const flow = requirementRef.current;
+    if (!flow) return;
+
+    // Defensive: skip any file field that slipped through.
+    while (flow.index < flow.fields.length) {
+      const f = flow.fields[flow.index];
+      if (!f) break;
+      if ((f.type as string) === "file") {
+        flow.index += 1;
+        continue;
+      }
+      break;
+    }
+
+    if (flow.index >= flow.fields.length) {
+      finalizeRequirements();
+      return;
+    }
+
+    const field = flow.fields[flow.index];
+    const optionalSuffix = field.required ? "" : " (optional — say 'skip' to move on)";
+    const promptText = field.hint
+      ? `${field.label}${optionalSuffix}\n${field.hint}`
+      : `${field.label}${optionalSuffix}`;
+
+    if (field.type === "select" && field.options && field.options.length > 0) {
+      addBotMessage(
+        promptText,
+        field.options.map((opt) => ({
+          label: opt,
+          onClick: () => onPickRequirementOption(opt),
+        })),
+        700,
+      );
+    } else {
+      // Free-text capture. Input handler intercepts based on
+      // requirementRef.current set + non-select current field.
+      addBotMessage(promptText, undefined, 700);
+    }
+  };
+
+  const onPickRequirementOption = (value: string) => {
+    const flow = requirementRef.current;
+    if (!flow) return;
+    addUserMessage(value);
+    const field = flow.fields[flow.index];
+    if (!field) return;
+    requirementRef.current = {
+      ...flow,
+      answers: { ...flow.answers, [field.id]: value },
+      index: flow.index + 1,
+      reprompted: false,
+    };
+    askNextRequirementField();
+  };
+
+  /** Free-text intercept for the inline requirement flow. Called from
+   *  onSendFreeText() before any other matching. Returns true when the
+   *  text was consumed by the flow. */
+  const handleRequirementFreeText = (text: string): boolean => {
+    const flow = requirementRef.current;
+    if (!flow) return false;
+    const field = flow.fields[flow.index];
+    if (!field) return false;
+    if (field.type === "select") return false; // chip-only, ignore typing
+
+    const trimmed = text.trim();
+    const isSkip = /^(skip|no|n\/a|na|none)$/i.test(trimmed);
+
+    if (!trimmed || isSkip) {
+      if (field.required && !isSkip && !flow.reprompted) {
+        // Empty + required → reprompt once.
+        requirementRef.current = { ...flow, reprompted: true };
+        addBotMessage(
+          `That one's required — could you give it a quick try? ${field.label}`,
+          undefined,
+          500,
+        );
+        return true;
+      }
+      // Optional skip OR second empty → record blank, advance.
+      requirementRef.current = {
+        ...flow,
+        answers: { ...flow.answers, [field.id]: "" },
+        index: flow.index + 1,
+        reprompted: false,
+      };
+      askNextRequirementField();
+      return true;
+    }
+
+    requirementRef.current = {
+      ...flow,
+      answers: { ...flow.answers, [field.id]: trimmed },
+      index: flow.index + 1,
+      reprompted: false,
+    };
+    askNextRequirementField();
+    return true;
+  };
+
+  const finalizeRequirements = () => {
+    const flow = requirementRef.current;
+    if (!flow || flow.submitted) return;
+    requirementRef.current = { ...flow, submitted: true };
+
+    // Fire-and-forget submit — UX is the WhatsApp handoff regardless.
+    requirementSubmit
+      .mutateAsync({
+        ref: flow.ref,
+        // Narrowed by REQUIREMENT_FORMS lookup at flow start.
+        serviceId: flow.serviceId as Parameters<typeof requirementSubmit.mutateAsync>[0]["serviceId"],
+        answers: flow.answers,
+        uploadKeys: {},
+        ndprConsent: true,
+      })
+      .catch(() => {
+        // Soft-fail — the WhatsApp message still routes a human to follow up.
+      });
+
+    // WhatsApp number selection: bizdoc → BIZDOC line; everyone else → CSO.
+    const waNumber = companyKey === "bizdoc" ? BIZDOC_PHONE : CSO_PHONE;
+
+    const docsLine = flow.fileLabels.length > 0
+      ? flow.fileLabels.map((d) => `- ${d}`).join("\n")
+      : "- (your supporting documents)";
+    const messageText =
+      `Hi HAMZURY — I just completed my requirement intake on chat.\n` +
+      `Reference: ${flow.ref}\n` +
+      `Service: ${flow.serviceName}\n\n` +
+      `Sending the documents you still need:\n` +
+      `${docsLine}\n\n` +
+      `Please confirm receipt.`;
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(messageText)}`;
+
+    const summaryBody =
+      flow.fileLabels.length > 0
+        ? `Thanks. We've logged your details under ${flow.ref}.\n\n` +
+          `One last step — please send the documents we still need on WhatsApp ` +
+          `(your reference will be pre-filled):\n${docsLine}`
+        : `Thanks. We've logged your details under ${flow.ref}.\n\n` +
+          `Tap WhatsApp below to confirm with our team — your reference will be pre-filled.`;
+
+    addBotMessage(
+      summaryBody,
+      [
+        {
+          label: "Send documents on WhatsApp",
+          onClick: () => {
+            if (typeof window !== "undefined") {
+              window.open(waUrl, "_blank", "noopener,noreferrer");
+            }
+          },
+        },
+        {
+          label: "Done — close chat",
+          onClick: () => {
+            requirementRef.current = null;
+            if (onClose) onClose();
+          },
+        },
+      ],
+      900,
+    );
+
+    // Release the input so subsequent typed messages aren't captured.
+    requirementRef.current = null;
   };
 
   /** Diagnostic leaf tapped — open route in a new tab. */
@@ -1986,6 +2247,13 @@ function WhatsAppChatPanel({
       setAwaitingAffiliateText(false);
       closingRef.current = { ...closingRef.current, affiliateCode: text };
       finishClosing();
+      return;
+    }
+
+    // 2026-05 — inline requirement intake. When a requirement flow is
+    // active and the current field expects free-text, the typed message
+    // is captured as that field's answer and we advance to the next.
+    if (handleRequirementFreeText(text)) {
       return;
     }
 
@@ -2510,11 +2778,13 @@ function WhatsAppChatPanel({
             }
           }}
           placeholder={
-            awaitingAffiliateText
-              ? "Type the affiliate code or content…"
-              : awaitingCallback
-                ? "Type your phone number…"
-                : "Type your message…"
+            requirementRef.current && requirementRef.current.fields[requirementRef.current.index]?.type !== "select"
+              ? "Type your answer…"
+              : awaitingAffiliateText
+                ? "Type the affiliate code or content…"
+                : awaitingCallback
+                  ? "Type your phone number…"
+                  : "Type your message…"
           }
           aria-label="Type your message"
           style={{
