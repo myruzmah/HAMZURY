@@ -212,6 +212,15 @@ export default function CSOPortal() {
   const [pipelineView, setPipelineView] = useState<PipelineView>("kanban");
   const isCsoStaff = (user as any)?.hamzuryRole === "cso_staff";
 
+  // 2026-05 — listen for the "go to Active Clients" event the Pipeline emits
+  // after a Won transition. Lets the post-Won toast click-through work
+  // without prop-drilling setActive into PipelineSection.
+  useEffect(() => {
+    const handler = () => setActive("active_clients");
+    window.addEventListener("hamzury:cso-go-active-clients", handler);
+    return () => window.removeEventListener("hamzury:cso-go-active-clients", handler);
+  }, []);
+
   /* Mobile responsiveness */
   const [isMobile, setIsMobile] = useState<boolean>(
     typeof window !== "undefined" ? window.innerWidth < 900 : false
@@ -2085,9 +2094,9 @@ function escapeHtml(s: string): string {
  * 6. ACTIVE CLIENTS
  * ═══════════════════════════════════════════════════════════════════════ */
 function ClientsSection() {
-  // 2026-05 — default to "all" so newly-Won clients (status="converted") are
-  // visible immediately. Was "active" which hid converted clients on first load.
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  // 2026-05 — default to "converted" so newly-Won clients land in the
+  // first thing the CSO sees. Reduces "where did my Won lead go?" friction.
+  const [statusFilter, setStatusFilter] = useState<string>("converted");
   const [showAddModal, setShowAddModal] = useState(false);
   const [detailClient, setDetailClient] = useState<any | null>(null);
   const [assignTarget, setAssignTarget] = useState<{ clientId?: number; leadId?: number } | null>(null);
@@ -2129,30 +2138,61 @@ function ClientsSection() {
         </button>
       </div>
 
+      {/* 2026-05 — relabelled tabs in plain English. The DB enum stays
+          (active/converted/unverified/dormant) — only the user-facing label
+          changes so the CSO knows exactly which bucket means what:
+            converted → "Just Won (post-handoff, before delivery)"
+            active    → "In Delivery"
+            unverified→ "Pending Payment"
+            dormant   → "Inactive 60d+"
+          Order is also rearranged so the journey reads left→right:
+            Just Won → In Delivery → Pending Payment → Inactive → Upsell. */}
       <div style={{ display: "flex", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
-        {["all", "active", "converted", "unverified", "dormant", "upsell"].map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            style={{
-              padding: "6px 12px", borderRadius: 10, border: `1px solid ${DARK}10`,
-              fontSize: 11, fontWeight: 600, cursor: "pointer", textTransform: "uppercase",
-              letterSpacing: "0.04em",
-              backgroundColor: statusFilter === s ? GREEN : WHITE,
-              color: statusFilter === s ? GOLD : MUTED,
-            }}
-          >
-            {s === "upsell"
-              ? `Upsell Queue (${upsellList.length})`
-              : `${s} ${s !== "all" ? `(${clients.filter((c: any) => c.status === s).length})` : ""}`}
-          </button>
-        ))}
+        {([
+          { key: "converted",  label: "Just Won",        countOf: "converted" },
+          { key: "active",     label: "In Delivery",     countOf: "active" },
+          { key: "unverified", label: "Pending Payment", countOf: "unverified" },
+          { key: "dormant",    label: "Inactive 60d+",   countOf: "dormant" },
+          { key: "upsell",     label: "Upsell Queue",    countOf: "upsell" },
+          { key: "all",        label: "All",             countOf: "all" },
+        ] as const).map(t => {
+          const count = t.countOf === "upsell"
+            ? upsellList.length
+            : t.countOf === "all"
+              ? clients.length
+              : clients.filter((c: any) => c.status === t.countOf).length;
+          const isSelected = statusFilter === t.key;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setStatusFilter(t.key)}
+              style={{
+                padding: "6px 12px", borderRadius: 10, border: `1px solid ${DARK}10`,
+                fontSize: 11, fontWeight: 600, cursor: "pointer", letterSpacing: "0.02em",
+                backgroundColor: isSelected ? GREEN : WHITE,
+                color: isSelected ? GOLD : MUTED,
+              }}
+            >
+              {t.label} ({count})
+            </button>
+          );
+        })}
       </div>
 
       {clientsQuery.isLoading ? (
         <Card><EmptyState icon={Loader2} title="Loading clients..." /></Card>
       ) : filtered.length === 0 ? (
-        <Card><EmptyState icon={Building2} title={statusFilter === "upsell" ? "Upsell queue is empty" : `No ${statusFilter === "all" ? "" : statusFilter} clients`} /></Card>
+        <Card><EmptyState icon={Building2} title={(() => {
+          const labels: Record<string, string> = {
+            converted: "No just-won clients yet — drag a lead to Won in Pipeline to see it here.",
+            active:    "No clients in delivery yet.",
+            unverified:"No pending-payment clients.",
+            dormant:   "No inactive clients.",
+            upsell:    "Upsell queue is empty.",
+            all:       "No clients yet.",
+          };
+          return labels[statusFilter] || "No clients";
+        })()} /></Card>
       ) : statusFilter === "upsell" ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {filtered.map((c: any) => (
@@ -3995,8 +4035,32 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
     onMutate: (vars) => { console.log("[CSO] updateStage →", vars); },
     onSuccess: (data, vars) => {
       console.log("[CSO] updateStage ok ←", vars, data);
-      toast.success(`Stage → ${vars.stage.replace("_", " ")}`, { duration: 2200 });
       utils.leads.list.invalidate();
+      utils.clientTruth?.listWithPaymentSummary?.invalidate?.();
+      // 2026-05 — Won is a special case: tell the CSO where the lead just
+      // went, with a click-through to Active Clients so they don't think
+      // the action did nothing. For other stages, plain toast is fine.
+      if (vars.stage === "won") {
+        toast.success(
+          (t) => (
+            <span>
+              ✅ Won — handed off to Active Clients.{" "}
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new CustomEvent("hamzury:cso-go-active-clients"));
+                  toast.dismiss(t);
+                }}
+                style={{ color: "#15803D", fontWeight: 700, textDecoration: "underline", cursor: "pointer", background: "none", border: "none", padding: 0 }}
+              >
+                Open →
+              </button>
+            </span>
+          ),
+          { duration: 6000 },
+        );
+      } else {
+        toast.success(`Stage → ${vars.stage.replace("_", " ")}`, { duration: 2200 });
+      }
     },
     onError: (e, vars) => {
       console.error("[CSO] updateStage FAILED", vars, e);
@@ -4184,13 +4248,20 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
             <p style={{ fontSize: 9, fontWeight: 700, color: INK_MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>Active</p>
             <p style={{ fontSize: 16, fontWeight: 700, marginTop: 2 }}>{activeCount}</p>
           </div>
-          <div style={{
-            padding: "8px 14px", borderRadius: 10, backgroundColor: WHITE,
-            border: `1px solid ${HAIRLINE}`, fontSize: 11, color: INK,
-          }}>
-            <p style={{ fontSize: 9, fontWeight: 700, color: INK_MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>Won this month</p>
+          {/* 2026-05 — make "Won this month" a click-through to Active Clients
+              so the CSO doesn't think their won leads vanished. */}
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent("hamzury:cso-go-active-clients"))}
+            style={{
+              padding: "8px 14px", borderRadius: 10, backgroundColor: WHITE,
+              border: `1px solid ${HAIRLINE}`, fontSize: 11, color: INK, cursor: "pointer",
+              textAlign: "left",
+            }}
+            title="Open Active Clients to see them"
+          >
+            <p style={{ fontSize: 9, fontWeight: 700, color: INK_MUTED, letterSpacing: "0.08em", textTransform: "uppercase" }}>Won this month →</p>
             <p style={{ fontSize: 16, fontWeight: 700, marginTop: 2, color: GREEN }}>{wonThisMonth}</p>
-          </div>
+          </button>
           <button
             onClick={() => setShowEndStates(s => !s)}
             style={{
