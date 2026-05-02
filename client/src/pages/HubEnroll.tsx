@@ -371,8 +371,9 @@ const cfg: AssessmentConfig = {
         {
           id: "receiptUrl",
           kind: "file",
-          prompt: "Upload your payment receipt (screenshot or PDF)",
-          required: true,
+          // Optional — if the upload service is down or the user skips, the
+          // form should still submit. CSO will follow up for the receipt.
+          prompt: "Upload your payment receipt (screenshot or PDF) — optional, you can also send it on WhatsApp after.",
           showWhen: (a) => (a.paidConfirm || "").startsWith("Yes"),
         },
         {

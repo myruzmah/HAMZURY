@@ -48,6 +48,13 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+  // ─── Static /uploads ─────────────────────────────────────────────────────
+  // Local-disk fallback for storagePut. Served from <cwd>/uploads/* so that
+  // payment receipts uploaded by clients are immediately viewable in the CSO
+  // dashboard via a public URL.
+  const uploadsDir = process.env.LOCAL_UPLOADS_DIR || `${process.cwd()}/uploads`;
+  app.use("/uploads", express.static(uploadsDir, { fallthrough: true, maxAge: "1d" }));
+
   // ─── Force HTTPS in production (Railway sets x-forwarded-proto) ──────────
   if (process.env.NODE_ENV === "production") {
     app.use((req, res, next) => {
@@ -249,9 +256,33 @@ async function startServer() {
   });
 
   // ─── DEV-ONLY: Role-switching for local development ───────────────────────
-  if (process.env.NODE_ENV !== "production") {
+  // 2026-04-30 — TRIPLE-GATED. Previous version was only gated by NODE_ENV.
+  // Now requires:
+  //   1) NODE_ENV !== "production"
+  //   2) ALLOW_DEV_LOGIN === "true"  (must be explicitly opted in)
+  //   3) the request must come from localhost (127.0.0.1 / ::1)
+  // This way a misconfigured production cannot accidentally turn on a backdoor
+  // that lets anyone log in as founder without a password.
+  const DEV_LOGIN_ENABLED =
+    process.env.NODE_ENV !== "production" &&
+    process.env.ALLOW_DEV_LOGIN === "true";
+  if (DEV_LOGIN_ENABLED) {
     app.post("/api/dev-login", async (req, res) => {
       try {
+        // Localhost-only: refuse all non-loopback requests.
+        const fwd = req.headers["x-forwarded-for"];
+        const ip = (typeof fwd === "string" ? fwd.split(",")[0].trim() : null)
+          || req.ip
+          || (req.socket && (req.socket as any).remoteAddress)
+          || "";
+        const isLocalhost =
+          ip === "127.0.0.1" || ip === "::1" || ip === "::ffff:127.0.0.1";
+        if (!isLocalhost) {
+          return res.status(403).json({
+            error: "dev-login is loopback-only.",
+          });
+        }
+
         const { name = "Dev Admin", role = "admin", staffId = 1 } = req.body ?? {};
         const openId = `dev__${role}__${staffId}`;
         const token = await sdk.createSessionToken(openId, { name });
@@ -261,11 +292,15 @@ async function startServer() {
           sameSite: "lax",
           maxAge: 8 * 60 * 60 * 1000,
         });
+        console.warn(`[dev-login] Issued session: role=${role} staffId=${staffId} from ${ip}`);
         res.json({ success: true, name, role });
       } catch (err) {
         res.status(500).json({ error: String(err) });
       }
     });
+  } else if (process.env.NODE_ENV !== "production") {
+    // Dev mode but not opted-in — log a hint so devs know how to turn it on.
+    console.log("[server] dev-login disabled. Set ALLOW_DEV_LOGIN=true to enable (loopback only).");
   }
   // ─────────────────────────────────────────────────────────────────────────
 
