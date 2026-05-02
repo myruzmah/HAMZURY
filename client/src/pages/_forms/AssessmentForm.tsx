@@ -58,6 +58,12 @@ export type AssessmentConfig = {
   division: "bizdoc" | "scalar" | "medialy" | "hub";
   pageTitle: string;
   pageDescription: string;
+  /** Optional override for the `source` field on the lead record. Defaults to
+   *  `assessment_${division}` (e.g. "assessment_hub" for Hub enrolments).
+   *  Use this when a single division has multiple form surfaces — e.g. Hub
+   *  has separate forms for enrolment, partnerships, and feedback, each of
+   *  which should NOT look identical in the CSO inbox. */
+  sourceOverride?: string;
   /** Full-brand hero — e.g. "BIZDOC ASSESSMENT" */
   brand: string;
   /** What the client should know — shown on welcome */
@@ -153,7 +159,7 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
       email: contact.email.trim() || undefined,
       service: `${cfg.brand} Assessment`,
       context: block.join("\n"),
-      source: `assessment_${cfg.division}`,
+      source: cfg.sourceOverride || `assessment_${cfg.division}`,
       meta: Object.fromEntries(
         Object.entries(answers).map(([k, v]) => [k, String(v ?? "")])
       ),

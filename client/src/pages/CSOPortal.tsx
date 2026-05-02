@@ -849,6 +849,8 @@ function friendlySource(source: string | null | undefined): string {
     assessment_scalar:  "Scalar assessment",
     assessment_medialy: "Medialy assessment",
     assessment_hub:     "Hub enrolment",
+    partner_hub:        "Hub — Partnership inquiry",
+    feedback_hub:       "Hub — Feedback / Complaint",
     diagnostic_clarity: "Clarity Session",
     diagnostic_business:"Business diagnostic",
     diagnostic_software:"Software diagnostic",

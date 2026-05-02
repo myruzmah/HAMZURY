@@ -2,6 +2,7 @@ import AssessmentForm, { type AssessmentConfig } from "./_forms/AssessmentForm";
 
 const cfg: AssessmentConfig = {
   division: "hub",
+  sourceOverride: "feedback_hub",
   pageTitle: "Feedback & Complaints | HAMZURY HUB",
   pageDescription: "Tell HAMZURY HUB what's working, what's not, or what we should fix. We read every message.",
   brand: "FEEDBACK & COMPLAINTS",

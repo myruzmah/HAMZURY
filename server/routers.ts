@@ -53,6 +53,7 @@ import {
   createInvoice, getInvoices, getInvoiceById, getInvoiceByNumber, updateInvoice, getInvoicesByTaskId,
   // Notifications
   createNotification, getNotifications, getUnreadNotifications, markNotificationRead, markAllNotificationsRead,
+  getNotificationsForKeys, getUnreadNotificationsForKeys, markAllNotificationsReadForKeys,
   // Proposals
   createProposal, getProposals, getProposalById, getProposalByNumber, updateProposal,
   // Certificates
@@ -199,6 +200,64 @@ function mapPaymentToTier(payment: string | undefined | null): string {
   return "early_bird";
 }
 
+/**
+ * 2026-04-30 — Build the set of "addressee keys" a notification can be
+ * targeted at and a given user will still see. Used by notifications.list /
+ * unreadCount / markAllRead so a "userId: skills" notification reaches every
+ * Hub admin staff member (skills_staff role), not just whoever has email
+ * skills@hamzury.com.
+ *
+ * Map of role → department slug, derived from the seed-staff roster.
+ */
+const ROLE_TO_DEPT: Record<string, string[]> = {
+  founder:           ["founder"],
+  ceo:               ["ceo"],
+  cso:               ["cso"],
+  cso_assist:        ["cso"],
+  cso_staff:         ["cso"],
+  finance:           ["finance"],
+  hr:                ["hr"],
+  bizdev:            ["bizdev"],
+  bizdev_staff:      ["bizdev"],
+  compliance_staff:  ["bizdoc"],
+  systemise_head:    ["systemise", "scalar"],
+  scalar_lead:       ["systemise", "scalar"],
+  scalar_staff:      ["systemise", "scalar"],
+  tech_lead:         ["systemise", "scalar"],
+  media:             ["medialy"],
+  medialy_lead:      ["medialy"],
+  medialy_staff:     ["medialy"],
+  podcast_lead:      ["podcast"],
+  podcast_staff:     ["podcast"],
+  video_lead:        ["video"],
+  video_staff:       ["video"],
+  faceless_lead:     ["faceless"],
+  faceless_staff:    ["faceless"],
+  skills_staff:      ["skills", "hub"],
+  security_staff:    ["security"],
+  department_lead:   [],
+  department_staff:  [],
+};
+
+function buildNotificationKeysFromUser(user: any): string[] {
+  const keys: string[] = [];
+  if (user?.email) keys.push(user.email);
+  if (user?.openId) keys.push(user.openId);
+  const role = user?.hamzuryRole;
+  if (role) {
+    keys.push(role);
+    // Strip "_lead" / "_staff" suffix so a notification targeting "skills" or
+    // "scalar" reaches dept members regardless of their exact role variant.
+    const stripped = role.replace(/_lead$|_staff$|_assist$/, "");
+    if (stripped !== role) keys.push(stripped);
+    const depts = ROLE_TO_DEPT[role];
+    if (depts) keys.push(...depts);
+  }
+  if (user?.department) keys.push(user.department);
+  // Dedupe; keep order so .filter logic is stable.
+  return Array.from(new Set(keys.filter(Boolean)));
+}
+
 export const appRouter = router({
   system: systemRouter,
   founder: founderRouter,
@@ -310,6 +369,15 @@ export const appRouter = router({
         assignedDepartment: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
+        // 2026-04-30 — log every public submission so production failures
+        // are diagnosable from Railway logs. Phone last-4 only (privacy).
+        console.log("[leads.submit] received", {
+          source: input.source || "(none)",
+          name: input.name,
+          phoneTail: input.phone ? `***${input.phone.slice(-4)}` : "(none)",
+          service: input.service,
+          hasMeta: !!input.meta,
+        });
         const ref = generateRefNumber(input.phone);
         // Auto-derive division from form source if it wasn't passed
         // explicitly (e.g. "assessment_hub" → "skills").
@@ -323,6 +391,11 @@ export const appRouter = router({
           diagnostic_media: "medialy",
           diagnostic_skills: "skills",
           diagnostic_clarity: "bizdoc",
+          // Partner / feedback don't belong to a delivery dept — leave at CSO
+          // for general triage. Explicitly mapped so the inbox badge reads
+          // "Direct" instead of "unassigned".
+          partner_hub:  "cso",
+          feedback_hub: "cso",
         };
         const inferredDept = input.assignedDepartment
           || (input.source ? sourceToDept[input.source] : undefined);
@@ -768,7 +841,7 @@ export const appRouter = router({
             console.error(`[leads.updateStage:won] Auto-handoff partially failed for lead ${lead.ref}:`, err);
             await createNotification({
               userId: "cso",
-              type: "alert",
+              type: "system",
               title: "Won handoff incomplete",
               message: `${lead.ref} (${lead.name}) is Won, but creating the client / commission row failed: ${msg.slice(0, 160)}. Open the lead and retry handoff.`,
               link: "/cso",
@@ -810,6 +883,47 @@ export const appRouter = router({
           resourceId: input.leadId,
           details: `Assigned to department: ${input.department}`,
         });
+
+        // ─── 2026-04-30 — Notify the receiving division ───────────────────
+        // Subtle in-portal notification. The dept ops staff sees a count
+        // badge on their notifications icon and can click through.
+        // The userId is the dept slug; notifications.list now matches on
+        // the logged-in user's role/department too, not just email.
+        const deptToPortal: Record<string, string> = {
+          bizdoc:    "/bizdoc/ops",
+          systemise: "/scalar/ops",
+          scalar:    "/scalar/ops",
+          medialy:   "/medialy/ops",
+          skills:    "/hub/admin",
+          hub:       "/hub/admin",
+          podcast:   "/podcast/ops",
+          video:     "/video/ops",
+          faceless:  "/faceless/ops",
+        };
+        const portalLink = deptToPortal[input.department.toLowerCase()] || "/";
+        try {
+          await createNotification({
+            userId: input.department.toLowerCase(),
+            type: "assignment",
+            title: `New from CSO: ${lead?.name || "lead"}`,
+            message: `${ctx.user.name || "CSO"} assigned ${lead?.name || "a lead"} (${lead?.ref || "—"}) for ${lead?.service || "delivery"}. Open the task to begin.`,
+            link: portalLink,
+          });
+          // Also drop a copy on the lead's specific dept "lead" tag so any
+          // role string variant (e.g. "scalar_lead", "skills_staff") can
+          // surface it via the role-broadened notifications query below.
+          await createNotification({
+            userId: `${input.department.toLowerCase()}_lead`,
+            type: "assignment",
+            title: `New from CSO: ${lead?.name || "lead"}`,
+            message: `${ctx.user.name || "CSO"} assigned ${lead?.name || "a lead"} (${lead?.ref || "—"}). See your tasks tab.`,
+            link: portalLink,
+          });
+        } catch (err) {
+          console.error("[leads.assign] dept notification failed:", err);
+          // Non-fatal — assignment already succeeded.
+        }
+
         return lead;
       }),
 
@@ -3573,16 +3687,21 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
 
   // ─── Notifications ──────────────────────────────────────────────────────────
   notifications: router({
+    /**
+     * 2026-04-30 — broadened lookup. A staff user sees notifications
+     * addressed to ANY of: their email, their openId, their role
+     * (e.g. "skills_staff"), or the department slug for that role
+     * (e.g. "skills"). This is what makes "CSO assigns to Bizdoc → Bizdoc
+     * ops sees it" work across portals.
+     */
     list: protectedProcedure
       .query(async ({ ctx }) => {
-        const userId = ctx.user.email || ctx.user.openId;
-        return getNotifications(userId);
+        return getNotificationsForKeys(buildNotificationKeysFromUser(ctx.user));
       }),
 
     unreadCount: protectedProcedure
       .query(async ({ ctx }) => {
-        const userId = ctx.user.email || ctx.user.openId;
-        return getUnreadNotifications(userId);
+        return getUnreadNotificationsForKeys(buildNotificationKeysFromUser(ctx.user));
       }),
 
     markRead: protectedProcedure
@@ -3594,8 +3713,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
 
     markAllRead: protectedProcedure
       .mutation(async ({ ctx }) => {
-        const userId = ctx.user.email || ctx.user.openId;
-        await markAllNotificationsRead(userId);
+        await markAllNotificationsReadForKeys(buildNotificationKeysFromUser(ctx.user));
         return { success: true };
       }),
   }),

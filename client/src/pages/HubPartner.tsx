@@ -2,6 +2,7 @@ import AssessmentForm, { type AssessmentConfig } from "./_forms/AssessmentForm";
 
 const cfg: AssessmentConfig = {
   division: "hub",
+  sourceOverride: "partner_hub",
   pageTitle: "Partner with HAMZURY HUB | HAMZURY",
   pageDescription: "Partner with HAMZURY HUB. We work with companies, schools, NGOs, sponsors and ecosystem partners on training, hiring and impact.",
   brand: "PARTNER WITH HUB",
