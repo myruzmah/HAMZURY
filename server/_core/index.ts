@@ -706,77 +706,26 @@ Sitemap: ${base}/sitemap.xml
 `);
   });
 
-  // ─── Bizdoc service catalog (static HTML) ──────────────────────────────────
-  // The /bizdoc/ourservice page is the locked v3-4 Apple-minimal phone-frame
-  // catalog. Served as a single self-contained HTML file from
-  // client/public/bizdoc/ourservice/index.html — NOT a React route so the
-  // design (max-width 420px, fonts, spacing) stays untouched.
+  // ─── Static catalog routing helpers (Bizdoc / Scalar / Medialy) ────────────
+  // The catalogs are locked v3-4 Apple-minimal phone-frame designs served as
+  // single self-contained HTML files — NOT React routes so the design
+  // (max-width 420px, fonts, spacing) stays untouched.
   //
-  // /packages/:industry deep-links serve the same HTML with
-  // window.__INITIAL_PACKAGE__ injected so the page boots straight to the
-  // requested industry detail screen — critical for WhatsApp shares.
-  {
-    const fs = await import("fs");
-    const path = await import("path");
-    const ourServicePath = path.resolve(
-      import.meta.dirname,
-      "../..",
-      "client",
-      "public",
-      "bizdoc",
-      "ourservice",
-      "index.html",
-    );
+  // Path resolution mirrors vite.ts/serveStatic:
+  //   dev: client/public/<division>/ourservice/index.html  (Vite source)
+  //   prod: dist/public/<division>/ourservice/index.html   (Vite build output)
+  // 2026-05-05 fix: original code only used the dev path, breaking prod.
+  const fs = await import("fs");
+  const path = await import("path");
+  const catalogBaseDir = process.env.NODE_ENV === "development"
+    ? path.resolve(import.meta.dirname, "../..", "client", "public")
+    : path.resolve(import.meta.dirname, "public");
 
-    const sendOurService = (industry: string | null, res: express.Response) => {
+  const makeCatalogHandler = (division: "bizdoc" | "scalar" | "medialy") => {
+    const filePath = path.resolve(catalogBaseDir, division, "ourservice", "index.html");
+    return (industry: string | null, res: express.Response) => {
       try {
-        const raw = fs.readFileSync(ourServicePath, "utf-8");
-        if (industry) {
-          // Whitelist: lowercase letters, digits, underscore, hyphen, max 40 chars.
-          // Anything else → ignore (page falls back to home screen).
-          const safe = /^[a-z0-9_-]{1,40}$/.test(industry) ? industry : "";
-          if (safe) {
-            const inject = `<script>window.__INITIAL_PACKAGE__=${JSON.stringify(safe)};</script>`;
-            const out = raw.replace("</head>", `${inject}\n</head>`);
-            res.setHeader("Content-Type", "text/html; charset=utf-8");
-            return res.send(out);
-          }
-        }
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(raw);
-      } catch (err) {
-        console.error("[/bizdoc/ourservice] read failed:", err);
-        res.status(500).send("Service catalog temporarily unavailable.");
-      }
-    };
-
-    app.get("/bizdoc/ourservice", (_req, res) => sendOurService(null, res));
-    app.get("/bizdoc/ourservice/", (_req, res) => sendOurService(null, res));
-    app.get("/bizdoc/ourservice/packages/:industry", (req, res) =>
-      sendOurService(req.params.industry, res),
-    );
-  }
-
-  // ─── Scalar service catalog (static HTML) ──────────────────────────────────
-  // Same shape as the Bizdoc catalog above — single self-contained HTML file at
-  // client/public/scalar/ourservice/index.html. Deep-link route injects
-  // window.__INITIAL_PACKAGE__ so /packages/:industry boots straight to detail.
-  {
-    const fs = await import("fs");
-    const path = await import("path");
-    const scalarPath = path.resolve(
-      import.meta.dirname,
-      "../..",
-      "client",
-      "public",
-      "scalar",
-      "ourservice",
-      "index.html",
-    );
-
-    const sendScalarService = (industry: string | null, res: express.Response) => {
-      try {
-        const raw = fs.readFileSync(scalarPath, "utf-8");
+        const raw = fs.readFileSync(filePath, "utf-8");
         if (industry) {
           const safe = /^[a-z0-9_-]{1,40}$/.test(industry) ? industry : "";
           if (safe) {
@@ -789,59 +738,23 @@ Sitemap: ${base}/sitemap.xml
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.send(raw);
       } catch (err) {
-        console.error("[/scalar/ourservice] read failed:", err);
+        console.error(`[/${division}/ourservice] read failed (${filePath}):`, err);
         res.status(500).send("Service catalog temporarily unavailable.");
       }
     };
+  };
 
-    app.get("/scalar/ourservice", (_req, res) => sendScalarService(null, res));
-    app.get("/scalar/ourservice/", (_req, res) => sendScalarService(null, res));
-    app.get("/scalar/ourservice/packages/:industry", (req, res) =>
-      sendScalarService(req.params.industry, res),
-    );
-  }
-
-  // ─── Medialy service catalog (static HTML) ─────────────────────────────────
-  // Same shape as the Bizdoc + Scalar catalogs above. Single self-contained HTML
-  // file at client/public/medialy/ourservice/index.html. Deep-link route injects
-  // window.__INITIAL_PACKAGE__ so /packages/:industry boots straight to detail.
-  {
-    const fs = await import("fs");
-    const path = await import("path");
-    const medialyPath = path.resolve(
-      import.meta.dirname,
-      "../..",
-      "client",
-      "public",
-      "medialy",
-      "ourservice",
-      "index.html",
-    );
-
-    const sendMedialyService = (industry: string | null, res: express.Response) => {
-      try {
-        const raw = fs.readFileSync(medialyPath, "utf-8");
-        if (industry) {
-          const safe = /^[a-z0-9_-]{1,40}$/.test(industry) ? industry : "";
-          if (safe) {
-            const inject = `<script>window.__INITIAL_PACKAGE__=${JSON.stringify(safe)};</script>`;
-            const out = raw.replace("</head>", `${inject}\n</head>`);
-            res.setHeader("Content-Type", "text/html; charset=utf-8");
-            return res.send(out);
-          }
-        }
-        res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(raw);
-      } catch (err) {
-        console.error("[/medialy/ourservice] read failed:", err);
-        res.status(500).send("Service catalog temporarily unavailable.");
-      }
-    };
-
-    app.get("/medialy/ourservice", (_req, res) => sendMedialyService(null, res));
-    app.get("/medialy/ourservice/", (_req, res) => sendMedialyService(null, res));
-    app.get("/medialy/ourservice/packages/:industry", (req, res) =>
-      sendMedialyService(req.params.industry, res),
+  // ─── Bizdoc / Scalar / Medialy catalog routes ─────────────────────────────
+  // /packages/:industry deep-links inject window.__INITIAL_PACKAGE__ so the
+  // page boots straight to the requested industry detail screen — critical
+  // for WhatsApp shares. All three use the same makeCatalogHandler factory
+  // above so dev-vs-prod path resolution lives in one place.
+  for (const division of ["bizdoc", "scalar", "medialy"] as const) {
+    const handler = makeCatalogHandler(division);
+    app.get(`/${division}/ourservice`,        (_req, res) => handler(null, res));
+    app.get(`/${division}/ourservice/`,       (_req, res) => handler(null, res));
+    app.get(`/${division}/ourservice/packages/:industry`, (req, res) =>
+      handler(req.params.industry, res),
     );
   }
 
