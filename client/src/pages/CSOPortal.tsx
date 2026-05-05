@@ -4,23 +4,24 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import PageMeta from "@/components/PageMeta";
 import {
-  LayoutDashboard, Users, FileCheck, UserPlus, RefreshCw,
-  Network, Calendar, LogOut, ArrowLeft, Loader2, AlertTriangle,
-  CheckCircle2, Clock, Target, FileText, Send, Building2,
+  LayoutDashboard, Users, FileCheck, UserPlus,
+  Calendar, LogOut, ArrowLeft, Loader2, AlertTriangle,
+  CheckCircle2, Clock, Target, FileText, Building2,
   Shield, Eye, ExternalLink, TrendingUp, AlertCircle,
   Menu, X, Plus, Settings as SettingsIcon, ChevronLeft, ChevronRight,
-  MessageSquare, Trash2, Lock, Briefcase, BookOpen, UserCheck,
-  DollarSign, Wallet, PieChart as PieChartIcon,
+  Trash2, Lock, Briefcase, BookOpen, UserCheck,
+  DollarSign,
   Inbox, BarChart3, MessageCircle, Phone, Bell, ArrowRightCircle,
 } from "lucide-react";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip,
-  CartesianGrid, BarChart, Bar, Cell,
+  ResponsiveContainer, XAxis, YAxis, Tooltip as RTooltip,
+  CartesianGrid, BarChart, Bar,
 } from "recharts";
 import { toast } from "sonner";
 import { SERVICE_LIST, servicesByDept } from "@shared/services";
 import { FORMS as DIAGNOSTIC_FORMS, type DiagnosticFormId } from "@/lib/diagnostic-forms";
 import { FORMS as REQUIREMENT_FORMS, type RequirementFormId } from "@/lib/requirement-forms";
+import { deriveCsoStats } from "@/lib/cso-stats";
 
 /* ══════════════════════════════════════════════════════════════════════
  * HAMZURY CSO PORTAL — Client Services Office
@@ -65,10 +66,8 @@ type Section =
   | "pipeline"
   | "active_clients"
   | "revenue"
-  | "lead_sources"
   | "calendar"
   | "templates"
-  | "playbook"
   | "settings";
 
 /* Internal qualification panel shown inside pipeline column detail */
@@ -183,11 +182,44 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   );
 }
 
-function SectionTitle({ children, sub }: { children: React.ReactNode; sub?: string }) {
+function SectionTitle({ children, sub, help }: { children: React.ReactNode; sub?: string; help?: string }) {
+  // 2026-04-30 — small inline ? popover replaces the deleted Playbook tab.
+  // Click ? toggles a one-paragraph explanation under the heading.
+  const [open, setOpen] = useState(false);
   return (
     <div style={{ marginBottom: 20 }}>
-      <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>{children}</h2>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: DARK, letterSpacing: -0.2 }}>{children}</h2>
+        {help && (
+          <button
+            type="button"
+            aria-label="What does this section do?"
+            onClick={() => setOpen(o => !o)}
+            style={{
+              width: 22, height: 22, borderRadius: 999,
+              border: `1px solid ${MUTED}30`, backgroundColor: open ? `${MUTED}12` : "transparent",
+              color: MUTED, fontSize: 11, fontWeight: 700, cursor: "pointer", lineHeight: 1,
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+            }}
+          >?</button>
+        )}
+      </div>
       {sub && <p style={{ fontSize: 12, color: MUTED, marginTop: 4 }}>{sub}</p>}
+      {help && open && (
+        <div style={{
+          marginTop: 8, padding: "10px 12px", borderRadius: 9,
+          backgroundColor: `${MUTED}08`, border: `1px solid ${MUTED}20`,
+          fontSize: 12, color: DARK, lineHeight: 1.6,
+        }}>
+          {help}
+          {" "}
+          <a
+            href="https://github.com/hamzury/hamzury/blob/main/docs/CSO_PLAYBOOK.md"
+            target="_blank" rel="noopener noreferrer"
+            style={{ color: GOLD, fontWeight: 600, textDecoration: "none" }}
+          >Full playbook →</a>
+        </div>
+      )}
     </div>
   );
 }
@@ -253,10 +285,8 @@ export default function CSOPortal() {
     { key: "pipeline",       icon: Target,          label: "Pipeline" },
     { key: "active_clients", icon: Building2,       label: "Active Clients" },
     { key: "revenue",        icon: DollarSign,      label: "Deals & Revenue" },
-    { key: "lead_sources",   icon: BarChart3,       label: "Lead Sources" },
     { key: "calendar",       icon: Calendar,        label: "Calendar" },
     { key: "templates",      icon: FileText,        label: "Forms & Templates" },
-    { key: "playbook",       icon: BookOpen,        label: "Playbook" },
     { key: "settings",       icon: SettingsIcon,    label: "Settings" },
   ];
 
@@ -437,7 +467,6 @@ export default function CSOPortal() {
             )}
             {active === "active_clients" && <ClientsSection />}
             {active === "revenue"        && <RevenueCommissionsSection />}
-            {active === "lead_sources"   && <SourceTracker />}
             {active === "calendar"       && <CalendarSection />}
             {active === "templates"      && (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -446,7 +475,6 @@ export default function CSOPortal() {
                 <RhythmSection />
               </div>
             )}
-            {active === "playbook"       && <PlaybookSection />}
             {active === "settings"       && <SettingsSection currentUser={user} />}
           </div>
         </div>
@@ -463,9 +491,8 @@ export default function CSOPortal() {
 function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const leadsQuery = trpc.leads.list.useQuery();
   const clientsQuery = trpc.clientTruth.list.useQuery();
-  const proposalsQuery = trpc.proposals.list.useQuery({ status: undefined });
-  const commissionsQuery = trpc.commissions.list.useQuery(undefined, { retry: false });
-  const revenueStatsQuery = trpc.commissions.revenueStats.useQuery(undefined, { retry: false });
+  const tasksQuery = trpc.tasks.list.useQuery();
+  const subsQuery = trpc.subscriptions.list.useQuery();
   const targetsQuery = trpc.targets.listForRole.useQuery(
     { role: "cso", period: "current" },
     { retry: false },
@@ -473,71 +500,33 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
   const activeTargets = ((targetsQuery.data || []) as any[]).slice(0, 3);
 
   const leads = (Array.isArray(leadsQuery.data) ? leadsQuery.data : []) as any[];
-  const clients = clientsQuery.data || [];
-  const proposals = proposalsQuery.data || [];
-  const commissions = (commissionsQuery.data || []) as any[];
-  const revenueStats = revenueStatsQuery.data;
+  const clients = (clientsQuery.data || []) as any[];
+  const allTasks = (tasksQuery.data || []) as any[];
+  const allSubs = (subsQuery.data || []) as any[];
 
-  const newLeads = leads.filter((l: any) => l.status === "new").length;
-  const unassignedLeads = leads.filter((l: any) => !l.assignedDepartment).length;
-  const activeClients = clients.filter((c: any) => c.status === "active").length;
-  const unverifiedClients = clients.filter((c: any) => c.status === "unverified").length;
-  const pendingProposals = proposals.filter((p: any) => p.status === "sent").length;
-  const draftProposals = proposals.filter((p: any) => p.status === "draft").length;
+  // 2026-05-02 (Phase 3.1) — moved aggregate derivation into the shared helper
+  // `lib/cso-stats.ts` so the same numbers can't drift across the portal.
+  const stats = useMemo(
+    () => deriveCsoStats({ leads, clients, tasks: allTasks, subscriptions: allSubs }),
+    [leads, clients, allTasks, allSubs],
+  );
+  const { newLeads, activeClients, totalContractValue, urgent, renewalsThisWeek } = stats;
 
-  // Revenue pipeline (contracts signed minus paid)
-  const totalContractValue = clients.reduce((s: number, c: any) => s + (parseFloat(c.contractValue || "0") || 0), 0);
-  const totalPaid = clients.reduce((s: number, c: any) => s + (parseFloat(c.amountPaid || "0") || 0), 0);
-  const totalBalance = totalContractValue - totalPaid;
+  // 2026-05-02 — Phase 1.3 cleanup: removed proposals, commissions, revenueStats,
+  // leadTrend, channelMix, unassignedLeads, unverifiedClients, totalPaid, totalBalance.
+  // Charts + Commission Grid + Channel Mix are gone — Pipeline / Active Clients /
+  // Revenue tabs each hold their own live numbers; Overview stays the single calm header.
 
-  // Commission buckets
-  const commissionPending  = commissions.filter((c: any) => c.status === "pending");
-  const commissionApproved = commissions.filter((c: any) => c.status === "approved");
-  const commissionPaid     = commissions.filter((c: any) => c.status === "paid");
-  const sumPool = (list: any[]) => list.reduce((s, c) => s + (parseFloat(c.commissionPool || "0") || 0), 0);
-
-  // Lead trend — last 6 months by createdAt
-  const leadTrend = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
-      const label = d.toLocaleString("en", { month: "short" });
-      const count = leads.filter((l: any) => {
-        if (!l.createdAt) return false;
-        const ld = new Date(l.createdAt);
-        return ld.getFullYear() === d.getFullYear() && ld.getMonth() === d.getMonth();
-      }).length;
-      return { month: label, leads: count };
-    });
-  }, [leads]);
-
-  // Channel mix — how leads arrived
-  const channelMix = useMemo(() => {
-    const buckets: Record<string, number> = {};
-    for (const l of leads) {
-      const src = (l.source || "direct").toString();
-      buckets[src] = (buckets[src] || 0) + 1;
-    }
-    const order = ["direct", "chat", "affiliate", "content", "referral", "bizdev", "cso"];
-    return order
-      .map(k => ({ source: k, count: buckets[k] || 0 }))
-      .concat(
-        Object.keys(buckets).filter(k => !order.includes(k)).map(k => ({ source: k, count: buckets[k] })),
-      );
-  }, [leads]);
-
-  // Clients with critical or high risk = needs attention today
-  const urgent = clients.filter((c: any) => ["critical", "high"].includes(c.riskFlag));
-
+  // 2026-04-30 (Phase 1.3) — slimmed to 3 KPIs. Detailed numbers live in Deals & Revenue.
+  // 2026-05-02 (Phase 4.2) — Renewals tile only appears when there's something due
+  // in the next 7 days, so the Overview stays calm when there's nothing to chase.
   const kpis = [
-    { label: "New Leads",          value: newLeads,          icon: TrendingUp,    color: BLUE,      section: "pipeline" as Section },
-    { label: "Unassigned Leads",   value: unassignedLeads,   icon: AlertCircle,   color: ORANGE,    section: "pipeline" as Section },
-    { label: "Active Clients",     value: activeClients,     icon: CheckCircle2,  color: "#22C55E", section: "active_clients" as Section },
-    { label: "Unverified Clients", value: unverifiedClients, icon: AlertTriangle, color: ORANGE,    section: "active_clients" as Section },
-    { label: "Draft Proposals",    value: draftProposals,    icon: FileText,      color: MUTED,     section: "back_office" as Section },
-    { label: "Sent / Awaiting",    value: pendingProposals,  icon: Send,          color: GOLD,      section: "back_office" as Section },
-    { label: "Contracts (₦)",      value: fmtNaira(totalContractValue), icon: DollarSign,  color: GREEN, section: "active_clients" as Section },
-    { label: "Outstanding (₦)",    value: fmtNaira(totalBalance),       icon: Wallet,      color: RED,   section: "active_clients" as Section },
+    { label: "New leads (this week)", value: newLeads,      icon: TrendingUp,   color: BLUE,      section: "inbox" as Section },
+    { label: "Active clients",        value: activeClients, icon: CheckCircle2, color: "#22C55E", section: "active_clients" as Section },
+    { label: "Revenue (this month)",  value: fmtNaira(totalContractValue), icon: DollarSign, color: GREEN, section: "revenue" as Section },
+    ...(renewalsThisWeek > 0 ? [
+      { label: "Renewals this week",  value: renewalsThisWeek, icon: Clock,    color: GOLD,      section: "active_clients" as Section },
+    ] : []),
   ];
 
   return (
@@ -565,121 +554,10 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
         ))}
       </div>
 
-      {/* Trend chart — leads per month + revenue per month (recharts) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12, marginBottom: 16 }}>
-        <Card>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <TrendingUp size={14} style={{ color: BLUE }} />
-              <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Lead Curve — Last 6 Months
-              </p>
-            </div>
-            <span style={{ fontSize: 10, color: MUTED }}>Total: {leads.length}</span>
-          </div>
-          <div style={{ width: "100%", height: 180 }}>
-            <ResponsiveContainer>
-              <LineChart data={leadTrend} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={`${DARK}0A`} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: MUTED }} />
-                <YAxis tick={{ fontSize: 10, fill: MUTED }} allowDecimals={false} />
-                <RTooltip />
-                <Line type="monotone" dataKey="leads" stroke={GREEN} strokeWidth={2} dot={{ r: 3, fill: GOLD }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-
-        <Card>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <DollarSign size={14} style={{ color: GREEN }} />
-              <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                Revenue Curve — Paid Commissions
-              </p>
-            </div>
-            <span style={{ fontSize: 10, color: MUTED }}>
-              {revenueStats ? `Total ${fmtNaira(revenueStats.totalRevenue)}` : "—"}
-            </span>
-          </div>
-          <div style={{ width: "100%", height: 180 }}>
-            <ResponsiveContainer>
-              <BarChart data={revenueStats?.monthlyRevenue || []} margin={{ top: 5, right: 10, left: -18, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={`${DARK}0A`} />
-                <XAxis dataKey="month" tick={{ fontSize: 10, fill: MUTED }} />
-                <YAxis tick={{ fontSize: 10, fill: MUTED }} />
-                <RTooltip formatter={(v: any) => fmtNaira(v)} />
-                <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
-                  {(revenueStats?.monthlyRevenue || []).map((_: any, i: number) => (
-                    <Cell key={i} fill={i === (revenueStats?.monthlyRevenue?.length || 0) - 1 ? GOLD : GREEN} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </Card>
-      </div>
-
-      {/* Commission Grid — pending / approved / paid */}
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <PieChartIcon size={14} style={{ color: GOLD }} />
-            <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-              Commission Grid
-            </p>
-          </div>
-          <span style={{ fontSize: 10, color: MUTED }}>
-            Finance confirms payouts. CSO views read-only.
-          </span>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
-          {[
-            { label: "Pending",  count: commissionPending.length,  total: sumPool(commissionPending),  color: ORANGE },
-            { label: "Approved", count: commissionApproved.length, total: sumPool(commissionApproved), color: BLUE   },
-            { label: "Paid",     count: commissionPaid.length,     total: sumPool(commissionPaid),     color: GREEN  },
-          ].map(box => (
-            <div key={box.label} style={{
-              padding: "12px 14px", borderRadius: 12,
-              backgroundColor: `${box.color}08`, border: `1px solid ${box.color}22`,
-            }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: box.color, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {box.label}
-              </p>
-              <p style={{ fontSize: 20, fontWeight: 700, color: DARK, marginTop: 4 }}>{box.count}</p>
-              <p style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>Pool: {fmtNaira(box.total)}</p>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* Channel mix — where leads come from */}
-      <Card style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-          <Network size={14} style={{ color: BLUE }} />
-          <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-            Where Leads Come From
-          </p>
-        </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8 }}>
-          {channelMix.map(c => (
-            <div key={c.source} style={{
-              padding: "10px 12px", borderRadius: 10,
-              backgroundColor: `${GOLD}08`, border: `1px solid ${GOLD}20`,
-            }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: GOLD, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                {c.source}
-              </p>
-              <p style={{ fontSize: 18, fontWeight: 700, color: DARK, marginTop: 4 }}>{c.count}</p>
-            </div>
-          ))}
-        </div>
-        <p style={{ fontSize: 10, color: MUTED, marginTop: 10 }}>
-          Tracked via <code style={{ background: `${DARK}08`, padding: "1px 6px", borderRadius: 4 }}>leads.source</code> +
-          <code style={{ background: `${DARK}08`, padding: "1px 6px", borderRadius: 4, marginLeft: 4 }}>leads.referralCode</code> —
-          every lead stores where it came from so nothing is guessed.
-        </p>
-      </Card>
+      {/* 2026-05-02 — Phase 1.3 cleanup: removed Lead Curve LineChart + Revenue Curve BarChart
+          (visual noise — Pipeline + Active Clients answer the same questions live).
+          Removed Commission Grid 3-card row (Finance owns commission view; CSO sees money in
+          Revenue tab). Removed Channel Mix card (already covered by source chips on each lead). */}
 
       {/* Manual controls — do it by hand when needed */}
       <Card style={{ marginBottom: 16 }}>
@@ -695,7 +573,7 @@ function HomeSection({ onGoto }: { onGoto: (s: Section) => void }) {
           {[
             { label: "Add Client",           hint: "Walk-in, phone, referral",    section: "active_clients" as Section, icon: UserPlus },
             { label: "Open Pipeline",        hint: "Move lead by hand",           section: "pipeline" as Section,       icon: Target },
-            { label: "Source Tracker",       hint: "See affiliate + content refs", section: "back_office" as Section,   icon: Eye },
+            { label: "Inbox",                hint: "Triage new leads",            section: "inbox" as Section,          icon: Eye },
           ].map(b => (
             <button key={b.label} onClick={() => onGoto(b.section)} style={{
               textAlign: "left", padding: "12px 14px", borderRadius: 12,
@@ -843,6 +721,26 @@ const DIV_BADGE: Record<string, { bg: string; text: string; label: string }> = {
   unassigned:{ bg: `${ORANGE}15`,text: ORANGE,   label: "Unassigned" },
 };
 
+/** 2026-04-30 — short variant for source chip on lead cards
+ *  (replaces the deleted Lead Sources tab). */
+function friendlySourceShort(source: string | null | undefined): string {
+  if (!source) return "Direct";
+  const s = source.toLowerCase();
+  if (s.startsWith("assessment_hub")) return "Hub form";
+  if (s.startsWith("assessment_")) return "Assessment";
+  if (s === "partner_hub" || s === "partner") return "Partner form";
+  if (s === "feedback_hub" || s === "feedback") return "Feedback";
+  if (s.startsWith("chat")) return "Chat";
+  if (s === "cso_manual" || s === "cso") return "CSO entry";
+  if (s.startsWith("diagnostic")) return "Diagnostic";
+  if (s === "bizdev") return "BizDev";
+  if (s === "referral") return "Referral";
+  if (s === "walk_in") return "Walk-in";
+  if (s === "phone_call") return "Phone";
+  if (s === "whatsapp") return "WhatsApp";
+  return "Direct";
+}
+
 /** Map technical source codes to human-readable labels for the inbox / cards. */
 function friendlySource(source: string | null | undefined): string {
   if (!source) return "Direct";
@@ -948,7 +846,10 @@ function InboxSection({
         display: "flex", justifyContent: "space-between", alignItems: "flex-start",
         gap: 12, marginBottom: 16, flexWrap: "wrap",
       }}>
-        <SectionTitle sub="Every lead from every channel lands here. Triage, assign, or escalate.">
+        <SectionTitle
+          sub="Every lead from every channel lands here. Triage, assign, or escalate."
+          help="Every new lead from every channel arrives here. Assign or qualify them. Snoozed leads come back automatically."
+        >
           Inbox
         </SectionTitle>
         <button
@@ -1063,6 +964,22 @@ function InboxSection({
                       <p style={{ fontSize: 14, fontWeight: 700, color: DARK }}>{l.name || "—"}</p>
                       <DivisionBadge dept={l.assignedDepartment} />
                       <Pill status={l.status || "new"} />
+                      {/* 2026-04-30 — source chip (replaces deleted Lead Sources tab) */}
+                      <span title={`Source: ${friendlySource(l.source)}`} style={{
+                        padding: "2px 7px", borderRadius: 999, fontSize: 9, fontWeight: 600,
+                        backgroundColor: `${MUTED}10`, color: MUTED, letterSpacing: "0.04em",
+                      }}>from: {friendlySourceShort(l.source)}</span>
+                      {/* 2026-05-02 (Phase 2.3) — Returning-client pill on inbox too. */}
+                      {l.linkedClientId && (
+                        <span
+                          title="This phone matches an existing client — upsell or new service"
+                          style={{
+                            padding: "2px 7px", borderRadius: 999, fontSize: 9, fontWeight: 700,
+                            backgroundColor: `${GREEN}15`, color: GREEN, letterSpacing: "0.04em",
+                            textTransform: "uppercase",
+                          }}
+                        >↩ Returning</span>
+                      )}
                     </div>
                     <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
                       {l.businessName ? `${l.businessName} · ` : ""}
@@ -1070,7 +987,7 @@ function InboxSection({
                       {l.phone ? ` · ${l.phone}` : ""}
                     </p>
                     <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                      Ref {l.ref} · {fmtDate(l.createdAt)} · {friendlySource(l.source)}
+                      Ref {l.ref} · {fmtDate(l.createdAt)}
                     </p>
                   </div>
                   <button
@@ -2103,27 +2020,101 @@ function ClientsSection() {
   const [notifyCeoOpen, setNotifyCeoOpen] = useState<{ clientId?: number; subject?: string } | null>(null);
   const [outreachClient, setOutreachClient] = useState<any | null>(null);
   const [upsellTarget, setUpsellTarget] = useState<any | null>(null);
+  // 2026-05-02 (Phase 2.5) — multi-service add-on
+  const [addServiceTarget, setAddServiceTarget] = useState<any | null>(null);
+  // 2026-05-02 (Phase 4.3) — Active Clients search box
+  const [searchQuery, setSearchQuery] = useState("");
+  // 2026-05-02 (Phase 5.1) — flat by-service view toggle
+  const [viewMode, setViewMode] = useState<"by_client" | "by_service">("by_client");
   // Feature 2 — single round-trip: clients + aggregated payment summary.
   const clientsQuery = trpc.clientTruth.listWithPaymentSummary.useQuery();
   const clients = (clientsQuery.data || []) as any[];
   // Feature 4 — Upsell Queue
   const upsellQuery = trpc.clientTruth.listUpsellQueue.useQuery();
   const upsellList = (upsellQuery.data || []) as any[];
+  // Tasks for search-by-service (2026-05-02 Phase 4.3) — searches the
+  // serviceLabel/service of any task linked to the client too.
+  const allTasksQuery = trpc.tasks.list.useQuery();
+  const allTasksData = (allTasksQuery.data || []) as any[];
 
-  const filtered =
+  const baseList =
     statusFilter === "upsell"
       ? upsellList
       : statusFilter === "all"
         ? clients
         : clients.filter((c: any) => c.status === statusFilter);
 
+  // 2026-05-02 (Phase 4.3) — apply search across name/business/phone/ref +
+  // any matching task service label. Empty query = no filter.
+  const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return baseList;
+    return baseList.filter((c: any) => {
+      const haystack = [
+        c.name, c.businessName, c.phone, c.email, c.ref, c.department, c.csoOwner,
+      ].filter(Boolean).join(" ").toLowerCase();
+      if (haystack.includes(q)) return true;
+      // Also search this client's tasks for service-label matches
+      const matchedTask = allTasksData.find((t: any) =>
+        ((c.phone && t.phone === c.phone) || (c.name && t.clientName === c.name))
+        && [t.serviceLabel, t.service].filter(Boolean).join(" ").toLowerCase().includes(q)
+      );
+      return Boolean(matchedTask);
+    });
+  }, [baseList, searchQuery, allTasksData]);
+
+  // 2026-04-30 (Phase 1.4) — single calm line replaces the DeliveredPerMonth panel
+  const inDeliveryThisMonth = clients.filter((c: any) => c.status === "active" || c.status === "converted").length;
+
+  // 2026-05-02 (Phase 5.1) — flat by-service list. Joins every active task to
+  // its parent client (matched by phone or name), filters by search if any.
+  const flatServices = useMemo(() => {
+    if (viewMode !== "by_service") return [];
+    const q = searchQuery.trim().toLowerCase();
+    const TERMINAL = new Set(["Cancelled", "Archived"]);
+    const rows: Array<{ task: any; client: any | null }> = [];
+    for (const t of allTasksData) {
+      if (TERMINAL.has(t.status)) continue;
+      // Find the parent client by phone first, then name.
+      const client = clients.find((c: any) =>
+        (c.phone && c.phone === t.phone) ||
+        (c.name && c.name === t.clientName)
+      ) || null;
+      // Status tab still applies in by_service mode — restrict to clients in
+      // the current bucket. Tasks without a matching client only show in "all".
+      if (statusFilter !== "all" && statusFilter !== "upsell") {
+        if (!client || client.status !== statusFilter) continue;
+      }
+      // Search across task fields + client identifying fields.
+      if (q) {
+        const haystack = [
+          t.serviceLabel, t.service, t.department, t.assignedTo,
+          client?.name, client?.businessName, client?.phone, client?.ref,
+        ].filter(Boolean).join(" ").toLowerCase();
+        if (!haystack.includes(q)) continue;
+      }
+      rows.push({ task: t, client });
+    }
+    // Sort by department then by createdAt desc — keeps Bizdoc rows together.
+    rows.sort((a, b) => {
+      const da = String(a.task.department || "").localeCompare(String(b.task.department || ""));
+      if (da !== 0) return da;
+      return new Date(b.task.createdAt || 0).getTime() - new Date(a.task.createdAt || 0).getTime();
+    });
+    return rows;
+  }, [viewMode, allTasksData, clients, statusFilter, searchQuery]);
+
   return (
     <div>
-      {/* 2026-04-30 — Delivered-per-month strip */}
-      <DeliveredPerMonth />
+      <p style={{ fontSize: 12, color: MUTED, marginBottom: 16 }}>
+        You have <strong style={{ color: DARK }}>{inDeliveryThisMonth}</strong> client{inDeliveryThisMonth === 1 ? "" : "s"} in delivery this month.
+      </p>
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 8, flexWrap: "wrap" }}>
-        <SectionTitle sub="Post-handoff workspace. Pipeline = acquisition; here is delivery, payment, and risk for paid clients only.">
+        <SectionTitle
+          sub="Post-handoff workspace. Pipeline = acquisition; here is delivery, payment, and risk for paid clients only."
+          help="Post-Won clients live here. Track payments, send updates, line them up for upsell."
+        >
           Active clients
         </SectionTitle>
         <button
@@ -2179,9 +2170,63 @@ function ClientsSection() {
         })}
       </div>
 
+      {/* 2026-05-02 (Phase 4.3) — search across name / business / phone / ref / service.
+          Empty input = no filter so the status tabs still own the default view.
+          2026-05-02 (Phase 5.1) — view-mode toggle alongside the search box. */}
+      <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 220, position: "relative" }}>
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={viewMode === "by_service" ? "Search services by label, division, client name…" : "Search clients by name, business, phone, ref, or service…"}
+            style={{
+              width: "100%", padding: "8px 12px 8px 32px",
+              borderRadius: 10, border: `1px solid ${DARK}12`,
+              fontSize: 12, color: DARK, backgroundColor: WHITE,
+            }}
+          />
+          <Eye size={12} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: MUTED }} />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              title="Clear search"
+              style={{
+                position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)",
+                border: "none", background: "none", cursor: "pointer",
+                fontSize: 12, color: MUTED, padding: 4,
+              }}
+            >×</button>
+          )}
+        </div>
+        {/* 2026-05-02 (Phase 5.1) — By client (default) / By service (flat) toggle */}
+        <div style={{ display: "flex", borderRadius: 10, border: `1px solid ${DARK}10`, overflow: "hidden", flexShrink: 0 }}>
+          {([
+            { key: "by_client",  label: "By client" },
+            { key: "by_service", label: "By service" },
+          ] as const).map(t => (
+            <button
+              key={t.key}
+              onClick={() => setViewMode(t.key)}
+              style={{
+                padding: "6px 12px", border: "none", cursor: "pointer",
+                fontSize: 11, fontWeight: 600, letterSpacing: "0.02em",
+                backgroundColor: viewMode === t.key ? GREEN : WHITE,
+                color: viewMode === t.key ? GOLD : MUTED,
+              }}
+            >{t.label}</button>
+          ))}
+        </div>
+      </div>
+      {searchQuery && viewMode === "by_client" && (
+        <p style={{ fontSize: 10, color: MUTED, marginTop: -8, marginBottom: 12 }}>
+          Showing <strong>{filtered.length}</strong> of <strong>{baseList.length}</strong> in this tab.
+        </p>
+      )}
+
       {clientsQuery.isLoading ? (
         <Card><EmptyState icon={Loader2} title="Loading clients..." /></Card>
-      ) : filtered.length === 0 ? (
+      ) : viewMode === "by_client" && filtered.length === 0 ? (
         <Card><EmptyState icon={Building2} title={(() => {
           const labels: Record<string, string> = {
             converted: "No just-won clients yet — drag a lead to Won in Pipeline to see it here.",
@@ -2204,6 +2249,56 @@ function ClientsSection() {
             />
           ))}
         </div>
+      ) : viewMode === "by_service" ? (
+        /* 2026-05-02 (Phase 5.1) — Flat by-service view. Every active task
+           across every client, one row per service. Useful for ops/CEO who
+           want "every Bizdoc job in flight" at a glance, not per-client. */
+        <Card>
+          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
+            Active services ({flatServices.length})
+          </p>
+          {flatServices.length === 0 ? (
+            <EmptyState icon={Building2} title="No services match." hint="Adjust the status tab or search." />
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {flatServices.map(({ task, client }) => {
+                const tv = parseFloat(String(task.contractValue || task.quotedPrice || "0")) || 0;
+                const label = task.serviceLabel || task.service || "—";
+                const dept = (task.department || "—").toLowerCase();
+                const deptLeads = DEPT_LEADS[dept] || [];
+                const ownerName = (task.assignedTo as string) || (deptLeads[0]?.name) || null;
+                return (
+                  <button
+                    key={task.id}
+                    onClick={() => client && setDetailClient(client)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                      padding: "10px 12px", borderRadius: 10, border: `1px solid ${HAIRLINE}`,
+                      backgroundColor: WHITE, cursor: client ? "pointer" : "default",
+                      textAlign: "left", width: "100%",
+                    }}
+                  >
+                    <DivisionBadge dept={dept} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: DARK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {label}
+                      </p>
+                      <p style={{ fontSize: 11, color: MUTED, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {client ? (client.businessName || client.name) : (task.businessName || task.clientName || "—")}
+                        {ownerName ? ` · ${ownerName}` : ""}
+                        {client?.ref ? ` · ${client.ref}` : task.ref ? ` · ${task.ref}` : ""}
+                      </p>
+                    </div>
+                    <span style={{ fontSize: 12, color: GREEN, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                      {tv > 0 ? fmtNaira(tv) : "—"}
+                    </span>
+                    <Pill status={task.status || "Not Started"} />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           {filtered.map((c: any) => (
@@ -2214,6 +2309,7 @@ function ClientsSection() {
               onAssignTask={() => setAssignTarget({ clientId: c.id })}
               onNotifyCeo={() => setNotifyCeoOpen({ clientId: c.id, subject: `Client: ${c.businessName || c.name}` })}
               onNotifyClient={() => setOutreachClient(c)}
+              onAddService={() => setAddServiceTarget(c)}
             />
           ))}
         </div>
@@ -2269,6 +2365,18 @@ function ClientsSection() {
           onSaved={() => {
             setUpsellTarget(null);
             upsellQuery.refetch();
+          }}
+        />
+      )}
+
+      {/* 2026-05-02 (Phase 2.5) — Add another service to a Won client */}
+      {addServiceTarget && (
+        <AddServiceModal
+          client={addServiceTarget}
+          onClose={() => setAddServiceTarget(null)}
+          onCreated={() => {
+            setAddServiceTarget(null);
+            clientsQuery.refetch();
           }}
         />
       )}
@@ -2522,142 +2630,11 @@ function UpsellRow({ client: c, onSetPlan, onNotify }: { client: any; onSetPlan:
   );
 }
 
-/* ─── Delivered-per-month strip ─────────────────────────────────────────
- * Shows what's actually shipping. CSO sees: completed tasks this month,
- * last month, 3-month trend, and per-division breakdown. Pulls from
- * tasks.list (any task with status="completed" counts).
- */
-function DeliveredPerMonth() {
-  const tasksQuery = trpc.tasks.list.useQuery();
-  const tasks = (tasksQuery.data || []) as any[];
-
-  const stats = useMemo(() => {
-    const now = new Date();
-    const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const thisMo = monthKey(now);
-    const lastMoDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const lastMo = monthKey(lastMoDate);
-
-    const completed = tasks.filter(t => t.status === "completed" || t.status === "done");
-    const byMonth: Record<string, any[]> = {};
-    completed.forEach(t => {
-      const ts = t.completedAt || t.updatedAt || t.createdAt;
-      if (!ts) return;
-      const k = monthKey(new Date(ts));
-      (byMonth[k] ||= []).push(t);
-    });
-
-    const byDiv: Record<string, number> = {};
-    (byMonth[thisMo] || []).forEach(t => {
-      const d = (t.department || t.assignedDepartment || "—").toLowerCase();
-      byDiv[d] = (byDiv[d] || 0) + 1;
-    });
-
-    // 3-month trend (oldest → newest)
-    const trend: { label: string; count: number }[] = [];
-    for (let i = 2; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      trend.push({
-        label: d.toLocaleString("en", { month: "short" }),
-        count: (byMonth[monthKey(d)] || []).length,
-      });
-    }
-
-    return {
-      thisMonth: (byMonth[thisMo] || []).length,
-      lastMonth: (byMonth[lastMo] || []).length,
-      byDiv,
-      trend,
-      totalCompleted: completed.length,
-    };
-  }, [tasks]);
-
-  const DIV_COLORS: Record<string, string> = {
-    bizdoc: "#1B4D3E", systemise: "#A07A0E", scalar: "#A07A0E",
-    medialy: "#1D4ED8", skills: "#1E3A5F", hub: "#1E3A5F",
-    podcast: "#7C3AED", video: "#DB2777", faceless: "#0891B2",
-  };
-  const DIV_LABEL: Record<string, string> = {
-    bizdoc: "Bizdoc", systemise: "Scalar", scalar: "Scalar",
-    medialy: "Medialy", skills: "Hub", hub: "Hub",
-    podcast: "Podcast", video: "Video", faceless: "Faceless",
-  };
-
-  const trendMax = Math.max(1, ...stats.trend.map(t => t.count));
-  const monthDelta = stats.thisMonth - stats.lastMonth;
-
-  return (
-    <Card style={{ marginBottom: 16, padding: 18 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 14, flexWrap: "wrap", marginBottom: 14 }}>
-        <div>
-          <p style={{ fontSize: 11, color: GREEN, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-            Delivered per month
-          </p>
-          <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 4 }}>
-            Tasks marked completed across every division. Live from the tasks table.
-          </p>
-        </div>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 10, marginBottom: 14 }}>
-        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
-          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>This month</p>
-          <p style={{ fontSize: 24, fontWeight: 700, color: GREEN, marginTop: 4 }}>{stats.thisMonth}</p>
-          {monthDelta !== 0 && (
-            <p style={{ fontSize: 10, color: monthDelta > 0 ? GREEN : RED, fontWeight: 600, marginTop: 2 }}>
-              {monthDelta > 0 ? "▲" : "▼"} {Math.abs(monthDelta)} vs last
-            </p>
-          )}
-        </div>
-        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
-          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Last month</p>
-          <p style={{ fontSize: 24, fontWeight: 700, color: INK, marginTop: 4 }}>{stats.lastMonth}</p>
-        </div>
-        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
-          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>All-time completed</p>
-          <p style={{ fontSize: 24, fontWeight: 700, color: INK, marginTop: 4 }}>{stats.totalCompleted}</p>
-        </div>
-        {/* 3-month bar trend */}
-        <div style={{ padding: "12px 14px", borderRadius: 10, border: `1px solid ${HAIRLINE}`, backgroundColor: WHITE }}>
-          <p style={{ fontSize: 9, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>3-month trend</p>
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginTop: 6, height: 36 }}>
-            {stats.trend.map((t, i) => (
-              <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                <div style={{
-                  width: "100%", borderRadius: 3,
-                  backgroundColor: i === stats.trend.length - 1 ? GREEN : `${GREEN}40`,
-                  height: `${Math.max(4, (t.count / trendMax) * 28)}px`,
-                }} />
-                <span style={{ fontSize: 8, color: INK_MUTED, fontWeight: 600 }}>{t.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Per-division breakdown for THIS month */}
-      <div>
-        <p style={{ fontSize: 10, color: INK_MUTED, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 8 }}>
-          Delivered this month — by division
-        </p>
-        {Object.keys(stats.byDiv).length === 0 ? (
-          <p style={{ fontSize: 11, color: INK_MUTED, fontStyle: "italic" }}>Nothing completed yet this month.</p>
-        ) : (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {Object.entries(stats.byDiv).map(([k, n]) => (
-              <span key={k} style={{
-                padding: "5px 10px", borderRadius: 999,
-                backgroundColor: `${DIV_COLORS[k] || INK_MUTED}15`,
-                color: DIV_COLORS[k] || INK_MUTED,
-                fontSize: 11, fontWeight: 700,
-              }}>{DIV_LABEL[k] || k} · {n}</span>
-            ))}
-          </div>
-        )}
-      </div>
-    </Card>
-  );
-}
+/* 2026-05-02 — Phase 1.4 cleanup: deleted `DeliveredPerMonth` panel.
+   The Active Clients header now shows a single calm line:
+   "You have N client(s) in delivery this month." Stats lived in 3 places —
+   collapsed to one. If a richer view is needed later, build it as a separate
+   /reports route, not as ambient noise on every page load. */
 
 /* ─── Feature 2 — Payment chip ──────────────────────────────────────── */
 function PaymentChip({ summary }: { summary: { totalContract: number; totalPaid: number; totalBalance: number } | null | undefined }) {
@@ -2690,18 +2667,62 @@ function ClientCard({
   onAssignTask,
   onNotifyCeo,
   onNotifyClient,
+  onAddService,
 }: {
   client: any;
   onOpen?: () => void;
   onAssignTask?: () => void;
   onNotifyCeo?: () => void;
   onNotifyClient?: () => void;
+  onAddService?: () => void;
 }) {
-  const [showHandoff, setShowHandoff] = useState(false);
+  // 2026-05-02 (Phase 2.4) — clientTasks now drives the always-visible per-service
+  // breakdown. The old showHandoff toggle is gone; details live in-card.
   const tasksQuery = trpc.tasks.list.useQuery();
   const clientTasks = ((tasksQuery.data || []) as any[]).filter((t: any) =>
     (c.phone && t.phone === c.phone) || (c.name && t.clientName === c.name)
   );
+  // 2026-05-02 (Phase 4.4) — invoices linked to this client's tasks. Built by
+  // taskId so each per-service row can show its own payment status (paid /
+  // partial / sent / overdue) instead of one rollup chip.
+  const invoicesQuery = trpc.invoices.list.useQuery();
+  const invoiceByTaskId = useMemo(() => {
+    const map = new Map<number, any>();
+    for (const inv of ((invoicesQuery.data || []) as any[])) {
+      if (inv.taskId) map.set(inv.taskId, inv);
+    }
+    return map;
+  }, [invoicesQuery.data]);
+
+  // 2026-05-02 (Phase 3.3) — Subscription / renewal awareness.
+  // Pulls active subscriptions linked to this client, picks the soonest next-bill
+  // date, and renders a calm "Renews <date>" pill in the header. Walking calendar:
+  // each subscription bills on `billingDay` of every month; "next" is the next
+  // occurrence of that day from today.
+  const subsQuery = trpc.subscriptions.list.useQuery();
+  const clientSubs = ((subsQuery.data || []) as any[]).filter((s: any) =>
+    s.status === "active" && (
+      (c.phone && s.phone === c.phone) || (c.name && s.clientName === c.name)
+    )
+  );
+  const nextRenewal = useMemo(() => {
+    if (clientSubs.length === 0) return null;
+    const now = new Date();
+    let soonest: Date | null = null;
+    for (const s of clientSubs) {
+      const day = Math.max(1, Math.min(28, parseInt(s.billingDay || "1", 10) || 1));
+      // Next occurrence: this month if day is in the future, else next month.
+      let next = new Date(now.getFullYear(), now.getMonth(), day);
+      if (next.getTime() <= now.getTime()) {
+        next = new Date(now.getFullYear(), now.getMonth() + 1, day);
+      }
+      if (!soonest || next < soonest) soonest = next;
+    }
+    return soonest;
+  }, [clientSubs]);
+  const renewalDaysLeft = nextRenewal
+    ? Math.max(0, Math.floor((nextRenewal.getTime() - Date.now()) / 86_400_000))
+    : null;
 
   return (
     <Card>
@@ -2711,6 +2732,31 @@ function ClientCard({
             <p style={{ fontSize: 15, fontWeight: 700, color: DARK }}>{c.businessName || c.name}</p>
             <Pill status={c.status} />
             <PaymentChip summary={c.paymentSummary} />
+            {/* 2026-05-02 (Phase 3.3) — Subscription renewal pill.
+                Tone shifts: green if 7+ days away, gold if 3-7 days, orange if ≤3 days. */}
+            {nextRenewal && (
+              <span
+                title={`Next billing day: ${nextRenewal.toDateString()}`}
+                style={{
+                  fontSize: 9, fontWeight: 700,
+                  padding: "2px 8px", borderRadius: 10,
+                  letterSpacing: "0.04em", textTransform: "uppercase",
+                  backgroundColor:
+                    renewalDaysLeft! <= 3 ? `${ORANGE}18`
+                    : renewalDaysLeft! <= 7 ? `${GOLD}18`
+                    : `${GREEN}15`,
+                  color:
+                    renewalDaysLeft! <= 3 ? ORANGE
+                    : renewalDaysLeft! <= 7 ? "#8B6914"
+                    : GREEN,
+                }}
+              >
+                Renews{" "}
+                {renewalDaysLeft === 0 ? "today"
+                  : renewalDaysLeft === 1 ? "tomorrow"
+                  : `in ${renewalDaysLeft}d`}
+              </span>
+            )}
             {c.riskFlag && c.riskFlag !== "none" && (
               <span style={{
                 fontSize: 9, fontWeight: 700, color: c.riskFlag === "critical" || c.riskFlag === "high" ? RED : ORANGE,
@@ -2724,14 +2770,79 @@ function ClientCard({
           </div>
           <p style={{ fontSize: 11, fontFamily: "monospace", color: GOLD, marginBottom: 8 }}>{c.ref}</p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginBottom: 10 }}>
-            <MetaCell label="Department" value={c.department || "—"} />
-            <MetaCell label="Contract" value={fmtNaira(c.contractValue)} />
-            {/* 2026-05 — removed legacy `Balance` MetaCell. The PaymentChip in the
-                card header now shows live invoice balance ("Paid X% · ₦Y due"),
-                so this read of client.balance (often stale or 0) was contradicting
-                the chip on the same card. Single source of truth = invoices. */}
-          </div>
+          {/* 2026-05-02 (Phase 2.4) — Per-service breakdown.
+              A client running 2+ services (e.g. Bizdoc CAC + Medialy package A)
+              gets one row per service-task with its own contract value + status.
+              The aggregate "Contract" metacell is the sum of all task contractValues,
+              falling back to the legacy client.contractValue if no tasks loaded yet. */}
+          {clientTasks.length > 0 ? (
+            <div style={{ marginBottom: 10 }}>
+              <p style={{ fontSize: 9, color: MUTED, textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: 6 }}>
+                Services ({clientTasks.length})
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {clientTasks.map((t: any) => {
+                  const tv = parseFloat(String(t.contractValue || t.quotedPrice || "0")) || 0;
+                  const label = t.serviceLabel || t.service || "—";
+                  const dept = (t.department || "—").toLowerCase();
+                  // 2026-05-02 (Phase 4.1) — per-task owner. Pick from DEPT_LEADS as
+                  // a default when no explicit assignee was set on the task. Keeps a
+                  // multi-service client showing distinct owners per service.
+                  const deptLeads = DEPT_LEADS[dept] || [];
+                  const ownerName = (t.assignedTo as string)
+                    || (deptLeads[0]?.name)
+                    || null;
+                  // 2026-05-02 (Phase 4.4) — per-task invoice. Schema already supports
+                  // invoices.taskId; we now surface the per-service payment status here.
+                  const inv = invoiceByTaskId.get(t.id);
+                  return (
+                    <div key={t.id} style={{
+                      display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                      padding: "6px 10px", borderRadius: 8,
+                      backgroundColor: `${HAIRLINE}40`, border: `1px solid ${HAIRLINE}`,
+                    }}>
+                      <DivisionBadge dept={dept} />
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+                        <span style={{ fontSize: 12, fontWeight: 600, color: DARK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {label}
+                        </span>
+                        <span style={{ fontSize: 10, color: MUTED, display: "flex", gap: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {ownerName && <span>{ownerName}</span>}
+                          {inv && (
+                            <span style={{
+                              fontSize: 9, fontWeight: 700, color:
+                                inv.status === "paid" ? GREEN
+                                : inv.status === "partial" ? "#8B6914"
+                                : inv.status === "overdue" ? RED
+                                : MUTED,
+                              padding: "1px 6px", borderRadius: 999,
+                              backgroundColor:
+                                inv.status === "paid" ? `${GREEN}15`
+                                : inv.status === "partial" ? `${GOLD}18`
+                                : inv.status === "overdue" ? `${RED}15`
+                                : `${MUTED}10`,
+                              textTransform: "uppercase", letterSpacing: "0.04em",
+                            }}>
+                              Inv {inv.status}
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 11, color: GREEN, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                        {tv > 0 ? fmtNaira(tv) : "—"}
+                      </span>
+                      <Pill status={t.status || "Not Started"} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10, marginBottom: 10 }}>
+              <MetaCell label="Department" value={c.department || "—"} />
+              <MetaCell label="Contract" value={fmtNaira(c.contractValue)} />
+            </div>
+          )}
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 10 }}>
             <MetaCell label="CSO Owner" value={c.csoOwner || "—"} />
@@ -2758,21 +2869,13 @@ function ClientCard({
         </div>
       </div>
 
-      {/* Handoff / publish strip */}
+      {/* Action strip — services are now visible above, so the toggle is gone.
+          2026-05-02 (Phase 2.4) collapsed the showHandoff dropdown into the
+          per-service breakdown rendered with the rest of the card. */}
       <div style={{
         marginTop: 12, paddingTop: 12, borderTop: `1px solid ${DARK}06`,
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap",
+        display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap",
       }}>
-        <button
-          onClick={() => setShowHandoff(v => !v)}
-          style={{
-            fontSize: 11, fontWeight: 600, color: GREEN, background: "none", border: "none",
-            cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4,
-          }}
-        >
-          <Eye size={12} />
-          Department Handoff ({clientTasks.length} task{clientTasks.length === 1 ? "" : "s"})
-        </button>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {onOpen && (
             <button
@@ -2796,6 +2899,19 @@ function ClientCard({
               }}
             >
               <UserPlus size={10} /> Assign Task
+            </button>
+          )}
+          {/* 2026-05-02 (Phase 2.5) — "+ Add service" for multi-service clients */}
+          {onAddService && (
+            <button
+              onClick={onAddService}
+              style={{
+                fontSize: 10, fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+                border: `1px solid ${GREEN}40`, color: GREEN, backgroundColor: `${GREEN}10`,
+                cursor: "pointer", display: "flex", alignItems: "center", gap: 4,
+              }}
+            >
+              <Plus size={10} /> Add service
             </button>
           )}
           {onNotifyClient && (
@@ -2825,23 +2941,6 @@ function ClientCard({
         </div>
       </div>
 
-      {showHandoff && (
-        <div style={{ marginTop: 10, padding: "10px 12px", borderRadius: 8, backgroundColor: `${GREEN}04`, border: `1px solid ${GREEN}10` }}>
-          {clientTasks.length === 0 ? (
-            <p style={{ fontSize: 11, color: MUTED, fontStyle: "italic" }}>No department tasks linked to this client.</p>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {clientTasks.map((t: any) => (
-                <div key={t.id} style={{ fontSize: 11, display: "flex", gap: 10, alignItems: "center", color: DARK }}>
-                  <span style={{ fontFamily: "monospace", color: GOLD, fontSize: 10 }}>{t.ref || `#${t.id}`}</span>
-                  <span style={{ flex: 1 }}>{t.service}</span>
-                  <Pill status={t.status || "new"} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </Card>
   );
 }
@@ -2856,77 +2955,6 @@ function MetaCell({ label, value, warn }: { label: string; value: string; warn?:
 }
 
 // 2026-04-30 — removed: RenewalsSection (replaced by inbox/pipeline pattern)
-/* ═══════════════════════════════════════════════════════════════════════
- * 8. REFERRAL SOURCES
- * ═══════════════════════════════════════════════════════════════════════ */
-function ReferralsSection() {
-  const leadsQuery = trpc.leads.list.useQuery();
-  const leads = (leadsQuery.data || []) as any[];
-
-  const bySource: Record<string, any[]> = {};
-  leads.forEach((l: any) => {
-    const src = l.source || "direct";
-    if (!bySource[src]) bySource[src] = [];
-    bySource[src].push(l);
-  });
-
-  const byReferrer: Record<string, any[]> = {};
-  leads.filter((l: any) => l.referrerName).forEach((l: any) => {
-    const r = l.referrerName;
-    if (!byReferrer[r]) byReferrer[r] = [];
-    byReferrer[r].push(l);
-  });
-
-  return (
-    <div>
-      <SectionTitle sub="Source attribution for every lead — direct, BizDev affiliate, returning client, or CSO outreach.">
-        Referral Source Visibility
-      </SectionTitle>
-
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 14 }}>
-        <Card>
-          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-            By Source
-          </p>
-          {Object.keys(bySource).length === 0 ? (
-            <EmptyState icon={Network} title="No lead source data yet" />
-          ) : Object.entries(bySource).map(([src, ls]) => {
-            const max = Math.max(...Object.values(bySource).map(a => a.length));
-            return (
-              <div key={src} style={{ marginBottom: 10 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: DARK, textTransform: "capitalize" }}>{src}</span>
-                  <span style={{ fontSize: 11, color: MUTED }}>{ls.length} lead{ls.length === 1 ? "" : "s"}</span>
-                </div>
-                <div style={{ height: 6, backgroundColor: `${DARK}08`, borderRadius: 3, overflow: "hidden" }}>
-                  <div style={{ width: `${(ls.length / max) * 100}%`, height: "100%", backgroundColor: GOLD, borderRadius: 3 }} />
-                </div>
-              </div>
-            );
-          })}
-        </Card>
-
-        <Card>
-          <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 10 }}>
-            By Referrer (Affiliate / Returning Client)
-          </p>
-          {Object.keys(byReferrer).length === 0 ? (
-            <EmptyState icon={Network} title="No referred leads yet" hint="Referred leads will show attribution here for commission tracking." />
-          ) : Object.entries(byReferrer).map(([r, ls]) => (
-            <div key={r} style={{ padding: "8px 12px", borderRadius: 8, backgroundColor: `${DARK}03`, marginBottom: 6, display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: 12, fontWeight: 500, color: DARK }}>{r}</span>
-              <span style={{ fontSize: 11, color: GOLD, fontWeight: 600 }}>{ls.length}</span>
-            </div>
-          ))}
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
- * 9. RHYTHM / CALENDAR
- * ═══════════════════════════════════════════════════════════════════════ */
 function RhythmSection() {
   const rhythm = [
     {
@@ -3092,6 +3120,11 @@ function expandRhythm(monthCursor: Date): any[] {
   return out;
 }
 
+/* 2026-05-02 (Phase 5.3 audit) — Calendar earns its slot.
+   Two non-overlapping uses: (a) user-created events via trpc.calendar (meetings,
+   follow-ups, deadlines) and (b) the built-in CSO rhythm overlay (Mon 8:30
+   week-planning, etc) generated from the playbook. Both stay live so the tab
+   isn't just decoration. No structural changes — kept for review only. */
 function CalendarSection() {
   const [cursor, setCursor] = useState<Date>(() => {
     const d = new Date();
@@ -3344,8 +3377,8 @@ function SettingsSection({ currentUser }: { currentUser: any }) {
   );
 }
 
-function Field({ label, value, onChange, type = "text" }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string;
+function Field({ label, value, onChange, type = "text", placeholder }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
 }) {
   return (
     <div style={{ marginBottom: 10 }}>
@@ -3354,6 +3387,7 @@ function Field({ label, value, onChange, type = "text" }: {
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
         style={{
           width: "100%", padding: "8px 12px", borderRadius: 8, border: `1px solid ${DARK}15`,
           fontSize: 13, color: DARK, backgroundColor: `${DARK}02`,
@@ -3654,6 +3688,77 @@ function AssignTaskModal({ clientId, leadId, onClose }: { clientId?: number; lea
   );
 }
 
+/* ─── Phase 2.5 (2026-05-02) — Add another service to an existing Won client.
+   Modal opens from ClientCard → "+ Add service". Skips the lead pipeline since
+   the client is already qualified and paid before. Creates a task + commission row
+   in one shot via csoActions.addServiceToClient. */
+function AddServiceModal({ client, onClose, onCreated }: { client: any; onClose: () => void; onCreated: () => void }) {
+  const [serviceLabel, setServiceLabel] = useState("");
+  const [department, setDepartment] = useState<"bizdoc" | "systemise" | "scalar" | "medialy" | "skills" | "hub" | "podcast" | "video" | "faceless">("bizdoc");
+  const [contractValue, setContractValue] = useState<string>("");
+  const [notes, setNotes] = useState("");
+
+  const add = trpc.csoActions.addServiceToClient.useMutation({
+    onSuccess: (r) => {
+      toast.success(`Added — task ${r.ref} created`);
+      onCreated();
+    },
+    onError: (e) => toast.error(e.message || "Couldn't add service."),
+  });
+
+  const submit = () => {
+    if (!serviceLabel.trim()) { toast.error("Service label is required."); return; }
+    const cv = parseFloat(contractValue.replace(/[^\d.]/g, ""));
+    if (!Number.isFinite(cv) || cv < 0) { toast.error("Contract value must be a positive number."); return; }
+    add.mutate({
+      clientId: client.id,
+      service: serviceLabel.trim(),
+      serviceLabel: serviceLabel.trim(),
+      department,
+      contractValue: cv,
+      notes: notes.trim() || undefined,
+    });
+  };
+
+  return (
+    <ModalShell title={`Add service · ${client.businessName || client.name}`} onClose={onClose}>
+      <p style={{ fontSize: 11, color: INK_MUTED, marginBottom: 12, lineHeight: 1.5 }}>
+        Adds a new service to this Won client. A task is created on the same client record (no
+        duplicate row), a pending commission is queued for Finance, and the receiving division gets
+        a notification.
+      </p>
+      <Field label="Service *" value={serviceLabel} onChange={setServiceLabel} placeholder="e.g. Bizdoc CAC, Medialy package A" />
+      <SelectField
+        label="Division *"
+        value={department}
+        onChange={(v) => setDepartment(v as any)}
+        options={[
+          { value: "bizdoc",   label: "Bizdoc" },
+          { value: "scalar",   label: "Scalar" },
+          { value: "medialy",  label: "Medialy" },
+          { value: "hub",      label: "Hub" },
+          { value: "podcast",  label: "Podcast" },
+          { value: "video",    label: "Video" },
+          { value: "faceless", label: "Faceless" },
+        ]}
+      />
+      <Field label="Contract value (₦) *" type="number" value={contractValue} onChange={setContractValue} placeholder="e.g. 250000" />
+      <Field label="Notes" value={notes} onChange={setNotes} placeholder="Anything the division needs to know" />
+      <button
+        onClick={submit}
+        disabled={add.isPending}
+        style={{
+          marginTop: 8, padding: "10px 16px", borderRadius: 10, border: "none",
+          backgroundColor: GREEN, color: GOLD, fontSize: 13, fontWeight: 600, cursor: "pointer",
+          width: "100%", opacity: add.isPending ? 0.6 : 1,
+        }}
+      >
+        {add.isPending ? "Adding…" : "Add service"}
+      </button>
+    </ModalShell>
+  );
+}
+
 function NotifyCeoModal({ defaultSubject, relatedClientId, relatedLeadId, relatedProposalId, onClose }: {
   defaultSubject?: string;
   relatedClientId?: number; relatedLeadId?: number; relatedProposalId?: number;
@@ -3784,6 +3889,9 @@ function ClientDetailSlideOver({
   const tasksQuery = trpc.tasks.list.useQuery();
   const subsQuery = trpc.subscriptions.list.useQuery();
   const invoicesQuery = trpc.invoices.list.useQuery();
+  // 2026-05-02 (Phase 3.2) — recent activity feed for this client.
+  const activityQuery = trpc.clientTruth.recentActivity.useQuery({ clientId: client.id, limit: 12 });
+  const activity = (activityQuery.data || []) as any[];
 
   const clientTasks = ((tasksQuery.data || []) as any[]).filter((t: any) =>
     (client.phone && t.phone === client.phone) || (client.name && t.clientName === client.name)
@@ -3914,6 +4022,47 @@ function ClientDetailSlideOver({
                 <Pill status={t.status || "new"} />
               </div>
             ))}
+          </Card>
+
+          {/* 2026-05-02 (Phase 3.2) — Recent activity feed */}
+          <Card style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 8 }}>
+              Recent activity
+            </p>
+            {activityQuery.isLoading ? (
+              <p style={{ fontSize: 11, color: MUTED, fontStyle: "italic" }}>Loading…</p>
+            ) : activity.length === 0 ? (
+              <p style={{ fontSize: 11, color: MUTED }}>No activity yet — once stage changes, payments, or status updates happen they'll show up here.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {activity.map((a: any) => {
+                  // Friendly action labels — keep the audit log human even when
+                  // the underlying enum is a snake_case slug.
+                  const ACTION_LABEL: Record<string, string> = {
+                    lead_stage_updated: "Stage updated",
+                    lead_assigned: "Lead assigned",
+                    lead_snoozed: "Snoozed",
+                    lead_unsnoozed: "Resumed",
+                    task_created: "Task created",
+                    price_set: "Price set",
+                    handoff_failed: "Handoff failed",
+                    details_updated: "Task details updated",
+                  };
+                  const label = ACTION_LABEL[a.action] || (a.action || "").replace(/_/g, " ");
+                  return (
+                    <div key={a.id} style={{ fontSize: 11, padding: "6px 8px", borderRadius: 6, backgroundColor: `${DARK}03` }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginBottom: 2 }}>
+                        <span style={{ fontWeight: 700, color: DARK, textTransform: "capitalize" }}>{label}</span>
+                        <span style={{ color: MUTED, fontSize: 10 }}>{fmtDate(a.createdAt)}</span>
+                      </div>
+                      {a.details && (
+                        <p style={{ color: MUTED, lineHeight: 1.5 }}>{a.details}</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </Card>
 
           {clientInvoices.length > 0 && (
@@ -4103,6 +4252,18 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
   const [showEndStates, setShowEndStates] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<number | null>(null);
   const [assignTarget, setAssignTarget] = useState<any | null>(null);
+  // 2026-05-02 (Phase 5.2) — bulk-move multi-select. Holds lead IDs ticked
+  // by the operator. Action bar at the bottom of the section reads this set
+  // and fires a stage-change for each one in sequence.
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const toggleSelected = (id: number) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
 
   // 2026-04-30 v3 — Connected, path-aware Advance/Move-back across every stage.
   //
@@ -4237,7 +4398,10 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
         display: "flex", justifyContent: "space-between", alignItems: "flex-start",
         gap: 12, marginBottom: 14, flexWrap: "wrap",
       }}>
-        <SectionTitle sub="Five flow stages on by default. Use the ⋯ menu on any card for Won, Nurture, Lost, or step back.">
+        <SectionTitle
+          sub="Five flow stages on by default. Use the ⋯ menu on any card for Won, Nurture, Lost, or step back."
+          help="Drag your active deals through stages: New → Qualified → Closer call → Onboarding → Won. Use ⋯ menu for shortcuts."
+        >
           Pipeline
         </SectionTitle>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -4341,9 +4505,38 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
                       >
                         {/* Header row */}
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 6 }}>
-                          <p style={{ fontSize: 13, fontWeight: 700, color: INK, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {lead.name || lead.businessName || "Unnamed"}
-                          </p>
+                          <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                            {/* 2026-05-02 (Phase 5.2) — multi-select checkbox.
+                                Stop propagation so clicking the box doesn't open the lead. */}
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.has(lead.id)}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => { e.stopPropagation(); toggleSelected(lead.id); }}
+                              title="Select for bulk action"
+                              style={{ flexShrink: 0, cursor: "pointer", accentColor: GREEN as any }}
+                            />
+                            <p style={{ fontSize: 13, fontWeight: 700, color: INK, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {lead.name || lead.businessName || "Unnamed"}
+                            </p>
+                            {/* 2026-05-02 (Phase 2.3) — Returning client pill. Lead.linkedClientId
+                                is set on submit when phone matches an existing clientTruth row,
+                                so CSO knows this is an upsell, not a fresh deal. */}
+                            {lead.linkedClientId && (
+                              <span
+                                title="This phone matches an existing client — upsell or new service"
+                                style={{
+                                  fontSize: 9, fontWeight: 700, color: GREEN,
+                                  padding: "1px 6px", borderRadius: 999,
+                                  backgroundColor: `${GREEN}15`,
+                                  letterSpacing: "0.04em", textTransform: "uppercase",
+                                  whiteSpace: "nowrap", flexShrink: 0,
+                                }}
+                              >
+                                ↩ Returning
+                              </span>
+                            )}
+                          </div>
                           {/* Single ⋯ menu button */}
                           <button
                             title="More actions"
@@ -4520,6 +4713,55 @@ function PipelineSection({ onQualify }: { onQualify: (id: number) => void }) {
             );
           }}
         />
+      )}
+
+      {/* 2026-05-02 (Phase 5.2) — Bulk action bar. Sticky at the bottom of the
+          viewport while leads are selected. End-of-day clean-up: tick a few
+          stale leads, hit "Mark Lost", done. Confirms before firing. */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          position: "fixed", left: "50%", bottom: 16, transform: "translateX(-50%)",
+          zIndex: 50, padding: "10px 16px", borderRadius: 12,
+          backgroundColor: INK, color: WHITE,
+          boxShadow: "0 6px 24px rgba(0,0,0,0.18)",
+          display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+          fontSize: 12, fontWeight: 600,
+        }}>
+          <span style={{ color: GOLD }}>{selectedIds.size} selected</span>
+          <span style={{ width: 1, height: 16, backgroundColor: `${WHITE}20` }} />
+          {([
+            { label: "Mark Won",     stage: "won" as const,    color: "#22C55E" },
+            { label: "Mark Nurture", stage: "paused" as const, color: GOLD },
+            { label: "Mark Lost",    stage: "lost" as const,   color: "#9CA3AF" },
+          ]).map(action => (
+            <button
+              key={action.stage}
+              disabled={updateStage.isPending}
+              onClick={async () => {
+                const ids = Array.from(selectedIds);
+                if (!window.confirm(`Mark ${ids.length} lead${ids.length === 1 ? "" : "s"} as ${action.label.replace("Mark ", "")}?`)) return;
+                // Fire sequentially so one failure doesn't blow up the rest;
+                // success toast appears per lead but that's acceptable for a
+                // batch op (the user just asked for it).
+                for (const id of ids) {
+                  try { await updateStage.mutateAsync({ leadId: id, stage: action.stage }); }
+                  catch (err) { console.error("[bulk] failed for", id, err); }
+                }
+                clearSelection();
+              }}
+              style={{
+                padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+                backgroundColor: action.color, color: action.stage === "lost" ? INK : GOLD,
+                fontSize: 11, fontWeight: 700, opacity: updateStage.isPending ? 0.6 : 1,
+              }}
+            >{action.label}</button>
+          ))}
+          <span style={{ width: 1, height: 16, backgroundColor: `${WHITE}20` }} />
+          <button
+            onClick={clearSelection}
+            style={{ padding: "6px 8px", borderRadius: 6, border: "none", backgroundColor: "transparent", color: WHITE, cursor: "pointer", fontSize: 11 }}
+          >Clear</button>
+        </div>
       )}
     </div>
   );
@@ -4728,109 +4970,6 @@ function ServicesLibrary() {
 }
 
 /* Source Tracker (Affiliates + Content Creators) */
-function SourceTracker() {
-  const [sub, setSub] = useState<"affiliates" | "creators">("affiliates");
-  return (
-    <div>
-      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-        {[
-          { k: "affiliates" as const, label: "Affiliates" },
-          { k: "creators"   as const, label: "Content Creators" },
-        ].map(t => (
-          <button
-            key={t.k}
-            onClick={() => setSub(t.k)}
-            style={{
-              padding: "6px 12px", borderRadius: 8, border: "none",
-              backgroundColor: sub === t.k ? GOLD : `${DARK}06`,
-              color: sub === t.k ? WHITE : DARK,
-              fontSize: 11, fontWeight: 600, cursor: "pointer",
-            }}
-          >{t.label}</button>
-        ))}
-      </div>
-      {sub === "affiliates" ? <ReferralsSection /> : <ContentCreatorsList />}
-    </div>
-  );
-}
-
-function ContentCreatorsList() {
-  const query = trpc.contentCreators.list.useQuery();
-  const utils = trpc.useUtils();
-  const create = trpc.contentCreators.create.useMutation({
-    onSuccess: () => { toast.success("Creator added"); utils.contentCreators.list.invalidate(); setShow(false); },
-    onError: (e) => toast.error(e.message),
-  });
-  const [show, setShow] = useState(false);
-  const [form, setForm] = useState({ name: "", handle: "", code: "", platform: "instagram" as const, commissionRate: 10, notes: "" });
-  const rows = (query.data || []) as any[];
-
-  return (
-    <Card>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: DARK, textTransform: "uppercase", letterSpacing: "0.06em" }}>
-          Content Creators ({rows.length})
-        </p>
-        <button
-          onClick={() => setShow(true)}
-          style={{
-            padding: "6px 12px", borderRadius: 8, border: "none",
-            backgroundColor: GREEN, color: GOLD, fontSize: 11, fontWeight: 600, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 4,
-          }}
-        ><Plus size={12} /> Add</button>
-      </div>
-      {query.isLoading ? (
-        <EmptyState icon={Loader2} title="Loading creators..." />
-      ) : rows.length === 0 ? (
-        <EmptyState icon={UserCheck} title="No creators yet" hint="Add the first content creator to track attributed leads." />
-      ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {rows.map((c: any) => (
-            <div key={c.id} style={{
-              padding: "10px 12px", borderRadius: 10, border: `1px solid ${DARK}08`,
-              backgroundColor: `${DARK}02`, display: "flex", gap: 12, alignItems: "center",
-            }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: DARK }}>{c.name}</p>
-                <p style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-                  {c.platform} {c.handle ? `· @${c.handle}` : ""} · code {c.code} · {c.commissionRate}%
-                </p>
-              </div>
-              <Pill status={c.status || "active"} />
-            </div>
-          ))}
-        </div>
-      )}
-
-      {show && (
-        <ModalShell title="Add Content Creator" onClose={() => setShow(false)} width={480}>
-          <Field label="Name *" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
-          <Field label="Handle" value={form.handle} onChange={(v) => setForm({ ...form, handle: v })} />
-          <Field label="Attribution code *" value={form.code} onChange={(v) => setForm({ ...form, code: v.toUpperCase() })} />
-          <Field label="Commission rate %" value={String(form.commissionRate)} onChange={(v) => setForm({ ...form, commissionRate: Number(v) || 0 })} />
-          <Field label="Notes" value={form.notes} onChange={(v) => setForm({ ...form, notes: v })} />
-          <button
-            onClick={() => {
-              if (!form.name || !form.code) { toast.error("Name and code required"); return; }
-              create.mutate(form);
-            }}
-            disabled={create.isPending}
-            style={{
-              marginTop: 10, padding: "10px 14px", borderRadius: 10, border: "none",
-              backgroundColor: GREEN, color: GOLD, fontSize: 13, fontWeight: 600, cursor: "pointer",
-              width: "100%",
-            }}
-          >
-            {create.isPending ? "Saving…" : "Create creator"}
-          </button>
-        </ModalShell>
-      )}
-    </Card>
-  );
-}
-
-/* Cohorts read-only for CSO */
 function BoCohorts() {
   const query = trpc.cohortsCso.list.useQuery();
   const rows = (query.data || []) as any[];
@@ -5385,197 +5524,3 @@ function RevenueCommissionsSection() {
   );
 }
 
-/* ═══════════════════════════════════════════════════════════════════════
- * PLAYBOOK — CSO Operations Guide content (Phase 4 source-of-truth).
- * 2026-04-30. Direct port of PHASE4_CSO_BIZDEV/CSO/OPERATIONS_GUIDE/
- * CSO_Operations_Guide.txt + the CSO Flow Diagram + the daily routine.
- *
- * Surfaced as readable cards so CSO can refer mid-conversation. Click
- * any block heading to copy the content.
- * ═══════════════════════════════════════════════════════════════════════ */
-function PlaybookSection() {
-  const copy = (text: string, label: string) => {
-    navigator.clipboard.writeText(text).then(
-      () => toast.success(`${label} copied`),
-      () => toast.error("Couldn't copy — select and copy manually"),
-    );
-  };
-
-  type PlayBlock = { title: string; body: string };
-  type PlaySection = { id: string; title: string; intro: string; blocks: PlayBlock[] };
-
-  const SECTIONS: PlaySection[] = [
-    {
-      id: "mission",
-      title: "Mission & ownership",
-      intro: "Who CSO is and why CSO exists. This is the constitutional layer.",
-      blocks: [
-        { title: "CSO Mission",
-          body: "CSO is the only client-facing role at Hamzury. Every lead enters through CSO; every closed client is brought by CSO; every commission is earned by CSO. Divisions deliver — CSO sells, qualifies, closes, and maintains the relationship for upsells and renewals." },
-        { title: "Three CSO roles inside the team",
-          body: "Lead Handler — adds leads to the sheet within 30 min, sends M1 within 2 hrs.\nCloser — qualifies, calls, handles objections, asks for the close.\nCoordinator — sends forms, PDFs, invoices; tracks payments; hands off to division." },
-        { title: "Founder rule",
-          body: "Only CSO contacts clients. Bizdoc, Scalar, Medialy, Hub ops portals do not message clients — ever. They deliver, update task status, and CSO communicates the update outward." },
-      ],
-    },
-    {
-      id: "bant",
-      title: "BANT qualification",
-      intro: "Use this on every lead before moving past Qualification stage.",
-      blocks: [
-        { title: "B — Budget",
-          body: "Question: \"Do you have a rough budget range in mind?\"\nFloor by service: Bizdoc CAC ₦25k+ · Scalar website ₦300k+ · Medialy package A ₦50k+ · Hub Code Craft ₦300k.\nIf budget is below floor: route to a smaller package or to Hub Online Academy. Don't undercut floor pricing." },
-        { title: "A — Authority",
-          body: "Question: \"Are you the decision-maker, or do you speak to someone else first?\"\nIf NOT decision-maker: ask who is, get their contact, send proposal to both." },
-        { title: "N — Need",
-          body: "Question: \"What specific challenge are you trying to solve?\"\nFollow-up: \"What happens if it stays unsolved for 6 months?\"\nGenuine pain → fast close. Vague aspirations → push to diagnostic form (Path B)." },
-        { title: "T — Timeline",
-          body: "Question: \"Ideal timeline to start?\"\nImmediately / 1 month: Path A (direct close).\n1–3 months / 3+: Path B (diagnostic form, nurture in calendar)." },
-      ],
-    },
-    {
-      id: "flow",
-      title: "11-stage CSO Flow",
-      intro: "Every lead moves through these stages. Pipeline cards mirror this.",
-      blocks: [
-        { title: "Stage 1–3 · Triage",
-          body: "1. Lead enters — Lead Handler adds to sheet within 30 min.\n2. First response — M1 (Welcome + 3 Qs) sent within 2 hrs.\n3. Qualification — answers reviewed; pick Path A or Path B." },
-        { title: "Path A · Direct close",
-          body: "Path A is for clear, simple needs. Skip the diagnosis form.\n4A. Assigned to Closer.\n5A. Closer calls within 24h, presents solution.\n7. Closer call → Won / Nurture / Lost." },
-        { title: "Path B · Diagnosis",
-          body: "Path B is for complex needs that require a custom solution.\n4B. Coordinator sends Message 3 (form link) within 4 hrs.\n5B. Wait for form. If no response in 24h, follow up.\n6B. Coordinator builds custom PDF + sends Message 4 within 24h of form return.\n7B. Coordinator schedules call (Message 5) → moves to Stage 7." },
-        { title: "Stage 8 · Closer call outcome",
-          body: "Closer asks: \"Ready to move forward?\"\nYES → Coordinator sends invoice + agreement (Message 6A) within 1 hour. Status = Onboarding.\nNO/MAYBE → Closer schedules follow-up in 3–7 days. Status = Nurture." },
-        { title: "Stage 9–10 · Close + handoff",
-          body: "9. Payment received → Coordinator notifies division + creates HMZ-C client file.\n10. Division begins delivery. CSO maintains relationship for upsells + renewals." },
-      ],
-    },
-    {
-      id: "messages",
-      title: "Message templates (M1–M6)",
-      intro: "Six canonical messages. Replace the placeholders. Don't improvise the structure.",
-      blocks: [
-        { title: "M1 · Welcome + 3 questions",
-          body: "Hi {name}, thanks for reaching out to Hamzury — I'm here to help.\n\nThree quick questions so I can recommend the right thing:\n1. What specific outcome are you looking for?\n2. Ideal timeline to start?\n3. Rough budget range you're working with?\n\nReply when you have a moment. — CSO" },
-        { title: "M2A · Path A — assigned to Closer",
-          body: "Hi {name}, thank you. {closer_name} from our team will call you within 24 hrs to walk through the right package.\n\nMeanwhile, here's a quick overview of what we'd recommend: {service_summary}.\n\nLooking forward to the conversation. — CSO" },
-        { title: "M3 · Path B — diagnostic form link",
-          body: "Hi {name}, thanks for the answers. Your situation needs a tailored plan, so we use a short diagnostic so we can scope it properly.\n\nIt takes 5 minutes: {diagnostic_link}\n\nOnce we have your answers we'll build a custom proposal within 24 hrs. — CSO" },
-        { title: "M4 · Path B — PDF follow-up",
-          body: "Hi {name}, your custom plan is attached.\n\nKey points:\n• {point_1}\n• {point_2}\n• {point_3}\n\nPrice: {amount}.\n\nWhen you've had a chance to review, can we schedule a 20-minute call to walk through it? — CSO" },
-        { title: "M5 · Call booking",
-          body: "Hi {name}, here are three slots that work this week:\n• {slot_1}\n• {slot_2}\n• {slot_3}\n\nReply with your pick, or send a time that suits you better. — CSO" },
-        { title: "M6A · Won — invoice & agreement",
-          body: "Hi {name}, brilliant — let's get started.\n\n• Invoice: {invoice_link}\n• Service Agreement: {agreement_link}\n\nOnce payment clears we'll send your reference number and assign your delivery team. Welcome to Hamzury. — CSO" },
-        { title: "M6B · Nurture — soft follow-up",
-          body: "Hi {name}, no rush — wanted to keep the door open.\n\nIf timing or budget changes in the next month or two, we're here. In the meantime here's a useful read: {resource_link}.\n\n— CSO" },
-      ],
-    },
-    {
-      id: "objections",
-      title: "Objection handling (top 5)",
-      intro: "Every objection has a script. Don't argue — acknowledge, reframe, redirect.",
-      blocks: [
-        { title: "\"It's too expensive\"",
-          body: "Acknowledge: \"That's a real concern — let me show you the breakdown.\"\nReframe: Cost vs cost-of-inaction. \"What does it cost you NOT to have this for the next 12 months?\"\nRedirect: Offer the next package down (Bizdoc B → A; Medialy C → B), OR offer the payment plan." },
-        { title: "\"We need to think about it\"",
-          body: "Acknowledge: \"Of course — totally understand.\"\nProbe: \"What specifically are you weighing? Is it the price, the timeline, or whether we're the right partner?\"\nRedirect: Address the specific concern. Set a follow-up time + day." },
-        { title: "\"We already work with someone\"",
-          body: "Acknowledge: \"Smart — you've done the homework.\"\nReframe: \"Many of our clients had a previous provider. Two questions: what's working with them, and what's not?\"\nRedirect: If gaps exist, offer to plug ONE gap as a trial (small package). Don't try to displace the whole relationship up front." },
-        { title: "\"I'll do it myself\"",
-          body: "Acknowledge: \"You absolutely could.\"\nReframe: \"What's your hourly rate? At {rate}/hr the {service} takes about {hours} hours of your time, vs ₦{price} for us to handle it.\"\nRedirect: Offer a hybrid — we do the heavy lifting, they review. Frame as augmentation, not replacement." },
-        { title: "\"Send me an email and I'll review\"",
-          body: "Acknowledge: \"Sure thing — what email is best?\"\nReframe: \"I'll send the proposal now. To make sure I tailor it correctly, can I ask you ONE question first?\" (use BANT)\nRedirect: Get one piece of qualification info before they go quiet, then send the proposal AND book the follow-up call in the same message." },
-      ],
-    },
-    {
-      id: "routine",
-      title: "Daily routine (Mon–Fri)",
-      intro: "Same rhythm every day. Boring is good — boring is repeatable.",
-      blocks: [
-        { title: "8:30 · Check pipeline + plan day",
-          body: "Open the pipeline. Sort by stage age. Anything in New, Qualified, or Negotiation older than 3 days = red, action today. Note the top 3 priorities for the morning." },
-        { title: "9:00 – 11:00 · Outreach block",
-          body: "Hard block. No meetings. No admin. Calls + LinkedIn DMs + email follow-ups. Goal: 10–15 connects per day. This is where revenue is born." },
-        { title: "11:00 · Inbox triage",
-          body: "Process every reply that came in during the outreach block. Send M1 to anything new. Move qualified leads to Closer." },
-        { title: "12:00 – 1:00 · Lunch + email batch",
-          body: "Eat. Then a 20-minute email batch — never throughout the day. Email is async; treat it like one." },
-        { title: "1:00 – 3:00 · Calls + proposals",
-          body: "Closer call slots. Discovery, follow-up, closing. Coordinator builds proposals based on morning's qualified leads." },
-        { title: "3:00 · Dashboard update",
-          body: "Mandatory. Every lead's stage, every commission row, every targets row updated by 3:30pm. End-of-day handoff to Coordinator." },
-      ],
-    },
-    {
-      id: "metrics",
-      title: "Targets & metrics",
-      intro: "What CSO is measured on. The 18% commission depends on these.",
-      blocks: [
-        { title: "Monthly targets",
-          body: "New leads: 20+\nQualified: 15+\nClosed deals: 5+\nRevenue brought: ₦2M+\nConversion rate (qualified → won): 25%+\nPipeline value at any time: ₦5M+" },
-        { title: "Commission structure",
-          body: "18% of every Naira CSO brings in. Calculated by Finance. Paid 1st of every month.\nRevenue from auto-renewals doesn't count — only NEW deals or NEW upsells.\nLost deals get zero. Nurtured deals that close later still earn the 18%." },
-        { title: "Escalation triggers",
-          body: "Escalate to CEO if: budget > ₦500k, scope is cross-division, legal threat from client, payment overdue > 14 days.\nEscalate to Founder if: brand/reputation issue, ethical question, or any decision affecting strategy." },
-      ],
-    },
-  ];
-
-  return (
-    <div>
-      <SectionTitle sub="The CSO Operations Guide. Every script, every metric, every escalation rule. From PHASE4_CSO_BIZDEV/CSO.">
-        Playbook
-      </SectionTitle>
-
-      {/* Quick navigation */}
-      <Card style={{ marginBottom: 16 }}>
-        <p style={{ fontSize: 11, color: GOLD, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10 }}>
-          Quick jump
-        </p>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-          {SECTIONS.map(s => (
-            <a key={s.id} href={`#playbook-${s.id}`} style={{
-              padding: "6px 12px", borderRadius: 8,
-              backgroundColor: `${GREEN}10`, color: GREEN, fontSize: 11, fontWeight: 600,
-              textDecoration: "none", border: `1px solid ${GREEN}20`,
-            }}>{s.title}</a>
-          ))}
-        </div>
-      </Card>
-
-      {SECTIONS.map(section => (
-        <Card key={section.id} style={{ marginBottom: 16 }}>
-          <div id={`playbook-${section.id}`} style={{ scrollMarginTop: 24 }}>
-            <p style={{ fontSize: 16, fontWeight: 700, color: INK, letterSpacing: -0.2 }}>{section.title}</p>
-            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 4, marginBottom: 14, lineHeight: 1.55 }}>{section.intro}</p>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {section.blocks.map((b, i) => (
-              <div key={i} style={{
-                padding: 12, borderRadius: 10,
-                backgroundColor: WHITE, border: `1px solid ${HAIRLINE}`,
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: INK }}>{b.title}</p>
-                  <button
-                    onClick={() => copy(b.body, b.title)}
-                    style={{
-                      padding: "4px 8px", borderRadius: 6, border: `1px solid ${HAIRLINE}`,
-                      backgroundColor: WHITE, color: INK_MUTED, fontSize: 10, fontWeight: 600, cursor: "pointer",
-                      display: "flex", alignItems: "center", gap: 4,
-                    }}
-                  ><MessageSquare size={10} /> Copy</button>
-                </div>
-                <pre style={{
-                  fontSize: 11, color: INK, fontFamily: "inherit",
-                  whiteSpace: "pre-wrap", lineHeight: 1.6, margin: 0,
-                }}>{b.body}</pre>
-              </div>
-            ))}
-          </div>
-        </Card>
-      ))}
-    </div>
-  );
-}

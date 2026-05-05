@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medialy Services — Brand Identity, Live, Content & Industry Packs | HAMZURY</title>
+<meta name="description" content="The full Medialy service catalog: Brand Identity systems, Medialy Live subscriptions, Content Production, and Industry Brand Packs. Built for serious operators across Africa.">
+<link rel="canonical" href="https://hamzury.com/medialy/ourservice">
+<!-- TODO(medialy-logo): swap in /medialy-logo.svg once the Medialy mark exists. Using Hamzury mark as stand-in. -->
+<link rel="icon" type="image/png" href="/hamzury-mark.png">
+<link rel="apple-touch-icon" href="/hamzury-mark.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Medialy Services — Brand Identity, Live, Content & Industry Packs">
+<meta property="og:description" content="The full Medialy service catalog: Brand Identity, Medialy Live subscriptions, Content Production, and Industry Brand Packs.">
+<meta property="og:image" content="https://hamzury.com/hamzury-mark.png">
+<meta property="og:url" content="https://hamzury.com/medialy/ourservice">
+<meta property="og:site_name" content="HAMZURY · Medialy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Medialy Services — Brand Identity, Live, Content & Industry Packs">
+<meta name="twitter:description" content="The full Medialy service catalog: Brand Identity, Medialy Live subscriptions, Content Production, and Industry Brand Packs.">
+<meta name="twitter:image" content="https://hamzury.com/hamzury-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --bg: #FBF7F2;
+    --paper: #FFFFFF;
+    --ink: #2A1F18;
+    --ink-soft: #4A3A2E;
+    --ink-muted: #8A7460;
+    --ink-faint: #C7B8A8;
+    --line: #EDE4D8;
+    --line-soft: #F5EEE3;
+    --accent: #A24E2C;
+    --accent-pale: #F7E8DD;
+    --gold: #A88A4D;
+    --gold-pale: #F2EBDB;
+    --cream: #F5EFE6;
+    --success: #1A6B3C;
+    --danger: #A3301F;
+    --focus: rgba(162,78,44,0.16);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: var(--sans); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; letter-spacing: -0.005em;
+    min-height: 100vh;
+  }
+
+  /* ============= PHONE FRAME (everywhere, even desktop) ============= */
+  .frame {
+    max-width: 420px; margin: 0 auto;
+    background: var(--paper); min-height: 100vh;
+    position: relative;
+    box-shadow: 0 0 60px rgba(15,44,74,0.06);
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px 0; }
+    .frame { border-radius: 24px; min-height: calc(100vh - 48px); overflow: hidden; }
+  }
+
+  /* ============= TOP BAR ============= */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--line);
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .topbar-back {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--line-soft); border: none; cursor: pointer;
+    display: none; place-items: center; flex-shrink: 0;
+  }
+  .topbar-back.show { display: grid; }
+  .topbar-back svg { width: 14px; height: 14px; stroke: var(--ink); fill: none; stroke-width: 2; }
+  .topbar-brand {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--serif); font-size: 16px; font-weight: 500;
+    letter-spacing: -0.015em; flex: 1; min-width: 0;
+    color: var(--ink); text-decoration: none;
+    cursor: pointer; transition: opacity 0.12s;
+  }
+  .topbar-brand:hover { opacity: 0.7; }
+  .topbar-brand .dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 11px;
+    flex-shrink: 0;
+  }
+  .topbar-brand .brand-logo {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+  }
+  .topbar-brand small {
+    font-family: var(--sans); font-size: 9.5px; font-weight: 500;
+    color: var(--ink-muted); letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .cart-btn {
+    background: none; border: none; cursor: pointer;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    position: relative; transition: background 0.12s;
+    flex-shrink: 0;
+  }
+  .cart-btn:hover { background: var(--line-soft); }
+  .cart-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .cart-badge {
+    position: absolute; top: 4px; right: 4px;
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 500;
+    min-width: 16px; height: 16px;
+    border-radius: 8px; padding: 0 4px;
+    display: none; place-items: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .cart-badge.show { display: grid; }
+
+  /* ============= PAGE CONTENT ============= */
+  .page { padding: 24px 22px 100px; }
+
+  .hero-eyebrow {
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 10px;
+  }
+  .hero-title {
+    font-family: var(--serif); font-size: 30px; font-weight: 400;
+    letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 10px;
+  }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub {
+    font-size: 14px; color: var(--ink-soft); line-height: 1.55;
+    margin-bottom: 32px;
+  }
+
+  /* ============= CATEGORY ROWS ============= */
+  .cat-row {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 14px; padding: 18px 18px;
+    margin-bottom: 10px; cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .cat-row:hover { border-color: var(--accent); transform: translateX(3px); }
+  .cat-row .num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-pale); color: var(--accent);
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .cat-row .meta { flex: 1; min-width: 0; }
+  .cat-row .name {
+    font-family: var(--serif); font-size: 16px; font-weight: 500;
+    letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 2px;
+  }
+  .cat-row .desc {
+    font-size: 12px; color: var(--ink-muted); line-height: 1.45;
+  }
+  .cat-row .arrow {
+    color: var(--ink-faint); flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .cat-row:hover .arrow { transform: translateX(2px); color: var(--accent); }
+
+  /* ============= ITEM LIST (List-first design) ============= */
+  .section-header {
+    margin: 24px 0 14px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .section-title {
+    font-family: var(--serif); font-size: 17px; font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .section-meta {
+    font-size: 11px; color: var(--ink-muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .filter-bar {
+    display: flex; gap: 6px; overflow-x: auto;
+    margin-bottom: 14px; padding-bottom: 4px;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    padding: 5px 12px; border: 0.5px solid var(--line);
+    border-radius: 999px; background: var(--paper);
+    cursor: pointer; font: 500 11.5px var(--sans);
+    color: var(--ink-soft); white-space: nowrap;
+    font-family: inherit; transition: all 0.12s;
+  }
+  .filter-pill:hover { color: var(--accent); border-color: var(--accent); }
+  .filter-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .item-list {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+  }
+  .item {
+    border-bottom: 0.5px solid var(--line-soft);
+    transition: background 0.1s;
+  }
+  .item:last-child { border-bottom: none; }
+  .item-head {
+    padding: 12px 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+    cursor: pointer;
+  }
+  .item-head:hover { background: var(--line-soft); }
+  .item.expanded .item-head { background: var(--cream); }
+  .item-meta {
+    flex: 1; min-width: 0;
+  }
+  .item-name-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 2px;
+  }
+  .item-name {
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    letter-spacing: -0.005em; line-height: 1.25;
+  }
+  .item-use {
+    font-size: 12px; color: var(--ink-muted);
+    line-height: 1.4; letter-spacing: -0.002em;
+  }
+  .item-tag {
+    font-size: 10px; font-weight: 500; padding: 1px 7px;
+    border-radius: 4px; letter-spacing: 0.02em;
+    text-transform: uppercase; flex-shrink: 0;
+  }
+  .item-tag.renewal { background: var(--gold-pale); color: var(--gold); }
+  .item-tag.modification { background: var(--accent-pale); color: var(--accent); }
+  .item-tag.annual { background: var(--gold-pale); color: var(--gold); }
+  .item-tag.free { background: rgba(26,107,60,0.12); color: var(--success); }
+  .item-tag.guide { background: var(--cream); color: var(--gold); }
+  .item-cart {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: none; border: 0.5px solid var(--line); cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+    margin-top: 2px;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .item-cart:hover { border-color: var(--accent); background: var(--accent-pale); }
+  .item-cart svg { width: 14px; height: 14px; stroke: var(--ink-soft); fill: none; stroke-width: 1.7; }
+  .item-cart:hover svg { stroke: var(--accent); }
+  .item-cart.added {
+    background: var(--success); border-color: var(--success);
+  }
+  .item-cart.added svg { stroke: #fff; }
+
+  .item-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .item.expanded .item-body { max-height: 600px; }
+  .item-body-inner {
+    padding: 4px 16px 16px;
+    border-top: 0.5px solid var(--line-soft);
+  }
+  .item-body-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 5px 0; font-size: 12.5px;
+  }
+  .item-body-label {
+    color: var(--ink-muted);
+    width: 75px; flex-shrink: 0;
+  }
+  .item-body-value {
+    color: var(--ink-soft); line-height: 1.5; flex: 1;
+  }
+  .item-body-value.fee {
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+  }
+  .item-actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .item-action-chat, .item-action-add {
+    flex: 1; padding: 9px 12px;
+    border-radius: 8px; font: 500 12.5px var(--sans);
+    cursor: pointer; font-family: inherit;
+    transition: all 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .item-action-chat {
+    background: var(--paper); color: var(--ink-soft);
+    border: 0.5px solid var(--line);
+  }
+  .item-action-chat:hover { border-color: var(--accent); color: var(--accent); }
+  .item-action-add {
+    background: var(--accent); color: #fff; border: none;
+  }
+  .item-action-add:hover { filter: brightness(1.12); }
+  .item-action-add.added { background: var(--success); }
+
+  .edu-box {
+    margin: 12px 0 4px;
+    padding: 12px 14px;
+    background: var(--cream);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+  }
+  .edu-title {
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    color: var(--gold); margin-bottom: 6px;
+    letter-spacing: -0.005em;
+  }
+  .edu-body {
+    font-size: 12.5px; color: var(--ink-soft); line-height: 1.55;
+  }
+  .ind-search-wrap {
+    position: relative; margin-bottom: 16px;
+  }
+  .ind-search {
+    width: 100%; padding: 10px 14px 10px 36px;
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 999px; font: 400 13.5px var(--sans);
+    color: var(--ink); font-family: inherit;
+    letter-spacing: -0.005em;
+  }
+  .ind-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--focus); }
+  .ind-search-icon {
+    position: absolute; left: 13px; top: 50%;
+    transform: translateY(-50%); color: var(--ink-muted);
+    pointer-events: none;
+  }
+  .item-note {
+    margin: 10px 0 4px;
+    padding: 8px 12px;
+    background: var(--gold-pale);
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--gold);
+    line-height: 1.5;
+  }
+
+  /* ============= INDUSTRY PACKAGES SCREEN ============= */
+  .industries-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .industry-card {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 18px 14px;
+    cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+  .industry-card:hover {
+    border-color: var(--gold); transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(184,115,31,0.08);
+  }
+  .industry-emoji { font-size: 28px; margin-bottom: 8px; }
+  .industry-name {
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    letter-spacing: -0.005em; line-height: 1.2; margin-bottom: 2px;
+  }
+  .industry-meta {
+    font-size: 10.5px; color: var(--ink-muted);
+  }
+
+  /* ============= INDUSTRY DETAIL (within frame, swipeable) ============= */
+  .industry-detail-head {
+    text-align: center; padding: 16px 0 22px;
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 22px;
+  }
+  .industry-detail-emoji { font-size: 40px; margin-bottom: 8px; }
+  .industry-detail-name {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 4px;
+  }
+  .industry-detail-sub {
+    font-size: 12.5px; color: var(--ink-muted); line-height: 1.5;
+  }
+
+  .subtype-tabs {
+    display: flex; gap: 6px; overflow-x: auto;
+    margin-bottom: 18px; padding-bottom: 4px;
+  }
+  .subtype-tabs::-webkit-scrollbar { display: none; }
+  .subtype-tab {
+    padding: 7px 14px; border: 0.5px solid var(--line);
+    border-radius: 999px; background: var(--paper);
+    cursor: pointer; font: 500 12px var(--sans); color: var(--ink-soft);
+    white-space: nowrap; font-family: inherit;
+    transition: all 0.12s;
+  }
+  .subtype-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .subtype-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .subtype-intro {
+    font-size: 13px; color: var(--ink-soft);
+    line-height: 1.55; margin-bottom: 14px;
+    padding: 12px 14px; background: var(--cream);
+    border-radius: 10px; border-left: 3px solid var(--gold);
+  }
+
+  /* ============= INDUSTRY FOOTER (other industries link) ============= */
+  .other-industries {
+    margin-top: 32px; padding: 20px;
+    background: var(--bg); border-radius: 14px;
+    border: 0.5px solid var(--line);
+  }
+  .other-industries-label {
+    font-size: 11px; color: var(--ink-muted); margin-bottom: 12px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    font-weight: 500;
+  }
+  .other-industries-list {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+  .other-industry-link {
+    padding: 8px 12px; background: var(--paper);
+    border: 0.5px solid var(--line); border-radius: 8px;
+    font-size: 12.5px; color: var(--ink); cursor: pointer;
+    transition: all 0.12s; font-family: inherit;
+    display: flex; align-items: center; gap: 8px;
+    text-align: left;
+  }
+  .other-industry-link:hover { border-color: var(--accent); color: var(--accent); }
+  .other-industry-link span { font-size: 14px; }
+
+  /* ============= CHAT MODAL ============= */
+  .chat-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,22,40,0.55);
+    display: none; place-items: center;
+    padding: 20px; backdrop-filter: blur(4px);
+  }
+  .chat-overlay.open { display: grid; }
+  .chat-modal {
+    width: 100%; max-width: 380px; max-height: 90vh;
+    background: var(--paper); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+  }
+  .chat-head {
+    padding: 18px 20px;
+    background: linear-gradient(180deg, var(--cream), var(--paper));
+    border-bottom: 0.5px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chat-head .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .chat-head-title { flex: 1; min-width: 0; }
+  .chat-head-name {
+    font-family: var(--serif); font-size: 14.5px; font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .chat-head-status {
+    font-size: 11px; color: var(--ink-muted);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .chat-head-status::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+  }
+  .chat-close {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(10,22,40,0.06); border: none; cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .chat-close svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 2; }
+  .chat-body {
+    flex: 1; overflow-y: auto;
+    padding: 18px; background: var(--bg);
+  }
+  .chat-msg {
+    margin-bottom: 12px; display: flex;
+  }
+  .chat-msg.bot { justify-content: flex-start; }
+  .chat-msg.user { justify-content: flex-end; }
+  .chat-bubble {
+    max-width: 85%; padding: 10px 14px;
+    border-radius: 18px; font-size: 13.5px;
+    line-height: 1.5; letter-spacing: -0.003em;
+  }
+  .chat-msg.bot .chat-bubble {
+    background: var(--paper); color: var(--ink);
+    border-bottom-left-radius: 5px;
+    border: 0.5px solid var(--line);
+  }
+  .chat-msg.user .chat-bubble {
+    background: var(--accent); color: #fff;
+    border-bottom-right-radius: 5px;
+  }
+  .chat-bubble strong { font-weight: 500; }
+  .chat-bubble ul { list-style: none; margin-top: 6px; padding-left: 0; }
+  .chat-bubble ul li { padding: 2px 0; padding-left: 12px; position: relative; }
+  .chat-bubble ul li::before { content: '·'; position: absolute; left: 4px; }
+  .chat-options {
+    margin-top: 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .chat-option {
+    background: var(--paper); border: 0.5px solid var(--line);
+    color: var(--accent); padding: 9px 14px;
+    border-radius: 999px; font: 500 12.5px var(--sans);
+    cursor: pointer; text-align: left; font-family: inherit;
+    transition: all 0.12s;
+  }
+  .chat-option:hover { background: var(--accent-pale); border-color: var(--accent); }
+  .chat-foot {
+    padding: 12px 16px; border-top: 0.5px solid var(--line);
+    background: var(--paper);
+    display: none;
+  }
+  .chat-foot.show { display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1; padding: 9px 14px; background: var(--bg);
+    border: 0.5px solid var(--line); border-radius: 999px;
+    font: 400 13.5px var(--sans); color: var(--ink);
+    font-family: inherit;
+  }
+  .chat-input:focus { outline: none; border-color: var(--accent); }
+  .chat-send {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .chat-send svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2; }
+
+  /* ============= CART MODAL ============= */
+  .cart-overlay {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(10,22,40,0.55);
+    display: none; place-items: center;
+    padding: 20px;
+  }
+  .cart-overlay.open { display: grid; }
+  .cart-modal {
+    width: 100%; max-width: 380px; max-height: 85vh;
+    background: var(--paper); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .cart-modal-head {
+    padding: 18px 20px; border-bottom: 0.5px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cart-modal-head h3 {
+    font-family: var(--serif); font-size: 18px; font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .cart-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .cart-row {
+    padding: 12px 20px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 12px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .cart-row:last-child { border-bottom: none; }
+  .cart-row-meta { flex: 1; min-width: 0; }
+  .cart-row-name {
+    font-size: 13.5px; font-weight: 500; color: var(--ink);
+    margin-bottom: 2px; line-height: 1.3;
+  }
+  .cart-row-tag {
+    font-size: 11px; color: var(--ink-muted);
+  }
+  .cart-row-fee {
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .cart-row-x {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-faint); font-size: 18px; line-height: 1;
+    padding: 0; margin-left: 4px; font-family: inherit;
+  }
+  .cart-row-x:hover { color: var(--danger); }
+  .cart-foot {
+    padding: 16px 20px; border-top: 0.5px solid var(--line);
+    background: var(--bg);
+  }
+  .cart-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .cart-total-label { font-size: 12px; color: var(--ink-muted); }
+  .cart-total-value {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+  }
+  .cart-checkout {
+    width: 100%; padding: 13px;
+    background: var(--accent); color: #fff;
+    border-radius: 12px; border: none; cursor: pointer;
+    font: 500 14px var(--sans); font-family: inherit;
+  }
+  .cart-checkout:hover { filter: brightness(1.1); }
+  .cart-empty {
+    padding: 50px 20px; text-align: center; color: var(--ink-muted);
+    font-size: 13px;
+  }
+  .cart-empty .big {
+    font-family: var(--serif); font-size: 18px; color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  /* ============= TOAST ============= */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--ink); color: #fff;
+    padding: 10px 16px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 500;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none;
+    transition: all 0.25s; z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ============= COMPLIANCE FLAGSHIP CARD ============= */
+  .flagship {
+    background: linear-gradient(135deg, var(--accent), #1A4373);
+    border-radius: 16px; padding: 22px;
+    color: #fff; margin-bottom: 14px;
+  }
+  .flagship-eyebrow {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.15em;
+    color: var(--gold-pale); margin-bottom: 10px; text-transform: uppercase;
+  }
+  .flagship-title {
+    font-family: var(--serif); font-size: 22px; font-weight: 400;
+    letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 10px;
+    color: #fff;
+  }
+  .flagship-title em { font-style: italic; color: var(--gold-pale); }
+  .flagship-desc { font-size: 12.5px; line-height: 1.55; opacity: 0.92; margin-bottom: 14px; }
+  .flagship-features { list-style: none; padding: 0; margin: 0 0 14px; }
+  .flagship-features li {
+    padding: 4px 0; font-size: 12px; opacity: 0.9;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .flagship-features li::before {
+    content: '✓'; color: var(--gold-pale); flex-shrink: 0;
+  }
+  .flagship-pricerow {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 12px 0; border-top: 0.5px solid rgba(255,255,255,0.15);
+  }
+  .flagship-price {
+    font-family: var(--serif); font-size: 24px; font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .flagship-price small { font-size: 12px; opacity: 0.7; font-family: var(--sans); font-weight: 400; }
+  .flagship-cta {
+    background: var(--gold); color: #fff;
+    padding: 9px 16px; border-radius: 999px;
+    border: none; cursor: pointer;
+    font: 500 12px var(--sans); font-family: inherit;
+  }
+  .flagship-cta:hover { filter: brightness(1.12); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <button class="topbar-back" id="back-btn" onclick="goBack()" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <a class="topbar-brand" href="/medialy" title="Back to Medialy home" aria-label="Back to Medialy home">
+      <svg class="brand-logo" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-label="Medialy">
+        <rect x="6" y="6" width="48" height="48" rx="12" fill="#A24E2C"/>
+        <path d="M16 42 L16 18 L22 18 L30 32 L38 18 L44 18 L44 42 L39 42 L39 27 L31 40 L29 40 L21 27 L21 42 Z" fill="#F5EFE6"/>
+        <circle cx="46" cy="16" r="3" fill="#A88A4D"/>
+      </svg>
+      <span>Medialy</span>
+      <small>Hamzury</small>
+    </a>
+    <button class="cart-btn" onclick="openCart()" aria-label="Cart">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+  </header>
+
+  <main class="page" id="page"></main>
+
+</div>
+
+<!-- CHAT MODAL -->
+<div class="chat-overlay" id="chat-overlay">
+  <div class="chat-modal">
+    <div class="chat-head">
+      <div class="avatar">B</div>
+      <div class="chat-head-title">
+        <div class="chat-head-name">Medialy Assistant</div>
+        <div class="chat-head-status">Online · Replies in seconds</div>
+      </div>
+      <button class="chat-close" onclick="closeChat()">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-foot" id="chat-foot">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Type your answer...">
+      <button class="chat-send" onclick="sendChat()">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="cart-overlay" id="cart-overlay">
+  <div class="cart-modal">
+    <div class="cart-modal-head">
+      <h3>Your selection</h3>
+      <button class="chat-close" onclick="closeCart()">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="cart-list" id="cart-list"></div>
+    <div class="cart-foot" id="cart-foot-area"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============= DATA =============
+
+// Educational layer — only services that need explanation
+const EDU = {
+  brand_book: {
+    title: 'About Brand Books',
+    body: 'A brand book is the document that captures everything about how your brand looks, sounds, and feels.\n\nWithout one, every team member, agency, and freelancer interprets your brand differently — leading to inconsistent results. With one, anyone can create on-brand work without checking with you first.'
+  },
+  business_naming: {
+    title: 'About Business Naming',
+    body: 'A great business name does three things: it is memorable, it is ownable (you can trademark it), and it works globally.\n\nWe deliver 5 name directions, run trademark pre-checks, and verify .com domain availability. The name you pick is one you can confidently grow into for the next 20 years.'
+  },
+  rebrand: {
+    title: 'About Rebrands',
+    body: 'A rebrand is for businesses outgrowing their original identity — when the brand stops matching what the company has become.\n\nA full rebrand can take 8-16 weeks and includes strategy reset, market research, name evaluation, full visual system rebuild, and rollout planning.'
+  },
+  pitch_deck_design: {
+    title: 'About Pitch Decks',
+    body: 'Investor pitch decks need to do two things in 12 slides: tell a clear story and look like a brand investors trust.\n\nWe handle both — content structuring with you and visual design that signals seriousness. The result is a deck that wins follow-up meetings.'
+  },
+  brand_film_short: {
+    title: 'About Brand Films',
+    body: 'A brand film is a 60-90 second piece of cinema that tells your brand story emotionally — not just informationally.\n\nIt sits on your homepage, runs as the lead ad in campaigns, plays at investor meetings, and gets shared on social. One piece of content with very high return.'
+  },
+  reels_pack_12: {
+    title: 'About Reels Packs',
+    body: 'A reels pack is a batch production approach to short-form video — 12 reels shot and edited together over 3-4 weeks.\n\nMuch more efficient than producing one reel at a time. Gives you 3 months of consistent content from one production cycle.'
+  },
+  packaging_design: {
+    title: 'About Packaging Design',
+    body: 'Packaging is the most under-priced marketing investment most product brands make.\n\nIt is the only ad your customer sees right before purchase. We design packaging that respects shelf physics (visibility, hierarchy) AND brand storytelling (why this product, why this brand).'
+  },
+  website_design: {
+    title: 'About Website Design',
+    body: 'We design — Scalar (our sister company) builds. This split makes sense because design and development are different crafts.\n\nWe deliver pixel-perfect designs in Figma. Scalar codes them into a live site. Same Hamzury team, two specialties.'
+  },
+  social_templates_15: {
+    title: 'About Social Templates',
+    body: 'Social templates are reusable design files your team can fill in with content — without needing a designer for every post.\n\nGood templates capture your brand visual rules so anyone on your team can post on-brand. We deliver 15-30 templates covering posts, stories, reels covers, and announcements.'
+  },
+  website_copy: {
+    title: 'About Website Copy',
+    body: 'Website copy is the difference between a beautiful site that does not convert and a beautiful site that grows your business.\n\nWe write copy that captures your voice, addresses real customer fears, and guides visitors through the journey from curious to convinced.'
+  },
+  brand_strategy: {
+    title: 'About Brand Strategy',
+    body: 'Brand strategy is what comes before any visual work — defining who you are, who you serve, what you stand for.\n\nA 2-hour strategy session with our brand lead unlocks the whole project. Without strategy, design is decoration. With it, design becomes a tool.'
+  }
+};
+
+// Category 1 — Brand Identity (tiered by depth)
+const CERTS = [
+  // === TIER 1: FOUNDATION (For new businesses or rebrands) ===
+  { id: 'business_naming', tier: 'foundation', name: 'Business Naming', use: 'Find a name that owns its category and works globally', fee: 'Starts from ₦150,000', timeline: '2-3 weeks', need: 'Business description, target market, naming brief', tag: '', note: 'Includes 5 name directions, trademark pre-check, .com availability check.' },
+  { id: 'logo_design', tier: 'foundation', name: 'Logo Design', use: 'A primary logo plus secondary marks for every use case', fee: 'Starts from ₦200,000', timeline: '2-3 weeks', need: 'Brand brief, target audience, references', tag: '', note: 'Includes primary logo, secondary mark, favicon, and full file pack.' },
+  { id: 'brand_brief_session', tier: 'foundation', name: 'Brand Strategy Session', use: 'Define your positioning before any design happens', fee: '₦100,000', timeline: '1 week', need: 'Founder availability for 2-hour deep session', tag: '' },
+  { id: 'visual_starter_kit', tier: 'foundation', name: 'Visual Starter Kit', use: 'Logo + colors + fonts + 5 social templates to launch', fee: 'Starts from ₦300,000', timeline: '3-4 weeks', need: 'Brand brief or strategy session done', tag: '', note: 'Perfect for founders launching their first brand.' },
+  { id: 'brand_voice_guide', tier: 'foundation', name: 'Brand Voice Guide', use: 'Document how your brand sounds in writing', fee: '₦120,000', timeline: '1-2 weeks', need: 'Founder interviews, audience definition' },
+
+  // === TIER 2: BRAND SYSTEM (For established businesses ready for proper identity) ===
+  { id: 'brand_book', tier: 'operations', name: 'Full Brand Book', use: 'Complete identity system — logo, colors, fonts, voice, examples', fee: 'Starts from ₦500,000', timeline: '4-6 weeks', need: 'Strategy session, market research, existing assets', tag: '', note: 'The reference document every team member uses to stay consistent.' },
+  { id: 'visual_system', tier: 'operations', name: 'Extended Visual System', use: 'Iconography, illustration style, photography direction, motion principles', fee: 'Starts from ₦400,000', timeline: '3-5 weeks', need: 'Existing logo and colors, brand brief' },
+  { id: 'brand_audit', tier: 'operations', name: 'Brand Audit', use: 'Review your existing brand and recommend improvements', fee: '₦200,000', timeline: '2 weeks', need: 'All current brand assets, examples of recent work', tag: '' },
+  { id: 'rebrand', tier: 'operations', name: 'Full Rebrand', use: 'Reposition and redesign an established brand', fee: 'Quote on request', timeline: '8-16 weeks', need: 'Strategy session, market research, stakeholder alignment', tag: '', note: 'For businesses outgrowing their original identity.' },
+  { id: 'product_naming', tier: 'operations', name: 'Product / Sub-brand Naming', use: 'Name new products, services, or sub-brands consistently', fee: '₦100,000', timeline: '1-2 weeks', need: 'Master brand context, product brief', tag: '' },
+  { id: 'pitch_deck_design', tier: 'operations', name: 'Investor Pitch Deck', use: 'Design a deck that wins meetings — content + visual', fee: 'Starts from ₦300,000', timeline: '2-3 weeks', need: 'Content brief, financials, investor target list' },
+  { id: 'company_profile', tier: 'operations', name: 'Company Profile / One-pager', use: 'Polished document to share with prospects and partners', fee: 'Starts from ₦200,000', timeline: '2-3 weeks', need: 'Company info, services, references' },
+
+  // === TIER 3: PREMIUM (For brands serious about being world-class) ===
+  { id: 'brand_world', tier: 'industry', name: 'Brand World', use: 'Full visual world — packaging, signage, environmental, digital', fee: 'Quote on request', timeline: '8-12 weeks', need: 'Brand system in place, full team alignment', tag: '', note: 'Where every customer touchpoint feels intentional.' },
+  { id: 'packaging_design', tier: 'industry', name: 'Packaging Design', use: 'Physical packaging that sells the product on the shelf', fee: 'Starts from ₦400,000', timeline: '4-8 weeks', need: 'Product specs, materials, manufacturing partner', tag: '' },
+  { id: 'environmental_design', tier: 'industry', name: 'Environmental / Signage Design', use: 'How your brand shows up in physical spaces', fee: 'Quote on request', timeline: '4-8 weeks', need: 'Floor plans, brand book, location details' },
+  { id: 'editorial_design', tier: 'industry', name: 'Editorial / Print Design', use: 'Magazines, books, lookbooks, annual reports', fee: 'Starts from ₦500,000', timeline: '4-12 weeks', need: 'Content brief, page count, print specifications' },
+  { id: 'motion_branding', tier: 'industry', name: 'Motion Branding', use: 'Logo animations, brand intros, motion guidelines', fee: 'Starts from ₦300,000', timeline: '3-4 weeks', need: 'Static brand book, examples of style' },
+  { id: 'sound_branding', tier: 'industry', name: 'Sound / Sonic Identity', use: 'A signature sound logo and audio guidelines', fee: 'Starts from ₦400,000', timeline: '4-6 weeks', need: 'Brand strategy, examples of sonic direction' },
+  { id: 'tagline_development', tier: 'industry', name: 'Tagline Development', use: 'A line that captures the brand in 5-7 words', fee: '₦150,000', timeline: '1-2 weeks', need: 'Brand strategy, positioning' },
+
+  // === REFRESH / MODIFICATION ===
+  { id: 'logo_refresh', tier: 'operations', name: 'Logo Refresh', use: 'Modernize an existing logo without full rebrand', fee: 'Starts from ₦150,000', timeline: '2 weeks', need: 'Current logo files, what feels dated', tag: 'Refresh' },
+  { id: 'brand_book_refresh', tier: 'operations', name: 'Brand Book Update', use: 'Update an outdated brand book to current direction', fee: 'Starts from ₦200,000', timeline: '2-3 weeks', need: 'Current brand book, what needs changing', tag: 'Refresh' },
+  { id: 'social_template_refresh', tier: 'foundation', name: 'Social Template Refresh', use: 'Update old social templates to current brand standard', fee: '₦80,000', timeline: '1 week', need: 'Current templates, brand book', tag: 'Refresh' },
+
+  // === MODIFICATIONS ===
+  { id: 'add_subbrand', tier: 'operations', name: 'Add New Sub-brand', use: 'Create a new sub-brand under your master brand', fee: 'Starts from ₦200,000', timeline: '2-4 weeks', need: 'Master brand book, sub-brand brief', tag: 'Modification' },
+  { id: 'expand_brand_assets', tier: 'foundation', name: 'Expand Brand Asset Library', use: 'Add more templates, icons, illustrations to your library', fee: 'Starts from ₦100,000', timeline: '1-2 weeks', need: 'Existing library, what is missing', tag: 'Modification' }
+];
+
+// Category 3 — Content Production
+const LEGAL = [
+  // === Photography ===
+  { id: 'photo_product', name: 'Product Photography', use: 'Catalog-quality photos of your products', fee: 'Starts from ₦200,000', timeline: '1-2 weeks', need: 'Products on hand, brand brief, location preferences', tag: '', kind: 'Photography' },
+  { id: 'photo_lifestyle', name: 'Lifestyle Photography', use: 'In-context photos for marketing and social', fee: 'Starts from ₦350,000', timeline: '2-3 weeks', need: 'Concept brief, models, locations', tag: '', kind: 'Photography' },
+  { id: 'photo_founder', name: 'Founder / Team Portraits', use: 'Professional portraits for press, web, social', fee: 'Starts from ₦150,000', timeline: '1 week', need: 'Team availability, location, wardrobe brief', tag: '', kind: 'Photography' },
+  { id: 'photo_event', name: 'Event Coverage', use: 'Photo coverage of launches, events, activations', fee: 'Starts from ₦250,000', timeline: 'Day-of + 1 week edit', need: 'Event details, shot list, key moments', tag: '', kind: 'Photography' },
+  { id: 'photo_real_estate', name: 'Real Estate / Architecture', use: 'High-end property and architectural photography', fee: 'Starts from ₦300,000', timeline: '1-2 weeks', need: 'Property access, shot list, drone needs', tag: '', kind: 'Photography' },
+
+  // === Video ===
+  { id: 'video_brand_film', name: 'Brand Film', use: 'A 60-90 second film that tells your brand story', fee: 'Starts from ₦800,000', timeline: '4-8 weeks', need: 'Brief, script approval, shoot logistics', tag: '', kind: 'Video' },
+  { id: 'video_ad', name: 'Ad / Commercial', use: 'TV or social ad with full production', fee: 'Quote on request', timeline: '6-12 weeks', need: 'Brief, brand book, distribution plan', tag: '', kind: 'Video' },
+  { id: 'video_testimonial', name: 'Customer Testimonial Films', use: 'Customer story videos for sales and trust', fee: 'Starts from ₦300,000', timeline: '2-3 weeks', need: 'Customer list, scheduling, interview prep', tag: '', kind: 'Video' },
+  { id: 'video_reels_pack', name: 'Reels / Short-form Pack', use: 'A pack of 8-12 short videos for social', fee: 'Starts from ₦400,000', timeline: '2-3 weeks', need: 'Content concepts, location, talent', tag: '', kind: 'Video' },
+  { id: 'video_explainer', name: 'Explainer / Animation', use: 'Animated explainer of your product or service', fee: 'Starts from ₦500,000', timeline: '4-6 weeks', need: 'Script, brand book, animation style references', tag: '', kind: 'Video' },
+  { id: 'video_event_recap', name: 'Event Recap Film', use: '2-3 minute highlight reel of an event', fee: 'Starts from ₦250,000', timeline: '1-2 weeks post-event', need: 'Event coverage, music license, key moments', tag: '', kind: 'Video' },
+
+  // === Graphic Design ===
+  { id: 'design_social_pack', name: 'Social Templates Pack', use: '15-20 reusable social media templates in your brand', fee: '₦200,000', timeline: '2 weeks', need: 'Brand book, content categories', tag: '', kind: 'Design' },
+  { id: 'design_presentation', name: 'Presentation / Slide Design', use: 'Custom slide deck designed for your brand', fee: 'Starts from ₦200,000', timeline: '2-3 weeks', need: 'Content outline, brand book', tag: '', kind: 'Design' },
+  { id: 'design_brochure', name: 'Brochure / Flyer Design', use: 'Print or digital brochure design', fee: 'Starts from ₦150,000', timeline: '1-2 weeks', need: 'Content, brand book, print specs', tag: '', kind: 'Design' },
+  { id: 'design_poster', name: 'Poster / Campaign Visual', use: 'Hero visual for a campaign or event', fee: 'Starts from ₦120,000', timeline: '1-2 weeks', need: 'Campaign brief, brand book', tag: '', kind: 'Design' },
+  { id: 'design_magazine', name: 'Magazine / Lookbook', use: 'Multi-page editorial design', fee: 'Starts from ₦500,000', timeline: '4-8 weeks', need: 'Content, page count, print specs', tag: '', kind: 'Design' },
+  { id: 'design_packaging', name: 'Packaging Mockup Design', use: 'Visual design for product packaging', fee: 'Starts from ₦300,000', timeline: '3-4 weeks', need: 'Product specs, dieline, brand book', tag: '', kind: 'Design' },
+
+  // === Copywriting ===
+  { id: 'copy_website', name: 'Website Copy', use: 'Full website copy that converts visitors to customers', fee: 'Starts from ₦250,000', timeline: '2-4 weeks', need: 'Sitemap, brand voice guide, audience profile', tag: '', kind: 'Copywriting' },
+  { id: 'copy_email_sequences', name: 'Email Sequences', use: 'Welcome, sales, and nurture email sequences', fee: 'Starts from ₦200,000', timeline: '2-3 weeks', need: 'Customer journey map, brand voice, offers', tag: '', kind: 'Copywriting' },
+  { id: 'copy_sales_page', name: 'Sales / Landing Page Copy', use: 'High-converting copy for one specific page', fee: '₦180,000', timeline: '1-2 weeks', need: 'Product details, audience, examples', tag: '', kind: 'Copywriting' },
+  { id: 'copy_ad', name: 'Ad Copy / Hooks', use: 'Pack of ad hooks and variations for testing', fee: '₦120,000', timeline: '1 week', need: 'Product, target audience, channels', tag: '', kind: 'Copywriting' },
+  { id: 'copy_blog', name: 'Blog / Article Writing', use: 'Long-form articles that build authority and SEO', fee: 'Starts from ₦80,000 per article', timeline: '1-2 weeks per article', need: 'Topic brief, target keywords, brand voice', tag: '', kind: 'Copywriting' }
+];
+
+// Master item dictionary - building blocks for industry brand packs
+const ITEMS = {
+  // Identity essentials
+  starter_logo: { name: 'Logo Design', use: 'Primary mark plus secondary versions', fee: '₦200,000', timeline: '2-3 weeks', need: 'Brand brief, references' },
+  brand_book_lite: { name: 'Mini Brand Book', use: 'Logo + colors + fonts + voice (10-15 pages)', fee: '₦250,000', timeline: '3 weeks', need: 'Brand brief, audience' },
+  full_brand_book: { name: 'Full Brand Book', use: 'Complete identity system, 30+ pages', fee: '₦500,000', timeline: '4-6 weeks', need: 'Strategy session, audience research' },
+  brand_voice_doc: { name: 'Brand Voice Guide', use: 'How your brand sounds in writing', fee: '₦120,000', timeline: '1-2 weeks', need: 'Founder interviews' },
+  business_card: { name: 'Business Card Design', use: 'Print-ready business card design', fee: '₦40,000', timeline: '1 week', need: 'Logo, contact info, paper preference' },
+  letterhead: { name: 'Letterhead / Stationery', use: 'Branded letterhead, envelope, email signature', fee: '₦80,000', timeline: '1 week', need: 'Logo, brand book' },
+
+  // Photography building blocks
+  product_photos_basic: { name: 'Basic Product Photos', use: '10-15 catalog photos of your products', fee: '₦150,000', timeline: '1 week', need: 'Products, white-background brief' },
+  product_photos_premium: { name: 'Premium Product Photography', use: '20+ lifestyle and catalog photos', fee: '₦350,000', timeline: '2 weeks', need: 'Products, brief, location, models' },
+  founder_portraits: { name: 'Founder Portraits', use: 'Professional headshots and environmental portraits', fee: '₦150,000', timeline: '1 week', need: 'Team availability, location' },
+  team_portraits: { name: 'Team Portraits', use: 'Consistent team headshots for web and social', fee: '₦200,000', timeline: '1 week', need: 'Team availability, location, wardrobe brief' },
+  lifestyle_shoot: { name: 'Lifestyle Brand Shoot', use: 'In-context lifestyle photos for marketing', fee: '₦350,000', timeline: '2 weeks', need: 'Concept, models, locations' },
+  event_coverage: { name: 'Event Photography', use: 'Photo coverage of one event', fee: '₦200,000', timeline: 'Day-of + 1 week', need: 'Event details, shot list' },
+
+  // Video building blocks
+  brand_film_short: { name: 'Brand Film (60s)', use: 'Short brand story film for web and social', fee: '₦800,000', timeline: '4-6 weeks', need: 'Brief, script approval' },
+  reels_pack_8: { name: 'Reels Pack (8 videos)', use: '8 short-form videos for social', fee: '₦300,000', timeline: '2-3 weeks', need: 'Content concepts, location' },
+  reels_pack_12: { name: 'Reels Pack (12 videos)', use: '12 short-form videos for social', fee: '₦450,000', timeline: '3-4 weeks', need: 'Content concepts, location, talent' },
+  testimonial_video: { name: 'Customer Testimonial Video', use: 'One customer story video', fee: '₦200,000', timeline: '1-2 weeks', need: 'Customer commitment, interview prep' },
+  product_demo_video: { name: 'Product Demo Video', use: 'Show how your product works in 60-90 seconds', fee: '₦300,000', timeline: '2-3 weeks', need: 'Product, script, shoot location' },
+  event_recap: { name: 'Event Recap Film', use: '2-3 min event highlight reel', fee: '₦250,000', timeline: '1 week post-event', need: 'Event coverage, music' },
+  animated_explainer: { name: 'Animated Explainer', use: '60-90 second animation', fee: '₦500,000', timeline: '4-6 weeks', need: 'Script, animation style' },
+
+  // Design templates
+  social_templates_15: { name: '15 Social Templates', use: '15 reusable templates for posts and stories', fee: '₦180,000', timeline: '2 weeks', need: 'Brand book, content categories' },
+  social_templates_30: { name: '30 Social Templates', use: '30 templates covering posts, stories, reels covers', fee: '₦300,000', timeline: '2-3 weeks', need: 'Brand book, content plan' },
+  presentation_template: { name: 'Presentation Template', use: 'Branded slide deck template', fee: '₦150,000', timeline: '1-2 weeks', need: 'Brand book, slide types' },
+  email_template_design: { name: 'Email Template Design', use: 'Branded email templates for campaigns', fee: '₦120,000', timeline: '1-2 weeks', need: 'Brand book, email types' },
+  pitch_deck: { name: 'Investor Pitch Deck', use: 'Designed deck that wins meetings', fee: '₦300,000', timeline: '2-3 weeks', need: 'Content, financials, audience' },
+
+  // Web and digital
+  landing_page_design: { name: 'Landing Page Design', use: 'High-conversion landing page design (we hand to Scalar to build)', fee: '₦200,000', timeline: '2 weeks', need: 'Product, audience, brand book' },
+  website_design: { name: 'Website Design (5-10 pages)', use: 'Multi-page website design (Scalar builds)', fee: 'Starts from ₦500,000', timeline: '4-6 weeks', need: 'Sitemap, content, brand book' },
+  email_signature: { name: 'Email Signature Design', use: 'Branded email signatures for whole team', fee: '₦30,000', timeline: '1 week', need: 'Team list, brand book' },
+
+  // Copy
+  website_copy: { name: 'Website Copy', use: 'Full website copy that converts', fee: '₦250,000', timeline: '2-4 weeks', need: 'Sitemap, voice guide, audience' },
+  product_descriptions: { name: 'Product Descriptions', use: 'Compelling descriptions for product catalog', fee: '₦100,000', timeline: '1-2 weeks', need: 'Product list, brand voice' },
+  email_sequences_copy: { name: 'Email Sequence Copy', use: 'Welcome, nurture, sales sequences', fee: '₦200,000', timeline: '2-3 weeks', need: 'Customer journey, voice guide' },
+  sales_page_copy: { name: 'Sales Page Copy', use: 'High-conversion copy for one page', fee: '₦180,000', timeline: '1-2 weeks', need: 'Product, audience' },
+  ad_hooks: { name: 'Ad Hook Pack', use: '20 ad hooks and variations to test', fee: '₦120,000', timeline: '1 week', need: 'Product, audience' },
+  blog_starter: { name: 'Blog Starter Pack', use: '5 SEO-optimized articles to launch a blog', fee: '₦300,000', timeline: '3-4 weeks', need: 'Topics, keywords, voice' },
+
+  // Packaging
+  packaging_design: { name: 'Packaging Design', use: 'Visual design for product packaging', fee: '₦300,000', timeline: '3-4 weeks', need: 'Product specs, dieline' },
+  label_design: { name: 'Label Design', use: 'Bottle, jar, or pack label design', fee: '₦120,000', timeline: '1-2 weeks', need: 'Product, dieline, regulations' },
+
+  // Signage and physical
+  signage_design: { name: 'Signage Design', use: 'Storefront or office signage design', fee: '₦200,000', timeline: '2-3 weeks', need: 'Location, dimensions, materials' },
+  vehicle_branding: { name: 'Vehicle Branding Design', use: 'Branded wraps for fleet vehicles', fee: '₦150,000', timeline: '1-2 weeks', need: 'Vehicle specs, brand book' },
+
+  // Naming and strategy
+  business_naming: { name: 'Business Naming', use: 'Find a name that works globally', fee: '₦150,000', timeline: '2-3 weeks', need: 'Business brief, market' },
+  product_naming: { name: 'Product Naming', use: 'Name a product or service', fee: '₦100,000', timeline: '1-2 weeks', need: 'Product brief' },
+  tagline: { name: 'Tagline Development', use: 'A line that captures your brand in 5-7 words', fee: '₦150,000', timeline: '1-2 weeks', need: 'Brand strategy' },
+  brand_strategy: { name: 'Brand Strategy Session', use: 'Define positioning before design', fee: '₦100,000', timeline: '1 week', need: 'Founder availability' }
+};
+
+// Industry brand packs
+const PACKAGES = {
+  restaurant: {
+    name: 'Restaurant / Food', emoji: '🍽',
+    description: 'Brand stacks for restaurants, fast food, cloud kitchens, and food brands.',
+    subtypes: [
+      { id: 'launch', name: 'Restaurant Launch Pack', intro: 'Everything to launch a new restaurant brand.', items: ['starter_logo','brand_book_lite','product_photos_premium','social_templates_15','website_design','website_copy'] },
+      { id: 'established', name: 'Established Restaurant', intro: 'Refresh and elevate an existing restaurant brand.', items: ['brand_book_lite','product_photos_premium','reels_pack_12','social_templates_30','founder_portraits'] },
+      { id: 'food_brand', name: 'Food Brand / FMCG', intro: 'For packaged food brands selling at retail.', items: ['full_brand_book','packaging_design','label_design','product_photos_premium','social_templates_30','website_design'] }
+    ]
+  },
+  hotel: {
+    name: 'Hotel / Hospitality', emoji: '🏨',
+    description: 'Brand identity, content, and digital presence for hotels and hospitality.',
+    subtypes: [
+      { id: 'boutique', name: 'Boutique Hotel', intro: 'For independent boutique hotels with distinct character.', items: ['full_brand_book','lifestyle_shoot','reels_pack_12','website_design','website_copy','social_templates_30'] },
+      { id: 'resort', name: 'Resort / Destination', intro: 'For destination resorts and beach properties.', items: ['full_brand_book','brand_film_short','lifestyle_shoot','reels_pack_12','website_design','social_templates_30'] },
+      { id: 'short_let', name: 'Short-let / Apartments', intro: 'For short-let operators managing branded properties.', items: ['starter_logo','brand_book_lite','lifestyle_shoot','social_templates_15','website_design'] }
+    ]
+  },
+  fashion: {
+    name: 'Fashion / Apparel', emoji: '👗',
+    description: 'For fashion brands, designers, and apparel companies.',
+    subtypes: [
+      { id: 'launch', name: 'Fashion Brand Launch', intro: 'For new fashion brands launching their first collection.', items: ['starter_logo','brand_book_lite','product_photos_premium','lifestyle_shoot','social_templates_15','website_design'] },
+      { id: 'lookbook', name: 'Seasonal Lookbook', intro: 'Seasonal lookbook campaign for established fashion brands.', items: ['lifestyle_shoot','reels_pack_12','social_templates_15'] },
+      { id: 'established', name: 'Established Fashion House', intro: 'For established fashion brands operating at scale.', items: ['full_brand_book','lifestyle_shoot','reels_pack_12','social_templates_30','website_design','brand_film_short'] }
+    ]
+  },
+  beauty: {
+    name: 'Beauty / Cosmetics', emoji: '💅',
+    description: 'For beauty, cosmetics, salons, and wellness brands.',
+    subtypes: [
+      { id: 'cosmetics_brand', name: 'Cosmetics Brand', intro: 'For DIY cosmetics and skincare brands.', items: ['starter_logo','brand_book_lite','packaging_design','product_photos_premium','social_templates_15','website_design'] },
+      { id: 'salon', name: 'Salon / Spa', intro: 'For salons, spas, and beauty service businesses.', items: ['starter_logo','brand_book_lite','founder_portraits','social_templates_15','website_design'] },
+      { id: 'wellness', name: 'Wellness / Lifestyle', intro: 'For wellness brands with content-first approach.', items: ['full_brand_book','lifestyle_shoot','reels_pack_12','social_templates_30','website_design','website_copy'] }
+    ]
+  },
+  realestate: {
+    name: 'Real Estate', emoji: '🏢',
+    description: 'Brand identity and content for real estate businesses.',
+    subtypes: [
+      { id: 'agency', name: 'Real Estate Agency', intro: 'For multi-agent agencies building authority.', items: ['starter_logo','brand_book_lite','team_portraits','social_templates_15','website_design'] },
+      { id: 'developer', name: 'Property Developer', intro: 'For developers selling units in projects.', items: ['full_brand_book','brand_film_short','lifestyle_shoot','reels_pack_12','website_design','pitch_deck'] },
+      { id: 'short_let_brand', name: 'Short-let Brand', intro: 'For branded short-let portfolios.', items: ['starter_logo','brand_book_lite','lifestyle_shoot','social_templates_15','website_design'] }
+    ]
+  },
+  professional: {
+    name: 'Professional Services', emoji: '💼',
+    description: 'For consultants, agencies, law firms, and professional service businesses.',
+    subtypes: [
+      { id: 'consulting', name: 'Consulting Firm', intro: 'For consultancy firms building thought leadership.', items: ['starter_logo','brand_book_lite','team_portraits','website_design','website_copy','social_templates_15'] },
+      { id: 'law_firm', name: 'Law Firm', intro: 'Polished brand for law chambers and firms.', items: ['full_brand_book','team_portraits','website_design','website_copy','letterhead'] },
+      { id: 'agency', name: 'Agency / Studio', intro: 'For creative agencies and design studios.', items: ['full_brand_book','team_portraits','reels_pack_8','website_design','social_templates_15'] }
+    ]
+  },
+  fintech: {
+    name: 'Fintech / Tech Startup', emoji: '💳',
+    description: 'For fintech, SaaS, and tech startups.',
+    subtypes: [
+      { id: 'startup', name: 'Tech Startup Launch', intro: 'For tech startups launching publicly.', items: ['starter_logo','brand_book_lite','founder_portraits','website_design','website_copy','pitch_deck','social_templates_15'] },
+      { id: 'fintech', name: 'Fintech Brand', intro: 'For fintech companies needing trustworthy brand.', items: ['full_brand_book','team_portraits','brand_film_short','website_design','website_copy','social_templates_30'] },
+      { id: 'saas', name: 'SaaS Product', intro: 'For SaaS products with self-serve onboarding.', items: ['full_brand_book','animated_explainer','website_design','website_copy','social_templates_30'] }
+    ]
+  },
+  ecommerce: {
+    name: 'E-commerce / Retail', emoji: '🛒',
+    description: 'For online stores and retail brands.',
+    subtypes: [
+      { id: 'launch', name: 'E-commerce Launch', intro: 'Launch a new online store with brand and content.', items: ['starter_logo','brand_book_lite','product_photos_premium','social_templates_15','website_design','website_copy','product_descriptions'] },
+      { id: 'multi_brand', name: 'Multi-brand E-commerce', intro: 'For e-commerce stores running multiple brands.', items: ['full_brand_book','product_photos_premium','reels_pack_12','social_templates_30','website_design'] },
+      { id: 'dtc', name: 'DTC Brand', intro: 'For direct-to-consumer brands with strong identity.', items: ['full_brand_book','packaging_design','lifestyle_shoot','reels_pack_12','social_templates_30','website_design'] }
+    ]
+  },
+  founder: {
+    name: 'Founder / Personal Brand', emoji: '👤',
+    description: 'For founders building personal brands alongside business.',
+    subtypes: [
+      { id: 'authority', name: 'Authority Brand', intro: 'For founders building thought leadership.', items: ['founder_portraits','reels_pack_12','social_templates_15','website_design','website_copy'] },
+      { id: 'creator', name: 'Creator Brand', intro: 'For creators monetizing their personal brand.', items: ['founder_portraits','reels_pack_12','social_templates_30','website_design'] },
+      { id: 'speaker', name: 'Speaker / Author', intro: 'For speakers, coaches, and authors.', items: ['founder_portraits','brand_film_short','reels_pack_8','website_design','website_copy','pitch_deck'] }
+    ]
+  },
+  ngo: {
+    name: 'NGO / Non-Profit', emoji: '🤝',
+    description: 'For NGOs, foundations, and social impact organizations.',
+    subtypes: [
+      { id: 'foundation', name: 'Foundation', intro: 'For private and corporate foundations.', items: ['full_brand_book','team_portraits','website_design','website_copy','social_templates_15'] },
+      { id: 'campaign', name: 'Campaign / Initiative', intro: 'Brand stack for one-off social impact campaign.', items: ['starter_logo','brand_book_lite','social_templates_15','website_design'] }
+    ]
+  },
+  events: {
+    name: 'Events / Entertainment', emoji: '🎉',
+    description: 'For event companies, festivals, and entertainment brands.',
+    subtypes: [
+      { id: 'event_company', name: 'Event Company', intro: 'For event planning and management businesses.', items: ['starter_logo','brand_book_lite','event_coverage','reels_pack_8','social_templates_15','website_design'] },
+      { id: 'festival', name: 'Festival / Concert', intro: 'For one-off festivals and concert brands.', items: ['starter_logo','brand_book_lite','event_recap','reels_pack_12','social_templates_30','website_design'] }
+    ]
+  },
+  manufacturing: {
+    name: 'Manufacturing / FMCG', emoji: '🏭',
+    description: 'For consumer goods manufacturers and FMCG brands.',
+    subtypes: [
+      { id: 'fmcg', name: 'FMCG Brand', intro: 'For consumer goods brands with retail distribution.', items: ['full_brand_book','packaging_design','label_design','product_photos_premium','social_templates_30','website_design'] },
+      { id: 'industrial', name: 'B2B / Industrial', intro: 'For B2B manufacturers building credibility.', items: ['full_brand_book','team_portraits','website_design','website_copy','pitch_deck','company_profile'] }
+    ]
+  },
+  school: {
+    name: 'School / Education', emoji: '🏫',
+    description: 'For schools, training centers, and education businesses.',
+    subtypes: [
+      { id: 'k12', name: 'K-12 School', intro: 'Brand stack for nursery, primary, secondary schools.', items: ['full_brand_book','team_portraits','website_design','website_copy','social_templates_15','event_coverage'] },
+      { id: 'edtech', name: 'EdTech / Online', intro: 'For online learning businesses.', items: ['full_brand_book','animated_explainer','reels_pack_12','website_design','website_copy','social_templates_15'] }
+    ]
+  },
+  general: {
+    name: 'General Business', emoji: '✨',
+    description: 'For businesses without an industry-specific need — tiered by stage.',
+    subtypes: [
+      { id: 'startup', name: 'Startup Brand Pack', intro: 'For early-stage businesses launching their brand.', items: ['starter_logo','brand_book_lite','founder_portraits','social_templates_15','website_design','website_copy'] },
+      { id: 'growing', name: 'Growing Business', intro: 'For businesses ready to invest in real brand.', items: ['full_brand_book','team_portraits','reels_pack_12','social_templates_30','website_design','website_copy'] },
+      { id: 'established', name: 'Established Business', intro: 'Premium brand build for established operators.', items: ['full_brand_book','brand_film_short','team_portraits','lifestyle_shoot','reels_pack_12','website_design','social_templates_30'] }
+    ]
+  }
+};
+
+// ============= STATE =============
+let cart = [];
+let currentScreen = 'home'; // 'home', 'certs', 'compliance', 'legal', 'industries', 'industry-detail'
+let currentIndustry = null;
+let currentSubtype = null;
+let currentFilter = 'all';
+let chatContext = null;
+let chatStep = 0;
+let chatAnswers = [];
+let chatSkipEdu = false;
+let industriesQuery = '';
+let industriesShownCount = 12;
+
+// ============= APPS SCRIPT BACKEND =============
+// Hamzury Backend v1 web app — chat leads land in the "Diagnostics" /
+// "Inbound Leads" tab in the CSO portal. Fire-and-forget; never blocks UI.
+const HAMZURY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+function postChatLead(payload) {
+  try {
+    const body = {
+      formType: 'diagnostic',
+      form: 'lead-medialy-ourservice',
+      formTitle: payload.title || 'Medialy service enquiry',
+      ref: payload.ref || undefined,
+      answers: {
+        contact: {
+          name: payload.businessName || '',
+          business: payload.businessName || '',
+          email: payload.email || '',
+          phone: payload.phone || '',
+          consent: true,
+        },
+        service: payload.service || '',
+        question1: payload.q1 || '',
+        question2: payload.q2 || '',
+        question3: payload.q3 || '',
+        leadType: payload.leadType || 'inbound',
+        transactionRef: payload.transactionRef || '',
+        sourceURL: payload.sourceURL || (typeof window !== 'undefined' ? window.location.href : ''),
+        timestamp: new Date().toISOString(),
+        notes: payload.notes || '',
+      },
+      meta: {
+        source: payload.leadType === 'awaiting_payment'
+          ? 'chat_medialy_ourservice_subscribe'
+          : 'chat_medialy_ourservice',
+      },
+    };
+    fetch(HAMZURY_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    }).catch(function (err) { console.warn('[chat-lead] post failed:', err); });
+  } catch (err) {
+    console.warn('[chat-lead] post error:', err);
+  }
+}
+
+// ============= ROUTING (URL parsing for shares) =============
+function parseUrl() {
+  try {
+    // Server-injected slug takes priority — set by /medialy/ourservice/packages/:industry route.
+    if (window.__INITIAL_PACKAGE__) {
+      const slug = String(window.__INITIAL_PACKAGE__).toLowerCase().replace(/-/g, '_');
+      if (PACKAGES[slug]) {
+        currentIndustry = slug;
+        currentSubtype = PACKAGES[slug].subtypes[0].id;
+        currentScreen = 'industry-detail';
+        return;
+      }
+    }
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    // Check for /packages/[industry] pattern. Accept hyphens (e.g. /packages/real-estate)
+    // and normalize to the underscore slug.
+    const m = (path + hash).match(/packages\/([a-z0-9_-]+)/);
+    if (m) {
+      const slug = m[1].replace(/-/g, '_');
+      if (PACKAGES[slug]) {
+        currentIndustry = slug;
+        currentSubtype = PACKAGES[slug].subtypes[0].id;
+        currentScreen = 'industry-detail';
+      }
+    }
+  } catch (e) { /* sandbox restriction — ignore */ }
+}
+parseUrl();
+
+// ============= RENDER =============
+const page = document.getElementById('page');
+const backBtn = document.getElementById('back-btn');
+
+function render() {
+  // back button visibility
+  backBtn.classList.toggle('show', currentScreen !== 'home');
+  // page
+  switch (currentScreen) {
+    case 'home': renderHome(); break;
+    case 'certs': renderCerts(); break;
+    case 'compliance': renderCompliance(); break;
+    case 'legal': renderLegal(); break;
+    case 'industries': renderIndustries(); break;
+    case 'industry-detail': renderIndustryDetail(); break;
+  }
+  // scroll top on screen change
+  window.scrollTo(0, 0);
+  document.querySelector('.frame').scrollTop = 0;
+}
+
+function renderHome() {
+  page.innerHTML = `
+    <div class="hero-eyebrow">Brand · Content · Social</div>
+    <h1 class="hero-title">A brand worth <em>remembering.</em></h1>
+    <p class="hero-sub">From a name on paper to a brand the world feels — we run every part of your visual presence so you stay focused on the work.</p>
+
+    <div onclick="goTo('certs')" class="cat-row">
+      <div class="num">1</div>
+      <div class="meta">
+        <div class="name">Brand Identity</div>
+        <div class="desc">Naming, logos, brand books, identity systems</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div onclick="goTo('compliance')" class="cat-row">
+      <div class="num">2</div>
+      <div class="meta">
+        <div class="name">Medialy Live</div>
+        <div class="desc">Monthly retainer. We run your social media end-to-end.</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div onclick="goTo('legal')" class="cat-row">
+      <div class="num">3</div>
+      <div class="meta">
+        <div class="name">Content Production</div>
+        <div class="desc">Photography, video, graphic design, copywriting</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div onclick="goTo('industries')" class="cat-row">
+      <div class="num">4</div>
+      <div class="meta">
+        <div class="name">Industry Brand Packs</div>
+        <div class="desc">Sector-specific brand stacks for 14 industries</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  `;
+}
+
+function renderCerts() {
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'new', label: 'New' },
+    { id: 'Renewal', label: 'Renewals' },
+    { id: 'Modification', label: 'Modifications' }
+  ];
+  const filtered = CERTS.filter(c => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'new') return !c.tag;
+    return c.tag === currentFilter;
+  });
+
+  // Group by tier
+  const groups = { foundation: [], operations: [], industry: [] };
+  filtered.forEach(c => {
+    if (groups[c.tier]) groups[c.tier].push(c);
+  });
+
+  const tierMeta = {
+    foundation: {
+      title: 'Foundation',
+      eyebrow: 'Tier 1',
+      sub: 'Naming, logo, starter kit. For brand-naked founders launching out.'
+    },
+    operations: {
+      title: 'Brand System',
+      eyebrow: 'Tier 2',
+      sub: 'Full brand book, voice guide, audit, rebrand. For established businesses ready for proper identity.'
+    },
+    industry: {
+      title: 'Premium Brand World',
+      eyebrow: 'Tier 3',
+      sub: 'Packaging, motion, sound, environmental design. For brands serious about being world-class.'
+    }
+  };
+
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 1</div>
+    <h1 class="hero-title">Brand <em>Identity.</em></h1>
+    <p class="hero-sub">Naming, logos, full brand systems — organized by depth, from a starter pack to a complete brand world.</p>
+
+    <div class="filter-bar">
+      ${filters.map(f => `<button class="filter-pill ${currentFilter === f.id ? 'active' : ''}" onclick="setFilter('${f.id}')">${f.label}</button>`).join('')}
+    </div>
+
+    ${['foundation', 'operations', 'industry'].filter(k => groups[k].length).map(k => `
+      <div style="margin-top:22px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:500;color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;">${tierMeta[k].eyebrow}</span>
+          <span style="font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:-0.005em;color:var(--ink);">${tierMeta[k].title}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-muted);margin-bottom:10px;line-height:1.5;">${tierMeta[k].sub}</div>
+        <div class="item-list">
+          ${groups[k].map(c => renderItem(c)).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+  attachItemHandlers();
+}
+
+function renderCompliance() {
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 2 · Flagship Subscription</div>
+    <h1 class="hero-title">Medialy <em>Live.</em></h1>
+    <p class="hero-sub">A monthly retainer where we run your social media end-to-end — so your brand shows up, every day, without you thinking about it.</p>
+
+    <div class="flagship">
+      <div class="flagship-eyebrow">Monthly retainer · 4 tiers</div>
+      <div class="flagship-title">We run the brand. <em>You run the business.</em></div>
+      <div class="flagship-desc">For brands that need consistent presence — not freelancers and inconsistent posting. Four tiers based on your scale and ambition.</div>
+      <ul class="flagship-features">
+        <li>Strategy session at start of every month</li>
+        <li>Content production — photos, reels, graphics — included</li>
+        <li>Daily posting + community management</li>
+        <li>Monthly performance report with metrics that matter</li>
+        <li>Brand voice maintained across every post</li>
+        <li>Direct line to your dedicated brand operator</li>
+      </ul>
+      <div class="flagship-pricerow">
+        <div class="flagship-price">From ₦150,000<small> /month</small></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="filter-pill" style="flex:1;padding:11px;font-size:13px;background:rgba(255,255,255,0.1);color:#fff;border:0.5px solid rgba(255,255,255,0.2);" onclick="openChat({id:'medialy_live', name:'Medialy Live', use:'Monthly social + brand operator retainer', fee:'From ₦150,000/mo', timeline:'Ongoing', need:'Existing brand assets or brand pack'})">Ask first</button>
+        <button class="flagship-cta" style="flex:1;padding:11px;font-size:13px;" onclick="openSubscribeFlow()">Subscribe →</button>
+      </div>
+    </div>
+
+    <p style="margin-top:14px;font-size:11.5px;color:var(--ink-muted);line-height:1.5;text-align:center;">Four tiers. Monthly billing. Pause or upgrade anytime.</p>
+
+    <div style="margin-top:20px;display:grid;grid-template-columns:1fr;gap:8px;">
+      <div style="padding:14px 16px;background:var(--paper);border:0.5px solid var(--line);border-radius:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+          <span style="font-family:var(--serif);font-size:14px;font-weight:500;">Starter</span>
+          <span style="font-size:13px;color:var(--accent);font-weight:500;">₦150,000/mo</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-muted);line-height:1.5;">1 platform · 12 posts/mo · Basic analytics · Email support</div>
+      </div>
+      <div style="padding:14px 16px;background:var(--paper);border:0.5px solid var(--gold);border-radius:10px;position:relative;">
+        <div style="position:absolute;top:-8px;right:14px;background:var(--gold);color:#fff;font-size:10px;padding:2px 8px;border-radius:6px;letter-spacing:0.04em;font-weight:500;">MOST POPULAR</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+          <span style="font-family:var(--serif);font-size:14px;font-weight:500;">Growth</span>
+          <span style="font-size:13px;color:var(--accent);font-weight:500;">₦300,000/mo</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-muted);line-height:1.5;">2-3 platforms · 20 posts + 4 reels/mo · Light ads · Weekly analytics</div>
+      </div>
+      <div style="padding:14px 16px;background:var(--paper);border:0.5px solid var(--line);border-radius:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+          <span style="font-family:var(--serif);font-size:14px;font-weight:500;">Premium</span>
+          <span style="font-size:13px;color:var(--accent);font-weight:500;">₦600,000/mo</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-muted);line-height:1.5;">All platforms · Daily content · Video production · Paid ads · Strategy review</div>
+      </div>
+      <div style="padding:14px 16px;background:var(--paper);border:0.5px solid var(--line);border-radius:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+          <span style="font-family:var(--serif);font-size:14px;font-weight:500;">Enterprise</span>
+          <span style="font-size:13px;color:var(--accent);font-weight:500;">₦1,000,000+/mo</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-muted);line-height:1.5;">Dedicated account director · In-house creative team · Weekly meetings</div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;padding:16px;background:var(--paper);border:0.5px solid var(--line);border-radius:12px;">
+      <div style="font-family:var(--serif);font-size:14px;font-weight:500;margin-bottom:6px;">What you'll need to start</div>
+      <div style="font-size:12px;color:var(--ink-muted);line-height:1.55;">A working brand · Existing brand assets (or we build them first) · Social accounts (or we set them up) · Your team's voice and personality</div>
+      <div style="font-size:11px;color:var(--ink-muted);line-height:1.5;margin-top:8px;font-style:italic;">No brand yet? Start with our Brand Identity work first (Category 1), then move to Medialy Live when ready.</div>
+    </div>
+  `;
+}
+
+// ============= COMPLIANCE SUBSCRIPTION FLOW =============
+window.openSubscribeFlow = () => {
+  chatContext = { id: 'medialy_live_subscribe', name: 'Medialy Live Subscription' };
+  chatStep = 0;
+  chatAnswers = [];
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('chat-foot').classList.remove('show');
+  document.getElementById('chat-body').innerHTML = '';
+  setTimeout(startSubscribeFlow, 200);
+};
+
+function startSubscribeFlow() {
+  addBotMsg(`Welcome to <strong>Medialy Live</strong>.\n\nMonthly retainer where we run your social media and brand presence end-to-end. Four tiers from ₦150k/mo (Starter) to ₦1M+/mo (Enterprise).`);
+  setTimeout(() => {
+    addBotMsg(`Before you subscribe, here's what you're getting at every tier:\n\n· Monthly strategy session\n· Content production included (photos, reels, graphics)\n· Daily posting and community management\n· Monthly performance report\n· Brand voice maintained across every post\n· Dedicated brand operator on your account`);
+    setTimeout(() => {
+      addBotMsg(`Ready to subscribe?`, [
+        { label: 'Yes, let\'s subscribe', action: () => { addUserMsg('Yes, let\'s subscribe'); setTimeout(askSubName, 600); } },
+        { label: 'I have questions first', action: () => { addUserMsg('I have questions first'); setTimeout(switchToAskFlow, 600); } },
+        { label: 'Maybe later', action: () => { addUserMsg('Maybe later'); setTimeout(closeWithThanks, 600); } }
+      ]);
+    }, 1400);
+  }, 900);
+}
+
+function switchToAskFlow() {
+  addBotMsg(`No problem — let me ask you a few questions so our team can answer properly.`);
+  setTimeout(askQuestion1, 1200);
+}
+
+function askSubName() {
+  addBotMsg(`<strong>1 of 3 — What's your business name?</strong>\n\n(As registered with CAC)`);
+  document.getElementById('chat-foot').classList.add('show');
+  document.getElementById('chat-input').placeholder = 'e.g. Lumen Logistics Ltd';
+  document.getElementById('chat-input').focus();
+  chatStep = 'sub-name';
+}
+function askSubContact() {
+  addBotMsg(`<strong>2 of 3 — Best WhatsApp number?</strong>\n\n(So our team can confirm payment and request remaining documents)`);
+  document.getElementById('chat-input').placeholder = 'e.g. +234 803 ...';
+  document.getElementById('chat-input').focus();
+  chatStep = 'sub-contact';
+}
+function askSubReadiness() {
+  document.getElementById('chat-foot').classList.remove('show');
+  addBotMsg(`<strong>3 of 3 — Which tier fits your brand right now?</strong>\n\n(Not sure? Our team will recommend after a quick call.)`, [
+    { label: 'Starter — ₦150k/mo (1 platform, 12 posts)', action: () => { addUserMsg('Starter — ₦150k/mo'); chatAnswers.push('Starter tier'); setTimeout(showPaymentInstructions, 600); } },
+    { label: 'Growth — ₦300k/mo (2-3 platforms, 20 + 4 reels)', action: () => { addUserMsg('Growth — ₦300k/mo'); chatAnswers.push('Growth tier'); setTimeout(showPaymentInstructions, 600); } },
+    { label: 'Premium — ₦600k/mo (all platforms, daily, video)', action: () => { addUserMsg('Premium — ₦600k/mo'); chatAnswers.push('Premium tier'); setTimeout(showPaymentInstructions, 600); } },
+    { label: 'Enterprise — ₦1M+/mo (full team, weekly meetings)', action: () => { addUserMsg('Enterprise — ₦1M+/mo'); chatAnswers.push('Enterprise tier'); setTimeout(showPaymentInstructions, 600); } }
+  ]);
+}
+
+function showPaymentInstructions() {
+  addBotMsg(`Almost done. Here are the payment instructions for your <strong>Medialy Live subscription</strong> (first month):`);
+  setTimeout(() => {
+    const html = `
+      <div style="margin-top:8px;padding:14px;background:var(--cream);border-radius:10px;border-left:3px solid var(--gold);">
+        <div style="font-size:11px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">Bank Transfer</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--ink);">
+          <div><strong>Account:</strong> Hamzury Ltd</div>
+          <div><strong>Number:</strong> 8034620520</div>
+          <div><strong>Bank:</strong> Moniepoint Bank</div>
+          <div><strong>Amount:</strong> Per chosen tier</div>
+          <div><strong>Reference:</strong> Use your business name + tier</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--ink-muted);line-height:1.55;">After your transfer:\n\n1. Reply here with the receipt or transaction reference\n2. Our team will confirm payment within 1 business day\n3. We'll request your remaining documents via WhatsApp\n4. Compliance management starts immediately</div>
+    `;
+    const body = document.getElementById('chat-body');
+    const msg = document.createElement('div');
+    msg.className = 'chat-msg bot';
+    msg.innerHTML = `<div class="chat-bubble">${html}</div>`;
+    body.appendChild(msg);
+    body.scrollTop = body.scrollHeight;
+
+    setTimeout(() => {
+      addBotMsg(`What works best for you now?`, [
+        { label: 'I\'ll transfer now', action: () => { addUserMsg('I\'ll transfer now'); setTimeout(confirmTransferPath, 600); } },
+        { label: 'Send these details to my email', action: () => { addUserMsg('Send to my email'); setTimeout(askEmail, 600); } },
+        { label: 'I need to think about it', action: () => { addUserMsg('I need to think'); setTimeout(closeWithThanks, 600); } }
+      ]);
+    }, 1500);
+  }, 800);
+}
+
+function confirmTransferPath() {
+  addBotMsg(`Perfect. Take your time with the transfer.\n\nWhen done, reply here with your transaction reference or screenshot of the receipt. Our team will confirm within 1 business day and reach you on WhatsApp to start onboarding.`);
+  setTimeout(() => {
+    document.getElementById('chat-foot').classList.add('show');
+    document.getElementById('chat-input').placeholder = 'Paste transaction reference here when ready';
+    chatStep = 'sub-receipt';
+  }, 1200);
+}
+
+function askEmail() {
+  addBotMsg(`What email address should we send the payment details to?`);
+  document.getElementById('chat-foot').classList.add('show');
+  document.getElementById('chat-input').placeholder = 'your.email@domain.com';
+  document.getElementById('chat-input').focus();
+  chatStep = 'sub-email';
+}
+
+function finalizeReceipt(reference) {
+  // POST the awaiting-payment subscription to the Apps Script backend.
+  // CSO confirms the bank transfer in Moniepoint then starts onboarding.
+  postChatLead({
+    title: 'Medialy Live subscription — awaiting payment confirmation',
+    service: (chatContext && chatContext.name) ? `${chatContext.name} (Subscription)` : 'Medialy Live (Subscription)',
+    businessName: chatAnswers[0] || '',
+    phone: chatAnswers[1] || '',
+    q1: chatAnswers[0] || '',
+    q2: chatAnswers[1] || '',
+    q3: chatAnswers[2] || '',
+    leadType: 'awaiting_payment',
+    transactionRef: reference || '',
+    notes: 'Account 8034620520 (Moniepoint · Hamzury Ltd) · Medialy Live first month deposit.',
+  });
+  addBotMsg(`Got it — reference saved. Our team will confirm your payment within 1 business day and start your subscription. You'll hear from us on WhatsApp soon.\n\nThank you for choosing Medialy.`);
+  setTimeout(() => closeChat(), 3000);
+}
+function finalizeEmail(email) {
+  addBotMsg(`Sent. Check ${email} in a few minutes — payment details are on the way.\n\nWhen you're ready to transfer, reply here or follow the email instructions.`);
+  setTimeout(() => closeChat(), 3000);
+}
+
+function renderLegal() {
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'Photography', label: 'Photography' },
+    { id: 'Video', label: 'Video' },
+    { id: 'Design', label: 'Design' },
+    { id: 'Copywriting', label: 'Copywriting' }
+  ];
+  const filtered = LEGAL.filter(c => currentFilter === 'all' || c.kind === currentFilter);
+
+  // Group by kind for clear section headers
+  const groups = {};
+  filtered.forEach(item => {
+    if (!groups[item.kind]) groups[item.kind] = [];
+    groups[item.kind].push(item);
+  });
+  const groupOrder = ['Photography', 'Video', 'Design', 'Copywriting'];
+  const groupSubtitles = {
+    'Photography': 'Product, lifestyle, founder, event, real estate photography.',
+    'Video': 'Brand films, ads, testimonials, reels, explainers.',
+    'Design': 'Graphic design, presentations, brochures, lookbooks, packaging.',
+    'Copywriting': 'Website copy, email sequences, sales pages, ads, blog content.'
+  };
+
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 3</div>
+    <h1 class="hero-title">Content <em>Production.</em></h1>
+    <p class="hero-sub">Photography, video, graphic design, copywriting — produced by our team for your brand.</p>
+
+    <div class="filter-bar">
+      ${filters.map(f => `<button class="filter-pill ${currentFilter === f.id ? 'active' : ''}" onclick="setFilter('${f.id}')">${f.label}</button>`).join('')}
+    </div>
+
+    ${groupOrder.filter(k => groups[k]).map(k => `
+      <div style="margin-top:18px;">
+        <div style="font-family:var(--serif);font-size:14px;font-weight:500;letter-spacing:-0.005em;color:var(--ink-soft);margin-bottom:4px;">${k === 'Photography' ? 'Photography' : k === 'Video' ? 'Video Production' : k === 'Design' ? 'Graphic Design' : 'Copywriting'}</div>
+        <div style="font-size:11.5px;color:var(--ink-muted);margin-bottom:10px;line-height:1.5;">${groupSubtitles[k]}</div>
+        <div class="item-list">
+          ${groups[k].map(c => renderItem(c)).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+  attachItemHandlers();
+}
+
+function renderItem(c) {
+  const inCart = cart.some(x => x.id === c.id);
+  const hasEdu = !!EDU[c.id];
+  return `
+    <div class="item" data-id="${c.id}">
+      <div class="item-head" onclick="toggleItem('${c.id}')">
+        <div class="item-meta">
+          <div class="item-name-row">
+            <div class="item-name">${c.name}</div>
+            ${c.tag ? `<span class="item-tag ${c.tag.toLowerCase()}">${c.tag}</span>` : ''}
+          </div>
+          <div class="item-use">${c.use}</div>
+        </div>
+        <button class="item-cart ${inCart ? 'added' : ''}" onclick="event.stopPropagation();toggleCart('${c.id}')" aria-label="Add to cart">
+          ${inCart
+            ? `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`
+            : `<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`}
+        </button>
+      </div>
+      <div class="item-body">
+        <div class="item-body-inner">
+          <div class="item-body-row"><span class="item-body-label">Fee</span><span class="item-body-value fee">${c.fee}</span></div>
+          <div class="item-body-row"><span class="item-body-label">Timeline</span><span class="item-body-value">${c.timeline}</span></div>
+          <div class="item-body-row"><span class="item-body-label">We need</span><span class="item-body-value">${c.need}</span></div>
+          ${c.note ? `<div class="item-note">⚠ ${c.note}</div>` : ''}
+          <div class="edu-box" id="edu-${c.id}" style="display:none;"></div>
+          <div class="item-actions">
+            ${hasEdu ? `<button class="item-action-chat" onclick="toggleEdu('${c.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Read more</button>` : ''}
+            <button class="item-action-chat" onclick="askAboutItem('${c.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Talk to us
+            </button>
+            <button class="item-action-add ${inCart ? 'added' : ''}" onclick="toggleCart('${c.id}')">
+              ${inCart ? '✓ Added' : 'Add to cart'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.askAboutItem = (id) => {
+  // Look up the item from any source (CERTS, LEGAL, or ITEMS dictionary)
+  let item = CERTS.find(x => x.id === id) || LEGAL.find(x => x.id === id);
+  if (!item && ITEMS[id]) item = { id, ...ITEMS[id] };
+  if (!item) return;
+  // Skip educational layer here — Read more handles education separately
+  openChat(item, { skipEdu: true });
+};
+
+window.toggleEdu = (id) => {
+  const edu = EDU[id];
+  if (!edu) return;
+  const box = document.getElementById('edu-' + id);
+  if (!box) return;
+  if (box.style.display === 'none') {
+    box.innerHTML = `<div class="edu-title">${edu.title}</div><div class="edu-body">${edu.body.replace(/\n/g, '<br><br>')}</div>`;
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+};
+
+function renderIndustries() {
+  const all = Object.entries(PACKAGES);
+  const q = (industriesQuery || '').toLowerCase().trim();
+  const filtered = q ? all.filter(([id, p]) =>
+    p.name.toLowerCase().includes(q) ||
+    (p.description && p.description.toLowerCase().includes(q)) ||
+    p.subtypes.some(s => s.name.toLowerCase().includes(q))
+  ) : all;
+  const visible = filtered.slice(0, industriesShownCount);
+  const hasMore = filtered.length > industriesShownCount;
+
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 4</div>
+    <h1 class="hero-title">Industry <em>Brand Packs.</em></h1>
+    <p class="hero-sub">Pre-built brand stacks for your sector. Tap an industry.</p>
+
+    <div class="ind-search-wrap">
+      <svg class="ind-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>
+      <input type="search" class="ind-search" id="ind-search" placeholder="Search industries..." value="${escAttrV(industriesQuery)}" autocomplete="off">
+    </div>
+
+    ${filtered.length === 0 ? `
+      <div style="padding:40px 20px;text-align:center;">
+        <div style="font-family:var(--serif);font-size:18px;color:var(--ink-soft);margin-bottom:6px;">No matches</div>
+        <div style="font-size:13px;color:var(--ink-muted);">Try a different keyword, or browse all ${all.length} industries.</div>
+        <button class="filter-pill" style="margin-top:14px;" onclick="resetIndustrySearch()">Clear search</button>
+      </div>
+    ` : `
+      <div class="industries-grid">
+        ${visible.map(([id, p]) => `
+          <div class="industry-card" onclick="openIndustry('${id}')">
+            <div class="industry-emoji">${p.emoji}</div>
+            <div class="industry-name">${p.name}</div>
+            <div class="industry-meta">${p.subtypes.length} ${p.subtypes.length === 1 ? 'type' : 'types'}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${hasMore ? `
+        <div style="text-align:center;margin-top:20px;">
+          <button class="filter-pill" style="padding:10px 20px;font-size:13px;" onclick="showMoreIndustries()">Show more (${filtered.length - industriesShownCount} left)</button>
+        </div>
+      ` : (filtered.length > 12 ? `<div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--ink-muted);">${filtered.length} industries shown</div>` : '')}
+    `}
+  `;
+
+  // Wire up search input
+  const searchInput = document.getElementById('ind-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      industriesQuery = e.target.value;
+      industriesShownCount = 12;
+      renderIndustries();
+      setTimeout(() => {
+        const el = document.getElementById('ind-search');
+        if (el) {
+          el.focus();
+          const len = el.value.length;
+          el.setSelectionRange(len, len);
+        }
+      }, 0);
+    });
+  }
+}
+
+window.showMoreIndustries = () => {
+  industriesShownCount += 12;
+  renderIndustries();
+};
+
+window.resetIndustrySearch = () => {
+  industriesQuery = '';
+  industriesShownCount = 12;
+  renderIndustries();
+};
+
+function escAttrV(s) {
+  return String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderIndustryDetail() {
+  const p = PACKAGES[currentIndustry];
+  if (!p) { currentScreen = 'home'; render(); return; }
+  const sub = p.subtypes.find(s => s.id === currentSubtype) || p.subtypes[0];
+
+  page.innerHTML = `
+    <div class="industry-detail-head">
+      <div class="industry-detail-emoji">${p.emoji}</div>
+      <div class="industry-detail-name">${p.name}</div>
+      <div class="industry-detail-sub">${p.description}</div>
+    </div>
+
+    <div class="subtype-tabs">
+      ${p.subtypes.map(s => `
+        <button class="subtype-tab ${s.id === currentSubtype ? 'active' : ''}" onclick="setSubtype('${s.id}')">${s.name}</button>
+      `).join('')}
+    </div>
+
+    <div class="subtype-intro">${sub.intro}</div>
+
+    <div class="item-list">
+      ${sub.items.map(itemId => {
+        const item = ITEMS[itemId];
+        if (!item) return '';
+        const c = { id: itemId, ...item, tag: '' };
+        return renderItem(c);
+      }).join('')}
+    </div>
+
+    <div class="other-industries">
+      <div class="other-industries-label">Other industries we serve</div>
+      <div class="other-industries-list">
+        ${Object.entries(PACKAGES).filter(([id]) => id !== currentIndustry).map(([id, op]) => `
+          <button class="other-industry-link" onclick="openIndustry('${id}')">
+            <span>${op.emoji}</span>${op.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:24px;text-align:center;">
+      <button class="filter-pill" onclick="sharePackage()" style="padding:9px 18px;font-size:12.5px;">
+        🔗 Share this package
+      </button>
+    </div>
+  `;
+  attachItemHandlers();
+}
+
+// ============= NAVIGATION =============
+window.goTo = (screen) => {
+  currentScreen = screen;
+  currentFilter = 'all';
+  if (screen === 'industries') {
+    industriesQuery = '';
+    industriesShownCount = 12;
+  }
+  render();
+};
+window.goBack = () => {
+  if (currentScreen === 'industry-detail') {
+    currentScreen = 'industries';
+    currentIndustry = null;
+    currentSubtype = null;
+  } else {
+    currentScreen = 'home';
+  }
+  render();
+};
+window.openIndustry = (id) => {
+  currentIndustry = id;
+  currentSubtype = PACKAGES[id].subtypes[0].id;
+  currentScreen = 'industry-detail';
+  // Update URL for share-ability (silently fail in sandboxed previews)
+  try { history.pushState({}, '', `#packages/${id}`); } catch (e) { /* sandbox restriction */ }
+  render();
+};
+window.setSubtype = (id) => {
+  currentSubtype = id;
+  render();
+};
+window.setFilter = (id) => {
+  currentFilter = id;
+  render();
+};
+
+// ============= ITEM EXPAND =============
+window.toggleItem = (id) => {
+  document.querySelectorAll('.item').forEach(el => {
+    if (el.dataset.id === id) el.classList.toggle('expanded');
+    else el.classList.remove('expanded');
+  });
+};
+function attachItemHandlers() {
+  // (already in renderItem via inline onclick)
+}
+
+// ============= CART =============
+window.toggleCart = (id) => {
+  let item = CERTS.find(c => c.id === id) || LEGAL.find(c => c.id === id);
+  if (!item && ITEMS[id]) item = { id, ...ITEMS[id] };
+  if (!item) return;
+
+  const idx = cart.findIndex(c => c.id === id);
+  if (idx >= 0) {
+    cart.splice(idx, 1);
+    showToast(`Removed`);
+  } else {
+    cart.push({ id: item.id, name: item.name, fee: item.fee, use: item.use });
+    showToast(`Added to cart`);
+  }
+  updateCartBadge();
+  // re-render current screen to update cart icons
+  render();
+};
+
+function updateCartBadge() {
+  const badge = document.getElementById('cart-badge');
+  badge.textContent = cart.length;
+  badge.classList.toggle('show', cart.length > 0);
+}
+
+window.openCart = () => {
+  document.getElementById('cart-overlay').classList.add('open');
+  renderCart();
+};
+window.closeCart = () => {
+  document.getElementById('cart-overlay').classList.remove('open');
+};
+function renderCart() {
+  const list = document.getElementById('cart-list');
+  const foot = document.getElementById('cart-foot-area');
+  if (cart.length === 0) {
+    list.innerHTML = `<div class="cart-empty"><div class="big">Cart is empty</div><div>Browse and add what you need.</div></div>`;
+    foot.innerHTML = '';
+    return;
+  }
+  list.innerHTML = cart.map((c, i) => `
+    <div class="cart-row">
+      <div class="cart-row-meta">
+        <div class="cart-row-name">${c.name}</div>
+        <div class="cart-row-tag">${c.use}</div>
+      </div>
+      <div class="cart-row-fee">${c.fee}</div>
+      <button class="cart-row-x" onclick="removeFromCart(${i})">×</button>
+    </div>
+  `).join('');
+
+  let total = 0; let hasVarying = false;
+  cart.forEach(c => {
+    const m = c.fee.match(/₦([\d,]+)/);
+    if (m) total += parseInt(m[1].replace(/,/g, ''), 10);
+    else hasVarying = true;
+  });
+  const formatted = '₦' + total.toLocaleString() + (hasVarying ? '+' : '');
+
+  foot.innerHTML = `
+    <div class="cart-total">
+      <span class="cart-total-label">Starting from</span>
+      <span class="cart-total-value">${formatted}</span>
+    </div>
+    <button class="cart-checkout" onclick="checkoutCart()">Continue to chat →</button>
+    <p style="font-size:10.5px;color:var(--ink-muted);margin-top:8px;text-align:center;line-height:1.5;">Final pricing confirmed by our team before any payment.</p>
+  `;
+}
+window.removeFromCart = (i) => {
+  cart.splice(i, 1);
+  updateCartBadge();
+  renderCart();
+  render();
+};
+window.checkoutCart = () => {
+  closeCart();
+  openChat({ id: 'cart', name: 'Multiple services', items: cart });
+};
+
+// ============= CHAT =============
+window.openChat = (item, opts) => {
+  chatContext = item;
+  chatStep = 0;
+  chatAnswers = [];
+  chatSkipEdu = (opts && opts.skipEdu) || false;
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('chat-foot').classList.remove('show');
+  document.getElementById('chat-body').innerHTML = '';
+  setTimeout(() => startChatFlow(), 200);
+};
+window.closeChat = () => {
+  document.getElementById('chat-overlay').classList.remove('open');
+};
+
+function startChatFlow() {
+  // Step 1: Show educational intro if available, OR jump to confirmation
+  const item = chatContext;
+  const edu = EDU[item.id];
+
+  // Cart context: skip education, go straight to questions
+  if (item.items) {
+    const items = item.items.map(c => c.name).join(', ');
+    addBotMsg(`You have ${item.items.length} services in your cart:\n\n${items}\n\nLet me ask you a few quick questions so our team can help you properly.`);
+    setTimeout(askQuestion1, 1500);
+    return;
+  }
+
+  // If 'Talk to us' was clicked (skipEdu), go straight to confirmation
+  if (chatSkipEdu || !edu) {
+    addBotMsg(`Hello — you're asking about <strong>${item.name}</strong>.\n\n${item.use ? '<em>' + item.use + '</em>\n\n' : ''}Would you like our team to contact you about this?`, [
+      { label: 'Yes, I want to proceed', action: () => { addUserMsg('Yes, I want to proceed'); setTimeout(askQuestion1, 600); } },
+      { label: 'Just exploring for now', action: () => { addUserMsg('Just exploring for now'); setTimeout(closeWithThanks, 600); } }
+    ]);
+    return;
+  }
+
+  // Otherwise, show educational intro first
+  addBotMsg(`Hello — let me share a bit about <strong>${item.name}</strong>.`);
+  setTimeout(() => {
+    addBotMsg(`<strong>${edu.title}</strong>\n\n${edu.body}`);
+    setTimeout(() => {
+      addBotMsg(`Would you like our team to contact you about ${item.name}?`, [
+        { label: 'Yes, I want to proceed', action: () => { addUserMsg('Yes, I want to proceed'); setTimeout(askQuestion1, 600); } },
+        { label: 'Just exploring for now', action: () => { addUserMsg('Just exploring for now'); setTimeout(closeWithThanks, 600); } }
+      ]);
+    }, 1400);
+  }, 900);
+}
+
+function askQuestion1() {
+  addBotMsg('Quick questions to help us serve you better.\n\n<strong>1 of 3 — What are you needing this for?</strong>');
+  document.getElementById('chat-foot').classList.add('show');
+  document.getElementById('chat-input').placeholder = 'e.g. opening a bank account, bidding for a contract...';
+  document.getElementById('chat-input').focus();
+  chatStep = 1;
+}
+function askQuestion2() {
+  addBotMsg('<strong>2 of 3 — Is this for a new application or renewal/modification?</strong>', [
+    { label: 'New application', action: () => { addUserMsg('New application'); chatAnswers.push('New application'); setTimeout(askQuestion3, 600); } },
+    { label: 'Renewal', action: () => { addUserMsg('Renewal'); chatAnswers.push('Renewal'); setTimeout(askQuestion3, 600); } },
+    { label: 'Modification', action: () => { addUserMsg('Modification'); chatAnswers.push('Modification'); setTimeout(askQuestion3, 600); } },
+    { label: "I'm not sure", action: () => { addUserMsg("I'm not sure"); chatAnswers.push("Not sure"); setTimeout(askQuestion3, 600); } }
+  ]);
+  document.getElementById('chat-foot').classList.remove('show');
+}
+function askQuestion3() {
+  addBotMsg('<strong>3 of 3 — Best way to reach you?</strong>', [
+    { label: 'WhatsApp', action: () => { addUserMsg('WhatsApp'); chatAnswers.push('WhatsApp'); setTimeout(submitChatLead, 600); } },
+    { label: 'Email', action: () => { addUserMsg('Email'); chatAnswers.push('Email'); setTimeout(submitChatLead, 600); } },
+    { label: 'Phone call', action: () => { addUserMsg('Phone call'); chatAnswers.push('Phone'); setTimeout(submitChatLead, 600); } }
+  ]);
+}
+function submitChatLead() {
+  // POST the inbound lead to the Apps Script backend → "Inbound Leads" tab.
+  postChatLead({
+    title: 'Medialy inbound lead',
+    service: (chatContext && chatContext.name) || '',
+    q1: chatAnswers[0] || '',
+    q2: chatAnswers[1] || '',
+    q3: chatAnswers[2] || '',
+    leadType: 'inbound',
+    notes: chatAnswers.slice(3).join(' | '),
+  });
+  addBotMsg(`Thank you. Our team will reach you on <strong>${chatAnswers[2]}</strong> within 24 hours.\n\nWe'll have everything ready to move quickly once we confirm your details.`);
+  // Cap the conversation
+  setTimeout(() => {
+    addBotMsg('Anything else you want us to know?', [
+      { label: "No, that's all", action: () => { addUserMsg("That's all, thank you"); setTimeout(closeWithThanks, 800); } },
+      { label: 'Add another note', action: () => {
+        addUserMsg('I want to add a note');
+        document.getElementById('chat-foot').classList.add('show');
+        document.getElementById('chat-input').placeholder = 'Add anything else...';
+        chatStep = 4;
+      }}
+    ]);
+  }, 1200);
+}
+function closeWithThanks() {
+  addBotMsg('Thank you for your interest. Medialy is here whenever you need us.');
+  setTimeout(() => closeChat(), 2000);
+}
+
+window.sendChat = () => {
+  const input = document.getElementById('chat-input');
+  const v = input.value.trim();
+  if (!v) return;
+  addUserMsg(v);
+  chatAnswers.push(v);
+  input.value = '';
+  if (chatStep === 1) {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(askQuestion2, 600);
+  } else if (chatStep === 4) {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(closeWithThanks, 800);
+  } else if (chatStep === 'sub-name') {
+    setTimeout(askSubContact, 600);
+  } else if (chatStep === 'sub-contact') {
+    setTimeout(askSubReadiness, 600);
+  } else if (chatStep === 'sub-receipt') {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(() => finalizeReceipt(v), 400);
+  } else if (chatStep === 'sub-email') {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(() => finalizeEmail(v), 400);
+  }
+};
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+
+function addBotMsg(text, options) {
+  const body = document.getElementById('chat-body');
+  const formatted = text.replace(/\n/g, '<br>');
+  let optsHtml = '';
+  if (options) {
+    optsHtml = `<div class="chat-options">${options.map((o, i) => `<button class="chat-option" data-opt="${i}">${o.label}</button>`).join('')}</div>`;
+  }
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg bot';
+  msg.innerHTML = `<div class="chat-bubble">${formatted}${optsHtml}</div>`;
+  body.appendChild(msg);
+  body.scrollTop = body.scrollHeight;
+  if (options) {
+    msg.querySelectorAll('.chat-option').forEach((b, i) => {
+      b.addEventListener('click', () => {
+        // Remove all options after click
+        msg.querySelectorAll('.chat-options').forEach(o => o.remove());
+        options[i].action();
+      });
+    });
+  }
+}
+function addUserMsg(text) {
+  const body = document.getElementById('chat-body');
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg user';
+  msg.innerHTML = `<div class="chat-bubble">${text}</div>`;
+  body.appendChild(msg);
+  body.scrollTop = body.scrollHeight;
+}
+
+// ============= SHARE =============
+window.sharePackage = () => {
+  try {
+    const slug = String(currentIndustry || '').replace(/_/g, '-');
+    const url = `${window.location.origin}/medialy/ourservice/packages/${slug}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        () => showToast('Link copied — paste anywhere'),
+        () => showToast('Link: ' + url)
+      );
+    } else {
+      showToast('Copy: ' + url);
+    }
+  } catch (e) {
+    showToast('Share link copied');
+  }
+};
+
+// ============= TOAST =============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function escapeAttr(s) { return String(s).replace(/'/g, '&apos;').replace(/"/g, '&quot;'); }
+
+// Initial
+render();
+updateCartBadge();
+</script>
+
+</body>
+</html>

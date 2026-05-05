@@ -81,8 +81,20 @@ export type DivisionPortalConfig = {
   path: string;
   /** Footer division label */
   footerLabel: string;
-  /** Optional link shown as a 3rd hero button (e.g. "Blueprint") */
-  blueprintLink?: { label: string; href: string };
+  /** Optional link shown as a 3rd hero button (e.g. "Blueprint").
+   *  Set `external: true` when the target is served outside the React app
+   *  (e.g. a static catalog page) — uses a plain <a> so the browser does a
+   *  full navigation instead of wouter's client-side pushState. */
+  blueprintLink?: { label: string; href: string; external?: boolean };
+  /** When set, the hero "See our services" button navigates to this URL
+   *  (full page load) instead of scrolling to the in-page services section.
+   *  Used by Bizdoc to send visitors to the standalone /bizdoc/ourservice
+   *  catalog. Other divisions leave this unset and keep the scroll behavior. */
+  servicesHref?: string;
+  /** When true, the in-page services section is not rendered. Used by Bizdoc
+   *  because the full catalog now lives at /bizdoc/ourservice — so the
+   *  duplicated on-page list is removed to avoid two sources of truth. */
+  hideServices?: boolean;
   /** Motivational bar department name — must match existing dept names */
   motivationalDept: "bizdoc" | "systemise" | "skills" | "general";
 };
@@ -113,19 +125,22 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
     { enabled: false, retry: false }
   );
 
+  /* 2026-04-30 — accept full ref including alphanumeric suffix.
+   *   Old format: HMZ-YY/M-XXXX  (8 digits)
+   *   New format: HMZ-YY/M-XXXX-AA (4 digits + 2 letters/digits)
+   * We accept both. User can paste their full ref or type it; we normalise
+   * to uppercase and trim. No more digits-only strip. */
   const handleTrackInput = (val: string) => {
-    let raw = val.replace(/[^0-9]/g, "");
-    if (raw.length > 8) raw = raw.slice(0, 8);
-    let formatted = "HMZ-";
-    if (raw.length > 0) formatted += raw.slice(0, 2);
-    if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
-    if (raw.length > 3) formatted += "-" + raw.slice(3);
-    setTrackCode(formatted);
+    // Allow letters, digits, dashes, slashes — strip anything else.
+    const cleaned = val.toUpperCase().replace(/[^A-Z0-9\-\/]/g, "").slice(0, 24);
+    setTrackCode(cleaned);
     setTrackSubmitted(false);
   };
 
   const handleTrack = () => {
-    if (trackCode.trim().length < 8) return;
+    // Old refs are 13 chars (HMZ-YY/M-XXXX). New refs are 16 chars
+    // (HMZ-YY/M-XXXX-AA). Accept any ref starting with "HMZ-" of length ≥ 12.
+    if (!trackCode.trim().toUpperCase().startsWith("HMZ-") || trackCode.trim().length < 12) return;
     setTrackSubmitted(true);
     trackQuery.refetch().then(res => {
       if (res.data?.found) {
@@ -264,13 +279,23 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
             {cfg.heroSub}
           </p>
           <div className="flex flex-wrap gap-3 justify-center fade-up-d2">
-            <button
-              onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
-              className="px-7 py-3.5 rounded-full text-[13px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.02] hover:opacity-95"
-              style={{ backgroundColor: Au, color: G, boxShadow: `0 8px 24px ${Au}40` }}
-            >
-              See our services
-            </button>
+            {cfg.servicesHref ? (
+              <a
+                href={cfg.servicesHref}
+                className="px-7 py-3.5 rounded-full text-[13px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.02] hover:opacity-95 inline-block"
+                style={{ backgroundColor: Au, color: G, boxShadow: `0 8px 24px ${Au}40`, textDecoration: "none" }}
+              >
+                See our services
+              </a>
+            ) : (
+              <button
+                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+                className="px-7 py-3.5 rounded-full text-[13px] font-semibold tracking-wide transition-all duration-300 hover:scale-[1.02] hover:opacity-95"
+                style={{ backgroundColor: Au, color: G, boxShadow: `0 8px 24px ${Au}40` }}
+              >
+                See our services
+              </button>
+            )}
             <button
               onClick={() => document.getElementById("track")?.scrollIntoView({ behavior: "smooth" })}
               className="px-7 py-3.5 rounded-full text-[13px] font-medium tracking-wide transition-all duration-300 hover:opacity-90"
@@ -279,14 +304,24 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
               Track my file
             </button>
             {cfg.blueprintLink && (
-              <Link href={cfg.blueprintLink.href}>
-                <span
+              cfg.blueprintLink.external ? (
+                <a
+                  href={cfg.blueprintLink.href}
                   className="px-7 py-3.5 rounded-full text-[12px] font-medium tracking-wide cursor-pointer inline-block transition-all duration-300 hover:opacity-80"
-                  style={{ color: Au, border: `1px solid ${Au}25` }}
+                  style={{ color: Au, border: `1px solid ${Au}25`, textDecoration: "none" }}
                 >
                   {cfg.blueprintLink.label}
-                </span>
-              </Link>
+                </a>
+              ) : (
+                <Link href={cfg.blueprintLink.href}>
+                  <span
+                    className="px-7 py-3.5 rounded-full text-[12px] font-medium tracking-wide cursor-pointer inline-block transition-all duration-300 hover:opacity-80"
+                    style={{ color: Au, border: `1px solid ${Au}25` }}
+                  >
+                    {cfg.blueprintLink.label}
+                  </span>
+                </Link>
+              )
             )}
           </div>
         </div>
@@ -428,6 +463,7 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
       </section>
 
       {/* ── SERVICES ── */}
+      {!cfg.hideServices && (
       <section id="services" className="py-12 md:py-24 overflow-x-hidden" style={{ backgroundColor: W }}>
         <div className="max-w-5xl mx-auto w-full px-4 sm:px-6 md:px-6">
           <div className="mb-8 md:mb-12">
@@ -541,6 +577,7 @@ export default function DivisionPortalTemplate({ cfg }: { cfg: DivisionPortalCon
           )}
         </div>
       </section>
+      )}
 
       {/* ── TRACK ── */}
       <section id="track" className="py-24 md:py-32" style={{ backgroundColor: Cr }}>

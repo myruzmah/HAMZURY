@@ -1,4 +1,4 @@
-import { eq, desc, sql, and, gte, lte, ne, like, or, not, count } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte, ne, like, or, not, count, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import { createHash, randomBytes, timingSafeEqual, scrypt } from "crypto";
@@ -24,6 +24,8 @@ import {
   cohorts, InsertCohort, Cohort,
   cohortModules, InsertCohortModule, CohortModule,
   skillsApplications, InsertSkillsApplication, SkillsApplication,
+  hubFeedback, InsertHubFeedback, HubFeedback,
+  hubPartnerOutreach, InsertHubPartnerOutreach, HubPartnerOutreach,
   scholarshipCodes, InsertScholarshipCode, ScholarshipCode,
   studentAssignments, InsertStudentAssignment, StudentAssignment,
   liveSessions, InsertLiveSession, LiveSession,
@@ -184,10 +186,27 @@ export async function updateUserRole(userId: number, hamzuryRole: string, depart
 // ─── Reference Number Generator ──────────────────────────────────────────────
 
 /**
- * Unified ref format: HAM-XXXX-YYYY
- *   XXXX = 4 random alphanumeric (A-Z, 0-9)
- *   YYYY = last 4 digits of phone (or 4 random digits if phone missing/short)
+ * Unified ref format: HMZ-YY/M-PPPP-XX
+ *   YY/M = year (2 digits) + month (1-2 digits)
+ *   PPPP = last 4 digits of phone (or 4 random digits if phone missing/short)
+ *   XX   = 2 random alphanumerics — collision breaker
+ *
+ * 2026-04-30 — added the XX suffix because two visitors with phones ending
+ * in the same 4 digits used to generate the same ref, hitting the UNIQUE
+ * constraint on `leads.ref` and crashing the whole submission. The XX
+ * suffix gives 36² = 1,296 variants per (month, phone-tail) pair so
+ * collisions are rare and `createLead` retries on the rare conflict.
  */
+const REF_SUFFIX_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // dropped I/O/L/0/1 for legibility
+
+function randomRefSuffix(len = 2): string {
+  let s = "";
+  for (let i = 0; i < len; i++) {
+    s += REF_SUFFIX_ALPHABET[Math.floor(Math.random() * REF_SUFFIX_ALPHABET.length)];
+  }
+  return s;
+}
+
 export function generateRef(phone?: string | null): string {
   const now = new Date();
   const yy = String(now.getFullYear()).slice(-2);
@@ -198,7 +217,7 @@ export function generateRef(phone?: string | null): string {
     ? digits.slice(-4)
     : String(Math.floor(1000 + Math.random() * 9000));
 
-  return `HMZ-${yy}/${m}-${last4}`;
+  return `HMZ-${yy}/${m}-${last4}-${randomRefSuffix(2)}`;
 }
 
 // Backward-compat aliases
@@ -212,8 +231,31 @@ export const generateSKLRefNumber = (phone?: string | null) => generateRef(phone
 export async function createLead(data: Omit<InsertLead, "id" | "createdAt" | "updatedAt">): Promise<Lead> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  const ref = data.ref || generateHMZRef(data.phone);
-  await db.insert(leads).values({ ...data, ref });
+
+  // 2026-04-30 — retry on duplicate-ref collision (UNIQUE constraint on
+  // leads.ref). Up to 5 tries with a fresh ref each time. Insurance against
+  // the rare random-suffix collision.
+  let ref = data.ref || generateHMZRef(data.phone);
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      await db.insert(leads).values({ ...data, ref });
+      lastErr = null;
+      break;
+    } catch (err: any) {
+      lastErr = err;
+      const msg = String(err?.message || err || "");
+      const isDup = err?.code === "ER_DUP_ENTRY"
+        || /Duplicate entry/i.test(msg)
+        || /UNIQUE/i.test(msg);
+      if (!isDup) throw err; // not a collision — surface immediately
+      // Generate a fresh ref and retry. Ignore the caller's data.ref the
+      // first time (which probably came from generateRef and may be the colliding one).
+      ref = generateRef(data.phone);
+      console.warn(`[createLead] duplicate ref, retrying with new ref ${ref} (attempt ${attempt + 2})`);
+    }
+  }
+  if (lastErr) throw lastErr;
   const result = await db.select().from(leads).where(eq(leads.ref, ref)).limit(1);
   return result[0];
 }
@@ -279,6 +321,9 @@ export async function createTask(data: {
 export async function createTaskFromLead(lead: Lead): Promise<Task> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
+  // 2026-05-02 (Phase 2 multi-service refactor) — seed serviceLabel from lead.service
+  // (the human-typed string, e.g. "Bizdoc CAC"). contractValue starts at 0 — the CSO
+  // sets it when they quote the deal so commission auto-creation has a number to use.
   await db.insert(tasks).values({
     ref: lead.ref,
     leadId: lead.id,
@@ -286,6 +331,8 @@ export async function createTaskFromLead(lead: Lead): Promise<Task> {
     businessName: lead.businessName,
     phone: lead.phone,
     service: lead.service,
+    serviceLabel: lead.service,
+    contractValue: "0",
     status: "Not Started",
     department: "bizdoc",
     notes: lead.context ? `Lead context: ${lead.context}` : `Lead captured via AI Desk. Phone: ${lead.phone}`,
@@ -520,6 +567,33 @@ export async function getRecentActivityLogs(limit: number = 50): Promise<Activit
   const db = await getDb();
   if (!db) return [];
   return db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(limit);
+}
+
+/** Phase 3.2 (2026-05-02) — recent activity for a single client.
+ *  Joins the client's lead row (if any) plus every linked task, returning
+ *  the union of activityLogs ordered newest-first. Used by the CSO client
+ *  detail slide-over to show "what's been happening with this client". */
+export async function getActivityLogsForClient(clientId: number, limit: number = 20): Promise<ActivityLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+  // Find the client truth row + its leadId (set on Won) + every linked task.
+  const clientRows = await db.select().from(clients).where(eq(clients.id, clientId)).limit(1);
+  if (!clientRows.length) return [];
+  const c = clientRows[0];
+  const taskRows = c.phone
+    ? await db.select().from(tasks).where(eq(tasks.phone, c.phone))
+    : [];
+  const taskIds = taskRows.map(t => t.id);
+
+  const conditions: any[] = [];
+  if (c.leadId) conditions.push(eq(activityLogs.leadId, c.leadId));
+  for (const tid of taskIds) conditions.push(eq(activityLogs.taskId, tid));
+  if (conditions.length === 0) return [];
+
+  return db.select().from(activityLogs)
+    .where(conditions.length === 1 ? conditions[0] : or(...conditions))
+    .orderBy(desc(activityLogs.createdAt))
+    .limit(limit);
 }
 
 // ─── Stats ───────────────────────────────────────────────────────────────────
@@ -799,6 +873,64 @@ export async function updateSkillsApplicationStatus(id: number, status: string, 
   if (reviewNotes) updateData.reviewNotes = reviewNotes;
   await db.update(skillsApplications).set(updateData).where(eq(skillsApplications.id, id));
   const result = await db.select().from(skillsApplications).where(eq(skillsApplications.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ─── Hub Feedback (2026-05-05) ──────────────────────────────────────────────
+// /feedback writes here directly. Hub admin / founder reads.
+
+export async function createHubFeedback(data: Omit<InsertHubFeedback, "id" | "createdAt" | "updatedAt">): Promise<HubFeedback> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const ref = data.ref || generateRef(undefined);
+  await db.insert(hubFeedback).values({ ...data, ref });
+  const result = await db.select().from(hubFeedback).where(eq(hubFeedback.ref, ref)).limit(1);
+  return result[0];
+}
+
+export async function getHubFeedback(): Promise<HubFeedback[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hubFeedback).orderBy(desc(hubFeedback.createdAt));
+}
+
+export async function updateHubFeedbackStatus(id: number, status: string, reviewedBy?: number, reviewNotes?: string): Promise<HubFeedback | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const updateData: Record<string, unknown> = { status };
+  if (reviewedBy) updateData.reviewedBy = reviewedBy;
+  if (reviewNotes) updateData.reviewNotes = reviewNotes;
+  await db.update(hubFeedback).set(updateData).where(eq(hubFeedback.id, id));
+  const result = await db.select().from(hubFeedback).where(eq(hubFeedback.id, id)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+// ─── Hub Partner Outreach (2026-05-05) ──────────────────────────────────────
+// /partner writes here directly. Partnerships team / Hub admin reviews.
+
+export async function createHubPartnerOutreach(data: Omit<InsertHubPartnerOutreach, "id" | "createdAt" | "updatedAt">): Promise<HubPartnerOutreach> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const ref = data.ref || generateRef(data.contactPhone || undefined);
+  await db.insert(hubPartnerOutreach).values({ ...data, ref });
+  const result = await db.select().from(hubPartnerOutreach).where(eq(hubPartnerOutreach.ref, ref)).limit(1);
+  return result[0];
+}
+
+export async function getHubPartnerOutreach(): Promise<HubPartnerOutreach[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hubPartnerOutreach).orderBy(desc(hubPartnerOutreach.createdAt));
+}
+
+export async function updateHubPartnerOutreachStatus(id: number, status: string, reviewedBy?: number, reviewNotes?: string): Promise<HubPartnerOutreach | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const updateData: Record<string, unknown> = { status };
+  if (reviewedBy) updateData.reviewedBy = reviewedBy;
+  if (reviewNotes) updateData.reviewNotes = reviewNotes;
+  await db.update(hubPartnerOutreach).set(updateData).where(eq(hubPartnerOutreach.id, id));
+  const result = await db.select().from(hubPartnerOutreach).where(eq(hubPartnerOutreach.id, id)).limit(1);
   return result.length > 0 ? result[0] : undefined;
 }
 
@@ -1641,6 +1773,42 @@ export async function getNotifications(userId: string): Promise<Notification[]> 
   return db.select().from(notifications)
     .where(eq(notifications.userId, userId))
     .orderBy(desc(notifications.createdAt));
+}
+
+/**
+ * 2026-04-30 — multi-key lookup. Returns notifications matching ANY of the
+ * keys provided. Lets a logged-in user see notifications addressed to their
+ * email, openId, role (e.g. "skills_staff"), or department slug (e.g. "skills").
+ * The notifications table userId column is varchar so any string is valid.
+ */
+export async function getNotificationsForKeys(keys: string[]): Promise<Notification[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const cleaned = keys.filter((k): k is string => typeof k === "string" && k.length > 0);
+  if (cleaned.length === 0) return [];
+  return db.select().from(notifications)
+    .where(inArray(notifications.userId, cleaned))
+    .orderBy(desc(notifications.createdAt));
+}
+
+export async function getUnreadNotificationsForKeys(keys: string[]): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const cleaned = keys.filter((k): k is string => typeof k === "string" && k.length > 0);
+  if (cleaned.length === 0) return 0;
+  const result = await db.select().from(notifications)
+    .where(and(inArray(notifications.userId, cleaned), eq(notifications.isRead, false)));
+  return result.length;
+}
+
+export async function markAllNotificationsReadForKeys(keys: string[]): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const cleaned = keys.filter((k): k is string => typeof k === "string" && k.length > 0);
+  if (cleaned.length === 0) return;
+  await db.update(notifications)
+    .set({ isRead: true })
+    .where(and(inArray(notifications.userId, cleaned), eq(notifications.isRead, false)));
 }
 
 export async function getUnreadNotifications(userId: string): Promise<number> {

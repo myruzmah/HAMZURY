@@ -307,10 +307,23 @@ const cfg: AssessmentConfig = {
       ],
     },
 
-    /* ─── 6a. Payment & cohort ─── (core only) */
+    /* ─── 6a. Payment & cohort ─── (core only)
+     * 2026-05-05 — accountInfo added so the bank details are visible the
+     * moment a visitor picks "₦10,000 seat hold now". Previously the account
+     * number only appeared on step 7 (the explicit seat-hold confirmation),
+     * which meant scholarship / sponsor / corporate applicants — and anyone
+     * who didn't advance past step 6 — never saw where to send money. */
     {
       title: "Payment & cohort",
+      sub: "If you're paying the ₦10,000 seat hold, the bank details are below. Pick the option that fits and we'll do the rest on the next screen.",
       showWhen: isCore,
+      accountInfo: {
+        bank: "MoniePoint",
+        name: "Hamzury Ltd.",
+        number: "8034620520",
+        amount: "₦10,000 — Seat Hold",
+        note: "Use your full name as the transfer narration. Skip if you're applying for a scholarship, using a scholarship code, or your company is paying — we'll arrange those separately.",
+      },
       questions: [
         { id: "payment", prompt: "Payment plan:", required: true, options: [
           "₦10,000 seat hold now, balance on orientation day (default)",
@@ -331,10 +344,29 @@ const cfg: AssessmentConfig = {
       ],
     },
 
-    /* ─── 6b. Kids / SIWES / Online / Placement / Corporate — light closing ─── */
+    /* ─── 6b. Kids / SIWES / Online / Placement — light closing
+     *  (Corporate + Unsure don't pay seat-hold — corporate is invoiced and
+     *  unsure hasn't picked a programme yet, so they don't see the account.) */
     {
       title: "Anything else?",
-      showWhen: (a) => ["kids", "placement", "siwes", "online", "corporate", "unsure"].includes(categoryFor(a.program) || ""),
+      sub: "Almost done. If you're paying the ₦10,000 seat hold, the bank details are below.",
+      showWhen: (a) => ["kids", "placement", "siwes", "online"].includes(categoryFor(a.program) || ""),
+      accountInfo: {
+        bank: "MoniePoint",
+        name: "Hamzury Ltd.",
+        number: "8034620520",
+        amount: "₦10,000 — Seat Hold",
+        note: "Use your full name as the transfer narration. Skip if a sponsor or company is paying for you.",
+      },
+      questions: [
+        { id: "notes", prompt: "Notes / questions for our team", kind: "textarea" },
+      ],
+    },
+
+    /* ─── 6c. Corporate / Unsure — closing without account display ─── */
+    {
+      title: "Anything else?",
+      showWhen: (a) => ["corporate", "unsure"].includes(categoryFor(a.program) || ""),
       questions: [
         { id: "notes", prompt: "Notes / questions for our team", kind: "textarea" },
       ],

@@ -82,6 +82,92 @@ const INVARIANTS: { name: string; check: string; fix: string }[] = [
     check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'staffUsers' AND column_name = 'staffHamzuryRole' AND COLUMN_TYPE LIKE '%medialy_lead%' AND COLUMN_TYPE LIKE '%scalar_lead%' AND COLUMN_TYPE LIKE '%podcast_staff%'",
     fix:   "ALTER TABLE staffUsers MODIFY COLUMN staffHamzuryRole enum('founder','ceo','cso','cso_staff','finance','hr','bizdev','bizdev_staff','media','skills_staff','skills_lead','systemise_head','tech_lead','compliance_staff','security_staff','department_staff','medialy_lead','medialy_staff','scalar_lead','scalar_staff','podcast_lead','podcast_staff','video_lead','video_staff','faceless_lead','faceless_staff') NOT NULL",
   },
+  {
+    name: "leads.snoozedUntil column",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'leads' AND column_name = 'snoozedUntil'",
+    fix:   "ALTER TABLE leads ADD COLUMN snoozedUntil timestamp NULL",
+  },
+  {
+    name: "leads.linkedClientId column",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'leads' AND column_name = 'linkedClientId'",
+    fix:   "ALTER TABLE leads ADD COLUMN linkedClientId int NULL",
+  },
+  /* Phase 2 Multi-Service Refactor (2026-05-02) — task carries its own contract value
+     so a client running 2+ services has a row per service. Aggregate stats sum these
+     instead of reading the legacy single client.contractValue. */
+  {
+    name: "tasks.contractValue column",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'tasks' AND column_name = 'contractValue'",
+    fix:   "ALTER TABLE tasks ADD COLUMN contractValue decimal(12,2) NOT NULL DEFAULT '0'",
+  },
+  {
+    name: "tasks.serviceLabel column",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'tasks' AND column_name = 'serviceLabel'",
+    fix:   "ALTER TABLE tasks ADD COLUMN serviceLabel varchar(200) NULL",
+  },
+  /* 2026-05-05 — HUB direct-route additions: branched-form columns on
+   * skills_applications + new tables for /feedback and /partner so they
+   * bypass the CSO leads queue entirely. */
+  { name: "skills_applications.enrolmentType",       check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'enrolmentType'",       fix: "ALTER TABLE skills_applications ADD COLUMN enrolmentType varchar(50) NULL" },
+  { name: "skills_applications.studentAge",          check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'studentAge'",          fix: "ALTER TABLE skills_applications ADD COLUMN studentAge varchar(20) NULL" },
+  { name: "skills_applications.programCategory",     check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'programCategory'",     fix: "ALTER TABLE skills_applications ADD COLUMN programCategory varchar(20) NULL" },
+  { name: "skills_applications.learningMode",        check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'learningMode'",        fix: "ALTER TABLE skills_applications ADD COLUMN learningMode varchar(50) NULL" },
+  { name: "skills_applications.paymentPlan",         check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'paymentPlan'",         fix: "ALTER TABLE skills_applications ADD COLUMN paymentPlan varchar(100) NULL" },
+  { name: "skills_applications.schoolName",          check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'schoolName'",          fix: "ALTER TABLE skills_applications ADD COLUMN schoolName varchar(255) NULL" },
+  { name: "skills_applications.companyName",         check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'companyName'",         fix: "ALTER TABLE skills_applications ADD COLUMN companyName varchar(255) NULL" },
+  { name: "skills_applications.parentName",          check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'parentName'",          fix: "ALTER TABLE skills_applications ADD COLUMN parentName varchar(255) NULL" },
+  { name: "skills_applications.scholarshipCodeUsed", check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'scholarshipCodeUsed'", fix: "ALTER TABLE skills_applications ADD COLUMN scholarshipCodeUsed varchar(64) NULL" },
+  { name: "skills_applications.cohortPreference",    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'cohortPreference'",    fix: "ALTER TABLE skills_applications ADD COLUMN cohortPreference varchar(100) NULL" },
+  { name: "skills_applications.paidConfirm",         check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'paidConfirm'",         fix: "ALTER TABLE skills_applications ADD COLUMN paidConfirm varchar(255) NULL" },
+  { name: "skills_applications.transferNarration",   check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'transferNarration'",   fix: "ALTER TABLE skills_applications ADD COLUMN transferNarration varchar(255) NULL" },
+  { name: "skills_applications.metadata",            check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'metadata'",            fix: "ALTER TABLE skills_applications ADD COLUMN metadata text NULL" },
+  {
+    name: "hub_feedback table",
+    check: "SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'hub_feedback'",
+    fix: `CREATE TABLE hub_feedback (
+      id int NOT NULL AUTO_INCREMENT,
+      ref varchar(30) NOT NULL UNIQUE,
+      kind varchar(100) NULL,
+      area varchar(100) NULL,
+      summary varchar(500) NULL,
+      story text NULL,
+      outcome text NULL,
+      anonName varchar(255) NULL,
+      anonEmail varchar(320) NULL,
+      hubFeedbackStatus enum('new','reviewing','responded','resolved','archived') NOT NULL DEFAULT 'new',
+      reviewedBy int NULL,
+      reviewNotes text NULL,
+      metadata text NULL,
+      createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    )`,
+  },
+  {
+    name: "hub_partner_outreach table",
+    check: "SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'hub_partner_outreach'",
+    fix: `CREATE TABLE hub_partner_outreach (
+      id int NOT NULL AUTO_INCREMENT,
+      ref varchar(30) NOT NULL UNIQUE,
+      orgName varchar(255) NULL,
+      orgType varchar(100) NULL,
+      contactName varchar(255) NULL,
+      contactRole varchar(100) NULL,
+      contactPhone varchar(50) NULL,
+      contactEmail varchar(320) NULL,
+      partnerInterest text NULL,
+      scope text NULL,
+      timeline varchar(100) NULL,
+      notes text NULL,
+      hubPartnerStatus enum('new','reviewing','in_discussion','agreement_signed','closed','rejected') NOT NULL DEFAULT 'new',
+      reviewedBy int NULL,
+      reviewNotes text NULL,
+      metadata text NULL,
+      createdAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updatedAt timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (id)
+    )`,
+  },
 ];
 
 async function ensureTrackingTable(db: any): Promise<void> {

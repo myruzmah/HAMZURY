@@ -88,7 +88,7 @@ Keep it sharp, actionable, and under 400 words. Use Nigerian business context.`;
       });
 
       await createNotification({
-        userId: 0,
+        userId: "system",
         type: "system",
         title: "Idris: Meeting Prep Ready",
         message: "Weekly hub meeting agenda and summary is ready for review.",

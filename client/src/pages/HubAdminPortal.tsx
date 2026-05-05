@@ -16,6 +16,7 @@ import {
   Menu, X, Shield, Send, GraduationCap, Plus, Trash2, Eye,
   BadgeCheck, BookOpen, Briefcase, Wrench, FolderOpen, Inbox,
   FileText, Settings as SettingsIcon, Copy, ExternalLink,
+  MessageSquare, Handshake,
 } from "lucide-react";
 import { toast } from "sonner";
 import { HUB_PROGRAMS, HUB_TEAMS, formatProgramPrice } from "@shared/programs";
@@ -46,7 +47,9 @@ const INK_MUTED = "#6B7280";
 
 type Section =
   | "dashboard"
-  | "applications"     // ⭐ NEW — CSO-assigned only (gates Hub from public form leak)
+  | "applications"     // 2026-05-05 — bypasses CSO; raw form submissions land here directly
+  | "feedback"         // 2026-05-05 — /feedback (HubFeedback) → hub_feedback table
+  | "partners"         // 2026-05-05 — /partner (HubPartner) → hub_partner_outreach table
   | "cohorts"
   | "attendance"
   | "lmsProgress"
@@ -278,6 +281,8 @@ export default function HubAdminPortal() {
   const NAV: { key: Section; icon: React.ElementType; label: string }[] = [
     { key: "dashboard",      icon: LayoutDashboard, label: "Overview" },
     { key: "applications",   icon: Inbox,           label: "Applications" },
+    { key: "feedback",       icon: MessageSquare,   label: "Feedback" },
+    { key: "partners",       icon: Handshake,       label: "Partners" },
     { key: "cohorts",        icon: GraduationCap,   label: "Active cohorts" },
     { key: "attendance",     icon: UserCheck,       label: "Attendance" },
     { key: "lmsProgress",    icon: BookOpen,        label: "LMS progress" },
@@ -415,6 +420,8 @@ export default function HubAdminPortal() {
           }}>
             {active === "dashboard"      && <OverviewSection onGoto={setActive} />}
             {active === "applications"   && <><EnrollmentsSection /><ScholarshipCodesSection /></>}
+            {active === "feedback"       && <FeedbackSection />}
+            {active === "partners"       && <PartnersSection />}
             {/* legacy alias — old links to /hub/admin#enrollments still work */}
             {active === "enrollments"    && <><EnrollmentsSection /><ScholarshipCodesSection /></>}
             {active === "cohorts"        && <CohortsSection />}
@@ -539,15 +546,16 @@ function EnrollmentsSection() {
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  // 2026-04-30 — CSO-gate per founder rule: Hub admin only sees applications
-  // CSO has triaged. "submitted" = raw public form, still in CSO inbox awaiting
-  // qualification. Statuses under_review / accepted / waitlisted / rejected
-  // mean CSO has touched them — only those land here.
+  // 2026-05-05 — Founder reversal of the earlier CSO-gate rule for HUB.
+  // /hub/enroll now writes DIRECTLY into skills.applications (via
+  // trpc.skills.submitApplication), bypassing the CSO leads queue.
+  // Hub admin sees every enrolment immediately, including raw "submitted"
+  // ones, and is responsible for their own qualification + payment-intent work.
+  // (Feedback + Partner forms still go through CSO — they don't have a
+  // dedicated table yet; would need a server-side change to bypass.)
   const all = ((appsQ.data || []) as any[]);
-  const csoTriaged = all.filter(a => a.status && a.status !== "submitted");
-  const pendingCsoCount = all.length - csoTriaged.length;
 
-  const filtered = csoTriaged
+  const filtered = all
     .filter(a => filter === "all" || a.status === filter)
     .filter(a => !search ||
       a.fullName?.toLowerCase().includes(search.toLowerCase()) ||
@@ -555,6 +563,8 @@ function EnrollmentsSection() {
       a.program?.toLowerCase().includes(search.toLowerCase()) ||
       a.ref?.toLowerCase().includes(search.toLowerCase())
     );
+
+  const newCount = all.filter(a => a.status === "submitted").length;
 
   const updateMut = trpc.skills.updateApplicationStatus.useMutation({
     onSuccess: () => { toast.success("Status updated"); utils.skills.applications.invalidate(); },
@@ -568,12 +578,12 @@ function EnrollmentsSection() {
 
   return (
     <div>
-      <SectionTitle sub="Applications CSO has triaged and assigned to Hub. New form submissions sit in CSO inbox first.">
+      <SectionTitle sub="All /hub/enroll submissions land here directly. Hub team qualifies, confirms payment, and updates status.">
         Applications
       </SectionTitle>
 
-      {/* CSO-gate banner — surfaces upstream queue without exposing it */}
-      {pendingCsoCount > 0 && (
+      {/* New-submissions banner — surfaces unqualified rows so they don't get lost */}
+      {newCount > 0 && (
         <div style={{
           padding: "12px 14px", borderRadius: 12, marginBottom: 12,
           backgroundColor: `${ORANGE}10`, border: `1px solid ${ORANGE}25`,
@@ -582,10 +592,10 @@ function EnrollmentsSection() {
           <AlertCircle size={15} strokeWidth={1.75} style={{ color: ORANGE, flexShrink: 0 }} />
           <div style={{ flex: 1 }}>
             <p style={{ fontSize: 12, fontWeight: 600, color: INK }}>
-              {pendingCsoCount} application{pendingCsoCount > 1 ? "s" : ""} pending CSO triage
+              {newCount} new submission{newCount > 1 ? "s" : ""} awaiting your review
             </p>
             <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 2, lineHeight: 1.5 }}>
-              New /hub/enroll submissions land in CSO inbox first. CSO qualifies, confirms payment intent, then assigns to Hub. Once CSO marks status "Under review" or beyond, the application appears here.
+              These are fresh /hub/enroll submissions. Use the "Submitted" filter to see them, qualify the applicant, then move status to Under review / Accepted / Waitlisted / Rejected.
             </p>
           </div>
         </div>
@@ -598,8 +608,8 @@ function EnrollmentsSection() {
           alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
         }}>
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {/* "submitted" intentionally omitted — those rows are CSO-gated upstream */}
-            {(["all", "under_review", "accepted", "waitlisted", "rejected"] as const).map(f => (
+            {/* 2026-05-05 — "submitted" added back; Hub admin now sees raw submissions directly. */}
+            {(["all", "submitted", "under_review", "accepted", "waitlisted", "rejected"] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 style={{
                   padding: "5px 10px", borderRadius: 8,
@@ -653,6 +663,236 @@ function EnrollmentsSection() {
                   <option value="under_review">Under Review</option>
                   <option value="accepted">Accepted</option>
                   <option value="waitlisted">Waitlisted</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * FeedbackSection — 2026-05-05.
+ * Reads from hub_feedback table (trpc.hub.listFeedback). Lets Hub admin /
+ * founder see all /feedback submissions and update status (new → reviewing
+ * → responded → resolved → archived). Bypasses CSO entirely.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function FeedbackSection() {
+  const isMobile = useIsMobile();
+  const utils = trpc.useUtils();
+  const fbQ = (trpc as any).hub.listFeedback.useQuery(undefined, { retry: false });
+  const [filter, setFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+
+  const all = ((fbQ.data || []) as any[]);
+  const filtered = all
+    .filter(f => filter === "all" || f.status === filter)
+    .filter(f => !search ||
+      f.summary?.toLowerCase().includes(search.toLowerCase()) ||
+      f.story?.toLowerCase().includes(search.toLowerCase()) ||
+      f.anonName?.toLowerCase().includes(search.toLowerCase()) ||
+      f.ref?.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const updateMut = (trpc as any).hub.updateFeedbackStatus.useMutation({
+    onSuccess: () => { toast.success("Status updated"); utils.hub.listFeedback.invalidate(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const FB_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted"> = {
+    new: "gold", reviewing: "blue", responded: "blue",
+    resolved: "green", archived: "muted",
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="All /feedback submissions land here directly. Founder reads new entries Friday weekly. Anonymous entries supported.">
+        Feedback inbox
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{
+          display: "flex", gap: 10,
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["all", "new", "reviewing", "responded", "resolved", "archived"] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                style={{
+                  padding: "5px 10px", borderRadius: 8,
+                  backgroundColor: filter === f ? ORANGE : "transparent",
+                  color: filter === f ? WHITE : INK_MUTED,
+                  border: `1px solid ${filter === f ? ORANGE : HAIRLINE}`,
+                  fontSize: 10, fontWeight: 600, cursor: "pointer",
+                  textTransform: "uppercase", letterSpacing: "0.04em",
+                }}>{f}</button>
+            ))}
+          </div>
+          <input type="search" placeholder="Search summary, story, name, ref…"
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...inputBox(), width: isMobile ? "100%" : 260 }} />
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card><EmptyState icon={MessageSquare} title="No feedback yet" /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.slice(0, 100).map((f: any) => (
+            <Card key={f.id} style={{ padding: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{f.summary || "(no summary)"}</p>
+                    <StatusPill label={f.status} tone={FB_TONE[f.status] || "muted"} />
+                    {f.kind && <StatusPill label={f.kind} tone="muted" />}
+                  </div>
+                  {f.story && (
+                    <p style={{ fontSize: 12, color: INK_MUTED, marginTop: 6, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                      {f.story.length > 200 ? f.story.slice(0, 200) + "…" : f.story}
+                    </p>
+                  )}
+                  <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "monospace" }}>{f.ref}</span>
+                    {f.area && <span>area: {f.area}</span>}
+                    {f.anonName && <span>{f.anonName}</span>}
+                    {f.anonEmail && <span>{f.anonEmail}</span>}
+                    <span>{fmtDate(f.createdAt)}</span>
+                  </div>
+                </div>
+                <select
+                  value={f.status}
+                  onChange={e => updateMut.mutate({ id: f.id, status: e.target.value as any })}
+                  disabled={updateMut.isPending}
+                  style={{
+                    padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+                    fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
+                  }}
+                >
+                  <option value="new">New</option>
+                  <option value="reviewing">Reviewing</option>
+                  <option value="responded">Responded</option>
+                  <option value="resolved">Resolved</option>
+                  <option value="archived">Archived</option>
+                </select>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * PartnersSection — 2026-05-05.
+ * Reads from hub_partner_outreach table (trpc.hub.listPartnerOutreach).
+ * Hub admin / partnerships team see all /partner submissions and update
+ * status (new → reviewing → in_discussion → agreement_signed / closed).
+ * ═══════════════════════════════════════════════════════════════════════ */
+function PartnersSection() {
+  const isMobile = useIsMobile();
+  const utils = trpc.useUtils();
+  const pQ = (trpc as any).hub.listPartnerOutreach.useQuery(undefined, { retry: false });
+  const [filter, setFilter] = useState<string>("all");
+  const [search, setSearch] = useState("");
+
+  const all = ((pQ.data || []) as any[]);
+  const filtered = all
+    .filter(p => filter === "all" || p.status === filter)
+    .filter(p => !search ||
+      p.orgName?.toLowerCase().includes(search.toLowerCase()) ||
+      p.contactName?.toLowerCase().includes(search.toLowerCase()) ||
+      p.contactEmail?.toLowerCase().includes(search.toLowerCase()) ||
+      p.ref?.toLowerCase().includes(search.toLowerCase())
+    );
+
+  const updateMut = (trpc as any).hub.updatePartnerOutreachStatus.useMutation({
+    onSuccess: () => { toast.success("Status updated"); utils.hub.listPartnerOutreach.invalidate(); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const P_TONE: Record<string, "green" | "gold" | "red" | "blue" | "muted"> = {
+    new: "gold", reviewing: "blue", in_discussion: "blue",
+    agreement_signed: "green", closed: "muted", rejected: "red",
+  };
+
+  return (
+    <div>
+      <SectionTitle sub="All /partner submissions land here directly. Hub team responds within two business days per the form copy.">
+        Partner outreach
+      </SectionTitle>
+
+      <Card style={{ marginBottom: 12 }}>
+        <div style={{
+          display: "flex", gap: 10,
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center", justifyContent: "space-between",
+        }}>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {(["all", "new", "reviewing", "in_discussion", "agreement_signed", "closed", "rejected"] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)}
+                style={{
+                  padding: "5px 10px", borderRadius: 8,
+                  backgroundColor: filter === f ? ORANGE : "transparent",
+                  color: filter === f ? WHITE : INK_MUTED,
+                  border: `1px solid ${filter === f ? ORANGE : HAIRLINE}`,
+                  fontSize: 10, fontWeight: 600, cursor: "pointer",
+                  textTransform: "uppercase", letterSpacing: "0.04em",
+                }}>{f.replace(/_/g, " ")}</button>
+            ))}
+          </div>
+          <input type="search" placeholder="Search org, contact, email, ref…"
+            value={search} onChange={e => setSearch(e.target.value)}
+            style={{ ...inputBox(), width: isMobile ? "100%" : 260 }} />
+        </div>
+      </Card>
+
+      {filtered.length === 0 ? (
+        <Card><EmptyState icon={Handshake} title="No partner outreach yet" /></Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {filtered.slice(0, 100).map((p: any) => (
+            <Card key={p.id} style={{ padding: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{p.orgName || "(no org name)"}</p>
+                    <StatusPill label={p.status?.replace(/_/g, " ")} tone={P_TONE[p.status] || "muted"} />
+                    {p.orgType && <StatusPill label={p.orgType} tone="muted" />}
+                  </div>
+                  {p.partnerInterest && (
+                    <p style={{ fontSize: 12, color: INK_MUTED, marginTop: 6, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+                      {p.partnerInterest.length > 200 ? p.partnerInterest.slice(0, 200) + "…" : p.partnerInterest}
+                    </p>
+                  )}
+                  <div style={{ display: "flex", gap: 10, marginTop: 6, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "monospace" }}>{p.ref}</span>
+                    {p.contactName && <span>{p.contactName}</span>}
+                    {p.contactEmail && <span>{p.contactEmail}</span>}
+                    {p.contactPhone && <span>{p.contactPhone}</span>}
+                    {p.timeline && <span>timeline: {p.timeline}</span>}
+                    <span>{fmtDate(p.createdAt)}</span>
+                  </div>
+                </div>
+                <select
+                  value={p.status}
+                  onChange={e => updateMut.mutate({ id: p.id, status: e.target.value as any })}
+                  disabled={updateMut.isPending}
+                  style={{
+                    padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+                    fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
+                  }}
+                >
+                  <option value="new">New</option>
+                  <option value="reviewing">Reviewing</option>
+                  <option value="in_discussion">In discussion</option>
+                  <option value="agreement_signed">Agreement signed</option>
+                  <option value="closed">Closed</option>
                   <option value="rejected">Rejected</option>
                 </select>
               </div>

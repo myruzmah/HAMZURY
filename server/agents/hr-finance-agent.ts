@@ -53,7 +53,7 @@ export async function executeHRFinanceAgent(): Promise<AgentResult> {
         let title: string;
 
         if (overlaps.length === 0 && hasReason && daysRequested <= 5) {
-          recommendation = `RECOMMEND APPROVE — No date conflicts, reason provided, ${daysRequested} day(s) requested.\n\nStaff: ${leave.staffName || "Unknown"}\nDates: ${leave.startDate} to ${leave.endDate}\nType: ${leave.type || "Annual"}\nReason: ${leave.reason}`;
+          recommendation = `RECOMMEND APPROVE — No date conflicts, reason provided, ${daysRequested} day(s) requested.\n\nStaff: ${leave.staffName || "Unknown"}\nDates: ${leave.startDate} to ${leave.endDate}\nReason: ${leave.reason || "Not provided"}`;
           title = `✅ Approve: ${leave.staffName || "Staff"} — ${daysRequested}d leave`;
         } else {
           const flags: string[] = [];
@@ -61,7 +61,7 @@ export async function executeHRFinanceAgent(): Promise<AgentResult> {
           if (!hasReason) flags.push("No reason provided");
           if (daysRequested > 5) flags.push(`${daysRequested} days is longer than standard (5 days)`);
 
-          recommendation = `FLAG FOR REVIEW — ${flags.join(". ")}.\n\nStaff: ${leave.staffName || "Unknown"}\nDates: ${leave.startDate} to ${leave.endDate}\nType: ${leave.type || "Annual"}\nReason: ${leave.reason || "Not provided"}`;
+          recommendation = `FLAG FOR REVIEW — ${flags.join(". ")}.\n\nStaff: ${leave.staffName || "Unknown"}\nDates: ${leave.startDate} to ${leave.endDate}\nReason: ${leave.reason || "Not provided"}`;
           title = `⚠️ Review: ${leave.staffName || "Staff"} — ${daysRequested}d leave`;
         }
 
@@ -104,15 +104,15 @@ export async function executeHRFinanceAgent(): Promise<AgentResult> {
         let title: string;
 
         if (mathCorrect && quotedPrice > 0) {
-          recommendation = `RECOMMEND APPROVE — Math verified (60/40 split correct).\n\nStaff: ${comm.staffName || "Unknown"}\nService: ${comm.service || "N/A"}\nQuoted: ₦${quotedPrice.toLocaleString()}\nInstitutional (60%): ₦${institutionalAmount.toLocaleString()}\nStaff Pool (40%): ₦${commissionPool.toLocaleString()}\nStatus: ${comm.status}`;
-          title = `✅ Approve: ₦${quotedPrice.toLocaleString()} — ${comm.staffName || "Staff"}`;
+          recommendation = `RECOMMEND APPROVE — Math verified (60/40 split correct).\n\nStaff: ${comm.clientName || "Unknown"}\nService: ${comm.service || "N/A"}\nQuoted: ₦${quotedPrice.toLocaleString()}\nInstitutional (60%): ₦${institutionalAmount.toLocaleString()}\nStaff Pool (40%): ₦${commissionPool.toLocaleString()}\nStatus: ${comm.status}`;
+          title = `✅ Approve: ₦${quotedPrice.toLocaleString()} — ${comm.clientName || "Staff"}`;
         } else {
           const flags: string[] = [];
           if (!mathCorrect) flags.push("60/40 split calculation doesn't match");
           if (quotedPrice <= 0) flags.push("Quoted price is zero or missing");
 
-          recommendation = `FLAG FOR REVIEW — ${flags.join(". ")}.\n\nStaff: ${comm.staffName || "Unknown"}\nService: ${comm.service || "N/A"}\nQuoted: ₦${quotedPrice.toLocaleString()}\nInstitutional (60%): ₦${institutionalAmount.toLocaleString()} (expected ₦${expected60.toLocaleString()})\nStaff Pool (40%): ₦${commissionPool.toLocaleString()} (expected ₦${expected40.toLocaleString()})`;
-          title = `⚠️ Review: ₦${quotedPrice.toLocaleString()} — ${comm.staffName || "Staff"}`;
+          recommendation = `FLAG FOR REVIEW — ${flags.join(". ")}.\n\nStaff: ${comm.clientName || "Unknown"}\nService: ${comm.service || "N/A"}\nQuoted: ₦${quotedPrice.toLocaleString()}\nInstitutional (60%): ₦${institutionalAmount.toLocaleString()} (expected ₦${expected60.toLocaleString()})\nStaff Pool (40%): ₦${commissionPool.toLocaleString()} (expected ₦${expected40.toLocaleString()})`;
+          title = `⚠️ Review: ₦${quotedPrice.toLocaleString()} — ${comm.clientName || "Staff"}`;
         }
 
         await createAgentSuggestion({
@@ -139,7 +139,7 @@ export async function executeHRFinanceAgent(): Promise<AgentResult> {
 
       if (pendingLeaves.length > 0) {
         await createNotification({
-          userId: 0,
+          userId: "system",
           type: "system",
           title: "Ibrahim: Leave Reviews Ready",
           message: `${pendingLeaves.length} leave request(s) pre-reviewed with recommendations.`,
@@ -149,7 +149,7 @@ export async function executeHRFinanceAgent(): Promise<AgentResult> {
 
       if (pendingComms.length > 0) {
         await createNotification({
-          userId: 0,
+          userId: "system",
           type: "system",
           title: "Ibrahim: Commission Reviews Ready",
           message: `${pendingComms.length} commission(s) pre-reviewed with recommendations.`,

@@ -112,7 +112,13 @@ export default function Home() {
       const res = await fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify({ staffId: staffIdVal.trim().toUpperCase(), password: staffPw }) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Login failed");
-      window.location.href = data.dashboard;
+      // 2026-04-30 — force first-login password change. Until they change it,
+      // they cannot reach the dashboard.
+      if (data.firstLogin) {
+        window.location.href = `/change-password?next=${encodeURIComponent(data.dashboard || "/")}`;
+      } else {
+        window.location.href = data.dashboard;
+      }
     } catch (err: unknown) { setStaffError(err instanceof Error ? err.message : String(err)); }
     finally { setStaffLoading(false); }
   }

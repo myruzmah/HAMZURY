@@ -1186,17 +1186,13 @@ export default function HubPage() {
               type="text"
               value={trackRef}
               onChange={e => {
-                let raw = e.target.value.replace(/[^0-9]/g, "");
-                if (raw.length > 8) raw = raw.slice(0, 8);
-                let formatted = "HMZ-";
-                if (raw.length > 0) formatted += raw.slice(0, 2);
-                if (raw.length > 2) formatted += "/" + raw.slice(2, 3);
-                if (raw.length > 3) formatted += "-" + raw.slice(3);
-                setTrackRef(formatted);
+                // 2026-04-30 — accept full alphanumeric ref (HMZ-26/5-1234-A7).
+                const cleaned = e.target.value.toUpperCase().replace(/[^A-Z0-9\-\/]/g, "").slice(0, 24);
+                setTrackRef(cleaned);
                 setTrackSubmitted(false);
               }}
               onKeyDown={e => e.key === "Enter" && handleTrack()}
-              placeholder="HMZ-26/3-XXXX"
+              placeholder="HMZ-26/5-1234-A7"
               className="flex-1 px-5 py-3.5 rounded-full text-[14px] font-mono outline-none"
               style={{ backgroundColor: `${TEXT}05`, color: TEXT }}
             />

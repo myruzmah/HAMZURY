@@ -427,7 +427,10 @@ function Field({ label, value, onChange, placeholder, required, type = "text" }:
           backgroundColor: MILK,
           border: `1px solid ${GREEN}12`,
           color: GREEN,
-          focusRingColor: GOLD,
+          // 2026-04-30 — focusRingColor isn't a real CSS property; it's a Tailwind
+          // utility. Either use the Tailwind class focus:ring-[#B48C4C] or set
+          // outline directly. Keeping as a comment so we don't lose intent.
+          // outlineColor: GOLD,
         }}
       />
     </div>

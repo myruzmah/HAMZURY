@@ -20,6 +20,11 @@ const cfg: DivisionPortalConfig = {
   path:              "/medialy",
   footerLabel:       "MEDIALY",
   motivationalDept:  "general",
+  // Hero "See our services" → opens the standalone /medialy/ourservice catalog.
+  servicesHref:      "/medialy/ourservice",
+  // The in-page "OUR SERVICES" section is removed — the catalog page is the
+  // single source of truth so visitors don't see two competing service lists.
+  hideServices:      true,
   navLinks: [
     { label: "Bizdoc",  href: "/bizdoc" },
     { label: "Scalar",  href: "/scalar" },

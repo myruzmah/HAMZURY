@@ -706,6 +706,145 @@ Sitemap: ${base}/sitemap.xml
 `);
   });
 
+  // ─── Bizdoc service catalog (static HTML) ──────────────────────────────────
+  // The /bizdoc/ourservice page is the locked v3-4 Apple-minimal phone-frame
+  // catalog. Served as a single self-contained HTML file from
+  // client/public/bizdoc/ourservice/index.html — NOT a React route so the
+  // design (max-width 420px, fonts, spacing) stays untouched.
+  //
+  // /packages/:industry deep-links serve the same HTML with
+  // window.__INITIAL_PACKAGE__ injected so the page boots straight to the
+  // requested industry detail screen — critical for WhatsApp shares.
+  {
+    const fs = await import("fs");
+    const path = await import("path");
+    const ourServicePath = path.resolve(
+      import.meta.dirname,
+      "../..",
+      "client",
+      "public",
+      "bizdoc",
+      "ourservice",
+      "index.html",
+    );
+
+    const sendOurService = (industry: string | null, res: express.Response) => {
+      try {
+        const raw = fs.readFileSync(ourServicePath, "utf-8");
+        if (industry) {
+          // Whitelist: lowercase letters, digits, underscore, hyphen, max 40 chars.
+          // Anything else → ignore (page falls back to home screen).
+          const safe = /^[a-z0-9_-]{1,40}$/.test(industry) ? industry : "";
+          if (safe) {
+            const inject = `<script>window.__INITIAL_PACKAGE__=${JSON.stringify(safe)};</script>`;
+            const out = raw.replace("</head>", `${inject}\n</head>`);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            return res.send(out);
+          }
+        }
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(raw);
+      } catch (err) {
+        console.error("[/bizdoc/ourservice] read failed:", err);
+        res.status(500).send("Service catalog temporarily unavailable.");
+      }
+    };
+
+    app.get("/bizdoc/ourservice", (_req, res) => sendOurService(null, res));
+    app.get("/bizdoc/ourservice/", (_req, res) => sendOurService(null, res));
+    app.get("/bizdoc/ourservice/packages/:industry", (req, res) =>
+      sendOurService(req.params.industry, res),
+    );
+  }
+
+  // ─── Scalar service catalog (static HTML) ──────────────────────────────────
+  // Same shape as the Bizdoc catalog above — single self-contained HTML file at
+  // client/public/scalar/ourservice/index.html. Deep-link route injects
+  // window.__INITIAL_PACKAGE__ so /packages/:industry boots straight to detail.
+  {
+    const fs = await import("fs");
+    const path = await import("path");
+    const scalarPath = path.resolve(
+      import.meta.dirname,
+      "../..",
+      "client",
+      "public",
+      "scalar",
+      "ourservice",
+      "index.html",
+    );
+
+    const sendScalarService = (industry: string | null, res: express.Response) => {
+      try {
+        const raw = fs.readFileSync(scalarPath, "utf-8");
+        if (industry) {
+          const safe = /^[a-z0-9_-]{1,40}$/.test(industry) ? industry : "";
+          if (safe) {
+            const inject = `<script>window.__INITIAL_PACKAGE__=${JSON.stringify(safe)};</script>`;
+            const out = raw.replace("</head>", `${inject}\n</head>`);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            return res.send(out);
+          }
+        }
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(raw);
+      } catch (err) {
+        console.error("[/scalar/ourservice] read failed:", err);
+        res.status(500).send("Service catalog temporarily unavailable.");
+      }
+    };
+
+    app.get("/scalar/ourservice", (_req, res) => sendScalarService(null, res));
+    app.get("/scalar/ourservice/", (_req, res) => sendScalarService(null, res));
+    app.get("/scalar/ourservice/packages/:industry", (req, res) =>
+      sendScalarService(req.params.industry, res),
+    );
+  }
+
+  // ─── Medialy service catalog (static HTML) ─────────────────────────────────
+  // Same shape as the Bizdoc + Scalar catalogs above. Single self-contained HTML
+  // file at client/public/medialy/ourservice/index.html. Deep-link route injects
+  // window.__INITIAL_PACKAGE__ so /packages/:industry boots straight to detail.
+  {
+    const fs = await import("fs");
+    const path = await import("path");
+    const medialyPath = path.resolve(
+      import.meta.dirname,
+      "../..",
+      "client",
+      "public",
+      "medialy",
+      "ourservice",
+      "index.html",
+    );
+
+    const sendMedialyService = (industry: string | null, res: express.Response) => {
+      try {
+        const raw = fs.readFileSync(medialyPath, "utf-8");
+        if (industry) {
+          const safe = /^[a-z0-9_-]{1,40}$/.test(industry) ? industry : "";
+          if (safe) {
+            const inject = `<script>window.__INITIAL_PACKAGE__=${JSON.stringify(safe)};</script>`;
+            const out = raw.replace("</head>", `${inject}\n</head>`);
+            res.setHeader("Content-Type", "text/html; charset=utf-8");
+            return res.send(out);
+          }
+        }
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(raw);
+      } catch (err) {
+        console.error("[/medialy/ourservice] read failed:", err);
+        res.status(500).send("Service catalog temporarily unavailable.");
+      }
+    };
+
+    app.get("/medialy/ourservice", (_req, res) => sendMedialyService(null, res));
+    app.get("/medialy/ourservice/", (_req, res) => sendMedialyService(null, res));
+    app.get("/medialy/ourservice/packages/:industry", (req, res) =>
+      sendMedialyService(req.params.industry, res),
+    );
+  }
+
   // tRPC API
   app.use(
     "/api/trpc",

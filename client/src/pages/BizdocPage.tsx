@@ -20,6 +20,11 @@ const cfg: DivisionPortalConfig = {
   path:              "/bizdoc",
   footerLabel:       "BIZDOC CONSULT",
   motivationalDept:  "bizdoc",
+  // Hero "See our services" → opens the standalone /bizdoc/ourservice catalog.
+  servicesHref:      "/bizdoc/ourservice",
+  // The in-page "OUR SERVICES" section is removed — the catalog page is the
+  // single source of truth so visitors don't see two competing service lists.
+  hideServices:      true,
   navLinks: [
     { label: "Scalar",  href: "/scalar" },
     { label: "Medialy", href: "/medialy" },

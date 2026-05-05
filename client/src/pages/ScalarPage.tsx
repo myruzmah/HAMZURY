@@ -20,6 +20,11 @@ const cfg: DivisionPortalConfig = {
   path:              "/scalar",
   footerLabel:       "SCALAR",
   motivationalDept:  "systemise",
+  // Hero "See our services" → opens the standalone /scalar/ourservice catalog.
+  servicesHref:      "/scalar/ourservice",
+  // The in-page "OUR SERVICES" section is removed — the catalog page is the
+  // single source of truth so visitors don't see two competing service lists.
+  hideServices:      true,
   navLinks: [
     { label: "Bizdoc",  href: "/bizdoc" },
     { label: "Medialy", href: "/medialy" },

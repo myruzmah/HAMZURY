@@ -115,6 +115,35 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
     },
   });
 
+  // 2026-05-05 — HUB direct routes. Three destinations depending on which
+  // HUB form is using AssessmentForm:
+  //   sourceOverride = "feedback_hub"     → trpc.hub.submitFeedback (hub_feedback table)
+  //   sourceOverride = "partner_hub"      → trpc.hub.submitPartnerOutreach (hub_partner_outreach table)
+  //   division "hub", anything else       → trpc.skills.submitApplication (skills_applications table)
+  // All three bypass the CSO leads queue. HubAdminPortal reads from each
+  // table separately. Other divisions (bizdoc/scalar/medialy) still use
+  // submitMut above (CSO leads queue).
+  const sharedHandlers = {
+    onMutate: (vars: any) => {
+      setSubmitError(null);
+      console.log("[AssessmentForm:hub] submitting →", { ...vars, businessDescription: "(omitted)", story: "(omitted)", scope: "(omitted)" });
+    },
+    onSuccess: (data: any) => {
+      console.log("[AssessmentForm:hub] success ←", data);
+      setSubmittedRef(data?.ref || null);
+      toast.success("Received. We'll be in touch.");
+    },
+    onError: (e: any) => {
+      console.error("[AssessmentForm:hub] FAILED:", e);
+      const msg = e.message || "Submission failed. Try again.";
+      setSubmitError(msg);
+      toast.error(msg);
+    },
+  };
+  const hubEnrolMut    = trpc.skills.submitApplication.useMutation(sharedHandlers);
+  const hubFeedbackMut = trpc.hub.submitFeedback.useMutation(sharedHandlers);
+  const hubPartnerMut  = trpc.hub.submitPartnerOutreach.useMutation(sharedHandlers);
+
   const G  = cfg.accent;
   const Au = cfg.highlight;
   const W  = "#FFFFFF";
@@ -160,6 +189,121 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
         ...visibleQuestions(step).map(q => `  Q: ${q.prompt}\n  A: ${answers[q.id] || "—"}`),
       ]),
     ];
+
+    // 2026-05-05 — HUB direct routing. All three HUB forms bypass CSO:
+    //   feedback_hub → hub.submitFeedback   → hub_feedback table
+    //   partner_hub  → hub.submitPartnerOutreach → hub_partner_outreach table
+    //   default hub  → skills.submitApplication → skills_applications table
+    // Founder rule: Hub admin owns their inbox; CSO doesn't triage HUB.
+    if (cfg.division === "hub") {
+      const yn = (v?: string): boolean | undefined => {
+        if (!v) return undefined;
+        const s = v.trim().toLowerCase();
+        if (s.startsWith("y")) return true;
+        if (s.startsWith("n")) return false;
+        return undefined;
+      };
+      // JSON-encoded blob so no answer is dropped — Hub admin sees full Q/A.
+      const metadataBlob = JSON.stringify({
+        contact: {
+          name: contact.name.trim(),
+          businessName: contact.businessName.trim() || undefined,
+          phone: contact.phone.trim(),
+          email: contact.email.trim() || undefined,
+        },
+        answers,
+        sourceOverride: cfg.sourceOverride || `assessment_${cfg.division}`,
+        capturedAt: new Date().toISOString(),
+      });
+
+      // ─── FEEDBACK ROUTE ───────────────────────────────────────────────
+      if (cfg.sourceOverride === "feedback_hub") {
+        hubFeedbackMut.mutate({
+          kind: answers.kind || undefined,
+          area: answers.area || undefined,
+          summary: answers.summary || undefined,
+          story: answers.story || undefined,
+          outcome: answers.outcome || undefined,
+          anonName: answers.anonName || contact.name.trim() || undefined,
+          anonEmail: answers.anonEmail || contact.email.trim() || undefined,
+          metadata: metadataBlob,
+        });
+        return;
+      }
+
+      // ─── PARTNER ROUTE ────────────────────────────────────────────────
+      if (cfg.sourceOverride === "partner_hub") {
+        hubPartnerMut.mutate({
+          orgName: answers.orgName || contact.businessName.trim() || undefined,
+          orgType: answers.orgType || undefined,
+          contactName: contact.name.trim() || undefined,
+          contactRole: answers.contactRole || answers.role || undefined,
+          contactPhone: contact.phone.trim() || undefined,
+          contactEmail: contact.email.trim() || undefined,
+          partnerInterest: answers.partnerInterest || answers.interest || answers.partner_interest || undefined,
+          scope: answers.scope || answers.opportunityScope || undefined,
+          timeline: answers.timeline || undefined,
+          notes: answers.notes || undefined,
+          metadata: metadataBlob,
+        });
+        return;
+      }
+
+      // ─── ENROLMENT ROUTE (default for cfg.division === "hub") ─────────
+      const baseDesc = answers.businessDescription || answers.business_description || "";
+      const fullDescription = [
+        baseDesc,
+        baseDesc ? "" : null,
+        block.join("\n"),
+        "",
+        contact.businessName.trim() ? `Business: ${contact.businessName.trim()}` : null,
+      ].filter((s): s is string => s !== null).join("\n");
+
+      // Derive programmeCategory from program text — mirrors HubEnroll's
+      // categoryFor() so admin filtering by category works without coupling.
+      const progLower = (answers.program || "").toLowerCase();
+      let programCategory: string | undefined;
+      if (progLower.includes("not sure")) programCategory = "unsure";
+      else if (progLower.startsWith("kids") || progLower.includes("kids 8") || progLower.includes("10–15")) programCategory = "kids";
+      else if (progLower.startsWith("hub internship")) programCategory = "placement";
+      else if (progLower.startsWith("higher-institution") || progLower.includes("siwes")) programCategory = "siwes";
+      else if (progLower.startsWith("online academy")) programCategory = "online";
+      else if (progLower.startsWith("corporate workshop")) programCategory = "corporate";
+      else if (answers.program) programCategory = "core";
+
+      hubEnrolMut.mutate({
+        program: answers.program || cfg.brand,
+        pathway: answers.pathway || undefined,
+        businessDescription: fullDescription,
+        biggestChallenge: answers.biggestChallenge || answers.challenge || answers.kidGoal || answers.goal || undefined,
+        heardFrom: answers.heardFrom || answers.heard_from || answers.referral || undefined,
+        canCommitTime: yn(answers.canCommitTime || answers.can_commit_time || answers.commitment),
+        hasEquipment: yn(answers.hasEquipment || answers.has_equipment || answers.device),
+        willingToExecute: yn(answers.willingToExecute || answers.willing_to_execute),
+        fullName: contact.name.trim(),
+        phone: contact.phone.trim() || undefined,
+        email: contact.email.trim() || undefined,
+        pricingTier: answers.pricingTier || answers.pricing_tier || undefined,
+        agreedToTerms: yn(answers.agreedToTerms || answers.agreed_to_terms),
+        agreedToEffort: yn(answers.agreedToEffort || answers.agreed_to_effort),
+        // 2026-05-05 — branched fields for HUB admin filtering / reporting
+        enrolmentType: answers.who || undefined,
+        studentAge: answers.age || undefined,
+        programCategory,
+        learningMode: answers.mode || undefined,
+        paymentPlan: answers.payment || undefined,
+        schoolName: answers.schoolName || undefined,
+        companyName: answers.companyName || undefined,
+        parentName: answers.parentName || undefined,
+        scholarshipCodeUsed: answers.scholarshipCode || undefined,
+        cohortPreference: answers.cohort || undefined,
+        paidConfirm: answers.paidConfirm || undefined,
+        transferNarration: answers.transferNarration || undefined,
+        metadata: metadataBlob,
+      });
+      return;
+    }
+
     submitMut.mutate({
       name: contact.name.trim(),
       businessName: contact.businessName.trim() || undefined,
@@ -380,11 +524,11 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
 
         <button
           onClick={next}
-          disabled={!canAdvance || submitMut.isPending}
+          disabled={!canAdvance || submitMut.isPending || hubEnrolMut.isPending || hubFeedbackMut.isPending || hubPartnerMut.isPending}
           className="w-full sm:w-auto px-8 py-3.5 rounded-full text-[13px] font-semibold flex items-center justify-center gap-2 transition-transform hover:scale-[1.02] disabled:opacity-40 disabled:cursor-not-allowed"
           style={{ backgroundColor: G, color: Au }}
         >
-          {submitMut.isPending ? (
+          {(submitMut.isPending || hubEnrolMut.isPending || hubFeedbackMut.isPending || hubPartnerMut.isPending) ? (
             <><Loader2 size={14} className="animate-spin" /> Submitting…</>
           ) : isContactStep ? (
             <>Submit <ArrowRight size={14} /></>

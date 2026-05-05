@@ -89,6 +89,10 @@ export const leads = mysqlTable("leads", {
   assignedDepartment: varchar("assignedDepartment", { length: 50 }),
   assignedBy: int("assignedBy"),
   assignedAt: timestamp("assignedAt"),
+  /** 2026-04-30 — Snooze: lead is hidden from inbox until this time. */
+  snoozedUntil: timestamp("snoozedUntil"),
+  /** 2026-04-30 — If this lead is from a returning customer, link to their client row. */
+  linkedClientId: int("linkedClientId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -222,6 +226,14 @@ export const tasks = mysqlTable("tasks", {
   category: varchar("category", { length: 50 }),
   /** Phase 2: who assigned this task (staff openId or ref) — nullable for legacy rows */
   assignedBy: varchar("assignedBy", { length: 100 }),
+  /** Phase 2 (Multi-Service Refactor 2026-05-02): contract value for THIS service.
+      A client running Bizdoc + Medialy has 2 tasks each with their own contractValue —
+      the legacy single client.contractValue is now an aggregate of these. */
+  contractValue: decimal("contractValue", { precision: 12, scale: 2 }).default("0").notNull(),
+  /** Phase 2 (Multi-Service Refactor 2026-05-02): human-readable service label
+      (e.g. "Bizdoc CAC", "Medialy Package A"). Falls back to the raw service field
+      if not set. Saves us doing label lookups in 3 different places. */
+  serviceLabel: varchar("serviceLabel", { length: 200 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -536,9 +548,85 @@ export const skillsApplications = mysqlTable("skills_applications", {
   reviewedBy: int("reviewedBy"),
   reviewNotes: text("reviewNotes"),
   paymentStatus: mysqlEnum("appPaymentStatus", ["pending", "paid", "waived", "refunded", "paid_via_scholarship", "pending_seat_hold"]).default("pending").notNull(),
+  /** 2026-05-05 — Branched-form fields for HUB enrolments. The form has 14
+   *  steps with branching by programme category (core/kids/placement/siwes/
+   *  online/corporate/unsure); these are the most-filtered fields. Anything
+   *  else lives in `metadata` (JSON-encoded). */
+  enrolmentType: varchar("enrolmentType", { length: 50 }), // self | child | team | company
+  studentAge: varchar("studentAge", { length: 20 }),
+  programCategory: varchar("programCategory", { length: 20 }), // core/kids/placement/siwes/online/corporate/unsure
+  learningMode: varchar("learningMode", { length: 50 }),
+  paymentPlan: varchar("paymentPlan", { length: 100 }),
+  schoolName: varchar("schoolName", { length: 255 }),    // SIWES
+  companyName: varchar("companyName", { length: 255 }),  // corporate
+  parentName: varchar("parentName", { length: 255 }),    // kids
+  scholarshipCodeUsed: varchar("scholarshipCodeUsed", { length: 64 }),
+  cohortPreference: varchar("cohortPreference", { length: 100 }),
+  paidConfirm: varchar("paidConfirm", { length: 255 }),
+  transferNarration: varchar("transferNarration", { length: 255 }),
+  /** JSON-encoded blob of every question answer (including kids guardian info,
+   *  SIWES school letter status, AI tools list, corporate decision-maker, etc.).
+   *  Hub admin can read it in the application detail view; not queryable as
+   *  individual fields, but no data is dropped. */
+  metadata: text("metadata"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
+
+/**
+ * 2026-05-05 — Hub Feedback inbox.
+ * /feedback (HubFeedback form) writes here directly, bypassing the CSO leads
+ * queue. The founder reads this Friday weekly per the form copy.
+ */
+export const hubFeedback = mysqlTable("hub_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  ref: varchar("ref", { length: 30 }).notNull().unique(),
+  kind: varchar("kind", { length: 100 }),       // compliment / suggestion / complaint / safety / other
+  area: varchar("area", { length: 100 }),       // programme / mentor / admin / payments / facilities / online / not-sure
+  summary: varchar("summary", { length: 500 }),
+  story: text("story"),
+  outcome: text("outcome"),
+  anonName: varchar("anonName", { length: 255 }),
+  anonEmail: varchar("anonEmail", { length: 320 }),
+  status: mysqlEnum("hubFeedbackStatus", ["new", "reviewing", "responded", "resolved", "archived"]).default("new").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNotes: text("reviewNotes"),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HubFeedback = typeof hubFeedback.$inferSelect;
+export type InsertHubFeedback = typeof hubFeedback.$inferInsert;
+
+/**
+ * 2026-05-05 — Hub Partner outreach inbox.
+ * /partner (HubPartner form) writes here directly. Partnerships team /
+ * Hub admin reviews and responds within two business days per form copy.
+ */
+export const hubPartnerOutreach = mysqlTable("hub_partner_outreach", {
+  id: int("id").autoincrement().primaryKey(),
+  ref: varchar("ref", { length: 30 }).notNull().unique(),
+  orgName: varchar("orgName", { length: 255 }),
+  orgType: varchar("orgType", { length: 100 }),    // company / enterprise / school / ngo / sponsor / ecosystem
+  contactName: varchar("contactName", { length: 255 }),
+  contactRole: varchar("contactRole", { length: 100 }),
+  contactPhone: varchar("contactPhone", { length: 50 }),
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  partnerInterest: text("partnerInterest"),  // hiring / training / sponsoring / ecosystem
+  scope: text("scope"),
+  timeline: varchar("timeline", { length: 100 }),
+  notes: text("notes"),
+  status: mysqlEnum("hubPartnerStatus", ["new", "reviewing", "in_discussion", "agreement_signed", "closed", "rejected"]).default("new").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNotes: text("reviewNotes"),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HubPartnerOutreach = typeof hubPartnerOutreach.$inferSelect;
+export type InsertHubPartnerOutreach = typeof hubPartnerOutreach.$inferInsert;
 
 /**
  * Scholarship codes — created by HUB admins, applied at enrolment time to

@@ -1,0 +1,2016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scalar Services — AI Automation, Custom Software, Industry Packages | HAMZURY</title>
+<meta name="description" content="The full Scalar service catalog: foundation automations, operations dashboards, AI agents, custom software, and Scalar Run subscriptions for serious operators.">
+<link rel="canonical" href="https://hamzury.com/scalar/ourservice">
+<!-- TODO(scalar-logo): swap in /scalar-logo.svg once the Scalar mark exists. Using Hamzury mark as stand-in. -->
+<link rel="icon" type="image/png" href="/hamzury-mark.png">
+<link rel="apple-touch-icon" href="/hamzury-mark.png">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Scalar Services — AI Automation, Custom Software, Industry Packages">
+<meta property="og:description" content="The full Scalar service catalog: foundation automations, operations dashboards, AI agents, and custom software.">
+<meta property="og:image" content="https://hamzury.com/hamzury-mark.png">
+<meta property="og:url" content="https://hamzury.com/scalar/ourservice">
+<meta property="og:site_name" content="HAMZURY · Scalar">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Scalar Services — AI Automation, Custom Software, Industry Packages">
+<meta name="twitter:description" content="The full Scalar service catalog: foundation automations, operations dashboards, AI agents, and custom software.">
+<meta name="twitter:image" content="https://hamzury.com/hamzury-mark.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --serif: 'Fraunces', ui-serif, "New York", Georgia, serif;
+    --bg: #F7F8FB;
+    --paper: #FFFFFF;
+    --ink: #0F1F3D;
+    --ink-soft: #2A3852;
+    --ink-muted: #6B7691;
+    --ink-faint: #B0B8C9;
+    --line: #E2E6EE;
+    --line-soft: #EEF1F6;
+    --accent: #0F1F3D;
+    --accent-pale: #E5EAF2;
+    --gold: #00B8D9;
+    --gold-pale: #DDF3F8;
+    --cream: #F5F1EA;
+    --success: #1A6B3C;
+    --danger: #A3301F;
+    --focus: rgba(15,31,61,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: var(--sans); background: var(--bg); color: var(--ink);
+    -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility; letter-spacing: -0.005em;
+    min-height: 100vh;
+  }
+
+  /* ============= PHONE FRAME (everywhere, even desktop) ============= */
+  .frame {
+    max-width: 420px; margin: 0 auto;
+    background: var(--paper); min-height: 100vh;
+    position: relative;
+    box-shadow: 0 0 60px rgba(15,44,74,0.06);
+  }
+  @media (min-width: 500px) {
+    body { padding: 24px 0; }
+    .frame { border-radius: 24px; min-height: calc(100vh - 48px); overflow: hidden; }
+  }
+
+  /* ============= TOP BAR ============= */
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 0.5px solid var(--line);
+    padding: 14px 18px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .topbar-back {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--line-soft); border: none; cursor: pointer;
+    display: none; place-items: center; flex-shrink: 0;
+  }
+  .topbar-back.show { display: grid; }
+  .topbar-back svg { width: 14px; height: 14px; stroke: var(--ink); fill: none; stroke-width: 2; }
+  .topbar-brand {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--serif); font-size: 16px; font-weight: 500;
+    letter-spacing: -0.015em; flex: 1; min-width: 0;
+    color: var(--ink); text-decoration: none;
+    cursor: pointer; transition: opacity 0.12s;
+  }
+  .topbar-brand:hover { opacity: 0.7; }
+  .topbar-brand .dot {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 11px;
+    flex-shrink: 0;
+  }
+  .topbar-brand .brand-logo {
+    width: 26px; height: 26px;
+    flex-shrink: 0;
+  }
+  .topbar-brand small {
+    font-family: var(--sans); font-size: 9.5px; font-weight: 500;
+    color: var(--ink-muted); letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+  .cart-btn {
+    background: none; border: none; cursor: pointer;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: grid; place-items: center;
+    position: relative; transition: background 0.12s;
+    flex-shrink: 0;
+  }
+  .cart-btn:hover { background: var(--line-soft); }
+  .cart-btn svg { width: 18px; height: 18px; stroke: var(--ink); fill: none; stroke-width: 1.5; }
+  .cart-badge {
+    position: absolute; top: 4px; right: 4px;
+    background: var(--accent); color: #fff;
+    font-size: 10px; font-weight: 500;
+    min-width: 16px; height: 16px;
+    border-radius: 8px; padding: 0 4px;
+    display: none; place-items: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .cart-badge.show { display: grid; }
+
+  /* ============= PAGE CONTENT ============= */
+  .page { padding: 24px 22px 100px; }
+
+  .hero-eyebrow {
+    font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em;
+    color: var(--gold); text-transform: uppercase; margin-bottom: 10px;
+  }
+  .hero-title {
+    font-family: var(--serif); font-size: 30px; font-weight: 400;
+    letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 10px;
+  }
+  .hero-title em { font-style: italic; color: var(--accent); }
+  .hero-sub {
+    font-size: 14px; color: var(--ink-soft); line-height: 1.55;
+    margin-bottom: 32px;
+  }
+
+  /* ============= CATEGORY ROWS ============= */
+  .cat-row {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 14px; padding: 18px 18px;
+    margin-bottom: 10px; cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .cat-row:hover { border-color: var(--accent); transform: translateX(3px); }
+  .cat-row .num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent-pale); color: var(--accent);
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .cat-row .meta { flex: 1; min-width: 0; }
+  .cat-row .name {
+    font-family: var(--serif); font-size: 16px; font-weight: 500;
+    letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 2px;
+  }
+  .cat-row .desc {
+    font-size: 12px; color: var(--ink-muted); line-height: 1.45;
+  }
+  .cat-row .arrow {
+    color: var(--ink-faint); flex-shrink: 0;
+    transition: transform 0.15s;
+  }
+  .cat-row:hover .arrow { transform: translateX(2px); color: var(--accent); }
+
+  /* ============= ITEM LIST (List-first design) ============= */
+  .section-header {
+    margin: 24px 0 14px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .section-title {
+    font-family: var(--serif); font-size: 17px; font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+  .section-meta {
+    font-size: 11px; color: var(--ink-muted);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .filter-bar {
+    display: flex; gap: 6px; overflow-x: auto;
+    margin-bottom: 14px; padding-bottom: 4px;
+  }
+  .filter-bar::-webkit-scrollbar { display: none; }
+  .filter-pill {
+    padding: 5px 12px; border: 0.5px solid var(--line);
+    border-radius: 999px; background: var(--paper);
+    cursor: pointer; font: 500 11.5px var(--sans);
+    color: var(--ink-soft); white-space: nowrap;
+    font-family: inherit; transition: all 0.12s;
+  }
+  .filter-pill:hover { color: var(--accent); border-color: var(--accent); }
+  .filter-pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .item-list {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; overflow: hidden;
+  }
+  .item {
+    border-bottom: 0.5px solid var(--line-soft);
+    transition: background 0.1s;
+  }
+  .item:last-child { border-bottom: none; }
+  .item-head {
+    padding: 12px 16px;
+    display: flex; align-items: flex-start; gap: 10px;
+    cursor: pointer;
+  }
+  .item-head:hover { background: var(--line-soft); }
+  .item.expanded .item-head { background: var(--cream); }
+  .item-meta {
+    flex: 1; min-width: 0;
+  }
+  .item-name-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 2px;
+  }
+  .item-name {
+    font-size: 14px; font-weight: 500; color: var(--ink);
+    letter-spacing: -0.005em; line-height: 1.25;
+  }
+  .item-use {
+    font-size: 12px; color: var(--ink-muted);
+    line-height: 1.4; letter-spacing: -0.002em;
+  }
+  .item-tag {
+    font-size: 10px; font-weight: 500; padding: 1px 7px;
+    border-radius: 4px; letter-spacing: 0.02em;
+    text-transform: uppercase; flex-shrink: 0;
+  }
+  .item-tag.renewal { background: var(--gold-pale); color: var(--gold); }
+  .item-tag.modification { background: var(--accent-pale); color: var(--accent); }
+  .item-tag.annual { background: var(--gold-pale); color: var(--gold); }
+  .item-tag.free { background: rgba(26,107,60,0.12); color: var(--success); }
+  .item-tag.guide { background: var(--cream); color: var(--gold); }
+  .item-cart {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: none; border: 0.5px solid var(--line); cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+    margin-top: 2px;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .item-cart:hover { border-color: var(--accent); background: var(--accent-pale); }
+  .item-cart svg { width: 14px; height: 14px; stroke: var(--ink-soft); fill: none; stroke-width: 1.7; }
+  .item-cart:hover svg { stroke: var(--accent); }
+  .item-cart.added {
+    background: var(--success); border-color: var(--success);
+  }
+  .item-cart.added svg { stroke: #fff; }
+
+  .item-body {
+    max-height: 0; overflow: hidden;
+    transition: max-height 0.3s ease;
+  }
+  .item.expanded .item-body { max-height: 600px; }
+  .item-body-inner {
+    padding: 4px 16px 16px;
+    border-top: 0.5px solid var(--line-soft);
+  }
+  .item-body-row {
+    display: flex; align-items: baseline; gap: 8px;
+    padding: 5px 0; font-size: 12.5px;
+  }
+  .item-body-label {
+    color: var(--ink-muted);
+    width: 75px; flex-shrink: 0;
+  }
+  .item-body-value {
+    color: var(--ink-soft); line-height: 1.5; flex: 1;
+  }
+  .item-body-value.fee {
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+  }
+  .item-actions {
+    display: flex; gap: 8px; margin-top: 12px;
+  }
+  .item-action-chat, .item-action-add {
+    flex: 1; padding: 9px 12px;
+    border-radius: 8px; font: 500 12.5px var(--sans);
+    cursor: pointer; font-family: inherit;
+    transition: all 0.12s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .item-action-chat {
+    background: var(--paper); color: var(--ink-soft);
+    border: 0.5px solid var(--line);
+  }
+  .item-action-chat:hover { border-color: var(--accent); color: var(--accent); }
+  .item-action-add {
+    background: var(--accent); color: #fff; border: none;
+  }
+  .item-action-add:hover { filter: brightness(1.12); }
+  .item-action-add.added { background: var(--success); }
+
+  .edu-box {
+    margin: 12px 0 4px;
+    padding: 12px 14px;
+    background: var(--cream);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+  }
+  .edu-title {
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    color: var(--gold); margin-bottom: 6px;
+    letter-spacing: -0.005em;
+  }
+  .edu-body {
+    font-size: 12.5px; color: var(--ink-soft); line-height: 1.55;
+  }
+  .ind-search-wrap {
+    position: relative; margin-bottom: 16px;
+  }
+  .ind-search {
+    width: 100%; padding: 10px 14px 10px 36px;
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 999px; font: 400 13.5px var(--sans);
+    color: var(--ink); font-family: inherit;
+    letter-spacing: -0.005em;
+  }
+  .ind-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--focus); }
+  .ind-search-icon {
+    position: absolute; left: 13px; top: 50%;
+    transform: translateY(-50%); color: var(--ink-muted);
+    pointer-events: none;
+  }
+  .item-note {
+    margin: 10px 0 4px;
+    padding: 8px 12px;
+    background: var(--gold-pale);
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-style: italic;
+    color: var(--gold);
+    line-height: 1.5;
+  }
+
+  /* ============= INDUSTRY PACKAGES SCREEN ============= */
+  .industries-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+  }
+  .industry-card {
+    background: var(--paper); border: 0.5px solid var(--line);
+    border-radius: 12px; padding: 18px 14px;
+    cursor: pointer; text-align: center;
+    transition: all 0.15s;
+  }
+  .industry-card:hover {
+    border-color: var(--gold); transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(184,115,31,0.08);
+  }
+  .industry-emoji { font-size: 28px; margin-bottom: 8px; }
+  .industry-name {
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    letter-spacing: -0.005em; line-height: 1.2; margin-bottom: 2px;
+  }
+  .industry-meta {
+    font-size: 10.5px; color: var(--ink-muted);
+  }
+
+  /* ============= INDUSTRY DETAIL (within frame, swipeable) ============= */
+  .industry-detail-head {
+    text-align: center; padding: 16px 0 22px;
+    border-bottom: 0.5px solid var(--line);
+    margin-bottom: 22px;
+  }
+  .industry-detail-emoji { font-size: 40px; margin-bottom: 8px; }
+  .industry-detail-name {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 4px;
+  }
+  .industry-detail-sub {
+    font-size: 12.5px; color: var(--ink-muted); line-height: 1.5;
+  }
+
+  .subtype-tabs {
+    display: flex; gap: 6px; overflow-x: auto;
+    margin-bottom: 18px; padding-bottom: 4px;
+  }
+  .subtype-tabs::-webkit-scrollbar { display: none; }
+  .subtype-tab {
+    padding: 7px 14px; border: 0.5px solid var(--line);
+    border-radius: 999px; background: var(--paper);
+    cursor: pointer; font: 500 12px var(--sans); color: var(--ink-soft);
+    white-space: nowrap; font-family: inherit;
+    transition: all 0.12s;
+  }
+  .subtype-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .subtype-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .subtype-intro {
+    font-size: 13px; color: var(--ink-soft);
+    line-height: 1.55; margin-bottom: 14px;
+    padding: 12px 14px; background: var(--cream);
+    border-radius: 10px; border-left: 3px solid var(--gold);
+  }
+
+  /* ============= INDUSTRY FOOTER (other industries link) ============= */
+  .other-industries {
+    margin-top: 32px; padding: 20px;
+    background: var(--bg); border-radius: 14px;
+    border: 0.5px solid var(--line);
+  }
+  .other-industries-label {
+    font-size: 11px; color: var(--ink-muted); margin-bottom: 12px;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    font-weight: 500;
+  }
+  .other-industries-list {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  }
+  .other-industry-link {
+    padding: 8px 12px; background: var(--paper);
+    border: 0.5px solid var(--line); border-radius: 8px;
+    font-size: 12.5px; color: var(--ink); cursor: pointer;
+    transition: all 0.12s; font-family: inherit;
+    display: flex; align-items: center; gap: 8px;
+    text-align: left;
+  }
+  .other-industry-link:hover { border-color: var(--accent); color: var(--accent); }
+  .other-industry-link span { font-size: 14px; }
+
+  /* ============= CHAT MODAL ============= */
+  .chat-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(10,22,40,0.55);
+    display: none; place-items: center;
+    padding: 20px; backdrop-filter: blur(4px);
+  }
+  .chat-overlay.open { display: grid; }
+  .chat-modal {
+    width: 100%; max-width: 380px; max-height: 90vh;
+    background: var(--paper); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.25);
+  }
+  .chat-head {
+    padding: 18px 20px;
+    background: linear-gradient(180deg, var(--cream), var(--paper));
+    border-bottom: 0.5px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .chat-head .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: grid; place-items: center;
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    flex-shrink: 0;
+  }
+  .chat-head-title { flex: 1; min-width: 0; }
+  .chat-head-name {
+    font-family: var(--serif); font-size: 14.5px; font-weight: 500;
+    letter-spacing: -0.005em;
+  }
+  .chat-head-status {
+    font-size: 11px; color: var(--ink-muted);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .chat-head-status::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--success);
+  }
+  .chat-close {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(10,22,40,0.06); border: none; cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .chat-close svg { width: 12px; height: 12px; stroke: var(--ink); fill: none; stroke-width: 2; }
+  .chat-body {
+    flex: 1; overflow-y: auto;
+    padding: 18px; background: var(--bg);
+  }
+  .chat-msg {
+    margin-bottom: 12px; display: flex;
+  }
+  .chat-msg.bot { justify-content: flex-start; }
+  .chat-msg.user { justify-content: flex-end; }
+  .chat-bubble {
+    max-width: 85%; padding: 10px 14px;
+    border-radius: 18px; font-size: 13.5px;
+    line-height: 1.5; letter-spacing: -0.003em;
+  }
+  .chat-msg.bot .chat-bubble {
+    background: var(--paper); color: var(--ink);
+    border-bottom-left-radius: 5px;
+    border: 0.5px solid var(--line);
+  }
+  .chat-msg.user .chat-bubble {
+    background: var(--accent); color: #fff;
+    border-bottom-right-radius: 5px;
+  }
+  .chat-bubble strong { font-weight: 500; }
+  .chat-bubble ul { list-style: none; margin-top: 6px; padding-left: 0; }
+  .chat-bubble ul li { padding: 2px 0; padding-left: 12px; position: relative; }
+  .chat-bubble ul li::before { content: '·'; position: absolute; left: 4px; }
+  .chat-options {
+    margin-top: 8px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .chat-option {
+    background: var(--paper); border: 0.5px solid var(--line);
+    color: var(--accent); padding: 9px 14px;
+    border-radius: 999px; font: 500 12.5px var(--sans);
+    cursor: pointer; text-align: left; font-family: inherit;
+    transition: all 0.12s;
+  }
+  .chat-option:hover { background: var(--accent-pale); border-color: var(--accent); }
+  .chat-foot {
+    padding: 12px 16px; border-top: 0.5px solid var(--line);
+    background: var(--paper);
+    display: none;
+  }
+  .chat-foot.show { display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1; padding: 9px 14px; background: var(--bg);
+    border: 0.5px solid var(--line); border-radius: 999px;
+    font: 400 13.5px var(--sans); color: var(--ink);
+    font-family: inherit;
+  }
+  .chat-input:focus { outline: none; border-color: var(--accent); }
+  .chat-send {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    border: none; cursor: pointer;
+    display: grid; place-items: center; flex-shrink: 0;
+  }
+  .chat-send svg { width: 14px; height: 14px; stroke: #fff; fill: none; stroke-width: 2; }
+
+  /* ============= CART MODAL ============= */
+  .cart-overlay {
+    position: fixed; inset: 0; z-index: 150;
+    background: rgba(10,22,40,0.55);
+    display: none; place-items: center;
+    padding: 20px;
+  }
+  .cart-overlay.open { display: grid; }
+  .cart-modal {
+    width: 100%; max-width: 380px; max-height: 85vh;
+    background: var(--paper); border-radius: 24px;
+    overflow: hidden; display: flex; flex-direction: column;
+  }
+  .cart-modal-head {
+    padding: 18px 20px; border-bottom: 0.5px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .cart-modal-head h3 {
+    font-family: var(--serif); font-size: 18px; font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+  .cart-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+  .cart-row {
+    padding: 12px 20px; display: flex; justify-content: space-between;
+    align-items: flex-start; gap: 12px;
+    border-bottom: 0.5px solid var(--line-soft);
+  }
+  .cart-row:last-child { border-bottom: none; }
+  .cart-row-meta { flex: 1; min-width: 0; }
+  .cart-row-name {
+    font-size: 13.5px; font-weight: 500; color: var(--ink);
+    margin-bottom: 2px; line-height: 1.3;
+  }
+  .cart-row-tag {
+    font-size: 11px; color: var(--ink-muted);
+  }
+  .cart-row-fee {
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .cart-row-x {
+    background: none; border: none; cursor: pointer;
+    color: var(--ink-faint); font-size: 18px; line-height: 1;
+    padding: 0; margin-left: 4px; font-family: inherit;
+  }
+  .cart-row-x:hover { color: var(--danger); }
+  .cart-foot {
+    padding: 16px 20px; border-top: 0.5px solid var(--line);
+    background: var(--bg);
+  }
+  .cart-total {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .cart-total-label { font-size: 12px; color: var(--ink-muted); }
+  .cart-total-value {
+    font-family: var(--serif); font-size: 22px; font-weight: 500;
+    color: var(--accent); font-variant-numeric: tabular-nums;
+  }
+  .cart-checkout {
+    width: 100%; padding: 13px;
+    background: var(--accent); color: #fff;
+    border-radius: 12px; border: none; cursor: pointer;
+    font: 500 14px var(--sans); font-family: inherit;
+  }
+  .cart-checkout:hover { filter: brightness(1.1); }
+  .cart-empty {
+    padding: 50px 20px; text-align: center; color: var(--ink-muted);
+    font-size: 13px;
+  }
+  .cart-empty .big {
+    font-family: var(--serif); font-size: 18px; color: var(--ink-soft);
+    margin-bottom: 6px;
+  }
+
+  /* ============= TOAST ============= */
+  .toast {
+    position: fixed; bottom: 80px; left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--ink); color: #fff;
+    padding: 10px 16px; border-radius: 999px;
+    font-size: 12.5px; font-weight: 500;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none;
+    transition: all 0.25s; z-index: 300;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ============= COMPLIANCE FLAGSHIP CARD ============= */
+  .flagship {
+    background: linear-gradient(135deg, var(--accent), #1A4373);
+    border-radius: 16px; padding: 22px;
+    color: #fff; margin-bottom: 14px;
+  }
+  .flagship-eyebrow {
+    font-size: 10px; font-weight: 500; letter-spacing: 0.15em;
+    color: var(--gold-pale); margin-bottom: 10px; text-transform: uppercase;
+  }
+  .flagship-title {
+    font-family: var(--serif); font-size: 22px; font-weight: 400;
+    letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 10px;
+    color: #fff;
+  }
+  .flagship-title em { font-style: italic; color: var(--gold-pale); }
+  .flagship-desc { font-size: 12.5px; line-height: 1.55; opacity: 0.92; margin-bottom: 14px; }
+  .flagship-features { list-style: none; padding: 0; margin: 0 0 14px; }
+  .flagship-features li {
+    padding: 4px 0; font-size: 12px; opacity: 0.9;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .flagship-features li::before {
+    content: '✓'; color: var(--gold-pale); flex-shrink: 0;
+  }
+  .flagship-pricerow {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 12px 0; border-top: 0.5px solid rgba(255,255,255,0.15);
+  }
+  .flagship-price {
+    font-family: var(--serif); font-size: 24px; font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+  .flagship-price small { font-size: 12px; opacity: 0.7; font-family: var(--sans); font-weight: 400; }
+  .flagship-cta {
+    background: var(--gold); color: #fff;
+    padding: 9px 16px; border-radius: 999px;
+    border: none; cursor: pointer;
+    font: 500 12px var(--sans); font-family: inherit;
+  }
+  .flagship-cta:hover { filter: brightness(1.12); }
+</style>
+</head>
+<body>
+
+<div class="frame">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <button class="topbar-back" id="back-btn" onclick="goBack()" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <a class="topbar-brand" href="/scalar" title="Back to Scalar home" aria-label="Back to Scalar home">
+      <svg class="brand-logo" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg" aria-label="Scalar">
+        <rect x="6" y="6" width="48" height="48" rx="12" fill="#0F1F3D"/>
+        <path d="M22 21 C22 17 25 15 30 15 C35 15 38 18 38 22 L34 22 C34 19 32 18 30 18 C28 18 26 19 26 21 C26 23 28 24 32 25 C37 26 40 28 40 32 C40 36 36 39 30 39 C24 39 21 36 21 32 L25 32 C25 35 27 36 30 36 C33 36 35 35 35 32 C35 30 33 29 29 28 C24 27 22 25 22 21 Z" fill="#00B8D9"/>
+        <circle cx="42" cy="18" r="3" fill="#00B8D9"/>
+      </svg>
+      <span>Scalar</span>
+      <small>Hamzury</small>
+    </a>
+    <button class="cart-btn" onclick="openCart()" aria-label="Cart">
+      <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <span class="cart-badge" id="cart-badge">0</span>
+    </button>
+  </header>
+
+  <main class="page" id="page"></main>
+
+</div>
+
+<!-- CHAT MODAL -->
+<div class="chat-overlay" id="chat-overlay">
+  <div class="chat-modal">
+    <div class="chat-head">
+      <div class="avatar">B</div>
+      <div class="chat-head-title">
+        <div class="chat-head-name">Scalar Assistant</div>
+        <div class="chat-head-status">Online · Replies in seconds</div>
+      </div>
+      <button class="chat-close" onclick="closeChat()">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="chat-body" id="chat-body"></div>
+    <div class="chat-foot" id="chat-foot">
+      <input type="text" class="chat-input" id="chat-input" placeholder="Type your answer...">
+      <button class="chat-send" onclick="sendChat()">
+        <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CART MODAL -->
+<div class="cart-overlay" id="cart-overlay">
+  <div class="cart-modal">
+    <div class="cart-modal-head">
+      <h3>Your selection</h3>
+      <button class="chat-close" onclick="closeCart()">
+        <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="cart-list" id="cart-list"></div>
+    <div class="cart-foot" id="cart-foot-area"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============= DATA =============
+
+// Educational layer — only services that need explanation
+const EDU = {
+  ai_sales_agent: {
+    title: 'About AI Sales Agents',
+    body: 'An AI sales agent is a 24/7 system that handles inbound inquiries, qualifies leads against your criteria, and books calls into your team\'s calendar.\n\nIt is trained on your specific products, pricing, and sales scripts. It does not replace your sales team — it removes the work of handling unqualified leads so your team focuses on closing.'
+  },
+  ai_proposal_writer: {
+    title: 'About AI Proposal Writers',
+    body: 'An AI proposal writer generates first-draft proposals from a project brief — cutting proposal time from hours to minutes.\n\nIt learns from your past winning proposals and your services list. Your team reviews and customizes the draft instead of starting from blank.'
+  },
+  ai_accountant: {
+    title: 'About AI Accounting Assistants',
+    body: 'An AI accounting assistant categorizes your bank transactions, flags anomalies, and prepares clean statements for your accountant.\n\nIt does not replace your accountant — it removes 80% of their data-entry work so they focus on tax strategy and advisory.'
+  },
+  custom_crm: {
+    title: 'About Custom CRMs',
+    body: 'A custom CRM is built to fit exactly how your team actually works — not the other way around.\n\nOff-the-shelf CRMs force your process to match their software. A custom CRM eliminates the tools you do not need and adds the workflows your business actually uses.'
+  },
+  custom_app: {
+    title: 'About Custom Mobile Apps',
+    body: 'A custom mobile app is built specifically for your business — your branding, your features, your data.\n\nWe handle iOS, Android, or cross-platform builds depending on your audience. Includes backend setup, app store submission, and post-launch support.'
+  },
+  industry_os: {
+    title: 'About Industry-Specific Operating Systems',
+    body: 'An industry OS is full software that runs every aspect of an industry-specific business — schools, clinics, logistics, etc.\n\nUnlike generic CRMs, an industry OS understands the regulatory, operational, and customer-experience needs of one specific industry deeply.'
+  },
+  workflow_orchestration: {
+    title: 'About Workflow Orchestration',
+    body: 'Workflow orchestration connects 10+ tools into one automated end-to-end process.\n\nInstead of manually moving data between Gmail, your CRM, accounting tool, and project management tool — one trigger sets off the entire chain automatically.'
+  },
+  chatgpt_integration: {
+    title: 'About AI Integrations',
+    body: 'AI integrations embed ChatGPT, Claude, or other LLMs directly into your existing software.\n\nUse cases: AI inside your CRM that drafts emails, AI inside your support tool that suggests replies, AI inside your dashboard that explains anomalies in plain English.'
+  },
+  lead_capture: {
+    title: 'About Lead Capture Systems',
+    body: 'A lead capture system pulls leads from every source — your website, social media, ads, referrals — into one place.\n\nNo more leads dying in DMs or forgotten emails. Every inbound interest gets tracked, scored, and routed automatically.'
+  },
+  crm_setup: {
+    title: 'About CRM Setup',
+    body: 'A CRM is a system that tracks every customer, every conversation, every deal in one place.\n\nWithout one, your business runs on individual people memories — which means lost leads, forgotten follow-ups, and revenue leakage. With one, every team member sees the full customer history.'
+  },
+  ai_content_engine: {
+    title: 'About AI Content Engines',
+    body: 'An AI content engine generates social media posts, emails, and blog content trained on your brand voice.\n\nWe work alongside your brand team (or our sister company Medialy) to capture your voice deeply — so AI-generated content sounds like you, not like a generic AI.'
+  }
+};
+
+// Category 1 — Automations & Custom Software (tiered)
+// Tiers: 'foundation' (every business needs), 'operations' (internal ops), 'industry' (custom builds)
+const CERTS = [
+  // === TIER 1: FOUNDATION AUTOMATIONS ===
+  { id: 'lead_capture', tier: 'foundation', name: 'Lead Capture & Routing', use: 'Capture leads from any channel and route to the right person', fee: 'Starts from ₦450,000', timeline: '5-7 working days', need: 'Existing channels (forms, ads, IG, WhatsApp)', tag: '', note: 'Includes web form, WhatsApp inbox, and Instagram DM unification into one CRM.' },
+  { id: 'crm_setup', tier: 'foundation', name: 'CRM Setup & Migration', use: 'Set up a proper CRM and migrate existing client data', fee: 'Starts from ₦600,000', timeline: '7-14 working days', need: 'Existing client list (any format)', tag: '', note: 'We use HubSpot, Pipedrive, or build custom — depending on your needs and budget.' },
+  { id: 'sales_automation', tier: 'foundation', name: 'Sales Pipeline Automation', use: 'Automated follow-ups, proposal generation, deal tracking', fee: 'Starts from ₦750,000', timeline: '10-14 working days', need: 'Sales process documented, CRM in place', tag: '' },
+  { id: 'onboarding_flow', tier: 'foundation', name: 'Client Onboarding Flow', use: 'Welcome sequence, document collection, kickoff scheduling', fee: 'Starts from ₦500,000', timeline: '7-10 working days', need: 'Onboarding requirements list', tag: '' },
+  { id: 'payment_invoicing', tier: 'foundation', name: 'Payment & Invoicing Automation', use: 'Automated invoices, reminders, reconciliation', fee: 'Starts from ₦550,000', timeline: '7-10 working days', need: 'Payment provider account (Paystack/Flutterwave/Stripe)', tag: '', note: 'Connects to your bank, generates invoices, sends reminders, reconciles automatically.' },
+  { id: 'whatsapp_business', tier: 'foundation', name: 'WhatsApp Business Automation', use: 'Auto-replies, broadcast lists, customer journey via WhatsApp', fee: 'Starts from ₦400,000', timeline: '5-7 working days', need: 'WhatsApp Business account, FAQ list', tag: '' },
+
+  // === TIER 2: OPERATIONAL AUTOMATIONS ===
+  { id: 'finance_dashboard', tier: 'operations', name: 'Finance Operations Dashboard', use: 'Real-time view of cash flow, receivables, expenses', fee: 'Starts from ₦800,000', timeline: '10-14 working days', need: 'Bank statements, accounting tool access', tag: '' },
+  { id: 'hr_automation', tier: 'operations', name: 'HR Operations Automation', use: 'Hiring pipeline, onboarding, payroll, leave tracking', fee: 'Starts from ₦900,000', timeline: '14-21 working days', need: 'Employee count, current HR processes', tag: '' },
+  { id: 'inventory_system', tier: 'operations', name: 'Inventory & Stock Automation', use: 'Real-time stock levels, auto-reorder, supplier coordination', fee: 'Starts from ₦750,000', timeline: '10-14 working days', need: 'Product catalog, supplier list', tag: '' },
+  { id: 'customer_support_ai', tier: 'operations', name: 'AI Customer Support Triage', use: 'AI agent answers tier-1 inquiries, escalates complex cases to humans', fee: 'Starts from ₦650,000', timeline: '7-14 working days', need: 'FAQ, support email/chat history', tag: '', note: 'Trained on your business knowledge. Routes only complex cases to your team.' },
+  { id: 'ops_dashboard', tier: 'operations', name: 'Operations Dashboard', use: 'Single dashboard showing every key metric across the business', fee: 'Starts from ₦1,200,000', timeline: '14-21 working days', need: 'Key metrics defined, data sources identified', tag: '' },
+  { id: 'reporting_automation', tier: 'operations', name: 'Automated Reporting', use: 'Daily/weekly/monthly reports auto-generated and emailed', fee: 'Starts from ₦400,000', timeline: '5-10 working days', need: 'Report types and recipients list', tag: '' },
+  { id: 'document_automation', tier: 'operations', name: 'Document Generation Automation', use: 'Auto-generate proposals, contracts, reports from data', fee: 'Starts from ₦500,000', timeline: '7-10 working days', need: 'Document templates', tag: '' },
+  { id: 'maintenance_subscription', tier: 'operations', name: 'Maintenance Subscription', use: 'We host, monitor, and fix bugs in your existing systems', fee: 'Starts from ₦100,000/month', timeline: 'Ongoing', need: 'Existing system access', tag: 'Subscription', note: 'For systems we did not build — we audit first, then take over maintenance.' },
+
+  // === TIER 3: CUSTOM SOFTWARE & AI AGENTS ===
+  { id: 'custom_crm', tier: 'industry', name: 'Custom CRM', use: 'Bespoke CRM built around your exact sales process', fee: 'Quote on request', timeline: '6-12 weeks', need: 'Sales process documentation, team size', tag: '', note: 'For businesses outgrowing HubSpot/Pipedrive. Full ownership of code and data.' },
+  { id: 'industry_os', tier: 'industry', name: 'Industry Operating System', use: 'Full operating system for your specific industry', fee: 'Quote on request', timeline: '12-24 weeks', need: 'Detailed requirements, key workflows', tag: '', note: 'Examples: clinic OS, school OS, logistics OS. Full ownership of the software.' },
+  { id: 'client_portal', tier: 'industry', name: 'Client Portal', use: 'White-labeled portal for your clients to log in and track work', fee: 'Starts from ₦1,500,000', timeline: '8-12 weeks', need: 'Client journey defined, branding assets', tag: '' },
+  { id: 'mobile_app', tier: 'industry', name: 'Mobile App (iOS + Android)', use: 'Native or cross-platform mobile app', fee: 'Quote on request', timeline: '12-20 weeks', need: 'Feature spec, design preferences', tag: '', note: 'Built with React Native or Flutter for fast cross-platform delivery.' },
+  { id: 'web_platform', tier: 'industry', name: 'Web Platform / Marketplace', use: 'Two-sided platform connecting buyers and sellers', fee: 'Quote on request', timeline: '12-24 weeks', need: 'Platform model, monetization plan', tag: '' },
+  { id: 'ai_sales_agent', tier: 'industry', name: 'AI Sales Agent', use: '24/7 AI agent that answers inquiries and books calls', fee: 'Starts from ₦800,000', timeline: '4-6 weeks', need: 'Sales scripts, FAQ, calendar access', tag: '', note: 'Trained on your offers, your voice, your sales process. Books qualified calls only.' },
+  { id: 'ai_assistant', tier: 'industry', name: 'AI Operations Assistant', use: 'AI that drafts, summarizes, and acts on internal operations', fee: 'Starts from ₦900,000', timeline: '6-8 weeks', need: 'Use cases identified', tag: '', note: 'Examples: AI accountant categorizing transactions, AI HR screening applications.' },
+  { id: 'chatgpt_integration', tier: 'industry', name: 'ChatGPT / Claude Integration', use: 'Embed AI into your existing tools and workflows', fee: 'Starts from ₦450,000', timeline: '3-5 weeks', need: 'Existing systems, intended use cases', tag: '' },
+
+  // === AUDITS & STRATEGIC SERVICES ===
+  { id: 'tech_audit', tier: 'foundation', name: 'Tech Stack Audit', use: 'Review existing systems, identify waste and gaps', fee: '₦300,000', timeline: '5-7 working days', need: 'System access, current costs', tag: 'Audit', note: 'Most clients save more in saved subscriptions than the audit costs.' },
+  { id: 'automation_audit', tier: 'operations', name: 'Automation Opportunity Audit', use: 'Map your business and identify high-ROI automations', fee: '₦400,000', timeline: '7-10 working days', need: 'Process walkthrough sessions', tag: 'Audit' },
+  { id: 'ai_readiness_audit', tier: 'industry', name: 'AI Readiness Audit', use: 'Assess where AI fits in your business, prioritized roadmap', fee: '₦500,000', timeline: '7-14 working days', need: 'Business overview, key challenges', tag: 'Audit' },
+
+  // === SUBSCRIPTIONS (separate items also visible under Subscription filter) ===
+  { id: 'scalar_run_starter', tier: 'operations', name: 'Scalar Run · Starter', use: 'Monitor + maintain up to 3 automations', fee: '₦200,000/month', timeline: 'Ongoing', need: 'Existing automations to manage', tag: 'Subscription' },
+  { id: 'scalar_run_growth', tier: 'operations', name: 'Scalar Run · Growth', use: 'Up to 10 automations + 1 AI agent + monthly improvements', fee: '₦350,000/month', timeline: 'Ongoing', need: 'Existing stack', tag: 'Subscription' },
+  { id: 'scalar_run_enterprise', tier: 'operations', name: 'Scalar Run · Enterprise', use: 'Unlimited automations, multiple AI agents, dedicated engineer', fee: '₦500,000/month', timeline: 'Ongoing', need: 'Existing stack + dedicated engineer brief', tag: 'Subscription' }
+];
+
+// Category 3 — Resources & Frameworks
+// Includes: Frameworks (custom-built for client) · Free Playbooks (lead magnets) · Paid Frameworks (downloadable)
+const LEGAL = [
+  // Custom frameworks (built per client)
+  { id: 'tech_strategy', name: 'Tech Strategy Document', use: 'Comprehensive 12-month tech roadmap for your business', fee: '₦400,000', timeline: '2-3 weeks', need: 'Business goals, current stack, growth plan', tag: '', kind: 'Custom drafted' },
+  { id: 'automation_blueprint', name: 'Automation Blueprint', use: 'Map of every automation your business needs, prioritized by ROI', fee: '₦350,000', timeline: '2-3 weeks', need: 'Process walkthrough sessions', tag: '', kind: 'Custom drafted' },
+  { id: 'ai_strategy', name: 'AI Strategy & Roadmap', use: 'Where AI fits in your business — practical, prioritized', fee: '₦450,000', timeline: '2-4 weeks', need: 'Business overview, key challenges', tag: '', kind: 'Custom drafted' },
+  { id: 'data_architecture', name: 'Data Architecture Plan', use: 'How to structure data so reporting and AI actually work', fee: '₦500,000', timeline: '3-4 weeks', need: 'Current data sources and tools', tag: '', kind: 'Custom drafted' },
+  { id: 'tech_due_diligence', name: 'Tech Due Diligence', use: 'Tech review for M&A, investments, partnerships', fee: 'Quote on request', timeline: '2-4 weeks', need: 'Target company access', tag: '', kind: 'Custom drafted' },
+  { id: 'system_documentation', name: 'System Documentation Package', use: 'Document your existing systems for handover or compliance', fee: 'Starts from ₦300,000', timeline: '2-3 weeks', need: 'Access to existing systems', tag: '', kind: 'Custom drafted' },
+  { id: 'sla_drafting', name: 'Tech SLA Drafting', use: 'Service level agreement for vendors or internal teams', fee: '₦150,000', timeline: '5-7 days', need: 'Service scope, expected metrics', tag: '', kind: 'Custom drafted' },
+  { id: 'security_assessment', name: 'Security Assessment', use: 'Review of authentication, data protection, and access controls', fee: 'Starts from ₦400,000', timeline: '2-3 weeks', need: 'System access for assessment', tag: '', kind: 'Custom drafted' },
+
+  // Free playbooks (lead magnets)
+  { id: 'playbook_first_automation', name: 'Your First Business Automation', use: '8-page playbook on what to automate first and why', fee: 'Free', timeline: 'Instant download', need: 'Email address only', tag: 'Free', kind: 'Pamphlet' },
+  { id: 'playbook_ai_intro', name: 'AI for African Businesses — Beginners Guide', use: 'Practical intro to using AI without hype or jargon', fee: 'Free', timeline: 'Instant download', need: 'Email address only', tag: 'Free', kind: 'Pamphlet' },
+  { id: 'playbook_tech_audit', name: 'DIY Tech Stack Audit Checklist', use: 'Audit your own tools and find waste', fee: 'Free', timeline: 'Instant download', need: 'Email address only', tag: 'Free', kind: 'Pamphlet' },
+  { id: 'playbook_lead_to_customer', name: 'Lead to Customer Automation Map', use: 'The 9 touchpoints between a lead and a customer', fee: 'Free', timeline: 'Instant download', need: 'Email address only', tag: 'Free', kind: 'Pamphlet' },
+  { id: 'playbook_buy_vs_build', name: 'Buy vs Build — A Decision Framework', use: 'When to use SaaS vs build custom software', fee: 'Free', timeline: 'Instant download', need: 'Email address only', tag: 'Free', kind: 'Pamphlet' },
+
+  // Paid frameworks (in-depth playbooks)
+  { id: 'framework_automation_blueprint', name: 'The Complete Automation Blueprint', use: '40-page framework + templates for mapping automations', fee: '₦25,000', timeline: 'Instant download', need: 'Payment confirmation', tag: 'Guide', kind: 'Setup Guide' },
+  { id: 'framework_ai_implementation', name: 'AI Implementation Playbook', use: 'Step-by-step framework for implementing AI in your business', fee: '₦30,000', timeline: 'Instant download', need: 'Payment confirmation', tag: 'Guide', kind: 'Setup Guide' },
+  { id: 'framework_crm_setup', name: 'Building a CRM That Actually Works', use: 'Framework for designing your CRM around your sales process', fee: '₦20,000', timeline: 'Instant download', need: 'Payment confirmation', tag: 'Guide', kind: 'Setup Guide' },
+  { id: 'framework_data_strategy', name: 'Data Strategy for Operators', use: 'How to structure and use data so AI and reporting work', fee: '₦25,000', timeline: 'Instant download', need: 'Payment confirmation', tag: 'Guide', kind: 'Setup Guide' },
+  { id: 'framework_tech_hiring', name: 'Hiring Your First Tech Team', use: 'Framework for hiring developers, designers, and ops', fee: '₦20,000', timeline: 'Instant download', need: 'Payment confirmation', tag: 'Guide', kind: 'Setup Guide' },
+  { id: 'framework_sla_templates', name: 'Tech SLA & Vendor Contract Templates', use: '12 ready-to-use templates for managing tech vendors', fee: '₦15,000', timeline: 'Instant download', need: 'Payment confirmation', tag: 'Guide', kind: 'Setup Guide' }
+];
+
+// Master item dictionary for industry stacks
+// Maps to the automation items available across stacks
+const ITEMS = {
+  lead_capture: { name: 'Lead Capture & Routing', use: 'Capture leads from any channel, route to right person', fee: 'Starts from ₦450,000', timeline: '5-7 days', need: 'Existing channels' },
+  crm_setup: { name: 'CRM Setup & Migration', use: 'Set up a proper CRM and migrate existing data', fee: 'Starts from ₦600,000', timeline: '7-14 days', need: 'Existing client list' },
+  sales_automation: { name: 'Sales Pipeline Automation', use: 'Follow-ups, proposals, deal tracking', fee: 'Starts from ₦750,000', timeline: '10-14 days', need: 'Sales process' },
+  onboarding_flow: { name: 'Client Onboarding Flow', use: 'Welcome, document collection, kickoff', fee: 'Starts from ₦500,000', timeline: '7-10 days', need: 'Onboarding requirements' },
+  payment_invoicing: { name: 'Payment & Invoicing Automation', use: 'Auto invoices, reminders, reconciliation', fee: 'Starts from ₦550,000', timeline: '7-10 days', need: 'Payment provider' },
+  whatsapp_business: { name: 'WhatsApp Business Automation', use: 'Auto-replies, broadcasts, customer journey', fee: 'Starts from ₦400,000', timeline: '5-7 days', need: 'WhatsApp Business' },
+  finance_dashboard: { name: 'Finance Dashboard', use: 'Real-time cash flow and finance metrics', fee: 'Starts from ₦800,000', timeline: '10-14 days', need: 'Bank + accounting access' },
+  hr_automation: { name: 'HR Operations Automation', use: 'Hiring, onboarding, payroll, leave', fee: 'Starts from ₦900,000', timeline: '14-21 days', need: 'Employee count' },
+  inventory_system: { name: 'Inventory & Stock Automation', use: 'Real-time stock, auto-reorder, suppliers', fee: 'Starts from ₦750,000', timeline: '10-14 days', need: 'Product catalog' },
+  customer_support_ai: { name: 'AI Customer Support Triage', use: 'AI handles tier-1, escalates complex', fee: 'Starts from ₦650,000', timeline: '7-14 days', need: 'FAQ + history' },
+  ops_dashboard: { name: 'Operations Dashboard', use: 'Single view of every key metric', fee: 'Starts from ₦1,200,000', timeline: '14-21 days', need: 'Metrics defined' },
+  reporting_automation: { name: 'Automated Reporting', use: 'Auto-generated daily/weekly/monthly reports', fee: 'Starts from ₦400,000', timeline: '5-10 days', need: 'Report types' },
+  document_automation: { name: 'Document Generation', use: 'Auto-generate proposals, contracts, reports', fee: 'Starts from ₦500,000', timeline: '7-10 days', need: 'Templates' },
+  custom_crm: { name: 'Custom CRM', use: 'Bespoke CRM for your exact sales process', fee: 'Quote on request', timeline: '6-12 weeks', need: 'Sales process docs' },
+  industry_os: { name: 'Industry Operating System', use: 'Full operating system for your industry', fee: 'Quote on request', timeline: '12-24 weeks', need: 'Detailed requirements' },
+  client_portal: { name: 'Client Portal', use: 'White-label portal for your clients', fee: 'Starts from ₦1,500,000', timeline: '8-12 weeks', need: 'Client journey + branding' },
+  mobile_app: { name: 'Mobile App (iOS + Android)', use: 'Native or cross-platform mobile app', fee: 'Quote on request', timeline: '12-20 weeks', need: 'Feature spec' },
+  web_platform: { name: 'Web Platform / Marketplace', use: 'Two-sided platform for buyers and sellers', fee: 'Quote on request', timeline: '12-24 weeks', need: 'Platform model' },
+  ai_sales_agent: { name: 'AI Sales Agent', use: '24/7 AI that answers and books calls', fee: 'Starts from ₦800,000', timeline: '4-6 weeks', need: 'Sales scripts + calendar' },
+  ai_assistant: { name: 'AI Operations Assistant', use: 'AI that drafts, summarizes, and acts', fee: 'Starts from ₦900,000', timeline: '6-8 weeks', need: 'Use cases identified' },
+  chatgpt_integration: { name: 'ChatGPT / Claude Integration', use: 'Embed AI into existing tools', fee: 'Starts from ₦450,000', timeline: '3-5 weeks', need: 'Existing systems + use cases' },
+  tech_audit: { name: 'Tech Stack Audit', use: 'Review systems, identify waste and gaps', fee: '₦300,000', timeline: '5-7 days', need: 'System access' },
+  automation_audit: { name: 'Automation Opportunity Audit', use: 'Map business, identify high-ROI automations', fee: '₦400,000', timeline: '7-10 days', need: 'Process walkthrough' },
+  ai_readiness_audit: { name: 'AI Readiness Audit', use: 'Assess AI fit, prioritized roadmap', fee: '₦500,000', timeline: '7-14 days', need: 'Business overview' }
+};
+
+// Industry Stacks — pre-built automation bundles per industry
+const PACKAGES = {
+  ecommerce: {
+    name: 'E-commerce', emoji: '🛒',
+    description: 'Automation stack for online stores selling physical or digital products.',
+    subtypes: [
+      { id: 'shopify', name: 'Shopify Store', intro: 'Automation stack for stores running on Shopify.', items: ['lead_capture','crm_setup','payment_invoicing','customer_support_ai','inventory_system','reporting_automation'] },
+      { id: 'woocommerce', name: 'WooCommerce', intro: 'Automation stack for stores running on WordPress + WooCommerce.', items: ['lead_capture','crm_setup','payment_invoicing','customer_support_ai','inventory_system'] },
+      { id: 'multi_vendor', name: 'Multi-Vendor Marketplace', intro: 'Custom platform for marketplaces with many sellers.', items: ['web_platform','custom_crm','payment_invoicing','customer_support_ai','reporting_automation'] },
+      { id: 'physical_retail', name: 'Physical Retail + Online', intro: 'Hybrid stack for stores with both physical and online presence.', items: ['inventory_system','crm_setup','payment_invoicing','reporting_automation','whatsapp_business'] }
+    ]
+  },
+  restaurant: {
+    name: 'Restaurant', emoji: '🍽',
+    description: 'Automation stack for restaurants, cafes, and food businesses.',
+    subtypes: [
+      { id: 'sit_down', name: 'Sit-down Restaurant', intro: 'Stack for restaurants with table service.', items: ['whatsapp_business','crm_setup','customer_support_ai','reporting_automation','payment_invoicing'] },
+      { id: 'qsr', name: 'Quick Service / Fast Food', intro: 'Stack for fast food and quick-service restaurants.', items: ['whatsapp_business','customer_support_ai','inventory_system','payment_invoicing'] },
+      { id: 'cloud_kitchen', name: 'Cloud Kitchen / Delivery', intro: 'Stack for delivery-only food businesses.', items: ['lead_capture','whatsapp_business','customer_support_ai','payment_invoicing','reporting_automation'] },
+      { id: 'food_chain', name: 'Multi-Location Food Chain', intro: 'Full operating system for restaurant chains.', items: ['industry_os','ops_dashboard','inventory_system','hr_automation','finance_dashboard'] }
+    ]
+  },
+  realestate: {
+    name: 'Real Estate', emoji: '🏢',
+    description: 'Automation stack for real estate agencies, developers, and property managers.',
+    subtypes: [
+      { id: 'agency', name: 'Real Estate Agency', intro: 'Stack for real estate agencies and brokers.', items: ['lead_capture','crm_setup','sales_automation','whatsapp_business','document_automation'] },
+      { id: 'developer', name: 'Property Developer', intro: 'Stack for property developers and builders.', items: ['lead_capture','custom_crm','client_portal','document_automation','reporting_automation'] },
+      { id: 'property_manager', name: 'Property Management', intro: 'Stack for property managers handling multiple units.', items: ['client_portal','payment_invoicing','customer_support_ai','reporting_automation','document_automation'] },
+      { id: 'short_let', name: 'Short-let / Airbnb', intro: 'Stack for short-let operators with multiple properties.', items: ['lead_capture','crm_setup','whatsapp_business','customer_support_ai','payment_invoicing'] }
+    ]
+  },
+  clinic: {
+    name: 'Clinic / Healthcare', emoji: '⚕️',
+    description: 'Automation stack for clinics, hospitals, and medical practices.',
+    subtypes: [
+      { id: 'private_clinic', name: 'Private Clinic', intro: 'Stack for general practice clinics.', items: ['client_portal','crm_setup','whatsapp_business','document_automation','reporting_automation'] },
+      { id: 'specialist', name: 'Specialist Practice', intro: 'Stack for specialist medical practices.', items: ['custom_crm','client_portal','document_automation','payment_invoicing'] },
+      { id: 'multi_location', name: 'Multi-Location Hospital', intro: 'Full operating system for hospitals and chains.', items: ['industry_os','ops_dashboard','hr_automation','finance_dashboard','reporting_automation'] },
+      { id: 'pharmacy_chain', name: 'Pharmacy / Distribution', intro: 'Stack for pharma distributors and chains.', items: ['inventory_system','custom_crm','payment_invoicing','reporting_automation'] }
+    ]
+  },
+  school: {
+    name: 'School / Education', emoji: '🏫',
+    description: 'Automation stack for schools, training centers, and education businesses.',
+    subtypes: [
+      { id: 'k12_school', name: 'K-12 School', intro: 'Full operating system for primary and secondary schools.', items: ['industry_os','client_portal','payment_invoicing','document_automation','whatsapp_business'] },
+      { id: 'training_center', name: 'Training Center', intro: 'Stack for training centers and academies.', items: ['lead_capture','crm_setup','client_portal','payment_invoicing','document_automation'] },
+      { id: 'edutech', name: 'EdTech / Online School', intro: 'Stack for online education businesses.', items: ['lead_capture','crm_setup','client_portal','payment_invoicing','customer_support_ai'] },
+      { id: 'tertiary', name: 'University / Tertiary', intro: 'Full enterprise stack for tertiary institutions.', items: ['industry_os','ops_dashboard','hr_automation','finance_dashboard'] }
+    ]
+  },
+  logistics: {
+    name: 'Logistics / Haulage', emoji: '🚚',
+    description: 'Automation stack for logistics, haulage, and delivery businesses.',
+    subtypes: [
+      { id: 'haulage', name: 'Haulage / Freight', intro: 'Stack for inter-state haulage and freight.', items: ['custom_crm','document_automation','reporting_automation','whatsapp_business'] },
+      { id: 'last_mile', name: 'Last-Mile Delivery', intro: 'Stack for last-mile delivery operators.', items: ['mobile_app','crm_setup','whatsapp_business','reporting_automation'] },
+      { id: 'shipping', name: 'Freight Forwarding', intro: 'Stack for shipping agents and freight forwarders.', items: ['custom_crm','document_automation','client_portal','payment_invoicing'] },
+      { id: 'courier', name: 'Courier / Parcel', intro: 'Stack for courier and parcel delivery.', items: ['mobile_app','customer_support_ai','whatsapp_business','reporting_automation'] }
+    ]
+  },
+  fintech: {
+    name: 'Fintech', emoji: '💳',
+    description: 'Automation stack for fintech startups, payment processors, lenders.',
+    subtypes: [
+      { id: 'payment', name: 'Payment Service', intro: 'Stack for payment service providers.', items: ['mobile_app','customer_support_ai','reporting_automation','custom_crm'] },
+      { id: 'lending', name: 'Digital Lending', intro: 'Stack for digital lending platforms.', items: ['custom_crm','ai_assistant','reporting_automation','customer_support_ai'] },
+      { id: 'wallet', name: 'Wallet / Stored Value', intro: 'Stack for digital wallets and stored value businesses.', items: ['mobile_app','customer_support_ai','reporting_automation','custom_crm'] },
+      { id: 'b2b_fintech', name: 'B2B Fintech', intro: 'Stack for B2B fintech serving businesses.', items: ['custom_crm','client_portal','payment_invoicing','reporting_automation'] }
+    ]
+  },
+  professional: {
+    name: 'Professional Services', emoji: '💼',
+    description: 'Automation stack for law firms, accounting firms, consultancies.',
+    subtypes: [
+      { id: 'law_firm', name: 'Law Firm / Chambers', intro: 'Stack for law firms and legal practices.', items: ['client_portal','crm_setup','document_automation','payment_invoicing','sales_automation'] },
+      { id: 'accounting', name: 'Accounting / Audit Firm', intro: 'Stack for accounting and audit firms.', items: ['custom_crm','document_automation','client_portal','payment_invoicing','ai_assistant'] },
+      { id: 'consulting', name: 'Management Consulting', intro: 'Stack for consulting firms.', items: ['crm_setup','sales_automation','document_automation','client_portal'] },
+      { id: 'agency', name: 'Marketing / Creative Agency', intro: 'Stack for agencies serving clients.', items: ['crm_setup','sales_automation','client_portal','document_automation'] }
+    ]
+  },
+  hotel: {
+    name: 'Hotel / Hospitality', emoji: '🏨',
+    description: 'Automation stack for hotels, resorts, and event venues.',
+    subtypes: [
+      { id: 'hotel', name: 'Hotel / Resort', intro: 'Stack for hotels and resorts.', items: ['lead_capture','crm_setup','customer_support_ai','whatsapp_business','reporting_automation'] },
+      { id: 'event_venue', name: 'Event Venue', intro: 'Stack for event centers and venues.', items: ['lead_capture','crm_setup','document_automation','payment_invoicing'] },
+      { id: 'tour_operator', name: 'Tour Operator', intro: 'Stack for tour operators and travel agencies.', items: ['lead_capture','crm_setup','whatsapp_business','document_automation'] }
+    ]
+  },
+  manufacturing: {
+    name: 'Manufacturing', emoji: '🏭',
+    description: 'Automation stack for factories, FMCG, and manufacturers.',
+    subtypes: [
+      { id: 'fmcg', name: 'FMCG / Consumer Goods', intro: 'Stack for FMCG manufacturers.', items: ['inventory_system','crm_setup','reporting_automation','finance_dashboard'] },
+      { id: 'industrial', name: 'Industrial Manufacturing', intro: 'Stack for industrial manufacturers.', items: ['ops_dashboard','inventory_system','custom_crm','reporting_automation'] },
+      { id: 'cottage', name: 'Cottage / Small Scale', intro: 'Stack for small-scale producers.', items: ['inventory_system','whatsapp_business','payment_invoicing'] }
+    ]
+  },
+  agriculture: {
+    name: 'Agriculture', emoji: '🌾',
+    description: 'Automation stack for agribusinesses, farms, and agro-processors.',
+    subtypes: [
+      { id: 'crop_farming', name: 'Crop Farming', intro: 'Stack for commercial crop farms.', items: ['inventory_system','reporting_automation','custom_crm'] },
+      { id: 'livestock', name: 'Livestock / Poultry', intro: 'Stack for livestock and poultry operations.', items: ['inventory_system','reporting_automation','ops_dashboard'] },
+      { id: 'agro_processing', name: 'Agro Processing', intro: 'Stack for businesses processing agricultural products.', items: ['inventory_system','crm_setup','payment_invoicing','reporting_automation'] }
+    ]
+  },
+  ngo: {
+    name: 'NGO / Non-profit', emoji: '🤝',
+    description: 'Automation stack for NGOs, foundations, and faith-based organizations.',
+    subtypes: [
+      { id: 'local_ngo', name: 'Local NGO', intro: 'Stack for locally-focused NGOs.', items: ['lead_capture','crm_setup','document_automation','reporting_automation'] },
+      { id: 'international_ngo', name: 'International / Donor-funded', intro: 'Stack for donor-funded international NGOs.', items: ['custom_crm','document_automation','reporting_automation','client_portal'] },
+      { id: 'foundation', name: 'Private Foundation', intro: 'Stack for private foundations.', items: ['custom_crm','document_automation','reporting_automation'] }
+    ]
+  },
+  creator: {
+    name: 'Creator / Coach', emoji: '🎙',
+    description: 'Automation stack for content creators, coaches, and online entrepreneurs.',
+    subtypes: [
+      { id: 'coach', name: 'Coach / Consultant', intro: 'Stack for coaches and 1-on-1 service providers.', items: ['lead_capture','crm_setup','sales_automation','client_portal','payment_invoicing'] },
+      { id: 'course_creator', name: 'Course Creator', intro: 'Stack for online course creators.', items: ['lead_capture','crm_setup','client_portal','payment_invoicing','customer_support_ai'] },
+      { id: 'creator', name: 'Content Creator / Influencer', intro: 'Stack for content creators monetizing audience.', items: ['lead_capture','crm_setup','payment_invoicing','whatsapp_business'] }
+    ]
+  },
+  general: {
+    name: 'General Business', emoji: '🌱',
+    description: 'For businesses that need a starter automation stack — perfect for new operations or those just beginning automation.',
+    subtypes: [
+      { id: 'starter', name: 'Starter Pack', intro: 'Essential automations to start any business.', items: ['lead_capture','crm_setup','whatsapp_business','payment_invoicing'] },
+      { id: 'growing', name: 'Growing Business', intro: 'Stack for businesses with first hires and recurring revenue.', items: ['lead_capture','crm_setup','sales_automation','whatsapp_business','customer_support_ai','reporting_automation'] },
+      { id: 'established', name: 'Established Business', intro: 'Full operations stack for established businesses.', items: ['lead_capture','crm_setup','sales_automation','customer_support_ai','finance_dashboard','hr_automation','reporting_automation'] },
+      { id: 'foreign_investor', name: 'Foreign Investor / Multi-Market', intro: 'Stack for businesses operating across borders.', items: ['custom_crm','client_portal','document_automation','finance_dashboard','reporting_automation'] }
+    ]
+  }
+};
+
+// ============= STATE =============
+let cart = [];
+let currentScreen = 'home'; // 'home', 'certs', 'compliance', 'legal', 'industries', 'industry-detail'
+let currentIndustry = null;
+let currentSubtype = null;
+let currentFilter = 'all';
+let chatContext = null;
+let chatStep = 0;
+let chatAnswers = [];
+let chatSkipEdu = false;
+let industriesQuery = '';
+let industriesShownCount = 12;
+
+// ============= APPS SCRIPT BACKEND =============
+// Hamzury Backend v1 web app — chat leads land in the "Diagnostics" /
+// "Inbound Leads" tab in the CSO portal. Fire-and-forget; never blocks UI.
+const HAMZURY_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbzofHoaqXV4EVQxscffo7GjlHcqJfHP_58JU_R-5URoe_AeIAPx33xUn-lPuGm1yWtW/exec';
+function postChatLead(payload) {
+  try {
+    const body = {
+      formType: 'diagnostic',
+      form: 'lead-scalar-ourservice',
+      formTitle: payload.title || 'Scalar service enquiry',
+      ref: payload.ref || undefined,
+      answers: {
+        contact: {
+          name: payload.businessName || '',
+          business: payload.businessName || '',
+          email: payload.email || '',
+          phone: payload.phone || '',
+          consent: true,
+        },
+        service: payload.service || '',
+        question1: payload.q1 || '',
+        question2: payload.q2 || '',
+        question3: payload.q3 || '',
+        leadType: payload.leadType || 'inbound',
+        transactionRef: payload.transactionRef || '',
+        sourceURL: payload.sourceURL || (typeof window !== 'undefined' ? window.location.href : ''),
+        timestamp: new Date().toISOString(),
+        notes: payload.notes || '',
+      },
+      meta: {
+        source: payload.leadType === 'awaiting_payment'
+          ? 'chat_scalar_ourservice_subscribe'
+          : 'chat_scalar_ourservice',
+      },
+    };
+    fetch(HAMZURY_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(body),
+    }).catch(function (err) { console.warn('[chat-lead] post failed:', err); });
+  } catch (err) {
+    console.warn('[chat-lead] post error:', err);
+  }
+}
+
+// ============= ROUTING (URL parsing for shares) =============
+function parseUrl() {
+  try {
+    // Server-injected slug takes priority — set by /scalar/ourservice/packages/:industry route.
+    if (window.__INITIAL_PACKAGE__) {
+      const slug = String(window.__INITIAL_PACKAGE__).toLowerCase().replace(/-/g, '_');
+      if (PACKAGES[slug]) {
+        currentIndustry = slug;
+        currentSubtype = PACKAGES[slug].subtypes[0].id;
+        currentScreen = 'industry-detail';
+        return;
+      }
+    }
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    // Check for /packages/[industry] pattern in path or hash. Accept hyphens too
+    // (e.g. /packages/scalar-run) and normalize to the underscore slug.
+    const m = (path + hash).match(/packages\/([a-z0-9_-]+)/);
+    if (m) {
+      const slug = m[1].replace(/-/g, '_');
+      if (PACKAGES[slug]) {
+        currentIndustry = slug;
+        currentSubtype = PACKAGES[slug].subtypes[0].id;
+        currentScreen = 'industry-detail';
+      }
+    }
+  } catch (e) { /* sandbox restriction — ignore */ }
+}
+parseUrl();
+
+// ============= RENDER =============
+const page = document.getElementById('page');
+const backBtn = document.getElementById('back-btn');
+
+function render() {
+  // back button visibility
+  backBtn.classList.toggle('show', currentScreen !== 'home');
+  // page
+  switch (currentScreen) {
+    case 'home': renderHome(); break;
+    case 'certs': renderCerts(); break;
+    case 'compliance': renderCompliance(); break;
+    case 'legal': renderLegal(); break;
+    case 'industries': renderIndustries(); break;
+    case 'industry-detail': renderIndustryDetail(); break;
+  }
+  // scroll top on screen change
+  window.scrollTo(0, 0);
+  document.querySelector('.frame').scrollTop = 0;
+}
+
+function renderHome() {
+  page.innerHTML = `
+    <div class="hero-eyebrow">Automation · Software · AI</div>
+    <h1 class="hero-title">Your business, <em>running itself.</em></h1>
+    <p class="hero-sub">From a single workflow automation to a fully bespoke operating system — we build, run, and continuously improve the technology that runs your business.</p>
+
+    <div onclick="goTo('certs')" class="cat-row">
+      <div class="num">1</div>
+      <div class="meta">
+        <div class="name">Automations & Custom Software</div>
+        <div class="desc">Workflows, automations, custom apps, AI integrations</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div onclick="goTo('compliance')" class="cat-row">
+      <div class="num">2</div>
+      <div class="meta">
+        <div class="name">Scalar Run · Operations Subscription</div>
+        <div class="desc">Monthly. We run, monitor, and improve your stack.</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div onclick="goTo('legal')" class="cat-row">
+      <div class="num">3</div>
+      <div class="meta">
+        <div class="name">Resources & Frameworks</div>
+        <div class="desc">Free playbooks · Paid frameworks · Tech audits</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+
+    <div onclick="goTo('industries')" class="cat-row">
+      <div class="num">4</div>
+      <div class="meta">
+        <div class="name">Industry Stacks</div>
+        <div class="desc">Pre-built automation bundles for 14 industries</div>
+      </div>
+      <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+  `;
+}
+
+function renderCerts() {
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'new', label: 'One-time Build' },
+    { id: 'Subscription', label: 'Subscription' },
+    { id: 'Audit', label: 'Audits' }
+  ];
+  const filtered = CERTS.filter(c => {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'new') return !c.tag;
+    return c.tag === currentFilter;
+  });
+
+  // Group by tier
+  const groups = { foundation: [], operations: [], industry: [] };
+  filtered.forEach(c => {
+    if (groups[c.tier]) groups[c.tier].push(c);
+  });
+
+  const tierMeta = {
+    foundation: {
+      title: 'Foundation Automations',
+      eyebrow: 'Tier 1',
+      sub: 'Lead capture, onboarding, payments — the workflows every business needs.'
+    },
+    operations: {
+      title: 'Operational Automations',
+      eyebrow: 'Tier 2',
+      sub: 'Internal operations, finance, HR, customer support — running smoothly.'
+    },
+    industry: {
+      title: 'Custom Software & AI Agents',
+      eyebrow: 'Tier 3',
+      sub: 'Bespoke applications, AI agents, and full operating systems.'
+    }
+  };
+
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 1</div>
+    <h1 class="hero-title">Automations & <em>Custom Software</em></h1>
+    <p class="hero-sub">Workflows that run on autopilot, custom software built for your business, AI agents that actually do work — organized by where they fit in your operations.</p>
+
+    <div class="filter-bar">
+      ${filters.map(f => `<button class="filter-pill ${currentFilter === f.id ? 'active' : ''}" onclick="setFilter('${f.id}')">${f.label}</button>`).join('')}
+    </div>
+
+    ${['foundation', 'operations', 'industry'].filter(k => groups[k].length).map(k => `
+      <div style="margin-top:22px;">
+        <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:4px;">
+          <span style="font-size:10px;font-weight:500;color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;">${tierMeta[k].eyebrow}</span>
+          <span style="font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:-0.005em;color:var(--ink);">${tierMeta[k].title}</span>
+        </div>
+        <div style="font-size:11.5px;color:var(--ink-muted);margin-bottom:10px;line-height:1.5;">${tierMeta[k].sub}</div>
+        <div class="item-list">
+          ${groups[k].map(c => renderItem(c)).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+  attachItemHandlers();
+}
+
+function renderCompliance() {
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 2 · Flagship</div>
+    <h1 class="hero-title">Scalar <em>Run.</em></h1>
+    <p class="hero-sub">A monthly subscription where we run, monitor, and improve the technology that runs your business.</p>
+
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:18px;">
+
+      <!-- TIER: STARTER -->
+      <div class="flagship" style="background:linear-gradient(135deg, var(--accent), #1B3056);">
+        <div class="flagship-eyebrow">Starter</div>
+        <div class="flagship-title">Up to <em>3 automations.</em></div>
+        <div class="flagship-desc">For small businesses with a handful of critical workflows. We monitor, fix, and tune them.</div>
+        <ul class="flagship-features">
+          <li>Up to 3 active automations monitored</li>
+          <li>Same-day bug fixes during business hours</li>
+          <li>Monthly performance report</li>
+          <li>Email + WhatsApp support</li>
+        </ul>
+        <div class="flagship-pricerow">
+          <div class="flagship-price">₦200,000<small> /month</small></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="flagship-cta" style="width:100%;padding:11px;font-size:13px;" onclick="openSubscribeFlow('starter')">Subscribe →</button>
+        </div>
+      </div>
+
+      <!-- TIER: GROWTH (RECOMMENDED) -->
+      <div class="flagship" style="background:linear-gradient(135deg, #00B8D9, #0F1F3D);position:relative;">
+        <div style="position:absolute;top:14px;right:14px;background:#fff;color:var(--accent);font-size:10px;font-weight:600;padding:3px 10px;border-radius:999px;letter-spacing:0.04em;">MOST POPULAR</div>
+        <div class="flagship-eyebrow" style="color:#DDF3F8;">Growth</div>
+        <div class="flagship-title">Up to <em>10 automations + 1 AI agent.</em></div>
+        <div class="flagship-desc">For growing businesses ready to compound — more workflows, AI in the loop, monthly improvements.</div>
+        <ul class="flagship-features">
+          <li>Up to 10 active automations monitored</li>
+          <li>1 AI agent included (sales, support, or ops)</li>
+          <li>Monthly improvements baked in (we add 1-2 new automations/month)</li>
+          <li>Same-day fixes + 24-hour SLA on issues</li>
+          <li>Monthly strategy review call</li>
+        </ul>
+        <div class="flagship-pricerow">
+          <div class="flagship-price">₦350,000<small> /month</small></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="flagship-cta" style="width:100%;padding:11px;font-size:13px;" onclick="openSubscribeFlow('growth')">Subscribe →</button>
+        </div>
+      </div>
+
+      <!-- TIER: ENTERPRISE -->
+      <div class="flagship" style="background:linear-gradient(135deg, #1B3056, #0F1F3D);">
+        <div class="flagship-eyebrow">Enterprise</div>
+        <div class="flagship-title">Unlimited automations <em>+ dedicated engineer.</em></div>
+        <div class="flagship-desc">For serious operators. A dedicated Scalar engineer effectively becomes part of your team.</div>
+        <ul class="flagship-features">
+          <li>Unlimited automations</li>
+          <li>Multiple AI agents</li>
+          <li>Dedicated engineer (4 hours/week embedded with your team)</li>
+          <li>2-hour SLA on critical issues</li>
+          <li>Quarterly strategy roadmap</li>
+        </ul>
+        <div class="flagship-pricerow">
+          <div class="flagship-price">₦500,000<small> /month</small></div>
+        </div>
+        <div style="margin-top:14px;">
+          <button class="flagship-cta" style="width:100%;padding:11px;font-size:13px;" onclick="openSubscribeFlow('enterprise')">Subscribe →</button>
+        </div>
+      </div>
+
+    </div>
+
+    <p style="font-size:11.5px;color:var(--ink-muted);line-height:1.5;text-align:center;">Monthly subscription. Cancel any time. First month full deposit, monthly thereafter.</p>
+
+    <div style="margin-top:24px;padding:16px;background:var(--paper);border:0.5px solid var(--line);border-radius:12px;">
+      <div style="font-family:var(--serif);font-size:14px;font-weight:500;margin-bottom:6px;">What you'll need to start</div>
+      <div style="font-size:12px;color:var(--ink-muted);line-height:1.55;">List of current automations · Access to your tools (we set up properly) · Key contacts on your team · Top 3 priorities for next 90 days</div>
+      <div style="font-size:11px;color:var(--ink-muted);line-height:1.5;margin-top:8px;font-style:italic;">Don't have automations yet? Start with a one-time build (Category 1) and we layer Scalar Run on top.</div>
+    </div>
+  `;
+}
+
+// ============= COMPLIANCE SUBSCRIPTION FLOW =============
+window.openSubscribeFlow = (tier) => {
+  chatContext = { id: 'scalar_run_subscribe', name: 'Scalar Run Subscription', tier: tier || 'growth' };
+  chatStep = 0;
+  chatAnswers = [];
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('chat-foot').classList.remove('show');
+  document.getElementById('chat-body').innerHTML = '';
+  setTimeout(startSubscribeFlow, 200);
+};
+
+function startSubscribeFlow() {
+  const tier = chatContext.tier || 'growth';
+  const tierData = {
+    starter: { name: 'Starter', price: '₦200,000/month', features: '· Up to 3 automations\n· Same-day fixes\n· Monthly performance report' },
+    growth: { name: 'Growth', price: '₦350,000/month', features: '· Up to 10 automations + 1 AI agent\n· Monthly improvements baked in\n· Strategy review calls' },
+    enterprise: { name: 'Enterprise', price: '₦500,000/month', features: '· Unlimited automations + multiple AI agents\n· Dedicated engineer (4 hrs/week)\n· 2-hour SLA on critical issues' }
+  };
+  const t = tierData[tier];
+  addBotMsg(`Welcome to <strong>Scalar Run · ${t.name}</strong>.\n\nA monthly subscription where we run, monitor, and improve the technology that runs your business. ${t.price}.`);
+  setTimeout(() => {
+    addBotMsg(`Here's what you're getting:\n\n${t.features}`);
+    setTimeout(() => {
+      addBotMsg(`Ready to subscribe?`, [
+        { label: 'Yes, let\'s subscribe', action: () => { addUserMsg('Yes, let\'s subscribe'); setTimeout(askSubName, 600); } },
+        { label: 'I have questions first', action: () => { addUserMsg('I have questions first'); setTimeout(switchToAskFlow, 600); } },
+        { label: 'Maybe later', action: () => { addUserMsg('Maybe later'); setTimeout(closeWithThanks, 600); } }
+      ]);
+    }, 1400);
+  }, 900);
+}
+
+function switchToAskFlow() {
+  addBotMsg(`No problem — let me ask you a few questions so our team can answer properly.`);
+  setTimeout(askQuestion1, 1200);
+}
+
+function askSubName() {
+  addBotMsg(`<strong>1 of 3 — What's your business name?</strong>\n\n(As registered with CAC)`);
+  document.getElementById('chat-foot').classList.add('show');
+  document.getElementById('chat-input').placeholder = 'e.g. Lumen Logistics Ltd';
+  document.getElementById('chat-input').focus();
+  chatStep = 'sub-name';
+}
+function askSubContact() {
+  addBotMsg(`<strong>2 of 3 — Best WhatsApp number?</strong>\n\n(So our team can confirm payment and request remaining documents)`);
+  document.getElementById('chat-input').placeholder = 'e.g. +234 803 ...';
+  document.getElementById('chat-input').focus();
+  chatStep = 'sub-contact';
+}
+function askSubReadiness() {
+  document.getElementById('chat-foot').classList.remove('show');
+  addBotMsg(`<strong>3 of 3 — What's your current state?</strong>\n\n(Pick what's true — we'll help with the rest)`, [
+    { label: 'We already have automations running', action: () => { addUserMsg('We already have automations running'); chatAnswers.push('Existing automations'); setTimeout(showPaymentInstructions, 600); } },
+    { label: 'A few tools but nothing connected', action: () => { addUserMsg('A few tools but nothing connected'); chatAnswers.push('Disconnected tools'); setTimeout(showPaymentInstructions, 600); } },
+    { label: 'We need to build from scratch', action: () => { addUserMsg('We need to build from scratch'); chatAnswers.push('From scratch'); setTimeout(showPaymentInstructions, 600); } },
+    { label: 'Not sure — would need an audit first', action: () => { addUserMsg('Not sure'); chatAnswers.push('Audit first'); setTimeout(showPaymentInstructions, 600); } }
+  ]);
+}
+
+function showPaymentInstructions() {
+  const priceMap = { starter: '₦200,000/month', growth: '₦350,000/month', enterprise: '₦500,000/month' };
+  const price = priceMap[chatContext.tier] || '₦350,000/month';
+  addBotMsg(`Almost done. Here are the payment instructions for your <strong>Scalar Run subscription · ${price}</strong>:`);
+  setTimeout(() => {
+    const html = `
+      <div style="margin-top:8px;padding:14px;background:var(--cream);border-radius:10px;border-left:3px solid var(--gold);">
+        <div style="font-size:11px;color:var(--gold);letter-spacing:0.08em;text-transform:uppercase;font-weight:500;margin-bottom:8px;">Bank Transfer</div>
+        <div style="font-size:13px;line-height:1.7;color:var(--ink);">
+          <div><strong>Account:</strong> Hamzury Ltd</div>
+          <div><strong>Number:</strong> 8034620520</div>
+          <div><strong>Bank:</strong> Moniepoint Bank</div>
+          <div><strong>Amount:</strong> First month deposit</div>
+          <div><strong>Reference:</strong> Use your business name</div>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--ink-muted);line-height:1.55;">After your transfer:\n\n1. Reply here with the receipt or transaction reference\n2. Our team will confirm payment within 1 business day\n3. We'll schedule your kick-off call within 48 hours\n4. Scalar Run begins immediately</div>
+    `;
+    const body = document.getElementById('chat-body');
+    const msg = document.createElement('div');
+    msg.className = 'chat-msg bot';
+    msg.innerHTML = `<div class="chat-bubble">${html}</div>`;
+    body.appendChild(msg);
+    body.scrollTop = body.scrollHeight;
+
+    setTimeout(() => {
+      addBotMsg(`What works best for you now?`, [
+        { label: 'I\'ll transfer now', action: () => { addUserMsg('I\'ll transfer now'); setTimeout(confirmTransferPath, 600); } },
+        { label: 'Send these details to my email', action: () => { addUserMsg('Send to my email'); setTimeout(askEmail, 600); } },
+        { label: 'I need to think about it', action: () => { addUserMsg('I need to think'); setTimeout(closeWithThanks, 600); } }
+      ]);
+    }, 1500);
+  }, 800);
+}
+
+function confirmTransferPath() {
+  addBotMsg(`Perfect. Take your time with the transfer.\n\nWhen done, reply here with your transaction reference or screenshot of the receipt. Our team will confirm within 1 business day and reach you on WhatsApp to start onboarding.`);
+  setTimeout(() => {
+    document.getElementById('chat-foot').classList.add('show');
+    document.getElementById('chat-input').placeholder = 'Paste transaction reference here when ready';
+    chatStep = 'sub-receipt';
+  }, 1200);
+}
+
+function askEmail() {
+  addBotMsg(`What email address should we send the payment details to?`);
+  document.getElementById('chat-foot').classList.add('show');
+  document.getElementById('chat-input').placeholder = 'your.email@domain.com';
+  document.getElementById('chat-input').focus();
+  chatStep = 'sub-email';
+}
+
+function finalizeReceipt(reference) {
+  // POST the awaiting-payment subscription to the Apps Script backend.
+  // CSO confirms the bank transfer in Moniepoint then schedules the kick-off call.
+  postChatLead({
+    title: 'Scalar Run subscription — awaiting payment confirmation',
+    service: (chatContext && chatContext.name) ? `${chatContext.name} (Subscription)` : 'Scalar Run (Subscription)',
+    businessName: chatAnswers[0] || '',
+    phone: chatAnswers[1] || '',
+    q1: chatAnswers[0] || '',
+    q2: chatAnswers[1] || '',
+    q3: chatAnswers[2] || '',
+    leadType: 'awaiting_payment',
+    transactionRef: reference || '',
+    notes: 'Account 8034620520 (Moniepoint · Hamzury Ltd) · Scalar Run first month deposit.',
+  });
+  addBotMsg(`Got it — reference saved. Our team will confirm your payment within 1 business day and start your subscription. You'll hear from us on WhatsApp soon.\n\nThank you for choosing Scalar.`);
+  setTimeout(() => closeChat(), 3000);
+}
+function finalizeEmail(email) {
+  addBotMsg(`Sent. Check ${email} in a few minutes — payment details are on the way.\n\nWhen you're ready to transfer, reply here or follow the email instructions.`);
+  setTimeout(() => closeChat(), 3000);
+}
+
+function renderLegal() {
+  const filters = [
+    { id: 'all', label: 'All' },
+    { id: 'Custom drafted', label: 'Strategies' },
+    { id: 'Pamphlet', label: 'Free playbooks' },
+    { id: 'Setup Guide', label: 'Paid frameworks' }
+  ];
+  const filtered = LEGAL.filter(c => currentFilter === 'all' || c.kind === currentFilter);
+
+  // Group by kind for clear section headers
+  const groups = {};
+  filtered.forEach(item => {
+    if (!groups[item.kind]) groups[item.kind] = [];
+    groups[item.kind].push(item);
+  });
+  const groupOrder = ['Custom drafted', 'Pamphlet', 'Setup Guide'];
+  const groupSubtitles = {
+    'Custom drafted': 'Strategy documents drafted by our team for your specific business.',
+    'Pamphlet': 'Free playbooks to help you think clearly about tech and automation.',
+    'Setup Guide': 'In-depth frameworks for operators ready to execute.'
+  };
+
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 3</div>
+    <h1 class="hero-title">Resources & <em>Frameworks.</em></h1>
+    <p class="hero-sub">Custom-drafted strategies, free playbooks, and paid frameworks for serious operators.</p>
+
+    <div class="filter-bar">
+      ${filters.map(f => `<button class="filter-pill ${currentFilter === f.id ? 'active' : ''}" onclick="setFilter('${f.id}')">${f.label}</button>`).join('')}
+    </div>
+
+    ${groupOrder.filter(k => groups[k]).map(k => `
+      <div style="margin-top:18px;">
+        <div style="font-family:var(--serif);font-size:14px;font-weight:500;letter-spacing:-0.005em;color:var(--ink-soft);margin-bottom:4px;">${k === 'Custom drafted' ? 'Custom-Drafted Strategies' : k === 'Pamphlet' ? 'Free Playbooks' : 'Paid Frameworks'}</div>
+        <div style="font-size:11.5px;color:var(--ink-muted);margin-bottom:10px;line-height:1.5;">${groupSubtitles[k]}</div>
+        <div class="item-list">
+          ${groups[k].map(c => renderItem(c)).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+  attachItemHandlers();
+}
+
+function renderItem(c) {
+  const inCart = cart.some(x => x.id === c.id);
+  const hasEdu = !!EDU[c.id];
+  return `
+    <div class="item" data-id="${c.id}">
+      <div class="item-head" onclick="toggleItem('${c.id}')">
+        <div class="item-meta">
+          <div class="item-name-row">
+            <div class="item-name">${c.name}</div>
+            ${c.tag ? `<span class="item-tag ${c.tag.toLowerCase()}">${c.tag}</span>` : ''}
+          </div>
+          <div class="item-use">${c.use}</div>
+        </div>
+        <button class="item-cart ${inCart ? 'added' : ''}" onclick="event.stopPropagation();toggleCart('${c.id}')" aria-label="Add to cart">
+          ${inCart
+            ? `<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`
+            : `<svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`}
+        </button>
+      </div>
+      <div class="item-body">
+        <div class="item-body-inner">
+          <div class="item-body-row"><span class="item-body-label">Fee</span><span class="item-body-value fee">${c.fee}</span></div>
+          <div class="item-body-row"><span class="item-body-label">Timeline</span><span class="item-body-value">${c.timeline}</span></div>
+          <div class="item-body-row"><span class="item-body-label">We need</span><span class="item-body-value">${c.need}</span></div>
+          ${c.note ? `<div class="item-note">⚠ ${c.note}</div>` : ''}
+          <div class="edu-box" id="edu-${c.id}" style="display:none;"></div>
+          <div class="item-actions">
+            ${hasEdu ? `<button class="item-action-chat" onclick="toggleEdu('${c.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Read more</button>` : ''}
+            <button class="item-action-chat" onclick="askAboutItem('${c.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+              Talk to us
+            </button>
+            <button class="item-action-add ${inCart ? 'added' : ''}" onclick="toggleCart('${c.id}')">
+              ${inCart ? '✓ Added' : 'Add to cart'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+window.askAboutItem = (id) => {
+  // Look up the item from any source (CERTS, LEGAL, or ITEMS dictionary)
+  let item = CERTS.find(x => x.id === id) || LEGAL.find(x => x.id === id);
+  if (!item && ITEMS[id]) item = { id, ...ITEMS[id] };
+  if (!item) return;
+  // Skip educational layer here — Read more handles education separately
+  openChat(item, { skipEdu: true });
+};
+
+window.toggleEdu = (id) => {
+  const edu = EDU[id];
+  if (!edu) return;
+  const box = document.getElementById('edu-' + id);
+  if (!box) return;
+  if (box.style.display === 'none') {
+    box.innerHTML = `<div class="edu-title">${edu.title}</div><div class="edu-body">${edu.body.replace(/\n/g, '<br><br>')}</div>`;
+    box.style.display = 'block';
+  } else {
+    box.style.display = 'none';
+  }
+};
+
+function renderIndustries() {
+  const all = Object.entries(PACKAGES);
+  const q = (industriesQuery || '').toLowerCase().trim();
+  const filtered = q ? all.filter(([id, p]) =>
+    p.name.toLowerCase().includes(q) ||
+    (p.description && p.description.toLowerCase().includes(q)) ||
+    p.subtypes.some(s => s.name.toLowerCase().includes(q))
+  ) : all;
+  const visible = filtered.slice(0, industriesShownCount);
+  const hasMore = filtered.length > industriesShownCount;
+
+  page.innerHTML = `
+    <div class="hero-eyebrow">Category 4</div>
+    <h1 class="hero-title">Industry <em>Stacks.</em></h1>
+    <p class="hero-sub">Tap an industry. See the automation stack that runs that business.</p>
+
+    <div class="ind-search-wrap">
+      <svg class="ind-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.5-4.5"/></svg>
+      <input type="search" class="ind-search" id="ind-search" placeholder="Search industries..." value="${escAttrV(industriesQuery)}" autocomplete="off">
+    </div>
+
+    ${filtered.length === 0 ? `
+      <div style="padding:40px 20px;text-align:center;">
+        <div style="font-family:var(--serif);font-size:18px;color:var(--ink-soft);margin-bottom:6px;">No matches</div>
+        <div style="font-size:13px;color:var(--ink-muted);">Try a different keyword, or browse all ${all.length} industries.</div>
+        <button class="filter-pill" style="margin-top:14px;" onclick="resetIndustrySearch()">Clear search</button>
+      </div>
+    ` : `
+      <div class="industries-grid">
+        ${visible.map(([id, p]) => `
+          <div class="industry-card" onclick="openIndustry('${id}')">
+            <div class="industry-emoji">${p.emoji}</div>
+            <div class="industry-name">${p.name}</div>
+            <div class="industry-meta">${p.subtypes.length} ${p.subtypes.length === 1 ? 'type' : 'types'}</div>
+          </div>
+        `).join('')}
+      </div>
+      ${hasMore ? `
+        <div style="text-align:center;margin-top:20px;">
+          <button class="filter-pill" style="padding:10px 20px;font-size:13px;" onclick="showMoreIndustries()">Show more (${filtered.length - industriesShownCount} left)</button>
+        </div>
+      ` : (filtered.length > 12 ? `<div style="text-align:center;margin-top:14px;font-size:11.5px;color:var(--ink-muted);">${filtered.length} industries shown</div>` : '')}
+    `}
+  `;
+
+  // Wire up search input
+  const searchInput = document.getElementById('ind-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      industriesQuery = e.target.value;
+      industriesShownCount = 12;
+      renderIndustries();
+      setTimeout(() => {
+        const el = document.getElementById('ind-search');
+        if (el) {
+          el.focus();
+          const len = el.value.length;
+          el.setSelectionRange(len, len);
+        }
+      }, 0);
+    });
+  }
+}
+
+window.showMoreIndustries = () => {
+  industriesShownCount += 12;
+  renderIndustries();
+};
+
+window.resetIndustrySearch = () => {
+  industriesQuery = '';
+  industriesShownCount = 12;
+  renderIndustries();
+};
+
+function escAttrV(s) {
+  return String(s || '').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function renderIndustryDetail() {
+  const p = PACKAGES[currentIndustry];
+  if (!p) { currentScreen = 'home'; render(); return; }
+  const sub = p.subtypes.find(s => s.id === currentSubtype) || p.subtypes[0];
+
+  page.innerHTML = `
+    <div class="industry-detail-head">
+      <div class="industry-detail-emoji">${p.emoji}</div>
+      <div class="industry-detail-name">${p.name}</div>
+      <div class="industry-detail-sub">${p.description}</div>
+    </div>
+
+    <div class="subtype-tabs">
+      ${p.subtypes.map(s => `
+        <button class="subtype-tab ${s.id === currentSubtype ? 'active' : ''}" onclick="setSubtype('${s.id}')">${s.name}</button>
+      `).join('')}
+    </div>
+
+    <div class="subtype-intro">${sub.intro}</div>
+
+    <div class="item-list">
+      ${sub.items.map(itemId => {
+        const item = ITEMS[itemId];
+        if (!item) return '';
+        const c = { id: itemId, ...item, tag: '' };
+        return renderItem(c);
+      }).join('')}
+    </div>
+
+    <div class="other-industries">
+      <div class="other-industries-label">Other industries we serve</div>
+      <div class="other-industries-list">
+        ${Object.entries(PACKAGES).filter(([id]) => id !== currentIndustry).map(([id, op]) => `
+          <button class="other-industry-link" onclick="openIndustry('${id}')">
+            <span>${op.emoji}</span>${op.name}
+          </button>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="margin-top:24px;text-align:center;">
+      <button class="filter-pill" onclick="sharePackage()" style="padding:9px 18px;font-size:12.5px;">
+        🔗 Share this package
+      </button>
+    </div>
+  `;
+  attachItemHandlers();
+}
+
+// ============= NAVIGATION =============
+window.goTo = (screen) => {
+  currentScreen = screen;
+  currentFilter = 'all';
+  if (screen === 'industries') {
+    industriesQuery = '';
+    industriesShownCount = 12;
+  }
+  render();
+};
+window.goBack = () => {
+  if (currentScreen === 'industry-detail') {
+    currentScreen = 'industries';
+    currentIndustry = null;
+    currentSubtype = null;
+  } else {
+    currentScreen = 'home';
+  }
+  render();
+};
+window.openIndustry = (id) => {
+  currentIndustry = id;
+  currentSubtype = PACKAGES[id].subtypes[0].id;
+  currentScreen = 'industry-detail';
+  // Update URL for share-ability (silently fail in sandboxed previews)
+  try { history.pushState({}, '', `#packages/${id}`); } catch (e) { /* sandbox restriction */ }
+  render();
+};
+window.setSubtype = (id) => {
+  currentSubtype = id;
+  render();
+};
+window.setFilter = (id) => {
+  currentFilter = id;
+  render();
+};
+
+// ============= ITEM EXPAND =============
+window.toggleItem = (id) => {
+  document.querySelectorAll('.item').forEach(el => {
+    if (el.dataset.id === id) el.classList.toggle('expanded');
+    else el.classList.remove('expanded');
+  });
+};
+function attachItemHandlers() {
+  // (already in renderItem via inline onclick)
+}
+
+// ============= CART =============
+window.toggleCart = (id) => {
+  let item = CERTS.find(c => c.id === id) || LEGAL.find(c => c.id === id);
+  if (!item && ITEMS[id]) item = { id, ...ITEMS[id] };
+  if (!item) return;
+
+  const idx = cart.findIndex(c => c.id === id);
+  if (idx >= 0) {
+    cart.splice(idx, 1);
+    showToast(`Removed`);
+  } else {
+    cart.push({ id: item.id, name: item.name, fee: item.fee, use: item.use });
+    showToast(`Added to cart`);
+  }
+  updateCartBadge();
+  // re-render current screen to update cart icons
+  render();
+};
+
+function updateCartBadge() {
+  const badge = document.getElementById('cart-badge');
+  badge.textContent = cart.length;
+  badge.classList.toggle('show', cart.length > 0);
+}
+
+window.openCart = () => {
+  document.getElementById('cart-overlay').classList.add('open');
+  renderCart();
+};
+window.closeCart = () => {
+  document.getElementById('cart-overlay').classList.remove('open');
+};
+function renderCart() {
+  const list = document.getElementById('cart-list');
+  const foot = document.getElementById('cart-foot-area');
+  if (cart.length === 0) {
+    list.innerHTML = `<div class="cart-empty"><div class="big">Cart is empty</div><div>Browse and add what you need.</div></div>`;
+    foot.innerHTML = '';
+    return;
+  }
+  list.innerHTML = cart.map((c, i) => `
+    <div class="cart-row">
+      <div class="cart-row-meta">
+        <div class="cart-row-name">${c.name}</div>
+        <div class="cart-row-tag">${c.use}</div>
+      </div>
+      <div class="cart-row-fee">${c.fee}</div>
+      <button class="cart-row-x" onclick="removeFromCart(${i})">×</button>
+    </div>
+  `).join('');
+
+  let total = 0; let hasVarying = false;
+  cart.forEach(c => {
+    const m = c.fee.match(/₦([\d,]+)/);
+    if (m) total += parseInt(m[1].replace(/,/g, ''), 10);
+    else hasVarying = true;
+  });
+  const formatted = '₦' + total.toLocaleString() + (hasVarying ? '+' : '');
+
+  foot.innerHTML = `
+    <div class="cart-total">
+      <span class="cart-total-label">Starting from</span>
+      <span class="cart-total-value">${formatted}</span>
+    </div>
+    <button class="cart-checkout" onclick="checkoutCart()">Continue to chat →</button>
+    <p style="font-size:10.5px;color:var(--ink-muted);margin-top:8px;text-align:center;line-height:1.5;">Final pricing confirmed by our team before any payment.</p>
+  `;
+}
+window.removeFromCart = (i) => {
+  cart.splice(i, 1);
+  updateCartBadge();
+  renderCart();
+  render();
+};
+window.checkoutCart = () => {
+  closeCart();
+  openChat({ id: 'cart', name: 'Multiple services', items: cart });
+};
+
+// ============= CHAT =============
+window.openChat = (item, opts) => {
+  chatContext = item;
+  chatStep = 0;
+  chatAnswers = [];
+  chatSkipEdu = (opts && opts.skipEdu) || false;
+  document.getElementById('chat-overlay').classList.add('open');
+  document.getElementById('chat-foot').classList.remove('show');
+  document.getElementById('chat-body').innerHTML = '';
+  setTimeout(() => startChatFlow(), 200);
+};
+window.closeChat = () => {
+  document.getElementById('chat-overlay').classList.remove('open');
+};
+
+function startChatFlow() {
+  // Step 1: Show educational intro if available, OR jump to confirmation
+  const item = chatContext;
+  const edu = EDU[item.id];
+
+  // Cart context: skip education, go straight to questions
+  if (item.items) {
+    const items = item.items.map(c => c.name).join(', ');
+    addBotMsg(`You have ${item.items.length} services in your cart:\n\n${items}\n\nLet me ask you a few quick questions so our team can help you properly.`);
+    setTimeout(askQuestion1, 1500);
+    return;
+  }
+
+  // If 'Talk to us' was clicked (skipEdu), go straight to confirmation
+  if (chatSkipEdu || !edu) {
+    addBotMsg(`Hello — you're asking about <strong>${item.name}</strong>.\n\n${item.use ? '<em>' + item.use + '</em>\n\n' : ''}Would you like our team to contact you about this?`, [
+      { label: 'Yes, I want to proceed', action: () => { addUserMsg('Yes, I want to proceed'); setTimeout(askQuestion1, 600); } },
+      { label: 'Just exploring for now', action: () => { addUserMsg('Just exploring for now'); setTimeout(closeWithThanks, 600); } }
+    ]);
+    return;
+  }
+
+  // Otherwise, show educational intro first
+  addBotMsg(`Hello — let me share a bit about <strong>${item.name}</strong>.`);
+  setTimeout(() => {
+    addBotMsg(`<strong>${edu.title}</strong>\n\n${edu.body}`);
+    setTimeout(() => {
+      addBotMsg(`Would you like our team to contact you about ${item.name}?`, [
+        { label: 'Yes, I want to proceed', action: () => { addUserMsg('Yes, I want to proceed'); setTimeout(askQuestion1, 600); } },
+        { label: 'Just exploring for now', action: () => { addUserMsg('Just exploring for now'); setTimeout(closeWithThanks, 600); } }
+      ]);
+    }, 1400);
+  }, 900);
+}
+
+function askQuestion1() {
+  addBotMsg('Quick questions to help us serve you better.\n\n<strong>1 of 3 — What are you needing this for?</strong>');
+  document.getElementById('chat-foot').classList.add('show');
+  document.getElementById('chat-input').placeholder = 'e.g. opening a bank account, bidding for a contract...';
+  document.getElementById('chat-input').focus();
+  chatStep = 1;
+}
+function askQuestion2() {
+  addBotMsg('<strong>2 of 3 — Is this for a new application or renewal/modification?</strong>', [
+    { label: 'New application', action: () => { addUserMsg('New application'); chatAnswers.push('New application'); setTimeout(askQuestion3, 600); } },
+    { label: 'Renewal', action: () => { addUserMsg('Renewal'); chatAnswers.push('Renewal'); setTimeout(askQuestion3, 600); } },
+    { label: 'Modification', action: () => { addUserMsg('Modification'); chatAnswers.push('Modification'); setTimeout(askQuestion3, 600); } },
+    { label: "I'm not sure", action: () => { addUserMsg("I'm not sure"); chatAnswers.push("Not sure"); setTimeout(askQuestion3, 600); } }
+  ]);
+  document.getElementById('chat-foot').classList.remove('show');
+}
+function askQuestion3() {
+  addBotMsg('<strong>3 of 3 — Best way to reach you?</strong>', [
+    { label: 'WhatsApp', action: () => { addUserMsg('WhatsApp'); chatAnswers.push('WhatsApp'); setTimeout(submitChatLead, 600); } },
+    { label: 'Email', action: () => { addUserMsg('Email'); chatAnswers.push('Email'); setTimeout(submitChatLead, 600); } },
+    { label: 'Phone call', action: () => { addUserMsg('Phone call'); chatAnswers.push('Phone'); setTimeout(submitChatLead, 600); } }
+  ]);
+}
+function submitChatLead() {
+  // POST the inbound lead to the Apps Script backend → "Inbound Leads" tab.
+  postChatLead({
+    title: 'Scalar inbound lead',
+    service: (chatContext && chatContext.name) || '',
+    q1: chatAnswers[0] || '',
+    q2: chatAnswers[1] || '',
+    q3: chatAnswers[2] || '',
+    leadType: 'inbound',
+    notes: chatAnswers.slice(3).join(' | '),
+  });
+  addBotMsg(`Thank you. Our team will reach you on <strong>${chatAnswers[2]}</strong> within 24 hours.\n\nWe'll have everything ready to move quickly once we confirm your details.`);
+  // Cap the conversation
+  setTimeout(() => {
+    addBotMsg('Anything else you want us to know?', [
+      { label: "No, that's all", action: () => { addUserMsg("That's all, thank you"); setTimeout(closeWithThanks, 800); } },
+      { label: 'Add another note', action: () => {
+        addUserMsg('I want to add a note');
+        document.getElementById('chat-foot').classList.add('show');
+        document.getElementById('chat-input').placeholder = 'Add anything else...';
+        chatStep = 4;
+      }}
+    ]);
+  }, 1200);
+}
+function closeWithThanks() {
+  addBotMsg('Thank you for your interest. Scalar is here whenever you need us.');
+  setTimeout(() => closeChat(), 2000);
+}
+
+window.sendChat = () => {
+  const input = document.getElementById('chat-input');
+  const v = input.value.trim();
+  if (!v) return;
+  addUserMsg(v);
+  chatAnswers.push(v);
+  input.value = '';
+  if (chatStep === 1) {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(askQuestion2, 600);
+  } else if (chatStep === 4) {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(closeWithThanks, 800);
+  } else if (chatStep === 'sub-name') {
+    setTimeout(askSubContact, 600);
+  } else if (chatStep === 'sub-contact') {
+    setTimeout(askSubReadiness, 600);
+  } else if (chatStep === 'sub-receipt') {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(() => finalizeReceipt(v), 400);
+  } else if (chatStep === 'sub-email') {
+    document.getElementById('chat-foot').classList.remove('show');
+    setTimeout(() => finalizeEmail(v), 400);
+  }
+};
+document.getElementById('chat-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') sendChat();
+});
+
+function addBotMsg(text, options) {
+  const body = document.getElementById('chat-body');
+  const formatted = text.replace(/\n/g, '<br>');
+  let optsHtml = '';
+  if (options) {
+    optsHtml = `<div class="chat-options">${options.map((o, i) => `<button class="chat-option" data-opt="${i}">${o.label}</button>`).join('')}</div>`;
+  }
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg bot';
+  msg.innerHTML = `<div class="chat-bubble">${formatted}${optsHtml}</div>`;
+  body.appendChild(msg);
+  body.scrollTop = body.scrollHeight;
+  if (options) {
+    msg.querySelectorAll('.chat-option').forEach((b, i) => {
+      b.addEventListener('click', () => {
+        // Remove all options after click
+        msg.querySelectorAll('.chat-options').forEach(o => o.remove());
+        options[i].action();
+      });
+    });
+  }
+}
+function addUserMsg(text) {
+  const body = document.getElementById('chat-body');
+  const msg = document.createElement('div');
+  msg.className = 'chat-msg user';
+  msg.innerHTML = `<div class="chat-bubble">${text}</div>`;
+  body.appendChild(msg);
+  body.scrollTop = body.scrollHeight;
+}
+
+// ============= SHARE =============
+window.sharePackage = () => {
+  try {
+    const slug = String(currentIndustry || '').replace(/_/g, '-');
+    const url = `${window.location.origin}/scalar/ourservice/packages/${slug}`;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(
+        () => showToast('Link copied — paste anywhere'),
+        () => showToast('Link: ' + url)
+      );
+    } else {
+      showToast('Copy: ' + url);
+    }
+  } catch (e) {
+    showToast('Share link copied');
+  }
+};
+
+// ============= TOAST =============
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function escapeAttr(s) { return String(s).replace(/'/g, '&apos;').replace(/"/g, '&quot;'); }
+
+// Initial
+render();
+updateCartBadge();
+</script>
+
+</body>
+</html>

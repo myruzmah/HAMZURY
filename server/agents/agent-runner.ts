@@ -155,7 +155,7 @@ function buildRegistry(): Map<string, Agent> {
                 // Notify BizDoc team
                 try {
                   await createNotification({
-                    userId: 0,
+                    userId: "system",
                     type: "system",
                     title: `Amara: Checklist for ${task.clientName}`,
                     message: `Document checklist ready for ${task.service} (${task.ref})`,
@@ -197,7 +197,7 @@ function buildRegistry(): Map<string, Agent> {
                   // Notify BizDoc team about drafted email
                   try {
                     await createNotification({
-                      userId: 0,
+                      userId: "system",
                       type: "system",
                       title: `Amara: Email draft for ${task.clientName}`,
                       message: `Client email drafted for ${task.service} (${task.ref})`,
@@ -261,7 +261,13 @@ function buildRegistry(): Map<string, Agent> {
             try {
               const brief = await callAI(
                 "Create a project brief for this Systemise (tech/digital) request. Include: 1) Project scope, 2) Estimated timeline, 3) Key deliverables, 4) Tech stack suggestions. Keep concise.",
-                `Client: ${lead.name}\nBusiness: ${lead.businessName || "N/A"}\nService: ${lead.service}\nDetails: ${lead.context || "No details provided"}`,
+                // 2026-04-30 — systemiseLeads schema uses serviceInterest (json) +
+                // freeTextNotes (not service/context which are on the regular leads table).
+                `Client: ${lead.name}\nBusiness: ${lead.businessName || "N/A"}\nService: ${
+                  Array.isArray(lead.serviceInterest) && lead.serviceInterest.length
+                    ? lead.serviceInterest.join(", ")
+                    : (lead.businessType || "Systemise")
+                }\nDetails: ${lead.freeTextNotes || lead.desiredOutcome || "No details provided"}`,
                 "Nova"
               );
 
@@ -275,10 +281,14 @@ function buildRegistry(): Map<string, Agent> {
                 // Notify Systemise team
                 try {
                   await createNotification({
-                    userId: 0,
+                    userId: "system",
                     type: "system",
                     title: `Nova: Brief for ${lead.name}`,
-                    message: `Project brief ready for ${lead.service} (${lead.ref})`,
+                    message: `Project brief ready for ${
+                      Array.isArray(lead.serviceInterest) && lead.serviceInterest.length
+                        ? lead.serviceInterest[0]
+                        : (lead.businessType || "Systemise enquiry")
+                    } (${lead.ref})`,
                     link: `/hub/systemise`,
                   });
                 } catch {}
@@ -291,7 +301,11 @@ function buildRegistry(): Map<string, Agent> {
                     targetEntityType: "lead",
                     targetEntityId: lead.id,
                     suggestionType: "brief",
-                    title: `Brief: ${lead.name} — ${lead.service}`,
+                    title: `Brief: ${lead.name} — ${
+                      Array.isArray(lead.serviceInterest) && lead.serviceInterest.length
+                        ? lead.serviceInterest[0]
+                        : (lead.businessType || "Systemise enquiry")
+                    }`,
                     content: brief,
                   });
                 } catch {}
@@ -327,7 +341,7 @@ function buildRegistry(): Map<string, Agent> {
                 // Notify Systemise team
                 try {
                   await createNotification({
-                    userId: 0,
+                    userId: "system",
                     type: "system",
                     title: `Nova: Plan for ${task.clientName}`,
                     message: `Implementation plan ready for ${task.service} (${task.ref})`,
@@ -390,7 +404,9 @@ function buildRegistry(): Map<string, Agent> {
             try {
               const welcomeMsg = await callAI(
                 "Draft a warm welcome acknowledgment message for this Skills Academy applicant. Mention their chosen program, that their application is being reviewed, and expected timeline (5-7 business days). Keep under 100 words.",
-                `Applicant: ${app.fullName}\nProgram: ${app.program}\nEmail: ${app.email || "N/A"}\nMotivation: ${app.motivation || "Not provided"}`,
+                // 2026-04-30 — schema has businessDescription/biggestChallenge,
+                // not "motivation". Use the real fields.
+                `Applicant: ${app.fullName}\nProgram: ${app.program}\nEmail: ${app.email || "N/A"}\nBusiness: ${app.businessDescription || "Not provided"}\nBiggest challenge: ${app.biggestChallenge || "Not provided"}`,
                 "Zara"
               );
 
@@ -403,7 +419,7 @@ function buildRegistry(): Map<string, Agent> {
                 // Notify Skills team
                 try {
                   await createNotification({
-                    userId: 0,
+                    userId: "system",
                     type: "system",
                     title: `Zara: Welcome for ${app.fullName}`,
                     message: `Welcome message drafted for ${app.program} applicant (${app.ref})`,
@@ -561,9 +577,9 @@ export async function executeAgent(agentId: string): Promise<AgentResult> {
       lastError: result.errors.length > 0 ? result.errors.join("; ") : null,
     });
 
-    // Log to audit
+    // Log to audit (auditLogs.userId is int, hence 0 for system)
     await createAuditLog({
-      userId: 0, // system
+      userId: 0,
       userName: `Agent:${agent.name}`,
       action: "agent_run",
       resource: "agents",

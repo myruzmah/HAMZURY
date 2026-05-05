@@ -46,4 +46,6 @@ export const DEPT_LABELS: Record<DepartmentKey, string> = {
   systemise: "Systemise",
   skills: "HAMZURY Skills",
   ridi: "RIDI",
+  founder: "Founder",
+  metfix: "MetFix",
 };

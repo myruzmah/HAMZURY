@@ -59,6 +59,7 @@ import ClientOnboarding from "./pages/ClientOnboarding";
 import PricingPage from "./pages/PricingPage";
 import FounderPage from "./pages/FounderPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import ChangePasswordPage from "./pages/ChangePasswordPage";
 import TermsOfService from "./pages/TermsOfService";
 
 import CookieBanner from "./components/CookieBanner";
@@ -260,6 +261,7 @@ function Router() {
       {/* ═══ Info / legal ═══ */}
       <Route path="/founder" component={FounderPage} />
       <Route path="/pricing" component={PricingPage} />
+      <Route path="/change-password" component={ChangePasswordPage} />
       <Route path="/privacy" component={PrivacyPolicy} />
       <Route path="/terms"   component={TermsOfService} />
       <Route path="/login">{() => <Redirect to="/" />}</Route>

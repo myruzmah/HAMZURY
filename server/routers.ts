@@ -34,6 +34,8 @@ import {
   getInstitutionalStats,
   listCohorts, getCohortById,
   createSkillsApplication, getSkillsApplications, getSkillsApplicationByRef, updateSkillsApplicationStatus,
+  createHubFeedback, getHubFeedback, updateHubFeedbackStatus,
+  createHubPartnerOutreach, getHubPartnerOutreach, updateHubPartnerOutreachStatus,
   validateScholarshipCode, consumeScholarshipCode, listScholarshipCodes, createScholarshipCode, deactivateScholarshipCode,
   generateSKLRefNumber,
   createAffiliate, getAffiliateByEmail, getAffiliateById, verifyAffiliatePassword,
@@ -124,13 +126,15 @@ import {
   // v1 restructure
   createContentCreator, listContentCreators, updateContentCreator,
   listAuditLogsForCso,
+  // Phase 3.2 — recent activity feed
+  getActivityLogsForClient,
 } from "./db";
 import { storagePut } from "./storage";
 import { encryptCredential, decryptCredential, maskPassword } from "./credentials";
 import { clientCredentials, tasks, affiliates, deptMessages, staffUsers, users, reportRequests, clients as clientsTable, invoices as invoicesTable } from "../drizzle/schema";
 import { eq, desc, and, or, isNull, lte } from "drizzle-orm";
 import { ENV } from "./_core/env";
-import { sendPaymentClaimedAlert, sendNewLeadAlert } from "./email";
+import { sendPaymentClaimedAlert, sendNewLeadAlert, sendHubEnrolmentAlert, sendHubFeedbackAlert, sendHubPartnerAlert } from "./email";
 import { invokeLLM } from "./_core/llm";
 import { buildSystemPrompt } from "./config/chat-config";
 import { TRPCError } from "@trpc/server";
@@ -420,12 +424,26 @@ export const appRouter = router({
           augmentedContext = (augmentedContext || "") + note;
         }
 
+        // 2026-04-30 — Returning-client detection. If the submitter's phone
+        // matches an existing client, link the lead so the inbox can show a
+        // ↩ Returning badge and a "Open existing client" jump.
+        let linkedClientId: number | undefined;
+        if (input.phone) {
+          try {
+            const existing = await getClientByPhone(input.phone);
+            if (existing) linkedClientId = existing.id;
+          } catch (err) {
+            console.error("[leads.submit] returning-client lookup failed:", err);
+          }
+        }
+
         const lead = await createLead({
           ...input,
           context: augmentedContext,
           ref,
           assignedDepartment: inferredDept,
-        });
+          linkedClientId,
+        } as any);
         const task = await createTaskFromLead(lead);
         // Email alert — non-blocking; pass real source/division so the
         // alert subject matches what the CSO sees in inbox.
@@ -708,6 +726,8 @@ export const appRouter = router({
         excludeConverted: z.boolean().optional(),
         /** v1 restructure: when true, return { new: [], qualified: [], ... } keyed by pipeline stage. */
         groupByStage: z.boolean().optional(),
+        /** 2026-04-30 — when true, return ONLY snoozed leads. Default false → hide snoozed. */
+        snoozedOnly: z.boolean().optional(),
       }).optional())
       .query(async ({ input, ctx }) => {
         const role = ctx.user.hamzuryRole;
@@ -716,6 +736,14 @@ export const appRouter = router({
           all = all.filter(l => (l.assignedDepartment || "").toLowerCase() === ctx.user.department?.toLowerCase());
         } else if (input?.department) {
           all = all.filter(l => (l.assignedDepartment || "").toLowerCase() === input.department!.toLowerCase());
+        }
+        // 2026-04-30 — snooze filter. By default, hide leads where
+        // snoozedUntil is in the future. snoozedOnly inverts that.
+        const now = Date.now();
+        if (input?.snoozedOnly) {
+          all = all.filter(l => l.snoozedUntil && new Date(l.snoozedUntil).getTime() > now);
+        } else {
+          all = all.filter(l => !l.snoozedUntil || new Date(l.snoozedUntil).getTime() <= now);
         }
         if (input?.excludeConverted) {
           // Exclude any terminal/non-actionable status from the inbox.
@@ -769,12 +797,22 @@ export const appRouter = router({
           }
         }
 
+        // 2026-04-30 — translate raw enum to friendly label in audit + activity
+        // logs so they read "Closer call" instead of "negotiation".
+        const STAGE_LABELS: Record<string, string> = {
+          new: "New", qualified: "Qualified", proposal_sent: "Proposal sent",
+          negotiation: "Closer call", onboarding: "Onboarding",
+          won: "Won", lost: "Lost", paused: "Nurture",
+          contacted: "Qualified", converted: "Won", archived: "Lost",
+        };
+        const stageLabel = STAGE_LABELS[input.stage] || input.stage;
+
         const lead = await updateLead(input.leadId, { status: input.stage as any });
         await createActivityLog({
           leadId: input.leadId,
           userId: ctx.user.id,
           action: "lead_stage_updated",
-          details: `Stage -> ${input.stage}${input.note ? ` · ${input.note}` : ""} (by ${ctx.user.name || ctx.user.email})`,
+          details: `Stage → ${stageLabel}${input.note ? ` · ${input.note}` : ""} (by ${ctx.user.name || ctx.user.email})`,
         });
         await createAuditLog({
           userId: ctx.user.id,
@@ -782,16 +820,21 @@ export const appRouter = router({
           action: "lead_stage_updated",
           resource: "leads",
           resourceId: input.leadId,
-          details: `Stage: ${input.stage}${input.note ? ` · ${input.note}` : ""}`,
+          details: `Stage → ${stageLabel}${input.note ? ` · ${input.note}` : ""}`,
         });
 
         // ─── Auto-handoff on Won (P0 fix) ────────────────────────────────
         if (input.stage === "won" && lead) {
           try {
-            // 1) Upsert the verified client truth record
+            // 1) Upsert the verified client truth record.
+            //    Phase 2 (multi-service): if a client already exists with the
+            //    same phone, this is a returning client. We DO NOT create a
+            //    duplicate client row — the new task is the per-service row,
+            //    so the same client can carry Bizdoc + Medialy + Hub etc.
             const existingClient = lead.phone
               ? await getClientByPhone(lead.phone).catch(() => null)
               : null;
+            const isReturning = !!existingClient;
             if (!existingClient) {
               await createClient({
                 ref: lead.ref,
@@ -806,15 +849,33 @@ export const appRouter = router({
                 source: lead.source ?? null,
               } as any);
               console.log(`[leads.updateStage:won] Created client truth for lead ${lead.ref}`);
+            } else {
+              console.log(`[leads.updateStage:won] Returning client ${existingClient.ref} — new task added without duplicate clientTruth row`);
             }
 
-            // 2) Create commission row from linked task (if it has a quotedPrice)
-            const tasks = await getTasksByLeadId(input.leadId);
-            const taskWithPrice = tasks.find((t: any) => t.quotedPrice && parseFloat(String(t.quotedPrice)) > 0);
+            // 2) Create commission row from linked task (if it has a quotedPrice).
+            //    Phase 2 — also sync tasks.contractValue from quotedPrice so
+            //    aggregate stats (cso-stats) and per-service breakdown render
+            //    the correct number for THIS service.
+            const leadTasks = await getTasksByLeadId(input.leadId);
+            const taskWithPrice = leadTasks.find((t: any) => t.quotedPrice && parseFloat(String(t.quotedPrice)) > 0);
             if (taskWithPrice) {
+              const quoted = parseFloat(String((taskWithPrice as any).quotedPrice));
+              // Sync contractValue + serviceLabel onto the task row so the
+              // CSO Active Clients per-service rows have a stable price.
+              try {
+                const dbInst = await getDb();
+                if (dbInst) {
+                  await dbInst.update(tasks).set({
+                    contractValue: String(quoted),
+                    serviceLabel: (taskWithPrice as any).serviceLabel || (taskWithPrice as any).service,
+                  } as any).where(eq(tasks.id, (taskWithPrice as any).id));
+                }
+              } catch (syncErr) {
+                console.warn("[leads.updateStage:won] tasks.contractValue sync failed:", syncErr);
+              }
               const existing = await getCommissionByTaskRef(taskWithPrice.ref).catch(() => null);
               if (!existing) {
-                const quoted = parseFloat(String((taskWithPrice as any).quotedPrice));
                 const breakdown = calculateCommission(quoted);
                 await createCommission({
                   taskId: taskWithPrice.id,
@@ -832,6 +893,12 @@ export const appRouter = router({
               }
             } else {
               console.log(`[leads.updateStage:won] No task with quotedPrice for lead ${lead.ref} — commission not auto-created`);
+            }
+            // Tag the lead with returning marker for downstream UI.
+            if (isReturning && existingClient) {
+              try {
+                await updateLead(input.leadId, { linkedClientId: existingClient.id } as any);
+              } catch { /* best-effort */ }
             }
           } catch (err) {
             // Non-fatal for the stage move — but the CSO MUST know so they can
@@ -925,6 +992,41 @@ export const appRouter = router({
         }
 
         return lead;
+      }),
+
+    /** 2026-04-30 — Snooze a lead. Hides it from inbox until snoozedUntil passes. */
+    snooze: csoProcedure
+      .input(z.object({
+        leadId: z.number(),
+        until: z.string(), // ISO timestamp
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const until = new Date(input.until);
+        if (isNaN(until.getTime())) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid snooze date." });
+        }
+        await updateLead(input.leadId, { snoozedUntil: until } as any);
+        await createActivityLog({
+          leadId: input.leadId,
+          userId: ctx.user.id,
+          action: "lead_snoozed",
+          details: `Snoozed until ${until.toISOString().slice(0, 16).replace("T", " ")} by ${ctx.user.name || ctx.user.email}`,
+        });
+        return { success: true };
+      }),
+
+    /** 2026-04-30 — Wake a snoozed lead immediately. */
+    unsnooze: csoProcedure
+      .input(z.object({ leadId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await updateLead(input.leadId, { snoozedUntil: null } as any);
+        await createActivityLog({
+          leadId: input.leadId,
+          userId: ctx.user.id,
+          action: "lead_unsnoozed",
+          details: `Snooze cleared by ${ctx.user.name || ctx.user.email}`,
+        });
+        return { success: true };
       }),
 
     updateScore: csoProcedure
@@ -1169,7 +1271,14 @@ export const appRouter = router({
     setPrice: seniorProcedure
       .input(z.object({ id: z.number(), quotedPrice: z.string() }))
       .mutation(async ({ input, ctx }) => {
-        const task = await updateTask(input.id, { quotedPrice: input.quotedPrice });
+        // 2026-05-02 (Phase 2.6) — keep tasks.contractValue in lockstep with
+        // tasks.quotedPrice so the Active Clients per-service rows + the
+        // Overview revenue rollup show the same number from the moment the
+        // CSO sets a price (instead of waiting for the Won handoff to sync).
+        const task = await updateTask(input.id, {
+          quotedPrice: input.quotedPrice,
+          contractValue: input.quotedPrice,
+        } as any);
         await createActivityLog({
           taskId: input.id,
           userId: ctx.user.id,
@@ -2757,6 +2866,24 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         pricingTier: z.string().optional(),
         agreedToTerms: z.boolean().optional(),
         agreedToEffort: z.boolean().optional(),
+        // 2026-05-05 — Branched HUB enrolment fields. All optional; populated
+        // by the form based on which programme category the applicant picked.
+        enrolmentType: z.string().optional(),     // self / child / team / company
+        studentAge: z.string().optional(),
+        programCategory: z.string().optional(),   // core/kids/placement/siwes/online/corporate/unsure
+        learningMode: z.string().optional(),
+        paymentPlan: z.string().optional(),
+        schoolName: z.string().optional(),
+        companyName: z.string().optional(),
+        parentName: z.string().optional(),
+        scholarshipCodeUsed: z.string().optional(),
+        cohortPreference: z.string().optional(),
+        paidConfirm: z.string().optional(),
+        transferNarration: z.string().optional(),
+        /** JSON-encoded blob of every form answer. The 49-question branched
+         *  form has more answers than dedicated columns; this captures the
+         *  remainder so no data is dropped. */
+        metadata: z.string().optional(),
       }))
       .mutation(async ({ input }) => {
         const ref = generateSKLRefNumber(input.phone);
@@ -2776,9 +2903,35 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
           pricingTier: input.pricingTier || "early_bird",
           agreedToTerms: input.agreedToTerms,
           agreedToEffort: input.agreedToEffort,
+          enrolmentType: input.enrolmentType,
+          studentAge: input.studentAge,
+          programCategory: input.programCategory,
+          learningMode: input.learningMode,
+          paymentPlan: input.paymentPlan,
+          schoolName: input.schoolName,
+          companyName: input.companyName,
+          parentName: input.parentName,
+          scholarshipCodeUsed: input.scholarshipCodeUsed,
+          cohortPreference: input.cohortPreference,
+          paidConfirm: input.paidConfirm,
+          transferNarration: input.transferNarration,
+          metadata: input.metadata,
           status: "submitted",
           paymentStatus: "pending",
         });
+        // 2026-05-05 — Email HUB desk (desk@hamzury.com). Fire-and-forget;
+        // SMTP failure never blocks the form submission.
+        sendHubEnrolmentAlert({
+          ref: app.ref,
+          fullName: input.fullName,
+          program: input.program,
+          programCategory: input.programCategory,
+          enrolmentType: input.enrolmentType,
+          studentAge: input.studentAge,
+          paymentPlan: input.paymentPlan,
+          phone: input.phone,
+          email: input.email,
+        }).catch(err => console.error("[skills.submitApplication] hub email alert failed:", err));
         return { ref: app.ref, applicationId: app.id };
       }),
 
@@ -2962,6 +3115,126 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
         const rawContent = response.choices[0]?.message?.content;
         const text = typeof rawContent === "string" ? rawContent : Array.isArray(rawContent) ? rawContent.filter((c): c is { type: "text"; text: string } => c.type === "text").map(c => c.text).join("") : "";
         return { reply: text || "Let me connect you with a program advisor who can help you pick the right fit." };
+      }),
+  }),
+
+  // ─── HUB direct routes (2026-05-05) ──────────────────────────────────────
+  // /feedback and /partner submissions bypass the CSO leads queue and write
+  // directly to dedicated tables (`hub_feedback`, `hub_partner_outreach`).
+  // HubAdminPortal reads from these tables — the founder and Hub team see
+  // their own inbox without CSO triage.
+  hub: router({
+    /** Public: HubFeedback form posts here. Anonymous-friendly. */
+    submitFeedback: rateLimitedProcedure
+      .input(z.object({
+        kind: z.string().optional(),
+        area: z.string().optional(),
+        summary: z.string().optional(),
+        story: z.string().optional(),
+        outcome: z.string().optional(),
+        anonName: z.string().optional(),
+        anonEmail: z.string().optional(),
+        metadata: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const ref = generateSKLRefNumber(input.anonEmail || undefined);
+        const row = await createHubFeedback({
+          ref,
+          kind: input.kind,
+          area: input.area,
+          summary: input.summary,
+          story: input.story,
+          outcome: input.outcome,
+          anonName: input.anonName,
+          anonEmail: input.anonEmail,
+          metadata: input.metadata,
+          status: "new",
+        });
+        // Email HUB desk (desk@hamzury.com). Fire-and-forget.
+        sendHubFeedbackAlert({
+          ref: row.ref,
+          kind: input.kind,
+          area: input.area,
+          summary: input.summary,
+          story: input.story,
+          anonName: input.anonName,
+          anonEmail: input.anonEmail,
+        }).catch(err => console.error("[hub.submitFeedback] email alert failed:", err));
+        return { ref: row.ref, feedbackId: row.id };
+      }),
+
+    /** Hub admin: list all feedback for the inbox view. */
+    listFeedback: protectedProcedure.query(async () => getHubFeedback()),
+
+    /** Hub admin: update feedback status (reviewing → responded → resolved → archived). */
+    updateFeedbackStatus: seniorProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["new", "reviewing", "responded", "resolved", "archived"]),
+        reviewNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return updateHubFeedbackStatus(input.id, input.status, ctx.user.id, input.reviewNotes);
+      }),
+
+    /** Public: HubPartner form posts here. */
+    submitPartnerOutreach: rateLimitedProcedure
+      .input(z.object({
+        orgName: z.string().optional(),
+        orgType: z.string().optional(),
+        contactName: z.string().optional(),
+        contactRole: z.string().optional(),
+        contactPhone: z.string().optional(),
+        contactEmail: z.string().optional(),
+        partnerInterest: z.string().optional(),
+        scope: z.string().optional(),
+        timeline: z.string().optional(),
+        notes: z.string().optional(),
+        metadata: z.string().optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const ref = generateSKLRefNumber(input.contactPhone || undefined);
+        const row = await createHubPartnerOutreach({
+          ref,
+          orgName: input.orgName,
+          orgType: input.orgType,
+          contactName: input.contactName,
+          contactRole: input.contactRole,
+          contactPhone: input.contactPhone,
+          contactEmail: input.contactEmail,
+          partnerInterest: input.partnerInterest,
+          scope: input.scope,
+          timeline: input.timeline,
+          notes: input.notes,
+          metadata: input.metadata,
+          status: "new",
+        });
+        // Email HUB desk (desk@hamzury.com). Fire-and-forget.
+        sendHubPartnerAlert({
+          ref: row.ref,
+          orgName: input.orgName,
+          orgType: input.orgType,
+          contactName: input.contactName,
+          contactEmail: input.contactEmail,
+          contactPhone: input.contactPhone,
+          partnerInterest: input.partnerInterest,
+          timeline: input.timeline,
+        }).catch(err => console.error("[hub.submitPartnerOutreach] email alert failed:", err));
+        return { ref: row.ref, partnerId: row.id };
+      }),
+
+    /** Hub admin: list all partner outreach. */
+    listPartnerOutreach: protectedProcedure.query(async () => getHubPartnerOutreach()),
+
+    /** Hub admin: update partner status. */
+    updatePartnerOutreachStatus: seniorProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["new", "reviewing", "in_discussion", "agreement_signed", "closed", "rejected"]),
+        reviewNotes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        return updateHubPartnerOutreachStatus(input.id, input.status, ctx.user.id, input.reviewNotes);
       }),
   }),
 
@@ -5046,6 +5319,15 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
         return row;
       }),
 
+    /** Phase 3.2 (2026-05-02) — recent activity log entries for a single client.
+     *  Powers the "Recent activity" feed on the CSO client detail slide-over.
+     *  Joins the client's lead row + every linked task. */
+    recentActivity: csoProcedure
+      .input(z.object({ clientId: z.number(), limit: z.number().int().min(1).max(50).default(20) }))
+      .query(async ({ input }) => {
+        return getActivityLogsForClient(input.clientId, input.limit);
+      }),
+
     // ─── Feature 4 — Upsell Queue ──────────────────────────────────────────
     /** Set / update the upsell plan for a client. */
     setUpsellPlan: csoProcedure
@@ -5185,6 +5467,103 @@ Respond in JSON format: { "caption": "...", "hashtags": "#tag1 #tag2 ..." }`;
           resourceId: task.id,
           details: `CSO assigned "${input.title}" to ${input.assignedTo} in ${input.department}`,
         });
+        return { taskId: task.id, ref: task.ref };
+      }),
+
+    /** Phase 2 (Multi-Service Refactor 2026-05-02) — add another service to an
+     *  existing Won client. Skips the lead pipeline since the client is already
+     *  qualified + paid before. Creates a new task on the same clientTruth row,
+     *  carries its own contractValue + serviceLabel, and auto-creates the pending
+     *  commission row so Finance + division ops see the new work immediately. */
+    addServiceToClient: csoProcedure
+      .input(z.object({
+        clientId: z.number(),
+        service: z.string().min(1),
+        serviceLabel: z.string().min(1),
+        department: z.enum(["bizdoc", "systemise", "scalar", "medialy", "skills", "hub", "podcast", "video", "faceless"]),
+        contractValue: z.number().nonnegative(),
+        notes: z.string().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        // 1) Resolve the existing client. Refuse if not found — the modal only
+        //    appears for Won clients so this should never miss in practice.
+        const client = await getAllClients().then(list => list.find(c => c.id === input.clientId));
+        if (!client) {
+          throw new TRPCError({ code: "NOT_FOUND", message: "Client not found." });
+        }
+
+        // 2) Create the new task. clientTruth row stays unchanged — multi-service
+        //    is now expressed as multiple tasks under one client, not one client
+        //    per service.
+        const task = await createTask({
+          clientName: client.name,
+          businessName: client.businessName ?? undefined,
+          phone: client.phone ?? undefined,
+          service: input.service,
+          department: input.department,
+          notes: input.notes || `Added service via Active Clients → "+ Add another service" by ${ctx.user.name || ctx.user.email}`,
+          priority: "normal",
+          quotedPrice: String(input.contractValue),
+        } as any);
+
+        // Tag the new task with serviceLabel + contractValue + assignedBy.
+        try {
+          const db = await getDb();
+          if (db) {
+            await db.update(tasks).set({
+              serviceLabel: input.serviceLabel,
+              contractValue: String(input.contractValue),
+              assignedBy: ctx.user.openId,
+            } as any).where(eq(tasks.id, task.id));
+          }
+        } catch (err) {
+          console.warn("[csoActions.addServiceToClient] task tag update failed:", err);
+        }
+
+        // 3) Auto-create the pending commission row so Finance sees the new deal.
+        if (input.contractValue > 0) {
+          try {
+            const breakdown = calculateCommission(input.contractValue);
+            await createCommission({
+              taskId: task.id,
+              taskRef: task.ref,
+              clientName: client.name,
+              service: input.serviceLabel,
+              quotedPrice: String(input.contractValue),
+              institutionalAmount: String(breakdown.institutionalAmount),
+              commissionPool: String(breakdown.commissionPool),
+              tierBreakdown: breakdown.tiers as any,
+              status: "pending",
+              createdBy: ctx.user.id,
+            } as any);
+          } catch (err) {
+            console.warn("[csoActions.addServiceToClient] commission create failed:", err);
+          }
+        }
+
+        // 4) Notify the receiving division so they pick up the new task.
+        const deptToPortal: Record<string, string> = {
+          bizdoc: "/bizdoc/ops", systemise: "/scalar/ops", scalar: "/scalar/ops",
+          medialy: "/medialy/ops", skills: "/hub/admin", hub: "/hub/admin",
+          podcast: "/podcast/ops", video: "/video/ops", faceless: "/faceless/ops",
+        };
+        await createNotification({
+          userId: input.department,
+          type: "assignment",
+          title: `New service from CSO: ${client.businessName || client.name}`,
+          message: `${input.serviceLabel} — ${ctx.user.name || "CSO"} added this for an existing client. Open the task to begin.`,
+          link: deptToPortal[input.department] || "/",
+        }).catch(() => {});
+
+        await createAuditLog({
+          userId: ctx.user.id,
+          userName: ctx.user.name || ctx.user.email || "CSO",
+          action: "client_service_added",
+          resource: "tasks",
+          resourceId: task.id,
+          details: `+ ${input.serviceLabel} (${input.department}) for ${client.businessName || client.name} · ₦${input.contractValue.toLocaleString()}`,
+        });
+
         return { taskId: task.id, ref: task.ref };
       }),
 
