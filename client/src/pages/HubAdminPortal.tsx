@@ -545,10 +545,10 @@ function EnrollmentsSection() {
   const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
-  // 2026-05-06 — expanded row state. Click a row to see all 49 form answers
-  // from the metadata JSON + branched DB columns. Without this, admins only
-  // saw row summaries.
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  // 2026-05-06 — modal state. Click a row to pop up a full-detail modal
+  // showing every DB field + every metadata answer (including blanks),
+  // not just highlights. Press Escape or click outside to close.
+  const [openRow, setOpenRow] = useState<any | null>(null);
 
   // 2026-05-05 — Founder reversal of the earlier CSO-gate rule for HUB.
   // /hub/enroll now writes DIRECTLY into skills.applications (via
@@ -635,155 +635,307 @@ function EnrollmentsSection() {
         <Card><EmptyState icon={Users} title="No applications match" /></Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.slice(0, 60).map((a: any) => {
-            const isOpen = expandedId === a.id;
-            return (
-              <Card key={a.id} style={{ padding: 12 }}>
-                <div
-                  onClick={() => setExpandedId(isOpen ? null : a.id)}
-                  style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", cursor: "pointer" }}
-                >
-                  <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{a.fullName}</p>
-                      <StatusPill label={a.status} tone={TONE[a.status] || "muted"} />
-                      {a.paymentStatus && <StatusPill label={`payment: ${a.paymentStatus}`} tone={a.paymentStatus === "paid" ? "green" : "muted"} />}
-                      <span style={{ fontSize: 10, color: ORANGE, fontWeight: 600 }}>
-                        {isOpen ? "▾ hide details" : "▸ view all answers"}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
-                      {a.program} · {a.pathway || "—"}
-                    </p>
-                    <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
-                      <span style={{ fontFamily: "monospace" }}>{a.ref}</span>
-                      {a.email && <span>{a.email}</span>}
-                      {a.phone && <span>{a.phone}</span>}
-                      <span>{fmtDate(a.createdAt)}</span>
-                    </div>
+          {filtered.slice(0, 60).map((a: any) => (
+            <Card key={a.id} style={{ padding: 12 }}>
+              <div
+                onClick={() => setOpenRow(a)}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", cursor: "pointer" }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{a.fullName}</p>
+                    <StatusPill label={a.status} tone={TONE[a.status] || "muted"} />
+                    {a.paymentStatus && <StatusPill label={`payment: ${a.paymentStatus}`} tone={a.paymentStatus === "paid" ? "green" : "muted"} />}
+                    <span style={{ fontSize: 10, color: ORANGE, fontWeight: 600 }}>
+                      ▸ view all answers
+                    </span>
                   </div>
-                  <select
-                    value={a.status}
-                    onClick={e => e.stopPropagation()}
-                    onChange={e => { e.stopPropagation(); updateMut.mutate({ id: a.id, status: e.target.value as any }); }}
-                    disabled={updateMut.isPending}
-                    style={{
-                      padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
-                      fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
-                    }}
-                  >
-                    <option value="submitted">Submitted</option>
-                    <option value="under_review">Under Review</option>
-                    <option value="accepted">Accepted</option>
-                    <option value="waitlisted">Waitlisted</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
+                  <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                    {a.program} · {a.pathway || "—"}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: "monospace" }}>{a.ref}</span>
+                    {a.email && <span>{a.email}</span>}
+                    {a.phone && <span>{a.phone}</span>}
+                    <span>{fmtDate(a.createdAt)}</span>
+                  </div>
                 </div>
-                {isOpen && <ApplicationDetail row={a} />}
-              </Card>
-            );
-          })}
+                <select
+                  value={a.status}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => { e.stopPropagation(); updateMut.mutate({ id: a.id, status: e.target.value as any }); }}
+                  disabled={updateMut.isPending}
+                  style={{
+                    padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+                    fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
+                  }}
+                >
+                  <option value="submitted">Submitted</option>
+                  <option value="under_review">Under Review</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="waitlisted">Waitlisted</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </Card>
+          ))}
         </div>
+      )}
+
+      {openRow && (
+        <ApplicationDetailModal row={openRow} onClose={() => setOpenRow(null)} />
       )}
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * ApplicationDetail — 2026-05-06.
- * Renders the full Q/A from a row's metadata JSON + the dedicated branched
- * fields (enrolmentType, studentAge, schoolName, companyName, etc.).
- * Shown when a Hub admin clicks a row in EnrollmentsSection. Without this,
- * admins only saw row summaries — the 49 form answers were stuck in DB.
+ * ApplicationDetailModal — 2026-05-06.
+ * Full-screen overlay popup that shows EVERY field on an application —
+ * every DB column AND every entry in the metadata JSON answers blob,
+ * including ones the applicant left blank (rendered as "—"). No
+ * filtering, no "highlights", no assumptions about which fields matter.
+ *
+ * Click outside / X / Escape to close.
  * ═══════════════════════════════════════════════════════════════════════ */
-function ApplicationDetail({ row }: { row: any }) {
+function ApplicationDetailModal({ row, onClose }: { row: any; onClose: () => void }) {
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
   let parsedMeta: any = null;
   try { parsedMeta = JSON.parse(row.metadata || "{}"); } catch { parsedMeta = null; }
-  const answers: Record<string, string> = parsedMeta?.answers || {};
+  const answers: Record<string, any> = parsedMeta?.answers || {};
   const contact = parsedMeta?.contact || {};
+  const capturedAt = parsedMeta?.capturedAt;
 
-  // 1) Branched DB columns (queryable). Skip empty.
-  const dbFields: Array<[string, any]> = [
-    ["Enrolment for",       row.enrolmentType],
-    ["Student age",         row.studentAge],
-    ["Program category",    row.programCategory],
-    ["Learning mode",       row.learningMode],
-    ["Payment plan",        row.paymentPlan],
-    ["School (SIWES)",      row.schoolName],
-    ["Company (corporate)", row.companyName],
-    ["Parent / guardian",   row.parentName],
-    ["Scholarship code",    row.scholarshipCodeUsed],
-    ["Cohort preference",   row.cohortPreference],
-    ["Paid confirm",        row.paidConfirm],
-    ["Transfer narration",  row.transferNarration],
-    ["Pricing tier",        row.pricingTier],
-    ["Heard from",          row.heardFrom],
-    ["Can commit time",     row.canCommitTime === null ? null : (row.canCommitTime ? "Yes" : "No")],
-    ["Has equipment",       row.hasEquipment === null ? null : (row.hasEquipment ? "Yes" : "No")],
-    ["Willing to execute",  row.willingToExecute === null ? null : (row.willingToExecute ? "Yes" : "No")],
-    ["Agreed to terms",     row.agreedToTerms === null ? null : (row.agreedToTerms ? "Yes" : "No")],
-    ["Agreed to effort",    row.agreedToEffort === null ? null : (row.agreedToEffort ? "Yes" : "No")],
-  ].filter(([_, v]) => v !== null && v !== undefined && v !== "");
+  // Friendly field labels for question IDs the form uses (HubEnroll cfg).
+  // Anything not in the map renders the raw question_id so nothing is hidden.
+  const QUESTION_LABELS: Record<string, string> = {
+    who: "Who is enrolling?",
+    age: "Student age",
+    program: "Programme",
+    pathway: "Pathway",
+    mode: "Learning mode",
+    schedule: "Preferred schedule",
+    aiLevel: "AI familiarity level",
+    aiTools: "AI tools used before",
+    device: "Device available",
+    weeklyHours: "Weekly hours available",
+    commitment: "Commitment confirmation",
+    canCommitTime: "Can commit time",
+    hasEquipment: "Has equipment",
+    willingToExecute: "Willing to execute on assignments",
+    learningGoal: "Learning goal",
+    goal: "Goal",
+    kidGoal: "What does the child want to learn?",
+    kidExperience: "Child's prior tech experience",
+    parentName: "Parent / guardian name",
+    parentRelationship: "Relationship to student",
+    schoolName: "School name (SIWES)",
+    courseOfStudy: "Course of study",
+    currentLevel: "Current level (year of study)",
+    siwesMonths: "SIWES duration (months)",
+    siwesStart: "SIWES start month",
+    schoolLetter: "School letter status",
+    companyName: "Company name (corporate)",
+    teamSize: "Team size",
+    businessSegment: "Business segment",
+    corpLocation: "Corporate workshop location",
+    corpDates: "Preferred corporate workshop dates",
+    decisionMaker: "Decision maker confirmation",
+    currentRole: "Current role",
+    mentorAddon: "Mentor add-on (online)",
+    placementCompletedProgramme: "Completed HUB programme",
+    placementGraduationYear: "Graduation year",
+    placementDept: "Internship department preference",
+    placementInternMonths: "Internship duration (months)",
+    placementPortfolio: "Portfolio / GitHub link",
+    payment: "Payment plan",
+    paymentPlan: "Payment plan",
+    scholarshipCode: "Scholarship code",
+    cohort: "Cohort preference",
+    cohortPreference: "Cohort preference",
+    paidConfirm: "Paid the seat-hold?",
+    transferNarration: "Transfer narration / sender name",
+    notes: "Notes / questions for the team",
+    businessDescription: "Business description",
+    biggestChallenge: "Biggest challenge",
+    challenge: "Biggest challenge",
+    heardFrom: "How did you hear about us?",
+    referral: "Referral source",
+    pricingTier: "Pricing tier",
+    agreedToTerms: "Agreed to terms",
+    agreedToEffort: "Agreed to effort commitment",
+  };
 
-  // 2) Free-text fields
-  const textFields: Array<[string, any]> = [
-    ["Business description", row.businessDescription],
-    ["Biggest challenge",    row.biggestChallenge],
-    ["Review notes",         row.reviewNotes],
-  ].filter(([_, v]) => v);
+  // Build a single ordered list of EVERY field (DB columns + metadata answers)
+  // with a friendly label, the raw question key, and the value (or "—" if empty).
+  const allFields: Array<{ section: string; label: string; key: string; value: string }> = [];
 
-  // 3) Anything else in the answers JSON not already covered above
-  const coveredKeys = new Set([
-    "who", "age", "mode", "payment", "scholarshipCode", "cohort", "paidConfirm",
-    "transferNarration", "schoolName", "companyName", "parentName", "program",
-    "pathway", "businessDescription", "biggestChallenge", "heardFrom", "challenge",
-    "canCommitTime", "hasEquipment", "willingToExecute", "pricingTier",
-    "agreedToTerms", "agreedToEffort", "notes",
-  ]);
-  const extraAnswers: Array<[string, any]> = Object.entries(answers)
-    .filter(([k, v]) => v && !coveredKeys.has(k))
-    .map(([k, v]) => [k, String(v)]);
+  // Section: Identity (always shown)
+  allFields.push({ section: "Identity", label: "Reference",        key: "ref",          value: row.ref || "—" });
+  allFields.push({ section: "Identity", label: "Full name",        key: "fullName",     value: row.fullName || "—" });
+  allFields.push({ section: "Identity", label: "Programme",        key: "program",      value: row.program || "—" });
+  allFields.push({ section: "Identity", label: "Pathway",          key: "pathway",      value: row.pathway || "—" });
+  allFields.push({ section: "Identity", label: "Phone",            key: "phone",        value: row.phone || "—" });
+  allFields.push({ section: "Identity", label: "Email",            key: "email",        value: row.email || "—" });
+  allFields.push({ section: "Identity", label: "Business",         key: "businessName", value: contact.businessName || "—" });
+  allFields.push({ section: "Identity", label: "Status",           key: "status",       value: row.status || "—" });
+  allFields.push({ section: "Identity", label: "Payment status",   key: "paymentStatus", value: row.paymentStatus || "—" });
+  allFields.push({ section: "Identity", label: "Submitted at",     key: "createdAt",    value: row.createdAt ? fmtDate(row.createdAt) : "—" });
 
-  const Row = ({ label, value }: { label: string; value: any }) => (
-    <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12, padding: "6px 0", borderTop: `1px solid ${HAIRLINE}` }}>
-      <div style={{ fontSize: 11, color: INK_MUTED, fontWeight: 600 }}>{label}</div>
-      <div style={{ fontSize: 12, color: INK, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{String(value)}</div>
-    </div>
-  );
+  // Section: Branched form fields (DB columns)
+  const dbCols: Array<[string, string, any]> = [
+    ["Enrolment for",       "enrolmentType",       row.enrolmentType],
+    ["Student age",         "studentAge",          row.studentAge],
+    ["Programme category",  "programCategory",     row.programCategory],
+    ["Learning mode",       "learningMode",        row.learningMode],
+    ["Payment plan",        "paymentPlan",         row.paymentPlan],
+    ["School (SIWES)",      "schoolName",          row.schoolName],
+    ["Company (corporate)", "companyName",         row.companyName],
+    ["Parent / guardian",   "parentName",          row.parentName],
+    ["Scholarship code",    "scholarshipCodeUsed", row.scholarshipCodeUsed],
+    ["Cohort preference",   "cohortPreference",    row.cohortPreference],
+    ["Paid the seat-hold?", "paidConfirm",         row.paidConfirm],
+    ["Transfer narration",  "transferNarration",   row.transferNarration],
+    ["Pricing tier",        "pricingTier",         row.pricingTier],
+    ["Heard from",          "heardFrom",           row.heardFrom],
+    ["Can commit time",     "canCommitTime",       row.canCommitTime === null || row.canCommitTime === undefined ? "—" : (row.canCommitTime ? "Yes" : "No")],
+    ["Has equipment",       "hasEquipment",        row.hasEquipment === null || row.hasEquipment === undefined ? "—" : (row.hasEquipment ? "Yes" : "No")],
+    ["Willing to execute",  "willingToExecute",    row.willingToExecute === null || row.willingToExecute === undefined ? "—" : (row.willingToExecute ? "Yes" : "No")],
+    ["Agreed to terms",     "agreedToTerms",       row.agreedToTerms === null || row.agreedToTerms === undefined ? "—" : (row.agreedToTerms ? "Yes" : "No")],
+    ["Agreed to effort",    "agreedToEffort",      row.agreedToEffort === null || row.agreedToEffort === undefined ? "—" : (row.agreedToEffort ? "Yes" : "No")],
+  ];
+  for (const [label, key, value] of dbCols) {
+    allFields.push({ section: "Branched form fields", label, key, value: (value === null || value === undefined || value === "") ? "—" : String(value) });
+  }
+
+  // Section: Long-form responses
+  allFields.push({ section: "Long-form responses", label: "Business description", key: "businessDescription", value: row.businessDescription || "—" });
+  allFields.push({ section: "Long-form responses", label: "Biggest challenge",    key: "biggestChallenge",    value: row.biggestChallenge || "—" });
+  allFields.push({ section: "Long-form responses", label: "Review notes",         key: "reviewNotes",         value: row.reviewNotes || "—" });
+
+  // Section: Every entry in the answers JSON (so nothing is hidden)
+  const dbColKeys = new Set(dbCols.map(([_, k]) => k));
+  const handledTopLevel = new Set(["program", "pathway", "fullName", "phone", "email", "businessDescription", "biggestChallenge", "challenge"]);
+  for (const [k, v] of Object.entries(answers)) {
+    if (handledTopLevel.has(k) || dbColKeys.has(k)) continue;
+    const label = QUESTION_LABELS[k] || k;
+    allFields.push({ section: "Branched form fields", label, key: k, value: (v === null || v === undefined || v === "") ? "—" : String(v) });
+  }
+
+  // Group by section, preserve insertion order within
+  const grouped: Record<string, typeof allFields> = {};
+  for (const f of allFields) {
+    if (!grouped[f.section]) grouped[f.section] = [];
+    grouped[f.section].push(f);
+  }
+  const sectionOrder = ["Identity", "Branched form fields", "Long-form responses"];
 
   return (
-    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `2px solid ${HAIRLINE}` }}>
-      {dbFields.length > 0 && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Form answers</div>
-          {dbFields.map(([label, value]) => <Row key={label} label={label} value={value} />)}
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        backgroundColor: "rgba(0,0,0,0.55)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "5vh 4vw", overflowY: "auto",
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 760, backgroundColor: WHITE, borderRadius: 14,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)", overflow: "hidden",
+        }}
+      >
+        {/* Header */}
+        <div style={{
+          padding: "16px 20px", borderBottom: `1px solid ${HAIRLINE}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 11, color: ORANGE, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Application detail</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginTop: 2 }}>{row.fullName || "(no name)"}</div>
+            <div style={{ fontSize: 11, color: INK_MUTED, marginTop: 2, fontFamily: "monospace" }}>{row.ref}</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 30, height: 30, borderRadius: 8, backgroundColor: NAV_HOVER,
+              color: INK_MUTED, border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+            }}
+            aria-label="Close"
+          >×</button>
         </div>
-      )}
-      {textFields.length > 0 && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Long-form responses</div>
-          {textFields.map(([label, value]) => <Row key={label} label={label} value={value} />)}
+
+        {/* Body */}
+        <div style={{ padding: "16px 20px", maxHeight: "75vh", overflowY: "auto" }}>
+          {sectionOrder.map(section => grouped[section] && (
+            <div key={section} style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+                {section}
+              </div>
+              {grouped[section].map((f, i) => (
+                <div key={`${f.key}-${i}`} style={{
+                  display: "grid", gridTemplateColumns: "200px 1fr", gap: 12,
+                  padding: "8px 0", borderTop: i === 0 ? "none" : `1px solid ${HAIRLINE}`,
+                }}>
+                  <div style={{ fontSize: 11, color: INK_MUTED, fontWeight: 600 }}>
+                    {f.label}
+                    <div style={{ fontSize: 9, color: INK_MUTED, fontFamily: "monospace", opacity: 0.6, marginTop: 2 }}>
+                      {f.key}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: 12, color: f.value === "—" ? INK_MUTED : INK,
+                    fontStyle: f.value === "—" ? "italic" : "normal",
+                    whiteSpace: "pre-wrap", wordBreak: "break-word",
+                  }}>{f.value}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          {/* Raw metadata JSON for full transparency — collapsible */}
+          <details style={{ marginTop: 16, paddingTop: 12, borderTop: `2px solid ${HAIRLINE}` }}>
+            <summary style={{ cursor: "pointer", fontSize: 11, color: INK_MUTED, fontWeight: 600, padding: "4px 0" }}>
+              Raw metadata JSON (full payload as captured at submission)
+            </summary>
+            <pre style={{
+              marginTop: 8, padding: 12, backgroundColor: NAV_HOVER, borderRadius: 6,
+              fontSize: 10, color: INK, overflow: "auto", maxHeight: 300,
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}>
+{row.metadata ? (() => { try { return JSON.stringify(JSON.parse(row.metadata), null, 2); } catch { return row.metadata; } })() : "(empty)"}
+            </pre>
+            {capturedAt && (
+              <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 6 }}>
+                Captured at: {capturedAt}
+              </div>
+            )}
+          </details>
         </div>
-      )}
-      {extraAnswers.length > 0 && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Other answers (branched)</div>
-          {extraAnswers.map(([label, value]) => <Row key={label} label={label} value={value} />)}
+
+        {/* Footer */}
+        <div style={{
+          padding: "12px 20px", borderTop: `1px solid ${HAIRLINE}`, backgroundColor: NAV_HOVER,
+          display: "flex", justifyContent: "flex-end",
+        }}>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 18px", borderRadius: 8, backgroundColor: INK, color: WHITE,
+              border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+            }}
+          >Close</button>
         </div>
-      )}
-      {(contact.businessName || contact.email || contact.phone) && (
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Contact (raw)</div>
-          {contact.businessName && <Row label="Business name" value={contact.businessName} />}
-          {contact.email && <Row label="Email" value={contact.email} />}
-          {contact.phone && <Row label="Phone" value={contact.phone} />}
-        </div>
-      )}
-      {dbFields.length === 0 && textFields.length === 0 && extraAnswers.length === 0 && (
-        <div style={{ fontSize: 11, color: INK_MUTED, fontStyle: "italic" }}>
-          No additional form answers stored for this application (likely created before the metadata column existed, or the applicant skipped optional fields).
-        </div>
-      )}
+      </div>
     </div>
   );
 }
