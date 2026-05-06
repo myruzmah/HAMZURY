@@ -14,7 +14,7 @@ import { hubAdminRouter } from "./hubAdmin/router";
 import { financeOpsRouter } from "./financeOps/router";
 import { diagnosticsRouter } from "./diagnostics/router";
 import { requirementsRouter } from "./requirements/router";
-import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, rateLimitedProcedure, router, founderCEOProcedure, financeProcedure, seniorProcedure, csoProcedure, bizdevProcedure, skillsProcedure } from "./_core/trpc";
 import { z } from "zod";
 import {
   createLead, getLeads, generateRefNumber, getUnassignedLeads, assignLead, updateLead, deleteLead,
@@ -2977,7 +2977,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
 
     applications: protectedProcedure.query(async () => getSkillsApplications()),
 
-    updateApplicationStatus: seniorProcedure
+    updateApplicationStatus: skillsProcedure
       .input(z.object({
         id: z.number(),
         status: z.enum(["submitted", "under_review", "accepted", "waitlisted", "rejected"]),
@@ -3167,7 +3167,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
     listFeedback: protectedProcedure.query(async () => getHubFeedback()),
 
     /** Hub admin: update feedback status (reviewing → responded → resolved → archived). */
-    updateFeedbackStatus: seniorProcedure
+    updateFeedbackStatus: skillsProcedure
       .input(z.object({
         id: z.number(),
         status: z.enum(["new", "reviewing", "responded", "resolved", "archived"]),
@@ -3227,7 +3227,7 @@ NEVER: hype words, urgency pressure, [READY] or [SHOW_PAYMENT] before client sig
     listPartnerOutreach: protectedProcedure.query(async () => getHubPartnerOutreach()),
 
     /** Hub admin: update partner status. */
-    updatePartnerOutreachStatus: seniorProcedure
+    updatePartnerOutreachStatus: skillsProcedure
       .input(z.object({
         id: z.number(),
         status: z.enum(["new", "reviewing", "in_discussion", "agreement_signed", "closed", "rejected"]),

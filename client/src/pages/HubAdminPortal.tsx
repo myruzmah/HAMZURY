@@ -545,6 +545,10 @@ function EnrollmentsSection() {
   const appsQ = trpc.skills.applications.useQuery(undefined, { retry: false });
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  // 2026-05-06 — expanded row state. Click a row to see all 49 form answers
+  // from the metadata JSON + branched DB columns. Without this, admins only
+  // saw row summaries.
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   // 2026-05-05 — Founder reversal of the earlier CSO-gate rule for HUB.
   // /hub/enroll now writes DIRECTLY into skills.applications (via
@@ -631,43 +635,153 @@ function EnrollmentsSection() {
         <Card><EmptyState icon={Users} title="No applications match" /></Card>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {filtered.slice(0, 60).map((a: any) => (
-            <Card key={a.id} style={{ padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{a.fullName}</p>
-                    <StatusPill label={a.status} tone={TONE[a.status] || "muted"} />
-                    {a.paymentStatus && <StatusPill label={`payment: ${a.paymentStatus}`} tone={a.paymentStatus === "paid" ? "green" : "muted"} />}
-                  </div>
-                  <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
-                    {a.program} · {a.pathway || "—"}
-                  </p>
-                  <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: "monospace" }}>{a.ref}</span>
-                    {a.email && <span>{a.email}</span>}
-                    {a.phone && <span>{a.phone}</span>}
-                    <span>{fmtDate(a.createdAt)}</span>
-                  </div>
-                </div>
-                <select
-                  value={a.status}
-                  onChange={e => updateMut.mutate({ id: a.id, status: e.target.value as any })}
-                  disabled={updateMut.isPending}
-                  style={{
-                    padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
-                    fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
-                  }}
+          {filtered.slice(0, 60).map((a: any) => {
+            const isOpen = expandedId === a.id;
+            return (
+              <Card key={a.id} style={{ padding: 12 }}>
+                <div
+                  onClick={() => setExpandedId(isOpen ? null : a.id)}
+                  style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", cursor: "pointer" }}
                 >
-                  <option value="submitted">Submitted</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="accepted">Accepted</option>
-                  <option value="waitlisted">Waitlisted</option>
-                  <option value="rejected">Rejected</option>
-                </select>
-              </div>
-            </Card>
-          ))}
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{a.fullName}</p>
+                      <StatusPill label={a.status} tone={TONE[a.status] || "muted"} />
+                      {a.paymentStatus && <StatusPill label={`payment: ${a.paymentStatus}`} tone={a.paymentStatus === "paid" ? "green" : "muted"} />}
+                      <span style={{ fontSize: 10, color: ORANGE, fontWeight: 600 }}>
+                        {isOpen ? "▾ hide details" : "▸ view all answers"}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: 11, color: MUTED, marginTop: 4 }}>
+                      {a.program} · {a.pathway || "—"}
+                    </p>
+                    <div style={{ display: "flex", gap: 10, marginTop: 4, fontSize: 10, color: MUTED, flexWrap: "wrap" }}>
+                      <span style={{ fontFamily: "monospace" }}>{a.ref}</span>
+                      {a.email && <span>{a.email}</span>}
+                      {a.phone && <span>{a.phone}</span>}
+                      <span>{fmtDate(a.createdAt)}</span>
+                    </div>
+                  </div>
+                  <select
+                    value={a.status}
+                    onClick={e => e.stopPropagation()}
+                    onChange={e => { e.stopPropagation(); updateMut.mutate({ id: a.id, status: e.target.value as any }); }}
+                    disabled={updateMut.isPending}
+                    style={{
+                      padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
+                      fontSize: 11, color: DARK, backgroundColor: WHITE, cursor: "pointer",
+                    }}
+                  >
+                    <option value="submitted">Submitted</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="waitlisted">Waitlisted</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                {isOpen && <ApplicationDetail row={a} />}
+              </Card>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * ApplicationDetail — 2026-05-06.
+ * Renders the full Q/A from a row's metadata JSON + the dedicated branched
+ * fields (enrolmentType, studentAge, schoolName, companyName, etc.).
+ * Shown when a Hub admin clicks a row in EnrollmentsSection. Without this,
+ * admins only saw row summaries — the 49 form answers were stuck in DB.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function ApplicationDetail({ row }: { row: any }) {
+  let parsedMeta: any = null;
+  try { parsedMeta = JSON.parse(row.metadata || "{}"); } catch { parsedMeta = null; }
+  const answers: Record<string, string> = parsedMeta?.answers || {};
+  const contact = parsedMeta?.contact || {};
+
+  // 1) Branched DB columns (queryable). Skip empty.
+  const dbFields: Array<[string, any]> = [
+    ["Enrolment for",       row.enrolmentType],
+    ["Student age",         row.studentAge],
+    ["Program category",    row.programCategory],
+    ["Learning mode",       row.learningMode],
+    ["Payment plan",        row.paymentPlan],
+    ["School (SIWES)",      row.schoolName],
+    ["Company (corporate)", row.companyName],
+    ["Parent / guardian",   row.parentName],
+    ["Scholarship code",    row.scholarshipCodeUsed],
+    ["Cohort preference",   row.cohortPreference],
+    ["Paid confirm",        row.paidConfirm],
+    ["Transfer narration",  row.transferNarration],
+    ["Pricing tier",        row.pricingTier],
+    ["Heard from",          row.heardFrom],
+    ["Can commit time",     row.canCommitTime === null ? null : (row.canCommitTime ? "Yes" : "No")],
+    ["Has equipment",       row.hasEquipment === null ? null : (row.hasEquipment ? "Yes" : "No")],
+    ["Willing to execute",  row.willingToExecute === null ? null : (row.willingToExecute ? "Yes" : "No")],
+    ["Agreed to terms",     row.agreedToTerms === null ? null : (row.agreedToTerms ? "Yes" : "No")],
+    ["Agreed to effort",    row.agreedToEffort === null ? null : (row.agreedToEffort ? "Yes" : "No")],
+  ].filter(([_, v]) => v !== null && v !== undefined && v !== "");
+
+  // 2) Free-text fields
+  const textFields: Array<[string, any]> = [
+    ["Business description", row.businessDescription],
+    ["Biggest challenge",    row.biggestChallenge],
+    ["Review notes",         row.reviewNotes],
+  ].filter(([_, v]) => v);
+
+  // 3) Anything else in the answers JSON not already covered above
+  const coveredKeys = new Set([
+    "who", "age", "mode", "payment", "scholarshipCode", "cohort", "paidConfirm",
+    "transferNarration", "schoolName", "companyName", "parentName", "program",
+    "pathway", "businessDescription", "biggestChallenge", "heardFrom", "challenge",
+    "canCommitTime", "hasEquipment", "willingToExecute", "pricingTier",
+    "agreedToTerms", "agreedToEffort", "notes",
+  ]);
+  const extraAnswers: Array<[string, any]> = Object.entries(answers)
+    .filter(([k, v]) => v && !coveredKeys.has(k))
+    .map(([k, v]) => [k, String(v)]);
+
+  const Row = ({ label, value }: { label: string; value: any }) => (
+    <div style={{ display: "grid", gridTemplateColumns: "180px 1fr", gap: 12, padding: "6px 0", borderTop: `1px solid ${HAIRLINE}` }}>
+      <div style={{ fontSize: 11, color: INK_MUTED, fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 12, color: INK, whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{String(value)}</div>
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: 12, paddingTop: 12, borderTop: `2px solid ${HAIRLINE}` }}>
+      {dbFields.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Form answers</div>
+          {dbFields.map(([label, value]) => <Row key={label} label={label} value={value} />)}
+        </div>
+      )}
+      {textFields.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Long-form responses</div>
+          {textFields.map(([label, value]) => <Row key={label} label={label} value={value} />)}
+        </div>
+      )}
+      {extraAnswers.length > 0 && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Other answers (branched)</div>
+          {extraAnswers.map(([label, value]) => <Row key={label} label={label} value={value} />)}
+        </div>
+      )}
+      {(contact.businessName || contact.email || contact.phone) && (
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 6 }}>Contact (raw)</div>
+          {contact.businessName && <Row label="Business name" value={contact.businessName} />}
+          {contact.email && <Row label="Email" value={contact.email} />}
+          {contact.phone && <Row label="Phone" value={contact.phone} />}
+        </div>
+      )}
+      {dbFields.length === 0 && textFields.length === 0 && extraAnswers.length === 0 && (
+        <div style={{ fontSize: 11, color: INK_MUTED, fontStyle: "italic" }}>
+          No additional form answers stored for this application (likely created before the metadata column existed, or the applicant skipped optional fields).
         </div>
       )}
     </div>

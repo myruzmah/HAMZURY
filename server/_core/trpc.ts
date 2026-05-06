@@ -125,6 +125,21 @@ export const csoProcedure = t.procedure.use(
   }),
 );
 
+/** Skills team — for /hub/admin actions (status updates on applications,
+ *  feedback, partner outreach). 2026-05-06: skills_staff + skills_lead were
+ *  missing from seniorProcedure so the Hub admin couldn't accept/reject
+ *  enrolments. Founder/CEO are included as fallback. */
+export const skillsProcedure = t.procedure.use(
+  t.middleware(async ({ ctx, next }) => {
+    if (!ctx.user) throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    const allowed = ["founder", "ceo", "skills_staff", "skills_lead"];
+    if (!ctx.user.hamzuryRole || !allowed.includes(ctx.user.hamzuryRole)) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Only Skills team or senior leadership can perform this action." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);
+
 /** BizDev + senior — for growth ops (manual lead capture, partner outreach, affiliate ops) */
 export const bizdevProcedure = t.procedure.use(
   t.middleware(async ({ ctx, next }) => {
