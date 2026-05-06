@@ -168,6 +168,32 @@ const INVARIANTS: { name: string; check: string; fix: string }[] = [
       PRIMARY KEY (id)
     )`,
   },
+  /* 2026-05-06 — Widen the branched form-answer columns. Original sizes
+   * (varchar(20–100)) were too tight for full form-prompt-style answers
+   * like "Physical at Jos (Mon–Wed advanced, or Thu–Sat basics)" — caused
+   * a Data-too-long INSERT failure on the first real /hub/enroll submit.
+   * The check looks at CHARACTER_MAXIMUM_LENGTH so the heal is idempotent. */
+  { name: "skills_applications.enrolmentType width >= 100",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'enrolmentType' AND CHARACTER_MAXIMUM_LENGTH >= 100",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN enrolmentType varchar(100) NULL" },
+  { name: "skills_applications.studentAge width >= 50",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'studentAge' AND CHARACTER_MAXIMUM_LENGTH >= 50",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN studentAge varchar(50) NULL" },
+  { name: "skills_applications.programCategory width >= 50",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'programCategory' AND CHARACTER_MAXIMUM_LENGTH >= 50",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN programCategory varchar(50) NULL" },
+  { name: "skills_applications.learningMode width >= 255",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'learningMode' AND CHARACTER_MAXIMUM_LENGTH >= 255",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN learningMode varchar(255) NULL" },
+  { name: "skills_applications.paymentPlan width >= 255",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'paymentPlan' AND CHARACTER_MAXIMUM_LENGTH >= 255",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN paymentPlan varchar(255) NULL" },
+  { name: "skills_applications.scholarshipCodeUsed width >= 100",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'scholarshipCodeUsed' AND CHARACTER_MAXIMUM_LENGTH >= 100",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN scholarshipCodeUsed varchar(100) NULL" },
+  { name: "skills_applications.cohortPreference width >= 255",
+    check: "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'skills_applications' AND column_name = 'cohortPreference' AND CHARACTER_MAXIMUM_LENGTH >= 255",
+    fix:   "ALTER TABLE skills_applications MODIFY COLUMN cohortPreference varchar(255) NULL" },
 ];
 
 async function ensureTrackingTable(db: any): Promise<void> {

@@ -551,17 +551,22 @@ export const skillsApplications = mysqlTable("skills_applications", {
   /** 2026-05-05 — Branched-form fields for HUB enrolments. The form has 14
    *  steps with branching by programme category (core/kids/placement/siwes/
    *  online/corporate/unsure); these are the most-filtered fields. Anything
-   *  else lives in `metadata` (JSON-encoded). */
-  enrolmentType: varchar("enrolmentType", { length: 50 }), // self | child | team | company
-  studentAge: varchar("studentAge", { length: 20 }),
-  programCategory: varchar("programCategory", { length: 20 }), // core/kids/placement/siwes/online/corporate/unsure
-  learningMode: varchar("learningMode", { length: 50 }),
-  paymentPlan: varchar("paymentPlan", { length: 100 }),
+   *  else lives in `metadata` (JSON-encoded).
+   *
+   *  2026-05-06 — Widened most VARCHARs to 255 after a real submission
+   *  failed: "Physical at Jos (Mon–Wed advanced, or Thu–Sat basics)" is
+   *  53 chars but learningMode was declared 50. These columns store FULL
+   *  form-answer text (not enums), so 255 is the safe default. */
+  enrolmentType: varchar("enrolmentType", { length: 100 }), // self | child | team | company
+  studentAge: varchar("studentAge", { length: 50 }),
+  programCategory: varchar("programCategory", { length: 50 }), // core/kids/placement/siwes/online/corporate/unsure
+  learningMode: varchar("learningMode", { length: 255 }),
+  paymentPlan: varchar("paymentPlan", { length: 255 }),
   schoolName: varchar("schoolName", { length: 255 }),    // SIWES
   companyName: varchar("companyName", { length: 255 }),  // corporate
   parentName: varchar("parentName", { length: 255 }),    // kids
-  scholarshipCodeUsed: varchar("scholarshipCodeUsed", { length: 64 }),
-  cohortPreference: varchar("cohortPreference", { length: 100 }),
+  scholarshipCodeUsed: varchar("scholarshipCodeUsed", { length: 100 }),
+  cohortPreference: varchar("cohortPreference", { length: 255 }),
   paidConfirm: varchar("paidConfirm", { length: 255 }),
   transferNarration: varchar("transferNarration", { length: 255 }),
   /** JSON-encoded blob of every question answer (including kids guardian info,
