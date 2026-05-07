@@ -918,7 +918,23 @@ export default function HubPage() {
           <h1 className="text-[clamp(32px,6vw,54px)] font-light leading-[1.05] tracking-tight mb-6" style={{ color: TEXT }}>
             Learn what{" "}<span style={{ color: DARK }}>actually works.</span>
           </h1>
-          <div className="flex flex-wrap gap-3 justify-center mt-12 mb-8">
+          <div className="flex flex-wrap gap-3 justify-center mt-12 mb-3">
+            {/* 2026-05-07 — Three-button hero. ENROL NOW is the attention-grabber:
+                gold-on-dark fill, larger pill, bold font, soft pulsing glow,
+                ArrowRight icon. Programmes + Calendar are secondary scrolls. */}
+            <Link href="/hub/enroll">
+              <span
+                className="hub-enrol-cta px-9 py-4 rounded-full text-[15px] font-bold transition-all duration-300 hover:scale-[1.04] cursor-pointer inline-flex items-center gap-2"
+                style={{
+                  backgroundColor: GOLD,
+                  color: DARK,
+                  boxShadow: `0 14px 36px ${GOLD}66`,
+                  letterSpacing: "0.01em",
+                }}
+              >
+                Enrol now <ArrowRight size={16} strokeWidth={2.5} />
+              </span>
+            </Link>
             <button
               onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
               className="px-8 py-4 rounded-full text-[14px] font-semibold transition-all duration-300 hover:scale-[1.02]"
@@ -934,8 +950,34 @@ export default function HubPage() {
               Calendar
             </button>
           </div>
+          {/* Attention micro-copy under primary CTA */}
+          <p className="text-[11px] mb-8" style={{ color: `${TEXT}55` }}>
+            <span className="inline-block w-1.5 h-1.5 rounded-full mr-2 align-middle hub-enrol-dot" style={{ backgroundColor: "#16A34A" }} />
+            Next cohort open · 20 seats · Pay ₦10k seat-hold to lock yours
+          </p>
         </div>
       </section>
+      {/* Subtle glow + pulse for the Enrol CTA — kept tight so it draws the
+          eye without becoming annoying. */}
+      <style>{`
+        @keyframes hubEnrolGlow {
+          0%, 100% { box-shadow: 0 14px 36px ${GOLD}66; }
+          50%      { box-shadow: 0 18px 48px ${GOLD}99; }
+        }
+        .hub-enrol-cta {
+          animation: hubEnrolGlow 2.6s ease-in-out infinite;
+        }
+        @keyframes hubDotPulse {
+          0%, 100% { transform: scale(1);   opacity: 1; }
+          50%      { transform: scale(1.4); opacity: 0.6; }
+        }
+        .hub-enrol-dot {
+          animation: hubDotPulse 1.6s ease-in-out infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hub-enrol-cta, .hub-enrol-dot { animation: none; }
+        }
+      `}</style>
 
       {/* ── WHAT WE OFFER — inline accordion, click item = pin ── */}
       <section id="services" className="py-20 md:py-28" style={{ backgroundColor: W }}>
