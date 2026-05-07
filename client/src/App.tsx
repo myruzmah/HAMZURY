@@ -13,6 +13,7 @@ import BizdocPage from "./pages/BizdocPage";
 import ScalarPage from "./pages/ScalarPage";
 import MedialyPage from "./pages/MedialyPage";
 import HubPage from "./pages/HubPage";
+import HubSchedulePage from "./pages/HubSchedulePage";
 import StartupPage from "./pages/StartupPage";
 import AlumniPage from "./pages/AlumniPage";
 import MilestonesPage from "./pages/MilestonesPage";
@@ -141,6 +142,7 @@ function Router() {
       <Route path="/scalar/assessment"  component={ScalarAssessment} />
       <Route path="/medialy/assessment" component={MedialyAssessment} />
       <Route path="/hub/enroll"         component={HubEnroll} />
+      <Route path="/hub/schedule"       component={HubSchedulePage} />
 
       {/* ═══ Public diagnostic forms (Apple-standard, Fraunces serif) ═══ */}
       <Route path="/clarity-session"><DiagnosticForm formId="clarity" /></Route>

@@ -15,9 +15,11 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import SplashScreen from "@/components/SplashScreen";
 // 2026-05-07 — single source of truth for /hub "What we offer" + admin Programs.
 import { OFFER_CATEGORIES, STATUS_BADGE, type CourseItem, type OfferCategory } from "@/lib/offer-categories";
-// 2026-05-07 — quarterly schedule (sale → orientation → cohorts → graduation)
-// + always-on intake (internships, online). Single source: lib/hub-schedule.ts.
-import HubScheduleSection from "@/components/HubScheduleSection";
+// 2026-05-07 — quarterly schedule helpers. Full grid lives at /hub/schedule;
+// here we just compute today's phase + derive monthly calendar events from the
+// same source-of-truth (client/src/lib/hub-schedule.ts) so the on-page calendar
+// reflects the actual cohort plan instead of hand-typed dates.
+import { HUB_LAUNCH_SCHEDULE, getCurrentPhase, fmtScheduleDate } from "@/lib/hub-schedule";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HAMZURY HUB — /hub — Apple-standard design (was /skills)
@@ -79,85 +81,65 @@ type CalEvent = {
  *   · Mid-month — Programme-specific cohort starts
  *   · End of programme — Programme graduation
  */
-const CALENDAR_EVENTS: Record<string, CalEvent[]> = {
-  // ── APRIL 2026 ── (first Monday: 6th)
-  "2026-04-06": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "April Cohort — Resumption & Orientation", detail: "New students start today. Welcome session + orientation for all April intakes across every programme.", chatContext: "I'd like to join the April cohort. Please tell me what to prepare." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of the month. New challenge released to all four teams — AI, Cyber, Quantum, Robotics.", chatContext: "Tell me about the HUB team competition and how I can join." },
-  ],
-  "2026-04-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Digital Dominance — New Cohort", detail: "4-week social media programme begins. ₦80,000. Mon–Wed 8am–2pm. Google Digital Marketing Certificate.", chatContext: "I want to enrol in Digital Dominance starting April 13th." }],
-  "2026-04-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Data Analytics — New Cohort", detail: "6-week data analytics programme begins. ₦130,000. Excel, SQL, Power BI, AI-assisted analysis.", chatContext: "I want to enrol in Data Analytics starting April 20th." }],
-  "2026-04-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Business Builders Graduation", detail: "3-week Business Builders Academy ends. Final pitches + Google Business Certificate.", chatContext: "When is the next Business Builders Academy cohort?" }],
 
-  // ── MAY 2026 ── (first Monday: 4th)
-  "2026-05-04": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "May Cohort — Resumption & Orientation", detail: "New students welcome + orientation. All programmes open for enrolment today.", chatContext: "I'd like to join the May cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge for AI · Cyber · Quantum · Robotics teams.", chatContext: "Tell me about the May team competition." },
-    { type: "Classes Start", color: CAL_COLORS.cohort, title: "Code Craft Bootcamp Starts", detail: "8-week full-stack programme. ₦300,000. Build with AI — backend, frontend, ship a real product. Coursera Certificate.", chatContext: "I want to enrol in Code Craft Bootcamp starting May 4th." },
-  ],
-  "2026-05-11": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Compliance Mastery Starts", detail: "6-week programme with Bizdoc partnership. ₦120,000. CAC, tax, NAFDAC, PENCOM.", chatContext: "I want to enrol in Compliance Mastery." }],
-  "2026-05-18": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "MetFix Hardware & Robotics", detail: "8-week hardware + robotics track. ₦180k physical / ₦80k online. Arduino, circuits, competition.", chatContext: "I want to enrol in MetFix Hardware & Robotics." }],
-  "2026-05-28": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Digital Dominance Graduation", detail: "4-week cohort ends. Final social media showcase + certificate ceremony.", chatContext: "When is the next Digital Dominance cohort?" }],
-
-  // ── JUNE 2026 ── (first Monday: 1st)
-  "2026-06-01": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "June Cohort — Resumption & Orientation", detail: "New students start + orientation. Summer intakes open.", chatContext: "I'd like to join the June cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of June. New challenge released.", chatContext: "Tell me about the June team competition." },
-  ],
-  "2026-06-15": [{ type: "Project Start", color: CAL_COLORS.project, title: "Code Craft — Web Development Block", detail: "Code Craft students enter the HTML/CSS/JS block. Portfolio site is due by end of block.", chatContext: "Tell me more about Code Craft Bootcamp." }],
-  "2026-06-22": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Compliance Mastery Graduation", detail: "6-week programme ends. Students graduate with full compliance roadmap + Professional Compliance Certificate.", chatContext: "When is the next Compliance Mastery cohort?" }],
-  "2026-06-29": [{ type: "Project Start", color: CAL_COLORS.project, title: "Team Competition Mid-Year Judging", detail: "All four teams present Q2 challenge outputs. Awards, points, team photos.", chatContext: "Tell me about the team competition mid-year judging." }],
-
-  // ── JULY 2026 ── (first Monday: 6th)
-  "2026-07-06": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "July Cohort — Resumption & Orientation", detail: "New students welcome. All programmes open for July intake.", chatContext: "I'd like to join the July cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New month, new challenge.", chatContext: "Tell me about the July team competition." },
-  ],
-  "2026-07-13": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "MetFix Physical Track", detail: "Physical MetFix Hardware cohort begins at HUB workshop. ₦180,000. Abuja only.", chatContext: "I want to enrol in MetFix physical track." }],
-  "2026-07-20": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Business Builders Academy", detail: "3-week business foundations programme. ₦150,000. Google Business Certificate.", chatContext: "I want to enrol in Business Builders Academy." }],
-  "2026-07-27": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Mid-Point Review", detail: "Week 6 milestone. Students present portfolio sites for peer + instructor review.", chatContext: "Tell me about the Code Craft mid-point review." }],
-
-  // ── AUGUST 2026 ── (first Monday: 3rd)
-  "2026-08-03": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "August Cohort — Resumption & Orientation", detail: "New students orientation + welcome.", chatContext: "I'd like to join the August cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. August challenge released.", chatContext: "Tell me about the August team competition." },
-  ],
-  "2026-08-10": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Kids Programme — August Cohort", detail: "Basic Computer Skills (Kids, 8–15). Thu–Sat, 2 weeks. ₦25,000.", chatContext: "I want to enrol my child in the August kids programme." }],
-  "2026-08-17": [{ type: "Project Start", color: CAL_COLORS.project, title: "MetFix Robotics Build", detail: "MetFix students begin robot design + programming phase.", chatContext: "Tell me about MetFix robotics." }],
-  "2026-08-31": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Data Analytics Graduation", detail: "Students present their final business dashboards. Hamzury HUB + Google Data Analytics Certificate.", chatContext: "When is the next Data Analytics cohort?" }],
-
-  // ── SEPTEMBER 2026 ── (first Monday: 7th)
-  "2026-09-07": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "September Cohort — Resumption & Orientation", detail: "New students orientation. Back-to-school intake — extra capacity.", chatContext: "I'd like to join the September cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday. New challenge.", chatContext: "Tell me about the September team competition." },
-  ],
-  "2026-09-21": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "MetFix + Robotics Graduation", detail: "8-week programme ends. Robot showcase + Hardware Engineering Certificate.", chatContext: "When is the next MetFix cohort?" }],
-  "2026-09-28": [{ type: "Project Start", color: CAL_COLORS.project, title: "Q3 Team Competition Finals", detail: "All four teams compete. Annual rankings updated.", chatContext: "Tell me about Q3 team competition finals." }],
-
-  // ── OCTOBER 2026 ── (first Monday: 5th)
-  "2026-10-05": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "October Cohort — Resumption & Orientation", detail: "New students welcome. Q4 intakes open.", chatContext: "I'd like to join the October cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of October.", chatContext: "Tell me about the October team competition." },
-  ],
-  "2026-10-19": [{ type: "Classes Start", color: CAL_COLORS.cohort, title: "Final 2026 Digital Dominance Cohort", detail: "Last Digital Dominance cohort of 2026. 4 weeks.", chatContext: "I want to join the final 2026 Digital Dominance cohort." }],
-  "2026-10-26": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "Code Craft Bootcamp Graduation", detail: "8-week full-stack programme ends. Final project demo day + Coursera Certificate.", chatContext: "When is the next Code Craft Bootcamp?" }],
-
-  // ── NOVEMBER 2026 ── (first Monday: 2nd)
-  "2026-11-02": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "November Cohort — Resumption & Orientation", detail: "Final standard intakes of 2026.", chatContext: "I'd like to join the November cohort." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition Challenge Announced", detail: "First Monday of November.", chatContext: "Tell me about the November team competition." },
-  ],
-  "2026-11-16": [{ type: "Project Start", color: CAL_COLORS.project, title: "Year-End Project Phase", detail: "All ongoing programmes enter capstone project phase. Market-ready deliverables.", chatContext: "Tell me about the year-end project phase." }],
-  "2026-11-30": [{ type: "Graduation", color: CAL_COLORS.graduation, title: "November Programme Graduations", detail: "Digital Dominance, Data Analytics, Kids programme graduations + certificate ceremony.", chatContext: "Tell me about November graduations." }],
-
-  // ── DECEMBER 2026 ── (first Monday: 7th)
-  "2026-12-07": [
-    { type: "Orientation", color: CAL_COLORS.orientation, title: "December Cohort — Resumption & Orientation", detail: "Last cohort of 2026. Short-run programmes only (Digital Dominance, Data Analytics, Online Academy).", chatContext: "I'd like to join the December cohort — last chance in 2026." },
-    { type: "Competition", color: CAL_COLORS.executive, title: "Team Competition — Year-End Championship", detail: "Annual team championship begins.", chatContext: "Tell me about the year-end team competition championship." },
-  ],
-  "2026-12-14": [{ type: "Executive", color: CAL_COLORS.executive, title: "Year-End Workshop + Showcase (2 Days)", detail: "All 2026 students gather. Team championship finals, project showcase, pitching, 2027 planning. The biggest event of the year.", chatContext: "Tell me about the year-end workshop and showcase in December." }],
-  "2026-12-21": [{ type: "Orientation", color: CAL_COLORS.orientation, title: "2027 Early Bird Orientation", detail: "Preview 2027 programmes. Early registrants get priority placement + 10% discount.", chatContext: "I'd like to attend the 2027 Early Bird Orientation." }],
-};
+/* ─────────────────────────────────────────────────────────────────────────
+ * 2026-05-07 — CALENDAR_EVENTS now DERIVED from HUB_LAUNCH_SCHEDULE in
+ * client/src/lib/hub-schedule.ts, so the on-page calendar reflects the
+ * actual cohort plan instead of hand-typed dates. Edit dates in
+ * hub-schedule.ts → calendar updates here automatically.
+ *
+ * For each quarter we emit: sale open, sale close, orientation, group
+ * graduation. For each cohort block we emit: programme start, programme
+ * end. That keeps "what's happening and when" in one source of truth.
+ * ───────────────────────────────────────────────────────────────────── */
+const CALENDAR_EVENTS: Record<string, CalEvent[]> = (() => {
+  const out: Record<string, CalEvent[]> = {};
+  const push = (date: string, ev: CalEvent) => {
+    if (!out[date]) out[date] = [];
+    out[date].push(ev);
+  };
+  for (const q of HUB_LAUNCH_SCHEDULE) {
+    push(q.saleStart, {
+      type: "Sale Open", color: CAL_COLORS.orientation,
+      title: `${q.label} — Sale window OPENS`,
+      detail: `Forms open today. Apply by ${fmtScheduleDate(q.saleEnd)}. Orientation ${fmtScheduleDate(q.orientation)}.`,
+      chatContext: `I want to apply for ${q.label}. Tell me what to prepare before orientation.`,
+    });
+    push(q.saleEnd, {
+      type: "Sale Closes", color: CAL_COLORS.orientation,
+      title: `${q.label} — Last day to register`,
+      detail: `Sale window closes today. Orientation Mon ${fmtScheduleDate(q.orientation)}.`,
+      chatContext: `Is it still possible to enrol for ${q.label}?`,
+    });
+    push(q.orientation, {
+      type: "Orientation", color: CAL_COLORS.orientation,
+      title: `${q.label} — Orientation Day`,
+      detail: `All cohorts kick off today. ${q.subtitle ?? ""}`.trim(),
+      chatContext: `I'd like to attend the orientation for ${q.label}.`,
+    });
+    push(q.graduation, {
+      type: "Graduation", color: CAL_COLORS.graduation,
+      title: `${q.label} — Group Graduation`,
+      detail: "Cohort showcase, certificate ceremony, photos. End of cycle.",
+      chatContext: `When is the next cohort after ${q.label}?`,
+    });
+    for (const c of q.cohorts) {
+      push(c.startDate, {
+        type: "Classes Start", color: CAL_COLORS.cohort,
+        title: `${c.name} — starts`,
+        detail: `${c.weeks}-week cohort · ${c.pattern} · ${c.hall} · ₦${c.priceNaira.toLocaleString()}.`,
+        chatContext: `I want to enrol in ${c.name} starting ${fmtScheduleDate(c.startDate)}.`,
+      });
+      push(c.endDate, {
+        type: "Programme Ends", color: CAL_COLORS.graduation,
+        title: `${c.name} — ends`,
+        detail: `Final session. Group graduation ceremony on ${fmtScheduleDate(q.graduation)}.`,
+        chatContext: `When is the next ${c.name} cohort?`,
+      });
+    }
+  }
+  return out;
+})();
 
 const CALENDAR_MONTHS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -624,6 +606,53 @@ function StickyNote({
   );
 }
 
+// ── QUARTERLY SCHEDULE TEASER — small live banner linking to /hub/schedule ──
+// Shows today's phase (sale open / cohort running / next sale opens) so the
+// /hub home page surfaces the most useful single fact, then defers the full
+// quarterly grid to the dedicated /hub/schedule page.
+function HubScheduleTeaser() {
+  const phase = getCurrentPhase();
+  let line: string, dotColor: string;
+  if (phase.kind === "sale") {
+    line = `🟢 Sale OPEN — ${phase.quarter.label}. Apply by ${fmtScheduleDate(phase.quarter.saleEnd)}. Orientation ${fmtScheduleDate(phase.quarter.orientation)}.`;
+    dotColor = "#16A34A";
+  } else if (phase.kind === "running") {
+    line = `🟡 ${phase.quarter.label} running. Graduation ${fmtScheduleDate(phase.quarter.graduation)} (${phase.daysToGraduation} days).`;
+    dotColor = GOLD;
+  } else if (phase.kind === "graduation") {
+    line = `🎓 ${phase.quarter.label} graduates today.`;
+    dotColor = "#16A34A";
+  } else if (phase.kind === "between") {
+    line = `🔔 Next sale window: ${fmtScheduleDate(phase.nextQuarter.saleStart)} (${phase.daysToSale} days). Internships + Online Academy still open.`;
+    dotColor = GOLD;
+  } else {
+    line = "Schedule loading…";
+    dotColor = "#9CA3AF";
+  }
+  return (
+    <section className="py-10 px-6" style={{ backgroundColor: `${DARK}06` }}>
+      <div className="max-w-4xl mx-auto rounded-2xl p-5 md:p-6 flex flex-col md:flex-row md:items-center gap-4" style={{ backgroundColor: W, border: `1px solid ${DARK}10` }}>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: dotColor, animation: "hubTeaserDot 1.6s ease-in-out infinite" }} />
+            <span className="text-[10px] font-bold tracking-[0.2em] uppercase" style={{ color: DARK }}>Quarterly schedule</span>
+          </div>
+          <p className="text-[13px]" style={{ color: TEXT }}>{line}</p>
+        </div>
+        <Link href="/hub/schedule">
+          <span className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-[12.5px] font-semibold cursor-pointer whitespace-nowrap transition-transform hover:scale-[1.03]" style={{ backgroundColor: DARK, color: GOLD }}>
+            See full schedule <ArrowRight size={13} strokeWidth={2.5} />
+          </span>
+        </Link>
+        <style>{`
+          @keyframes hubTeaserDot { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.7); opacity: 0.55; } }
+          @media (prefers-reduced-motion: reduce) { [style*="hubTeaserDot"] { animation: none !important; } }
+        `}</style>
+      </div>
+    </section>
+  );
+}
+
 // ── HOW IT WORKS — horizontal minimal icons, click to expand ─────────────────
 function HowItWorks() {
   const [open, setOpen] = useState<number | null>(null);
@@ -982,9 +1011,9 @@ export default function HubPage() {
         }
       `}</style>
 
-      {/* ── QUARTERLY SCHEDULE — sale window · cohorts · graduation
-            (always-on intake separate). Single source: client/src/lib/hub-schedule.ts ── */}
-      <HubScheduleSection />
+      {/* ── QUARTERLY SCHEDULE TEASER — full page lives at /hub/schedule.
+            Inline summary only — sale status + a clear "See full schedule" link. */}
+      <HubScheduleTeaser />
 
       {/* ── WHAT WE OFFER — inline accordion, click item = pin ── */}
       <section id="services" className="py-20 md:py-28" style={{ backgroundColor: W }}>
