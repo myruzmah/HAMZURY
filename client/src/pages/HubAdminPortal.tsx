@@ -694,6 +694,106 @@ function EnrollmentsSection() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
+ * printRecord — 2026-05-07.
+ * Opens a print-friendly window with the record's full data, then triggers
+ * the browser's print dialog. Used by ApplicationDetailModal +
+ * PartnerDetailModal so admins can save/print a clean copy of any record.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function printRecord(args: {
+  title: string;
+  recordLabel: string;
+  ref: string;
+  status?: string;
+  sections: Array<{ name: string; rows: Array<{ label: string; key: string; value: string }> }>;
+  rawJson?: string;
+}) {
+  const win = window.open("", "_blank", "width=900,height=1100");
+  if (!win) {
+    alert("Popup blocked — allow popups for hamzury.com to print.");
+    return;
+  }
+  const escapeHtml = (s: string) => String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+  const sectionsHtml = args.sections.map(sec => `
+    <div class="section">
+      <div class="section-title">${escapeHtml(sec.name)}</div>
+      ${sec.rows.map(r => `
+        <div class="row">
+          <div class="label">
+            ${escapeHtml(r.label)}
+            <div class="key">${escapeHtml(r.key)}</div>
+          </div>
+          <div class="value ${r.value === "—" ? "empty" : ""}">${escapeHtml(r.value)}</div>
+        </div>
+      `).join("")}
+    </div>
+  `).join("");
+
+  const rawJsonHtml = args.rawJson ? `
+    <div class="section">
+      <div class="section-title">Raw metadata JSON</div>
+      <pre>${escapeHtml(args.rawJson)}</pre>
+    </div>
+  ` : "";
+
+  win.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(args.title)}</title>
+<style>
+  @page { margin: 1.4cm 1.2cm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1A1A1A; line-height: 1.5; padding: 16px 24px; max-width: 800px; margin: 0 auto; }
+  .head { border-bottom: 2px solid #1E3A5F; padding-bottom: 12px; margin-bottom: 18px; }
+  .eyebrow { font-size: 10px; color: #F97316; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  h1 { font-size: 22px; margin: 4px 0 6px; color: #1A1A1A; }
+  .meta { font-size: 11px; color: #6B7280; }
+  .ref { font-family: "SFMono-Regular", Menlo, monospace; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #1E3A5F10; font-size: 10px; font-weight: 600; margin-left: 8px; }
+  .section { page-break-inside: avoid; margin-bottom: 22px; }
+  .section-title { font-size: 11px; color: #F97316; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding-bottom: 6px; border-bottom: 1.5px solid #F97316; margin-bottom: 8px; }
+  .row { display: grid; grid-template-columns: 220px 1fr; gap: 16px; padding: 8px 0; border-bottom: 1px solid #E5E5EA; }
+  .row:last-child { border-bottom: none; }
+  .label { font-size: 11px; color: #6B7280; font-weight: 600; }
+  .key { font-size: 9px; color: #B0B0B0; font-family: "SFMono-Regular", Menlo, monospace; margin-top: 2px; }
+  .value { font-size: 12px; white-space: pre-wrap; word-break: break-word; color: #1A1A1A; }
+  .value.empty { color: #B0B0B0; font-style: italic; }
+  pre { background: #F5F5F7; border: 1px solid #E5E5EA; border-radius: 6px; padding: 12px; font-size: 10px; white-space: pre-wrap; word-break: break-word; max-height: 400px; overflow: auto; }
+  .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #E5E5EA; font-size: 10px; color: #6B7280; display: flex; justify-content: space-between; }
+  .toolbar { background: #1E3A5F; color: #fff; padding: 12px 24px; margin: -16px -24px 18px; display: flex; justify-content: space-between; align-items: center; }
+  .toolbar button { background: #B48C4C; color: #1E3A5F; border: none; padding: 8px 16px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+  @media print { .toolbar { display: none; } body { padding: 0; } }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <span style="font-size: 12px; font-weight: 600;">HAMZURY HUB · ${escapeHtml(args.recordLabel)}</span>
+    <button onclick="window.print()">Print or Save as PDF</button>
+  </div>
+  <div class="head">
+    <div class="eyebrow">${escapeHtml(args.recordLabel)}</div>
+    <h1>${escapeHtml(args.title)}${args.status ? `<span class="pill">${escapeHtml(args.status)}</span>` : ""}</h1>
+    <div class="meta"><span class="ref">${escapeHtml(args.ref)}</span></div>
+  </div>
+  ${sectionsHtml}
+  ${rawJsonHtml}
+  <div class="footer">
+    <span>Printed ${new Date().toLocaleString()}</span>
+    <span>HAMZURY HUB Admin · Confidential</span>
+  </div>
+  <script>setTimeout(() => window.print(), 300);</script>
+</body>
+</html>`);
+  win.document.close();
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
  * ApplicationDetailModal — 2026-05-06.
  * Full-screen overlay popup that shows EVERY field on an application —
  * every DB column AND every entry in the metadata JSON answers blob,
@@ -929,8 +1029,28 @@ function ApplicationDetailModal({ row, onClose }: { row: any; onClose: () => voi
         {/* Footer */}
         <div style={{
           padding: "12px 20px", borderTop: `1px solid ${HAIRLINE}`, backgroundColor: NAV_HOVER,
-          display: "flex", justifyContent: "flex-end",
+          display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
         }}>
+          <button
+            onClick={() => printRecord({
+              title: row.fullName || "(no name)",
+              recordLabel: "Application detail",
+              ref: row.ref,
+              status: `${row.status || ""} · payment: ${row.paymentStatus || ""}`,
+              sections: sectionOrder.filter(s => grouped[s]).map(s => ({
+                name: s,
+                rows: grouped[s].map(f => ({ label: f.label, key: f.key, value: f.value })),
+              })),
+              rawJson: row.metadata ? (() => { try { return JSON.stringify(JSON.parse(row.metadata), null, 2); } catch { return row.metadata; } })() : undefined,
+            })}
+            style={{
+              padding: "8px 18px", borderRadius: 8, backgroundColor: ORANGE, color: WHITE,
+              border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+              display: "inline-flex", alignItems: "center", gap: 6,
+            }}
+          >
+            🖨 Print / Save as PDF
+          </button>
           <button
             onClick={onClose}
             style={{
@@ -1070,6 +1190,9 @@ function PartnersSection() {
   const pQ = (trpc as any).hub.listPartnerOutreach.useQuery(undefined, { retry: false });
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  // 2026-05-07 — same modal pattern as Applications. Click row → popup with
+  // every field + Print/Save-as-PDF.
+  const [openPartner, setOpenPartner] = useState<any | null>(null);
 
   const all = ((pQ.data || []) as any[]);
   const filtered = all
@@ -1128,12 +1251,16 @@ function PartnersSection() {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {filtered.slice(0, 100).map((p: any) => (
             <Card key={p.id} style={{ padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+              <div
+                onClick={() => setOpenPartner(p)}
+                style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap", cursor: "pointer" }}
+              >
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: DARK }}>{p.orgName || "(no org name)"}</p>
                     <StatusPill label={p.status?.replace(/_/g, " ")} tone={P_TONE[p.status] || "muted"} />
                     {p.orgType && <StatusPill label={p.orgType} tone="muted" />}
+                    <span style={{ fontSize: 10, color: ORANGE, fontWeight: 600 }}>▸ view all</span>
                   </div>
                   {p.partnerInterest && (
                     <p style={{ fontSize: 12, color: INK_MUTED, marginTop: 6, lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
@@ -1151,7 +1278,8 @@ function PartnersSection() {
                 </div>
                 <select
                   value={p.status}
-                  onChange={e => updateMut.mutate({ id: p.id, status: e.target.value as any })}
+                  onClick={e => e.stopPropagation()}
+                  onChange={e => { e.stopPropagation(); updateMut.mutate({ id: p.id, status: e.target.value as any }); }}
                   disabled={updateMut.isPending}
                   style={{
                     padding: "6px 10px", borderRadius: 8, border: `1px solid ${DARK}15`,
@@ -1170,6 +1298,178 @@ function PartnersSection() {
           ))}
         </div>
       )}
+
+      {openPartner && (
+        <PartnerDetailModal row={openPartner} onClose={() => setOpenPartner(null)} />
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * PartnerDetailModal — 2026-05-07.
+ * Same shape as ApplicationDetailModal — every DB field + every metadata
+ * answer, click-outside / X / Escape to close, Print/Save-as-PDF button.
+ * ═══════════════════════════════════════════════════════════════════════ */
+function PartnerDetailModal({ row, onClose }: { row: any; onClose: () => void }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  let parsedMeta: any = null;
+  try { parsedMeta = JSON.parse(row.metadata || "{}"); } catch { parsedMeta = null; }
+  const answers: Record<string, any> = parsedMeta?.answers || {};
+  const capturedAt = parsedMeta?.capturedAt;
+
+  const dbFields: Array<{ label: string; key: string; value: string }> = [
+    { label: "Reference",         key: "ref",            value: row.ref || "—" },
+    { label: "Organisation",      key: "orgName",        value: row.orgName || "—" },
+    { label: "Organisation type", key: "orgType",        value: row.orgType || "—" },
+    { label: "Contact name",      key: "contactName",    value: row.contactName || "—" },
+    { label: "Contact role",      key: "contactRole",    value: row.contactRole || "—" },
+    { label: "Contact email",     key: "contactEmail",   value: row.contactEmail || "—" },
+    { label: "Contact phone",     key: "contactPhone",   value: row.contactPhone || "—" },
+    { label: "Timeline",          key: "timeline",       value: row.timeline || "—" },
+    { label: "Status",            key: "status",         value: (row.status || "—").replace(/_/g, " ") },
+    { label: "Submitted at",      key: "createdAt",      value: row.createdAt ? fmtDate(row.createdAt) : "—" },
+  ];
+
+  const longFields: Array<{ label: string; key: string; value: string }> = [
+    { label: "Partnership interest", key: "partnerInterest", value: row.partnerInterest || "—" },
+    { label: "Scope",                key: "scope",            value: row.scope || "—" },
+    { label: "Notes",                key: "notes",            value: row.notes || "—" },
+    { label: "Review notes",         key: "reviewNotes",      value: row.reviewNotes || "—" },
+  ];
+
+  // Anything else captured in the metadata answers blob — none of it should
+  // be hidden from the admin (matches the Application modal philosophy).
+  const handledKeys = new Set(["orgName", "orgType", "contactName", "contactRole",
+    "contactEmail", "contactPhone", "partnerInterest", "scope", "timeline", "notes"]);
+  const extraAnswers: Array<{ label: string; key: string; value: string }> = Object.entries(answers)
+    .filter(([k]) => !handledKeys.has(k))
+    .map(([k, v]) => ({ label: k, key: k, value: (v === null || v === undefined || v === "") ? "—" : String(v) }));
+
+  const sections = [
+    { name: "Identity & contact", rows: dbFields },
+    { name: "Long-form responses", rows: longFields },
+    ...(extraAnswers.length > 0 ? [{ name: "Other answers", rows: extraAnswers }] : []),
+  ];
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        backgroundColor: "rgba(0,0,0,0.55)",
+        display: "flex", alignItems: "flex-start", justifyContent: "center",
+        padding: "5vh 4vw", overflowY: "auto",
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 760, backgroundColor: WHITE, borderRadius: 14,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.35)", overflow: "hidden",
+        }}
+      >
+        <div style={{
+          padding: "16px 20px", borderBottom: `1px solid ${HAIRLINE}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ fontSize: 11, color: ORANGE, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>Partner outreach</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginTop: 2 }}>{row.orgName || "(no org name)"}</div>
+            <div style={{ fontSize: 11, color: INK_MUTED, marginTop: 2, fontFamily: "monospace" }}>{row.ref}</div>
+          </div>
+          <button
+            onClick={onClose}
+            style={{
+              width: 30, height: 30, borderRadius: 8, backgroundColor: NAV_HOVER,
+              color: INK_MUTED, border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
+            }}
+            aria-label="Close"
+          >×</button>
+        </div>
+
+        <div style={{ padding: "16px 20px", maxHeight: "75vh", overflowY: "auto" }}>
+          {sections.map(sec => (
+            <div key={sec.name} style={{ marginBottom: 22 }}>
+              <div style={{ fontSize: 10, color: ORANGE, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+                {sec.name}
+              </div>
+              {sec.rows.map((f, i) => (
+                <div key={`${f.key}-${i}`} style={{
+                  display: "grid", gridTemplateColumns: "200px 1fr", gap: 12,
+                  padding: "8px 0", borderTop: i === 0 ? "none" : `1px solid ${HAIRLINE}`,
+                }}>
+                  <div style={{ fontSize: 11, color: INK_MUTED, fontWeight: 600 }}>
+                    {f.label}
+                    <div style={{ fontSize: 9, color: INK_MUTED, fontFamily: "monospace", opacity: 0.6, marginTop: 2 }}>
+                      {f.key}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: 12, color: f.value === "—" ? INK_MUTED : INK,
+                    fontStyle: f.value === "—" ? "italic" : "normal",
+                    whiteSpace: "pre-wrap", wordBreak: "break-word",
+                  }}>{f.value}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          <details style={{ marginTop: 16, paddingTop: 12, borderTop: `2px solid ${HAIRLINE}` }}>
+            <summary style={{ cursor: "pointer", fontSize: 11, color: INK_MUTED, fontWeight: 600, padding: "4px 0" }}>
+              Raw metadata JSON (full payload as captured at submission)
+            </summary>
+            <pre style={{
+              marginTop: 8, padding: 12, backgroundColor: NAV_HOVER, borderRadius: 6,
+              fontSize: 10, color: INK, overflow: "auto", maxHeight: 300,
+              fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            }}>
+{row.metadata ? (() => { try { return JSON.stringify(JSON.parse(row.metadata), null, 2); } catch { return row.metadata; } })() : "(empty)"}
+            </pre>
+            {capturedAt && (
+              <div style={{ fontSize: 10, color: INK_MUTED, marginTop: 6 }}>
+                Captured at: {capturedAt}
+              </div>
+            )}
+          </details>
+        </div>
+
+        <div style={{
+          padding: "12px 20px", borderTop: `1px solid ${HAIRLINE}`, backgroundColor: NAV_HOVER,
+          display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8,
+        }}>
+          <button
+            onClick={() => printRecord({
+              title: row.orgName || "(no org name)",
+              recordLabel: "Partner outreach",
+              ref: row.ref,
+              status: row.status?.replace(/_/g, " "),
+              sections: sections.map(s => ({ name: s.name, rows: s.rows })),
+              rawJson: row.metadata ? (() => { try { return JSON.stringify(JSON.parse(row.metadata), null, 2); } catch { return row.metadata; } })() : undefined,
+            })}
+            style={{
+              padding: "8px 18px", borderRadius: 8, backgroundColor: ORANGE, color: WHITE,
+              border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+              display: "inline-flex", alignItems: "center", gap: 6,
+            }}
+          >
+            🖨 Print / Save as PDF
+          </button>
+          <button
+            onClick={onClose}
+            style={{
+              padding: "8px 18px", borderRadius: 8, backgroundColor: INK, color: WHITE,
+              border: "none", cursor: "pointer", fontSize: 12, fontWeight: 600,
+            }}
+          >Close</button>
+        </div>
+      </div>
     </div>
   );
 }
