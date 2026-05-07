@@ -15,6 +15,9 @@ import MotivationalQuoteBar from "@/components/MotivationalQuoteBar";
 import SplashScreen from "@/components/SplashScreen";
 // 2026-05-07 — single source of truth for /hub "What we offer" + admin Programs.
 import { OFFER_CATEGORIES, STATUS_BADGE, type CourseItem, type OfferCategory } from "@/lib/offer-categories";
+// 2026-05-07 — quarterly schedule (sale → orientation → cohorts → graduation)
+// + always-on intake (internships, online). Single source: lib/hub-schedule.ts.
+import HubScheduleSection from "@/components/HubScheduleSection";
 
 /* ═══════════════════════════════════════════════════════════════════════════
    HAMZURY HUB — /hub — Apple-standard design (was /skills)
@@ -978,6 +981,10 @@ export default function HubPage() {
           .hub-enrol-cta, .hub-enrol-dot { animation: none; }
         }
       `}</style>
+
+      {/* ── QUARTERLY SCHEDULE — sale window · cohorts · graduation
+            (always-on intake separate). Single source: client/src/lib/hub-schedule.ts ── */}
+      <HubScheduleSection />
 
       {/* ── WHAT WE OFFER — inline accordion, click item = pin ── */}
       <section id="services" className="py-20 md:py-28" style={{ backgroundColor: W }}>
