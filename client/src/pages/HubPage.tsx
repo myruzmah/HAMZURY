@@ -486,19 +486,25 @@ function StickyNote({
         boxShadow: "0 1px 2px rgba(0,0,0,0.04), 0 12px 36px rgba(20,20,30,0.10)",
         minWidth: 280,
         maxWidth: 320,
+        // 2026-05-07 — cap height so long content (lots of "What you get"
+        // bullets) doesn't push the sticky beyond the viewport. Inner body
+        // scrolls; accent strip + close button stay pinned.
+        maxHeight: "min(72vh, 600px)",
+        display: "flex",
+        flexDirection: "column",
         overflow: "hidden",
         border: `1px solid ${TEXT}08`,
       }}
     >
       {/* Apple Notes-style accent strip */}
-      <div className="h-1.5" style={{ backgroundColor: stickyColor.border }} />
+      <div className="h-1.5 shrink-0" style={{ backgroundColor: stickyColor.border }} />
 
       {/* Close */}
-      <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-black/5" title="Close">
+      <button onClick={onClose} className="absolute top-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors hover:bg-black/5 z-10" title="Close" style={{ backgroundColor: `${W}cc`, backdropFilter: "blur(6px)" }}>
         <X size={14} style={{ color: `${TEXT}55` }} />
       </button>
 
-      <div className="p-5">
+      <div className="p-5 sticky-scroll-body" style={{ overflowY: "auto", overflowX: "hidden", flex: 1, minHeight: 0 }}>
         <h4 className="text-[17px] font-semibold tracking-tight mb-2 pr-6" style={{ color: TEXT, letterSpacing: "-0.01em" }}>{item.name}</h4>
 
         <div className="flex items-center gap-2 flex-wrap mb-3">
@@ -863,6 +869,13 @@ export default function HubPage() {
         @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap');
         .sticky-board { scrollbar-width: none; -ms-overflow-style: none; }
         .sticky-board::-webkit-scrollbar { display: none; }
+        /* 2026-05-07 — slim native-feeling scrollbar for the per-sticky body
+           when content overflows (e.g. course pinned with many bullets). */
+        .sticky-scroll-body { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.18) transparent; }
+        .sticky-scroll-body::-webkit-scrollbar { width: 6px; }
+        .sticky-scroll-body::-webkit-scrollbar-track { background: transparent; }
+        .sticky-scroll-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 999px; }
+        .sticky-scroll-body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.28); }
         @keyframes sticky-in {
           0% { opacity: 0; transform: scale(0.85) rotate(-3deg); }
           70% { transform: scale(1.03) rotate(1deg); }
