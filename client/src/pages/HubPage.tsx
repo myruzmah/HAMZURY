@@ -1256,7 +1256,6 @@ export default function HubPage() {
           <div className="flex items-center gap-6">
             <Link href="/privacy"><span className="hover:opacity-80 transition-opacity cursor-pointer">Privacy</span></Link>
             <Link href="/terms"><span className="hover:opacity-80 transition-opacity cursor-pointer">Terms</span></Link>
-            <button onClick={() => openChat("I am interested in partnering with HAMZURY HUB.")} className="hover:opacity-80 transition-opacity cursor-pointer">Partner with Us</button>
             <button onClick={() => openChat("I want to file a complaint or give a suggestion about HUB services.")} className="hover:opacity-80 transition-opacity cursor-pointer flex items-center gap-1">
               <AlertCircle size={10} /> Complaint / Suggestion
             </button>
