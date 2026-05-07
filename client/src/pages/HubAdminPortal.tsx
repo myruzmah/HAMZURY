@@ -20,6 +20,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { HUB_PROGRAMS, HUB_TEAMS, formatProgramPrice } from "@shared/programs";
+// 2026-05-07 — share /hub "What we offer" data between public + admin so they
+// stay identical. Edit client/src/lib/offer-categories.ts to update both at once.
+import { OFFER_CATEGORIES, STATUS_BADGE } from "@/lib/offer-categories";
+import { Lock as LockIcon } from "lucide-react";
 
 /* Palette — HUB Orange + Apple-clean rebrand 2026-04-30
  * Spec: PHASE7_HUB → "HUB Orange #F59E0B"
@@ -2199,7 +2203,7 @@ SOCIAL MEDIA (this week)
  · Posts logged:        ${postsThisWeek}
  · Verified:            ${verifiedThisWeek}
 
-Built to Last.`;
+Learn what actually works.`;
 
   const copy = () => {
     navigator.clipboard.writeText(report).then(
@@ -3254,7 +3258,7 @@ Orientation: {orientation_date} · 8:00am · Hamzury HUB.
 Bring: a laptop (we have rentals if needed), your ID.
 You'll be assigned to a team (AI / Cyber / Quantum / Robotics) on day one.
 
-Welcome aboard. Built to Last. — CSO`;
+Welcome aboard. Learn what actually works. — CSO`;
 
   const M_ORIENTATION_REMINDER = `Hi {name}, quick reminder — orientation is tomorrow at 8:00am.
 
@@ -3414,36 +3418,137 @@ See you there. — CSO`;
 /* ═══════════════════════════════════════════════════════════════════════
  * PROGRAMS — single-source-of-truth catalog from shared/programs.ts.
  * ═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════
+ * ProgramsCatalogSection — 2026-05-07.
+ * Renders the EXACT same "What we offer" data the public /hub page shows.
+ * Both surfaces import OFFER_CATEGORIES from client/src/lib/offer-categories.ts
+ * — single source of truth. Edit there to add a programme, rename a course,
+ * or change schedule and both sides update at once.
+ * ═══════════════════════════════════════════════════════════════════════ */
 function ProgramsCatalogSection() {
+  const [expandedCat, setExpandedCat] = useState<string | null>("programs");
+
   return (
     <div>
-      <SectionTitle sub="Eight programs from PHASE7_HUB. Edit shared/programs.ts to add, rename, or reprice.">
+      <SectionTitle sub="Live source-of-truth catalog — same data the public /hub 'What we offer' section shows. Edit client/src/lib/offer-categories.ts to update both at once.">
         Programs catalog
       </SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
-        {HUB_PROGRAMS.map(p => (
-          <div key={p.key} style={{
-            backgroundColor: WHITE, borderRadius: 14, padding: 16,
-            border: `1px solid ${HAIRLINE}`, borderLeft: `3px solid ${p.accent}`,
-          }}>
-            <p style={{ fontSize: 10, color: p.accent, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 6 }}>
-              {p.weeks ? `${p.weeks} weeks` : "Self-paced"} · {p.ageRange ?? "Adult"}
-            </p>
-            <p style={{ fontSize: 16, fontWeight: 700, color: INK, letterSpacing: -0.2 }}>{p.name}</p>
-            <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 6, lineHeight: 1.55 }}>{p.pitch}</p>
-            <p style={{ fontSize: 12, fontWeight: 700, color: p.accent, marginTop: 10 }}>{formatProgramPrice(p)}</p>
-            <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 6 }}>{p.scheduleLabel}</p>
-            <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>Certificate: {p.certificate}</p>
-            <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0", display: "flex", flexDirection: "column", gap: 4 }}>
-              {p.whatYouGet.slice(0, 3).map((w, i) => (
-                <li key={i} style={{ fontSize: 11, color: INK, display: "flex", alignItems: "center", gap: 6 }}>
-                  <CheckCircle2 size={11} strokeWidth={1.75} style={{ color: p.accent, flexShrink: 0 }} /> {w}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {OFFER_CATEGORIES.map(cat => {
+          const Icon = cat.icon as React.ElementType;
+          const isOpen = expandedCat === cat.id;
+          return (
+            <div key={cat.id} style={{
+              backgroundColor: WHITE, borderRadius: 14,
+              border: `1px solid ${isOpen ? ORANGE : HAIRLINE}`,
+              overflow: "hidden",
+            }}>
+              <button
+                onClick={() => setExpandedCat(isOpen ? null : cat.id)}
+                style={{
+                  width: "100%", padding: "16px 18px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  backgroundColor: isOpen ? `${ORANGE}06` : "transparent",
+                  border: "none", cursor: "pointer", textAlign: "left",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    backgroundColor: isOpen ? ORANGE : `${INK}08`,
+                    display: "grid", placeItems: "center",
+                  }}>
+                    <Icon size={16} color={isOpen ? WHITE : INK} strokeWidth={1.75} />
+                  </div>
+                  <div>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: INK }}>{cat.title}</p>
+                    <p style={{ fontSize: 11, color: INK_MUTED, marginTop: 2 }}>{cat.items.length} courses</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} style={{ color: INK_MUTED, transform: isOpen ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+              </button>
+
+              {isOpen && (
+                <div style={{ padding: "0 18px 18px" }}>
+                  <p style={{ fontSize: 12, color: INK_MUTED, marginBottom: 14, lineHeight: 1.55 }}>{cat.description}</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {cat.items.map(item => {
+                      const badge = STATUS_BADGE[item.status];
+                      const priceLabel = typeof item.onlinePrice === "number"
+                        ? `₦${item.onlinePrice.toLocaleString()}`
+                        : item.onlinePrice === "free" ? "Free / scholarship"
+                        : item.onlinePrice === "custom" ? "Custom quote"
+                        : null;
+                      return (
+                        <div key={item.name} style={{
+                          padding: 12, borderRadius: 10,
+                          backgroundColor: WHITE, border: `1px solid ${HAIRLINE}`,
+                        }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
+                            <p style={{ fontSize: 13, fontWeight: 600, color: INK }}>{item.name}</p>
+                            <span style={{
+                              fontSize: 9, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                              backgroundColor: badge.bg, color: badge.text,
+                            }}>{badge.label}</span>
+                            {item.prerequisites && (
+                              <span style={{
+                                fontSize: 9, fontWeight: 500, padding: "2px 8px", borderRadius: 999,
+                                backgroundColor: `${INK}06`, color: INK_MUTED,
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                              }}>
+                                <LockIcon size={9} /> Requires prior course
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, fontSize: 10, color: INK_MUTED, marginBottom: item.whatYouGet ? 8 : 0 }}>
+                            {item.duration && <span>{item.duration}</span>}
+                            {item.age && <span>Age: {item.age}</span>}
+                            {item.maxStudents && <span>{item.maxStudents} seats</span>}
+                            {priceLabel && <span style={{ color: ORANGE, fontWeight: 600 }}>{priceLabel}</span>}
+                            {item.locations && item.locations.length > 0 && <span>{item.locations.join(" · ")}</span>}
+                          </div>
+                          {item.whatYouGet && item.whatYouGet.length > 0 && (
+                            <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                              {item.whatYouGet.map((w, i) => (
+                                <li key={i} style={{ fontSize: 11, color: INK, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.5 }}>
+                                  <CheckCircle2 size={11} strokeWidth={1.75} style={{ color: ORANGE, flexShrink: 0, marginTop: 3 }} />
+                                  <span>{w}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
+
+      {/* Legacy programmes summary (HUB_PROGRAMS from shared/programs.ts) — kept
+          for the rest of the system (cohort scheduler, etc.) that still reads
+          the simpler list. Visible here so admins can spot-check drift. */}
+      <details style={{ marginTop: 24 }}>
+        <summary style={{ cursor: "pointer", fontSize: 11, color: INK_MUTED, fontWeight: 600 }}>
+          Legacy programme list (shared/programs.ts) — used by cohort scheduler, attendance, certificates
+        </summary>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 10, marginTop: 12 }}>
+          {HUB_PROGRAMS.map(p => (
+            <div key={p.key} style={{
+              backgroundColor: WHITE, borderRadius: 10, padding: 12,
+              border: `1px solid ${HAIRLINE}`, borderLeft: `3px solid ${p.accent}`,
+            }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: INK }}>{p.name}</p>
+              <p style={{ fontSize: 10, color: INK_MUTED, marginTop: 4 }}>{p.scheduleLabel}</p>
+              <p style={{ fontSize: 11, fontWeight: 600, color: p.accent, marginTop: 6 }}>{formatProgramPrice(p)}</p>
+            </div>
+          ))}
+        </div>
+      </details>
     </div>
   );
 }
