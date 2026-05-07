@@ -339,11 +339,15 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
     medialy: { href: "/medialy", label: "MEDIALY" },
   };
   const { href: backHref, label: backLabel } = divisionBack[cfg.division] ?? { href: "/", label: "HAMZURY" };
+  // 2026-05-07 — HUB has its own tagline ("Learn what actually works.")
+  // separate from the corporate "Built to Last." Other divisions keep the
+  // corporate tagline.
+  const navTagline = cfg.division === "hub" ? "Learn what actually works" : "Built to Last";
 
   /* ─── Thank you ─── */
   if (submittedRef !== null) {
     return (
-      <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel}>
+      <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel} tagline={navTagline}>
         <PageMeta title={`${cfg.pageTitle} — Received`} description="We've received your submission." />
         <div className="max-w-xl mx-auto px-6 py-24 md:py-32 text-center">
           <div className="w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: `${G}10` }}>
@@ -420,7 +424,7 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
   /* ─── Welcome screen (stepIndex === -1) ─── */
   if (stepIndex < 0) {
     return (
-      <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel}>
+      <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel} tagline={navTagline}>
         <PageMeta title={cfg.pageTitle} description={cfg.pageDescription} />
         <div className="max-w-xl mx-auto px-6 py-20 md:py-28">
           <p className="text-[10px] font-semibold tracking-[0.3em] uppercase mb-4" style={{ color: Au }}>
@@ -456,7 +460,7 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
 
   /* ─── Step view ─── */
   return (
-    <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel}>
+    <Shell G={G} Au={Au} BG={BG} W={W} backHref={backHref} backLabel={backLabel} tagline={navTagline}>
       <PageMeta title={cfg.pageTitle} description={cfg.pageDescription} />
 
       {/* Progress bar */}
@@ -562,7 +566,7 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
 }
 
 /* ─── Shell ─── */
-function Shell({ G, Au, BG, W, children, backHref = "/", backLabel = "HAMZURY" }: { G: string; Au: string; BG: string; W: string; children: React.ReactNode; backHref?: string; backLabel?: string; }) {
+function Shell({ G, Au, BG, W, children, backHref = "/", backLabel = "HAMZURY", tagline = "Built to Last" }: { G: string; Au: string; BG: string; W: string; children: React.ReactNode; backHref?: string; backLabel?: string; tagline?: string; }) {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: BG, fontFamily: "Inter, -apple-system, sans-serif" }}>
       <nav className="py-5 px-6 border-b" style={{ backgroundColor: W, borderColor: `${G}08` }}>
@@ -571,7 +575,7 @@ function Shell({ G, Au, BG, W, children, backHref = "/", backLabel = "HAMZURY" }
             {backLabel}
           </Link>
           <span className="text-[10px] tracking-[0.2em] uppercase" style={{ color: Au }}>
-            Built to Last
+            {tagline}
           </span>
         </div>
       </nav>
