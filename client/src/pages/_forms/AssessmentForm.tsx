@@ -359,8 +359,28 @@ export default function AssessmentForm({ cfg, initialAnswers }: { cfg: Assessmen
             {cfg.thankYou.sub}
           </p>
           {submittedRef && (
-            <div className="inline-block px-5 py-3 rounded-xl mb-6 font-mono text-[13px]" style={{ backgroundColor: `${G}08`, color: G }}>
-              Reference: <strong>{submittedRef}</strong>
+            <div className="mb-6">
+              <div className="inline-block px-5 py-3 rounded-xl font-mono text-[13px] mb-3" style={{ backgroundColor: `${G}08`, color: G }}>
+                Reference: <strong>{submittedRef}</strong>
+              </div>
+              {/* 2026-05-07 — Founder ask: applicants must save their reference.
+                  We surface this prominently right under the ref so it's the
+                  first thing they see after submission. */}
+              <div
+                className="max-w-md mx-auto px-4 py-3 rounded-xl text-[12.5px] font-medium flex items-start gap-2"
+                style={{
+                  backgroundColor: `${Au}12`,
+                  border: `1px solid ${Au}40`,
+                  color: G,
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1.2 }}>📸</span>
+                <span style={{ textAlign: "left", lineHeight: 1.5 }}>
+                  <strong>Screenshot or copy this reference now.</strong>
+                  <br />
+                  You'll need it to track your application, send your payment receipt on WhatsApp, and follow up with our team.
+                </span>
+              </div>
             </div>
           )}
           <p className="text-[13px] mb-8" style={{ color: MUTED }}>
