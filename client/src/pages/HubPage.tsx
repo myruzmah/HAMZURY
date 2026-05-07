@@ -1032,8 +1032,8 @@ export default function HubPage() {
                                 ) : isPinned ? (
                                   <span className="text-[10px] font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: `${color}15`, color }}>Pinned</span>
                                 ) : (
-                                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1" style={{ backgroundColor: "#16A34A14", color: "#15803D" }}>
-                                    <span style={{ fontSize: 11, lineHeight: 1 }}>🪑</span> Apply
+                                  <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 whitespace-nowrap" style={{ backgroundColor: "#16A34A14", color: "#15803D" }}>
+                                    <span style={{ fontSize: 11, lineHeight: 1 }}>🪑</span> Book a seat
                                   </span>
                                 )}
                               </div>
